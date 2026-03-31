@@ -60,6 +60,7 @@ interface WornPathEntry {
   chunkY: number;
   tileX: number;
   tileY: number;
+  visitCount: number;
 }
 
 interface ServerTickMessage {
