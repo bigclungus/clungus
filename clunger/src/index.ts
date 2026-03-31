@@ -726,8 +726,8 @@ function restServeTasks(res: http.ServerResponse, query: URLSearchParams): void 
 }
 
 const SERVICES_HEALTH = [
-  "claude-bot", "clunger", "cloudflared", "labs-router",
-  "terminal-server", "temporal", "temporal-proxy", "temporal-worker",
+  "claude-bot", "clunger", "cloudflared",
+  "terminal-server", "temporal", "temporal-worker",
 ];
 
 function restServeOpsHealth(res: http.ServerResponse): void {
@@ -2348,9 +2348,341 @@ function serveStaticFile(res: http.ServerResponse, filePath: string): boolean {
   return true;
 }
 
+// ── Folded: inject service (was port 9876) ─────────────────────────────────
+// Forwards POST /inject to the omni gateway. Secret-authenticated.
+
+const OMNI_INJECT_URL = "http://127.0.0.1:8085/webhooks/bigclungus-main";
+const INJECT_SECRET = process.env.DISCORD_INJECT_SECRET ?? "";
+const INJECT_MAX_RETRIES = 3;
+const INJECT_RETRY_DELAY_MS = 600;
+
+async function handleInject(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  if (INJECT_SECRET) {
+    const providedSecret = (req.headers["x-inject-secret"] as string) ?? "";
+    if (providedSecret !== INJECT_SECRET) {
+      res.writeHead(401, { "Content-Type": "text/plain" });
+      res.end("Unauthorized");
+      return;
+    }
+  }
+
+  let body: { content?: string; user?: string; chat_id?: string };
+  try {
+    const raw = await readBody(req);
+    body = JSON.parse(raw.toString("utf-8")) as { content?: string; user?: string; chat_id?: string };
+  } catch {
+    res.writeHead(400, { "Content-Type": "text/plain" });
+    res.end("Bad Request: invalid JSON");
+    return;
+  }
+
+  const { content, user } = body;
+  if (!content) {
+    res.writeHead(400, { "Content-Type": "text/plain" });
+    res.end("Bad Request: missing content");
+    return;
+  }
+
+  console.log(`[inject] proxying message from=${user ?? "(unknown)"} content="${content.slice(0, 80)}${content.length > 80 ? "..." : ""}"`);
+
+  const omniPayload = { content, user };
+  let lastErr = "";
+  let omniRes: Response | null = null;
+
+  for (let attempt = 1; attempt <= INJECT_MAX_RETRIES; attempt++) {
+    try {
+      omniRes = await fetch(OMNI_INJECT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(omniPayload),
+      });
+      if (omniRes.ok) break;
+      lastErr = `omni responded ${omniRes.status}`;
+      console.warn(`[inject] attempt ${attempt}/${INJECT_MAX_RETRIES}: ${lastErr}`);
+      if (attempt < INJECT_MAX_RETRIES) await new Promise((r) => setTimeout(r, INJECT_RETRY_DELAY_MS * attempt));
+    } catch (err) {
+      lastErr = err instanceof Error ? err.message : String(err);
+      console.warn(`[inject] attempt ${attempt}/${INJECT_MAX_RETRIES}: request failed: ${lastErr}`);
+      if (attempt < INJECT_MAX_RETRIES) await new Promise((r) => setTimeout(r, INJECT_RETRY_DELAY_MS * attempt));
+    }
+  }
+
+  if (!omniRes) {
+    console.error(`[inject] all ${INJECT_MAX_RETRIES} attempts failed: ${lastErr}`);
+    res.writeHead(502, { "Content-Type": "text/plain" });
+    res.end(`Bad Gateway: ${lastErr}`);
+    return;
+  }
+
+  const responseText = await omniRes.text();
+  console.log(`[inject] omni responded ${omniRes.status}`);
+  const ct = omniRes.headers.get("Content-Type") ?? "text/plain";
+  res.writeHead(omniRes.status, { "Content-Type": ct });
+  res.end(responseText);
+}
+
+// ── Folded: temporal-proxy service (was port 8234) ─────────────────────────
+// Auth proxy for the Temporal dev server at :8233. Requires tauth_github cookie.
+
+const TEMPORAL_UPSTREAM = "http://localhost:8233";
+const TEMPORAL_LOGIN_URL = "https://clung.us/auth/github?next=https://temporal.clung.us";
+const TEMPORAL_HOP_BY_HOP = new Set([
+  "connection", "transfer-encoding", "te", "trailers",
+  "upgrade", "proxy-authorization", "proxy-authenticate", "keep-alive",
+  "content-encoding", "content-length",
+]);
+
+async function handleTemporalProxy(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  if (!restIsAuthed(req)) {
+    res.writeHead(302, { Location: TEMPORAL_LOGIN_URL });
+    res.end();
+    return;
+  }
+
+  const rawPath = req.url ?? "/";
+  const targetUrl = TEMPORAL_UPSTREAM + rawPath;
+
+  const forwardHeaders: Record<string, string> = {};
+  for (const [k, v] of Object.entries(req.headers)) {
+    if (k.toLowerCase() === "host") continue;
+    if (TEMPORAL_HOP_BY_HOP.has(k.toLowerCase())) continue;
+    forwardHeaders[k] = Array.isArray(v) ? v.join(", ") : (v ?? "");
+  }
+  forwardHeaders["X-Forwarded-For"] = req.socket.remoteAddress ?? "";
+  forwardHeaders["X-Forwarded-Host"] = req.headers["host"] ?? "";
+
+  try {
+    const body = await readBody(req);
+    const upstreamResp = await fetch(targetUrl, {
+      method: req.method ?? "GET",
+      headers: forwardHeaders,
+      body: body.length > 0 ? body : undefined,
+      redirect: "manual",
+    } as RequestInit);
+
+    const respHeaders: Record<string, string> = {};
+    upstreamResp.headers.forEach((v, k) => {
+      if (!TEMPORAL_HOP_BY_HOP.has(k.toLowerCase())) respHeaders[k] = v;
+    });
+
+    const respBody = Buffer.from(await upstreamResp.arrayBuffer());
+    res.writeHead(upstreamResp.status, respHeaders);
+    res.end(respBody);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("ECONNREFUSED") || msg.includes("connect")) {
+      res.writeHead(502, { "Content-Type": "text/plain" });
+      res.end("Temporal upstream unreachable");
+    } else {
+      res.writeHead(504, { "Content-Type": "text/plain" });
+      res.end(`Upstream error: ${msg}`);
+    }
+  }
+}
+
+// ── Folded: labs-router service (was port 8083) ────────────────────────────
+// Discovers lab experiments from lab.json manifests and proxies labs.clung.us/<name>/.
+
+const LABS_DIR = "/mnt/data/labs";
+
+interface LabManifest {
+  name: string;
+  title: string;
+  description: string;
+  port: number;
+  status: string;
+}
+
+const LABS_NAV_INJECT = `<link rel="stylesheet" href="https://clung.us/sitenav.css">
+<style>
+/* labs-router nav override: pin nav to top across all body layouts */
+nav.sitenav {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+  z-index: 9999 !important;
+}
+/* push page content below the fixed nav (nav is ~37px tall) */
+body { padding-top: 48px !important; }
+</style>
+<script src="https://clung.us/sitenav.js" defer></script>`;
+
+async function labsDiscoverLabs(): Promise<LabManifest[]> {
+  const { readdir, readFile } = await import("fs/promises");
+  const labs: LabManifest[] = [];
+  let entries: string[];
+  try {
+    entries = await readdir(LABS_DIR);
+  } catch {
+    return labs;
+  }
+  for (const entry of entries) {
+    const manifestPath = join(LABS_DIR, entry, "lab.json");
+    try {
+      const raw = await readFile(manifestPath, "utf-8");
+      const manifest = JSON.parse(raw) as LabManifest;
+      if (manifest.status === "active") labs.push(manifest);
+    } catch {
+      // No lab.json or invalid — skip
+    }
+  }
+  return labs;
+}
+
+function labsInjectNav(html: string): string {
+  const headClose = html.match(/<\/head>/i);
+  if (headClose) return html.replace(headClose[0], LABS_NAV_INJECT + "\n" + headClose[0]);
+  const bodyTag = html.match(/<body[^>]*>/i);
+  if (bodyTag) return html.replace(bodyTag[0], LABS_NAV_INJECT + "\n" + bodyTag[0]);
+  return LABS_NAV_INJECT + html;
+}
+
+function labsRenderIndex(labs: LabManifest[]): string {
+  const items =
+    labs.length === 0
+      ? `<p style="color:#666">No active labs yet. Run <code>new-lab.sh &lt;name&gt;</code> to create one.</p>`
+      : labs.map((lab) => `
+    <div class="lab">
+      <a href="/${lab.name}/">${lab.title}</a>
+      <p>${lab.description}</p>
+    </div>`).join("\n");
+
+  return labsInjectNav(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>labs.clung.us</title>
+  <style>
+    body { font-family: monospace; max-width: 720px; margin: 0 auto; padding: 48px 20px 20px; background: #0d0d0d; color: #e0e0e0; }
+    h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
+    .subtitle { color: #666; margin-bottom: 2rem; font-size: 0.9rem; }
+    .lab { border: 1px solid #222; padding: 14px 18px; margin-bottom: 12px; border-radius: 4px; }
+    .lab a { color: #7eb8f7; text-decoration: none; font-size: 1rem; font-weight: bold; }
+    .lab a:hover { text-decoration: underline; }
+    .lab p { margin: 6px 0 0; color: #999; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <h1>labs.clung.us</h1>
+  <p class="subtitle">active experiments — ${labs.length} running</p>
+  ${items}
+</body>
+</html>`);
+}
+
+async function handleLabsRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  const url = new URL(req.url ?? "/", "http://labs.clung.us");
+  const pathname = url.pathname;
+
+  if (pathname === "/" || pathname === "") {
+    const labs = await labsDiscoverLabs();
+    const html = labsRenderIndex(labs);
+    const buf = Buffer.from(html, "utf-8");
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Content-Length": buf.length });
+    res.end(buf);
+    return;
+  }
+
+  const parts = pathname.split("/").filter(Boolean);
+  const labName = parts[0];
+  const subpath = "/" + parts.slice(1).join("/") + (pathname.endsWith("/") && parts.length > 1 ? "/" : "");
+
+  const labs = await labsDiscoverLabs();
+  const lab = labs.find((l) => l.name === labName);
+
+  if (!lab) {
+    const html = labsInjectNav(`<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:monospace;padding:40px;background:#0d0d0d;color:#e0e0e0">
+      <h2>404 — lab not found</h2>
+      <p>No active lab named <code>${labName}</code>.</p>
+      <p><a href="/" style="color:#7eb8f7">← back to index</a></p>
+    </body></html>`);
+    const buf = Buffer.from(html, "utf-8");
+    res.writeHead(404, { "Content-Type": "text/html; charset=utf-8", "Content-Length": buf.length });
+    res.end(buf);
+    return;
+  }
+
+  const targetUrl = `http://127.0.0.1:${lab.port}${(subpath || "/") + url.search}`;
+  const headers = new Headers();
+  for (const [k, v] of Object.entries(req.headers)) {
+    if (typeof v === "string") headers.set(k, v);
+    else if (Array.isArray(v)) headers.set(k, v.join(", "));
+  }
+  headers.set("X-Forwarded-For", "127.0.0.1");
+  headers.set("X-Lab-Name", lab.name);
+  headers.set("X-Lab-Base-Path", `/${lab.name}`);
+
+  let reqBody: ArrayBuffer | undefined;
+  if (req.method !== "GET" && req.method !== "HEAD") {
+    reqBody = (await readBody(req)).buffer as ArrayBuffer;
+  }
+
+  try {
+    const upstream = await fetch(targetUrl, {
+      method: req.method ?? "GET",
+      headers,
+      body: reqBody,
+    });
+
+    const contentType = upstream.headers.get("content-type") ?? "";
+    const isHtml = contentType.includes("text/html");
+
+    if (!isHtml) {
+      const upstreamBuf = Buffer.from(await upstream.arrayBuffer());
+      const responseHeaders: Record<string, string> = {};
+      upstream.headers.forEach((v, k) => { responseHeaders[k] = v; });
+      res.writeHead(upstream.status, responseHeaders);
+      res.end(upstreamBuf);
+      return;
+    }
+
+    const html = await upstream.text();
+    const modified = labsInjectNav(html);
+    const modifiedBuf = Buffer.from(modified, "utf-8");
+    const responseHeaders: Record<string, string> = {};
+    upstream.headers.forEach((v, k) => {
+      if (k.toLowerCase() !== "content-length" && k.toLowerCase() !== "content-encoding") {
+        responseHeaders[k] = v;
+      }
+    });
+    responseHeaders["content-type"] = "text/html; charset=utf-8";
+    responseHeaders["content-length"] = String(modifiedBuf.length);
+    res.writeHead(upstream.status, responseHeaders);
+    res.end(modifiedBuf);
+  } catch (err) {
+    console.error(`[labs-router] proxy error for lab ${labName}: ${err}`);
+    const html = labsInjectNav(`<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:monospace;padding:40px;background:#0d0d0d;color:#e0e0e0">
+      <h2>502 — lab unreachable</h2>
+      <p>Lab <code>${labName}</code> is registered but not responding on port ${lab.port}.</p>
+      <p><a href="/" style="color:#7eb8f7">← back to index</a></p>
+    </body></html>`);
+    const buf = Buffer.from(html, "utf-8");
+    res.writeHead(502, { "Content-Type": "text/html; charset=utf-8", "Content-Length": buf.length });
+    res.end(buf);
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
   const pathname = url.pathname;
+  const host = (req.headers["host"] ?? "").split(":")[0].toLowerCase();
+
+  // ── labs.clung.us — labs router ────────────────────────────────────────────
+  if (host === "labs.clung.us") {
+    await handleLabsRequest(req, res);
+    return;
+  }
+
+  // ── temporal.clung.us — Temporal auth proxy ────────────────────────────────
+  if (host === "temporal.clung.us") {
+    await handleTemporalProxy(req, res);
+    return;
+  }
 
   // ConnectRPC routes — identified by service package prefix
   if (
@@ -2403,6 +2735,12 @@ const server = http.createServer(async (req, res) => {
   // GitHub webhook
   if (pathname === "/webhook/github" && req.method === "POST") {
     await handleGithubWebhook(req, res);
+    return;
+  }
+
+  // Folded inject endpoint — POST /inject
+  if (pathname === "/inject" && req.method === "POST") {
+    await handleInject(req, res);
     return;
   }
 
