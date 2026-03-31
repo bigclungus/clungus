@@ -35,32 +35,35 @@ def _age_str(iso_str: str) -> str:
         return "?"
 
 
+_CLOSED = {"done", "failed", "cancelled", "stale"}
+
+
 def _derive_status(task: dict) -> str:
     """
-    Derive task status from the last log entry event.
-    Fallback to top-level 'status' field for old-format tasks.
+    Derive task status, checking the top-level status field first when it is a
+    known terminal value.  Falls back to the last log entry event so that tasks
+    whose only record of completion is the log still work correctly.
 
     Event mapping:
       started  -> in_progress
       done     -> done
       stale    -> stale
       failed   -> failed
+      cancelled -> cancelled
     """
+    # Top-level status wins when it is a known terminal value
+    top_level = task.get("status")
+    if top_level in _CLOSED:
+        return top_level
+    # Fall back to last log event
     log = task.get("log")
     if log and isinstance(log, list) and len(log) > 0:
         last_event = log[-1].get("event", "")
         if last_event == "started":
             return "in_progress"
-        elif last_event == "done":
-            return "done"
-        elif last_event == "stale":
-            return "stale"
-        elif last_event == "failed":
-            return "failed"
-        else:
+        if last_event in _CLOSED:
             return last_event
-    # Backward compat: old format with top-level status field
-    return task.get("status", "unknown")
+    return top_level or "unknown"
 
 
 def _get_started_ts(task: dict) -> str:
