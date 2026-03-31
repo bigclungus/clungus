@@ -230,7 +230,33 @@ except ImportError:
     HAS_PSUTIL = False
 
 LOGFILE = "/tmp/screenlog.txt"
-TASKS_DIR = "/tmp/claude-1001/-mnt-data/bb9407c6-0d39-400c-af71-7c6765df2c69/tasks"
+_TASKS_BASE = "/tmp/claude-1001/-mnt-data"
+
+
+def _all_task_dirs() -> list[str]:
+    """Return all Claude session task directories under the base path."""
+    base = _TASKS_BASE
+    dirs = []
+    try:
+        for entry in os.listdir(base):
+            d = os.path.join(base, entry, "tasks")
+            if os.path.isdir(d):
+                dirs.append(d)
+    except OSError:
+        pass
+    return dirs
+
+
+def _find_task_dir_for_agent(agent_id: str) -> str | None:
+    """Return the task directory containing agent_id's .output file, or None."""
+    for d in _all_task_dirs():
+        if os.path.exists(os.path.join(d, agent_id + ".output")):
+            return d
+    return None
+
+
+# Legacy constant kept for meta_handler writes — resolved dynamically at call time.
+TASKS_DIR = _TASKS_BASE  # unused sentinel; real resolution happens via helpers above
 
 HTML = r"""<!DOCTYPE html>
 <html>
@@ -1433,15 +1459,21 @@ async def tasks_handler(request):
     thirty_secs_ago = now - 30
 
     tasks = []
-    try:
-        entries = os.listdir(TASKS_DIR)
-    except FileNotFoundError:
+    task_dirs = _all_task_dirs()
+    if not task_dirs:
         return web.Response(text='[]', content_type='application/json')
 
-    for fname in entries:
-        if not fname.endswith('.output'):
-            continue
-        fpath = os.path.join(TASKS_DIR, fname)
+    all_entries: list[tuple[str, str]] = []  # (task_dir, fname)
+    for task_dir in task_dirs:
+        try:
+            for fname in os.listdir(task_dir):
+                if fname.endswith('.output'):
+                    all_entries.append((task_dir, fname))
+        except OSError:
+            pass
+
+    for task_dir, fname in all_entries:
+        fpath = os.path.join(task_dir, fname)
         try:
             stat = os.stat(fpath)
         except OSError:
@@ -1469,7 +1501,7 @@ async def tasks_handler(request):
         description = get_task_description(agent_id, fpath)
 
         requester = ''
-        meta_path = os.path.join(TASKS_DIR, agent_id + '.meta.json')
+        meta_path = os.path.join(task_dir, agent_id + '.meta.json')
         try:
             with open(meta_path) as f:
                 requester = json.load(f).get('requester', '')
@@ -1493,7 +1525,10 @@ async def task_output_handler(request):
     agent_id = request.match_info['agentId']
     if not agent_id.replace('-', '').replace('_', '').isalnum():
         return web.Response(status=400, text='Invalid agentId')
-    fpath = os.path.join(TASKS_DIR, agent_id + '.output')
+    task_dir = _find_task_dir_for_agent(agent_id)
+    if task_dir is None:
+        return web.Response(status=404, text='Task output not found')
+    fpath = os.path.join(task_dir, agent_id + '.output')
     try:
         with open(fpath, 'r', errors='replace') as f:
             content = f.read()
@@ -1517,9 +1552,11 @@ async def meta_handler(request):
     if not description:
         return web.Response(status=400, text='Missing description field')
     requester = body.get('requester', '').strip()
-    meta_path = os.path.join(TASKS_DIR, agent_id + '.meta.json')
+    task_dir = _find_task_dir_for_agent(agent_id)
+    if task_dir is None:
+        return web.Response(status=404, text='Task not found')
+    meta_path = os.path.join(task_dir, agent_id + '.meta.json')
     try:
-        os.makedirs(TASKS_DIR, exist_ok=True)
         with open(meta_path, 'w') as f:
             json.dump({'description': description, 'requester': requester}, f)
     except OSError as e:
@@ -2309,8 +2346,8 @@ async def restart_bot_handler(request):
 
 
 SERVICES = [
-    "claude-bot", "terminal-server", "website", "1998",
-    "temporal", "temporal-worker", "temporal-proxy", "cloudflared"
+    "claude-bot", "terminal-server", "clunger",
+    "omni-gateway", "temporal", "temporal-worker", "cloudflared"
 ]
 
 async def system_status_handler(request):
@@ -2593,29 +2630,34 @@ async def _auto_meta_loop():
     await asyncio.sleep(10)  # Let the server start first
     while True:
         try:
-            for fname in os.listdir(TASKS_DIR):
-                if not fname.endswith('.output'):
+            for task_dir in _all_task_dirs():
+                try:
+                    entries = os.listdir(task_dir)
+                except OSError:
                     continue
-                agent_id = fname[:-7]
-                meta_path = os.path.join(TASKS_DIR, agent_id + '.meta.json')
-                if os.path.exists(meta_path):
+                for fname in entries:
+                    if not fname.endswith('.output'):
+                        continue
+                    agent_id = fname[:-7]
+                    meta_path = os.path.join(task_dir, agent_id + '.meta.json')
+                    if os.path.exists(meta_path):
+                        try:
+                            data = json.load(open(meta_path))
+                            if data.get('requester'):
+                                continue  # Already has a requester
+                        except (OSError, json.JSONDecodeError):
+                            pass
+                    ctime = os.path.getctime(os.path.join(task_dir, fname))
+                    requester = _requester_from_jsonl(ctime)
+                    if not requester:
+                        continue
+                    existing_desc = ''
                     try:
-                        data = json.load(open(meta_path))
-                        if data.get('requester'):
-                            continue  # Already has a requester
+                        existing_desc = json.load(open(meta_path)).get('description', '')
                     except (OSError, json.JSONDecodeError):
                         pass
-                ctime = os.path.getctime(os.path.join(TASKS_DIR, fname))
-                requester = _requester_from_jsonl(ctime)
-                if not requester:
-                    continue
-                existing_desc = ''
-                try:
-                    existing_desc = json.load(open(meta_path)).get('description', '')
-                except (OSError, json.JSONDecodeError):
-                    pass
-                with open(meta_path, 'w') as f:
-                    json.dump({'description': existing_desc, 'requester': requester}, f)
+                    with open(meta_path, 'w') as f:
+                        json.dump({'description': existing_desc, 'requester': requester}, f)
         except Exception as exc:
             print(f'[auto_meta] error: {exc}')
         await asyncio.sleep(30)
