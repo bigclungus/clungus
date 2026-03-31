@@ -47,14 +47,17 @@ function fetchSpriteWinners(): void {
   const slugs = Object.keys(SPRITE_SLUG_MAP);
   for (const name of slugs) {
     const info = SPRITE_SLUG_MAP[name];
-    fetch('/api/vote/sprite-' + encodeURIComponent(info.pollSlug))
+    fetch('/api/vote/sprite-' + encodeURIComponent(info.pollSlug), { signal: AbortSignal.timeout(8_000) })
       .then((r) => (r.ok ? r.json() : null))
       .then((d: { winner?: string } | null) => {
         if (d?.winner) {
           SPRITE_WINNERS[name] = d.winner;
         }
       })
-      .catch((err: unknown) => { throw err instanceof Error ? err : new Error(String(err)); });
+      .catch((err: unknown) => {
+        // eslint-disable-next-line no-console
+        console.warn('[sprites] fetchSpriteWinners error for', info.pollSlug, ':', err instanceof Error ? err.message : String(err));
+      });
   }
 }
 

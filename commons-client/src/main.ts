@@ -243,7 +243,7 @@ interface MeResponse {
 }
 
 async function fetchPlayerInfo(): Promise<void> {
-  const res = await fetch("/api/me");
+  const res = await fetch("/api/me", { signal: AbortSignal.timeout(8_000) });
   if (!res.ok) return;
   const data = await res.json() as MeResponse;
   const name = data.username ?? data.login ?? data.name ?? null;

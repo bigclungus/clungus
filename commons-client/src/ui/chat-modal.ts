@@ -304,7 +304,7 @@ function submitChat(): void {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name: npc.name, prompt: text }),
-    signal: abortController.signal,
+    signal: AbortSignal.any([abortController.signal, AbortSignal.timeout(90_000)]),
   })
     .then((r) => {
       if (!r.ok) throw new Error(`HTTP ${String(r.status)}`);
