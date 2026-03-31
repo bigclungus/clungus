@@ -561,7 +561,10 @@ export const congressServiceImpl: ServiceImpl<typeof CongressService> = {
     const { sessionId } = req;
     const session = readSession(sessionId);
 
-    const ALLOWED = ["verdict", "status", "finished_at", "evolution", "thread_id", "task_titles", "defendant", "charges", "flavor"] as const;
+    // Only keys that the PatchSessionRequest proto actually carries.
+    // defendant/charges/flavor are set via the REST PATCH endpoint (trial_act.py),
+    // not via RPC — they are not in the proto schema.
+    const ALLOWED = ["verdict", "status", "finished_at", "evolution", "thread_id", "task_titles"] as const;
     type AllowedKey = (typeof ALLOWED)[number];
     const reqMap: Record<AllowedKey, string | undefined> = {
       verdict: req.verdict,
