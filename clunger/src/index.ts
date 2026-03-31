@@ -11,12 +11,10 @@ import { runPostMergeReview } from "./services/post-merge-review.js";
 
 // ── Error monitoring: inject alerts to bot on critical failures ────────────
 async function injectAlert(message: string): Promise<void> {
-  const secret = process.env.DISCORD_INJECT_SECRET;
-  if (!secret) return;
   try {
-    const resp = await fetch("http://127.0.0.1:9876/inject", {
+    const resp = await fetch("http://127.0.0.1:8085/webhooks/bigclungus-main", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-inject-secret": secret },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content: `⚠️ ${message}`, chat_id: "1485343472952148008", user: "clunger-monitor" }),
     });
     if (!resp.ok) console.error("[clunger] injectAlert failed:", resp.status);
@@ -555,20 +553,13 @@ async function restHandleDiscordPersona(req: http.IncomingMessage, res: http.Ser
   }
 
   // Inject structured [persona-invoke] message back to BigClungus
-  const injectSecret = process.env.DISCORD_INJECT_SECRET ?? "";
-  if (!injectSecret) {
-    jsonResponse(res, { error: "DISCORD_INJECT_SECRET not configured" }, 500);
-    return;
-  }
-
   const injectContent = `[persona-invoke] identity=${identity} display_name=${displayName} question=${question}\n\nPERSONA PROMPT:\n${personaPrompt}`;
 
   try {
-    const injectResp = await fetch("http://127.0.0.1:9876/inject", {
+    const injectResp = await fetch("http://127.0.0.1:8085/webhooks/bigclungus-main", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-inject-secret": injectSecret,
       },
       body: JSON.stringify({
         content: injectContent,
@@ -1965,13 +1956,13 @@ function getWinner(counts: Record<string, number>, quorum = QUORUM): string | nu
 }
 
 async function notifySpriteTie(pollId: string): Promise<void> {
-  const secret = process.env.DISCORD_INJECT_SECRET;
-  if (!secret) return;
+  const INJECT_URL = "http://127.0.0.1:8085/webhooks/bigclungus-main";
+  const INJECT_HEADERS = { "Content-Type": "application/json" };
   try {
     // Human-readable alert
-    const alertResp = await fetch("http://127.0.0.1:9876/inject", {
+    const alertResp = await fetch(INJECT_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-inject-secret": secret },
+      headers: INJECT_HEADERS,
       body: JSON.stringify({
         content: `🎨 Three-way tie on ${pollId}! Votes reset. Regenerating 3 new sprite variants...`,
         chat_id: "1485343472952148008",
@@ -1993,9 +1984,9 @@ async function notifySpriteTie(pollId: string): Promise<void> {
       if (code !== 0) {
         console.error(`[vote] regen-sprites failed (exit ${code}) for ${persona}:\n${err}`);
         // Notify Discord of failure
-        await fetch("http://127.0.0.1:9876/inject", {
+        await fetch(INJECT_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json", "x-inject-secret": secret },
+          headers: INJECT_HEADERS,
           body: JSON.stringify({
             content: `❌ Sprite regen failed for ${pollId} (exit ${code}): ${err.slice(0, 300)}`,
             chat_id: "1485343472952148008",
@@ -2004,9 +1995,9 @@ async function notifySpriteTie(pollId: string): Promise<void> {
         }).catch((e) => console.error("[vote] regen failure notify error:", e));
       } else {
         console.log(`[vote] regen-sprites done for ${persona}:\n${out}`);
-        await fetch("http://127.0.0.1:9876/inject", {
+        await fetch(INJECT_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json", "x-inject-secret": secret },
+          headers: INJECT_HEADERS,
           body: JSON.stringify({
             content: `✅ New ${persona} sprite variants are live — vote again!`,
             chat_id: "1485343472952148008",
@@ -2021,12 +2012,10 @@ async function notifySpriteTie(pollId: string): Promise<void> {
 }
 
 async function notifyVoteWinner(pollId: string, option: string, count: number): Promise<void> {
-  const secret = process.env.DISCORD_INJECT_SECRET;
-  if (!secret) return;
   try {
-    const resp = await fetch("http://127.0.0.1:9876/inject", {
+    const resp = await fetch("http://127.0.0.1:8085/webhooks/bigclungus-main", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-inject-secret": secret },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         content: `🗳️ vote/${pollId}: **${option}** wins (${count} votes) — queued for implementation`,
         chat_id: "1485343472952148008",
