@@ -3,6 +3,9 @@ gemini-cli/
 graphiti/
 omni/
 
+# xAI proxy (contains API key env vars)
+ccr/
+
 # Runtime / generated
 docker/
 data/

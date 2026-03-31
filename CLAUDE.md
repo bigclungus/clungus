@@ -24,18 +24,16 @@ On startup, run `/mnt/data/scripts/session-number.sh` to determine your session 
 |---|---|---|
 | clung.us | 8081 | Clunger (Bun/TypeScript web server) |
 | terminal.clung.us | 7682 | Terminal WebSocket server |
-| temporal.clung.us | 8234 | Temporal auth proxy (proxies → :8233) |
-| labs.clung.us | 8083 | Labs router (dynamic per-experiment proxy) |
+| temporal.clung.us | 8081 | Clunger (temporal proxy folded in) |
+| labs.clung.us | 8081 | Clunger (labs router folded in) |
 
 ### Local Services and Ports
 | Port | Service |
 |---|---|
 | 7682 | terminal-server (ttyd-style WebSocket) |
-| 8081 | clunger (clung.us, Bun/TypeScript) |
-| 8083 | labs-router (labs.clung.us) |
+| 8081 | clunger (clung.us + labs + temporal proxy, Bun/TypeScript) |
 | 8085 | omni-gateway (Discord + other channels, HTTP + Unix socket) |
 | 8233 | Temporal dev server (internal) |
-| 8234 | temporal-proxy (public, auth-gated) |
 | 6379 | FalkorDB / Redis (Docker) |
 
 ### Auth Passwords
@@ -76,13 +74,11 @@ The Discord integration now runs through the **omni** system (`omni-gateway.serv
 | Service | Description |
 |---|---|
 | claude-bot.service | BigClungus Claude Bot |
-| clunger.service | TypeScript web server on :8081 (Bun, replaces serve.py) |
+| clunger.service | TypeScript web server on :8081 (Bun; handles labs + temporal proxy) |
 | cloudflared.service | Cloudflare Tunnel |
 | omni-gateway.service | Omni Gateway — multi-channel event router (Discord + others) on :8085 |
-| labs-router.service | Labs Router — labs.clung.us (:8083) |
 | terminal-server.service | Terminal WebSocket Server (:7682) |
 | temporal.service | Temporal Dev Server |
-| temporal-proxy.service | Temporal Auth Proxy (:8234) |
 | temporal-worker.service | Temporal Worker (listings-queue) |
 | dbus.service | D-Bus (system) |
 | gpg-agent.service | GnuPG agent |
@@ -94,8 +90,7 @@ The Discord integration now runs through the **omni** system (`omni-gateway.serv
 Sandboxed experiments at `labs.clung.us`. Each lab is a self-contained Bun + TypeScript + SQLite app with its own auth. No shared auth with the main site.
 
 **Directory:** `/mnt/data/labs/<name>/`
-**Router:** `/mnt/data/labs-router/` — auto-discovers labs from `lab.json` manifests, no restart needed
-**Router service:** `labs-router.service` (port 8083)
+**Router:** Folded into clunger — auto-discovers labs from `lab.json` manifests, no restart needed
 
 **lab.json format:**
 ```json
