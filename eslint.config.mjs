@@ -65,8 +65,21 @@ const config = [
       // Dead variables are bugs
       "@typescript-eslint/no-unused-vars": [
         "error",
-        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
       ],
+
+      // Dead code detection
+      "no-unreachable": "error",
+      "@typescript-eslint/no-unused-expressions": "error",
+      "@typescript-eslint/no-useless-constructor": "error",
+      "@typescript-eslint/no-empty-function": "error",
+      "@typescript-eslint/no-empty-interface": "error",
+      "@typescript-eslint/no-unnecessary-type-arguments": "error",
+      "@typescript-eslint/no-inferrable-types": "error",
 
       // All functions must declare their return type
       "@typescript-eslint/explicit-function-return-type": [
