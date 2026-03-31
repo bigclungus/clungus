@@ -14,6 +14,12 @@
       "ts": "2026-03-31T02:38:40Z",
       "event": "started",
       "context": "Heartbeat reliability check"
+    },
+    {
+      "ts": "2026-03-31T02:41:09Z",
+      "event": "done",
+      "context": "Heartbeat scan complete. Here's the summary:\n\n**Stale tasks:** None. Watchdog found 0 stale tasks, no orphaned congress sessions.\n\n**Failed services:** None. 0 failed units.\n\n**GitHub issues:** None open.\n\n**Timeline ingestion:** 3 candidates found across repos (dungeon tile addition in commons-server, cache-busting strings in clung.us and clunger). All rejected as routine maintenance commits, not timeline-worthy milestones.\n\n**Ideation:** Skipped — no signal to act on, system is healthy. No lab...(truncated)",
+      "artifacts": []
     }
   ]
 }
