@@ -138,7 +138,7 @@ git add "$(basename "$BATCH_FILE")"
 git commit -m "sprites: regenerate ${PERSONA} A/B/C variants after 3-way tie"
 git push
 
-echo "$LOG_PREFIX restarting website.service..."
-systemctl --user restart website.service
+echo "$LOG_PREFIX restarting clunger.service..."
+systemctl --user restart clunger.service
 
 echo "$LOG_PREFIX done — new ${PERSONA} sprite variants are live"
