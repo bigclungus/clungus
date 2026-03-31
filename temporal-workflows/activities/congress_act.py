@@ -987,12 +987,7 @@ async def congress_check_ibrahim(topic: str, context_brief: str, debate_summarie
 
     full_prompt = system_prompt + context_section + debate_text
 
-    try:
-        response_text = await _call_congress_api(full_prompt, "chairman", session_id, timeout=60)
-    except Exception as e:
-        activity.logger.warning(f"congress_check_ibrahim exception: {e}, defaulting to CONTINUE")
-        await _inject_alert(f"congress_check_ibrahim failed (defaulting to CONTINUE): {str(e)[:200]}")
-        return {"signal": SIGNAL_CONTINUE, "reason": "(check failed — defaulting to continue)", "new_topic": None}
+    response_text = await _call_congress_api(full_prompt, "chairman", session_id, timeout=60)
 
     # Parse the signal from the first line
     first_line = response_text.strip().split("\n")[0].strip()
@@ -1076,8 +1071,11 @@ async def congress_select_seats(topic: str, debaters: list, session_id: str) -> 
                     selected.append(d)
                     seated_names.add(d.get("name"))
         if len(selected) < 3:
-            activity.logger.warning("congress_select_seats: too few matches (minimum is 3), using full roster")
-            return debaters
+            raise ApplicationError(
+                f"congress_select_seats: LLM returned fewer than 3 matched debaters "
+                f"(got {len(selected)}) — aborting to avoid a malformed debate panel",
+                non_retryable=True,
+            )
 
         # --- Provider diversity enforcement ---
         # For each non-Anthropic provider (grok, gemini) that has at least one
@@ -1145,8 +1143,10 @@ async def congress_select_seats(topic: str, debaters: list, session_id: str) -> 
     except ApplicationError:
         raise
     except Exception as e:
-        activity.logger.warning(f"congress_select_seats failed ({e}), using full roster")
-        return debaters
+        raise ApplicationError(
+            f"congress_select_seats failed: {e}",
+            non_retryable=True,
+        ) from e
 
 
 @activity.defn
@@ -1476,11 +1476,7 @@ async def congress_vote(
         f"Agreement is not the default — only agree if you genuinely believe the synthesis captured the crux."
     )
 
-    try:
-        response_text = await _call_congress_api(prompt, identity, session_id, timeout=180)
-    except Exception as _exc:
-        activity.logger.warning(f"congress_vote ({identity}) failed: {_exc}")
-        return {"name": name, "vote": "DISAGREE", "reason": "(vote failed — defaulting to DISAGREE)"}
+    response_text = await _call_congress_api(prompt, identity, session_id, timeout=180)
 
     # Parse vote — look for AGREE or DISAGREE at the start of the response.
     # Default to DISAGREE if ambiguous (Spengler's lesson: make agreement require justification).
