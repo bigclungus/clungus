@@ -69,7 +69,7 @@ export function mergeServerWornPaths(
   tiles: { tileX: number; tileY: number; visitCount: number }[]
 ): void {
   for (const { tileX, tileY, visitCount } of tiles) {
-    const key = `${String(tileX)},${String(tileY)}`;
+    const key = `${tileX},${tileY}`;
     const local = store.counts[key] ?? 0;
     if (visitCount > local) {
       store.counts[key] = visitCount;
@@ -80,7 +80,7 @@ export function mergeServerWornPaths(
 
 // Called by main.ts when the local player moves
 export function recordTileVisit(tileX: number, tileY: number): void {
-  const key = `${String(tileX)},${String(tileY)}`;
+  const key = `${tileX},${tileY}`;
   store.counts[key] = (store.counts[key] ?? 0) + 1;
   // Persist every 30 visits to avoid thrashing localStorage.
   // The visibilitychange/beforeunload handlers above ensure the remainder
@@ -91,7 +91,7 @@ export function recordTileVisit(tileX: number, tileY: number): void {
 }
 
 export function getWornLevel(tileX: number, tileY: number): 0 | 1 | 2 | 3 {
-  const count = store.counts[`${String(tileX)},${String(tileY)}`] ?? 0;
+  const count = store.counts[`${tileX},${tileY}`] ?? 0;
   if (count >= COBBLESTONE_THRESHOLD) return 3;
   if (count >= DIRT_THRESHOLD) return 2;
   if (count >= WORN_THRESHOLD) return 1;

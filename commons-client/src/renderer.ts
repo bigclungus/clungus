@@ -5,7 +5,7 @@ import { WorldState, NPC, Facing, TILE, CANVAS_W, CANVAS_H, NPC_HIT_RADIUS,
   CONGRESS_BUILDING_COL, CONGRESS_BUILDING_LABEL_ROW,
   DUNGEON_BUILDING_COL, DUNGEON_BUILDING_LABEL_ROW,
   LEADERBOARD_COL, LEADERBOARD_ROW } from "./state.ts";
-import { getOrBuildTileCache, getSeason, getTileColors, drawTallSprites } from "./map/renderer.ts";
+import { getOrBuildTileCache, getSeason, drawTallSprites } from "./map/renderer.ts";
 import { getWinner, getSpriteId, getSpriteFn, NPC_DISPLAY_NAMES } from "./sprites.ts";
 import { drawWarthog } from "./entities/warthog.ts";
 import { drawWalkers } from "./entities/walker.ts";
@@ -383,8 +383,7 @@ function drawMapLayers(
   }
   drawWornPaths(ctx, state.map);
   if (state.map) {
-    const tileColors = getTileColors(season);
-    drawFountainAnimation(ctx, state.map, frame, tileColors.fountainWater);
+    drawFountainAnimation(ctx, state.map, frame);
   }
   const tint = getNightTint(refTime);
   if (tint) {

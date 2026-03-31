@@ -55,5 +55,6 @@ async def inject_message(content: str, user: str, chat_id: str) -> None:
         try:
             with open(HEARTBEAT_TIMESTAMP_FILE, "w") as f:
                 f.write(str(time.time()))
-        except Exception:
-            pass  # timestamp write failure must never break the heartbeat itself
+        except Exception as e:
+            import logging
+            logging.warning("[inject] failed to write heartbeat timestamp: %s", e)

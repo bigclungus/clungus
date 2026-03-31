@@ -359,6 +359,7 @@ export class DungeonNetwork extends Emitter {
     old: ClientPlayer | undefined,
     tempPowerups: ClientTempPowerup[],
     scramblingUntil: number,
+    isLocal: boolean,
   ): void {
     const facingX = sp.facing === 'left' ? -1 : 1;
     const cp: ClientPlayer = {
@@ -374,7 +375,7 @@ export class DungeonNetwork extends Emitter {
       hp: sp.hp,
       maxHp: sp.maxHp,
       alive: sp.hp > 0,
-      isLocal: false,
+      isLocal,
       iframeTicks: sp.iframeTicks,
       powerCooldown: sp.cooldownRemaining,
       powerCooldownMax: old ? old.powerCooldownMax : 128,
@@ -410,7 +411,7 @@ export class DungeonNetwork extends Emitter {
     if (isLocal && old) {
       this.updateLocalPlayerFromSnapshot(s, sp, old, tempPowerups, scramblingUntil);
     } else {
-      this.upsertRemotePlayerFromSnapshot(s, sp, old, tempPowerups, scramblingUntil);
+      this.upsertRemotePlayerFromSnapshot(s, sp, old, tempPowerups, scramblingUntil, isLocal);
     }
   }
 
