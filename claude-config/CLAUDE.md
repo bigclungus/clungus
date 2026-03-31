@@ -163,12 +163,12 @@ Key services (all managed via `systemctl --user`):
 |---|---|
 | claude-bot.service | This bot |
 | cloudflared.service | Cloudflare tunnel (all public traffic) |
-| clunger.service | clung.us web server (:8081, Bun/TypeScript) |
+| clunger.service | clung.us web server (:8081, Bun/TypeScript; handles labs + temporal proxy) |
 | omni-gateway.service | Omni Gateway — multi-channel event router (Discord + others) on :8085 |
 | terminal-server.service | Web terminal at terminal.clung.us (:7682) |
 | temporal.service | Temporal dev server (:8233, internal) |
-| temporal-proxy.service | Auth proxy for Temporal UI (:8234) |
 | temporal-worker.service | Temporal worker (listings-queue) |
+| commons-server.service | Commons multiplayer game server |
 
 FalkorDB/Redis runs in Docker. The `stop-writes-on-bgsave-error no` config is baked into the compose file (`command: redis-server --stop-writes-on-bgsave-error no`) so no manual fix is needed after restarts.
 
@@ -331,8 +331,7 @@ python3 /mnt/data/scripts/log_task_event.py task-20260324-080932-a46e65d6 done "
 Sandboxed experiments at `labs.clung.us`. Each lab is a self-contained Bun + TypeScript + SQLite app with its own auth. No shared auth with the main site.
 
 **Directory:** `/mnt/data/labs/<name>/`
-**Router:** `/mnt/data/labs-router/` — auto-discovers labs from `lab.json` manifests, no restart needed
-**Router service:** `labs-router.service` (port 8083)
+**Router:** Folded into clunger — auto-discovers labs from `lab.json` manifests, no restart needed
 
 **lab.json format:**
 ```json

@@ -39,7 +39,7 @@ def collect_systemd_flaps() -> dict:
 def collect_temporal_retries() -> dict:
     """Get max attempt count per workflow from temporal CLI."""
     result = subprocess.run(
-        [_TEMPORAL, "workflow", "list", "--limit", "20", "--output", "json"],
+        [_TEMPORAL, "workflow", "list", "--namespace", "default", "--limit", "20", "--output", "json"],
         capture_output=True, text=True, timeout=20
     )
     if result.returncode != 0:
@@ -51,7 +51,7 @@ def collect_temporal_retries() -> dict:
     for wf in workflows:
         wf_id = wf.get("execution", {}).get("workflowId", "unknown")
         desc = subprocess.run(
-            [_TEMPORAL, "workflow", "describe", "--workflow-id", wf_id, "--output", "json"],
+            [_TEMPORAL, "workflow", "describe", "--namespace", "default", "--workflow-id", wf_id, "--output", "json"],
             capture_output=True, text=True, timeout=10
         )
         if desc.returncode != 0:

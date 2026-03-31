@@ -80,6 +80,7 @@ The Discord integration now runs through the **omni** system (`omni-gateway.serv
 | terminal-server.service | Terminal WebSocket Server (:7682) |
 | temporal.service | Temporal Dev Server |
 | temporal-worker.service | Temporal Worker (listings-queue) |
+| commons-server.service | Commons multiplayer game server |
 | dbus.service | D-Bus (system) |
 | gpg-agent.service | GnuPG agent |
 
