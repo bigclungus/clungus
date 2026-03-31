@@ -1023,7 +1023,7 @@
           }
           prevNet = d.net;
         })
-        .catch(function () { /* silent — metrics failure doesn't break the page */ });
+        .catch(function (err) { console.warn('[index] metrics fetch failed:', err.message); });
     }
 
     fetchMetrics();

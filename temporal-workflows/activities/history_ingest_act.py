@@ -15,6 +15,7 @@ import os
 import re
 import sys
 import sqlite3
+import time
 import urllib.request
 from datetime import datetime
 
@@ -382,9 +383,15 @@ def _run_history_ingest_sync() -> str:
     activity.logger.info("Found %d JSONL files", len(jsonl_files))
 
     total_new = 0
+    _last_heartbeat = 0.0
 
     for filepath in jsonl_files:
-        activity.heartbeat(f"processing {os.path.basename(filepath)}")
+        # Throttle heartbeats to once per 10 seconds — queue maxsize is 1000
+        # and with thousands of files we'd overflow it immediately.
+        _now = time.monotonic()
+        if _now - _last_heartbeat >= 10.0:
+            activity.heartbeat(f"processing {os.path.basename(filepath)}")
+            _last_heartbeat = _now
         current_size = os.path.getsize(filepath)
 
         row = conn.execute(

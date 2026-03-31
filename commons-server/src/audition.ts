@@ -8,7 +8,7 @@ import * as childProcess from "child_process";
 import type { AuditionWalker, WorldState } from "./protocol.ts";
 
 const AGENTS_DIR = "/mnt/data/bigclungus-meta/agents";
-const DISCORD_INJECT_URL = "http://127.0.0.1:9876/inject";
+const DISCORD_INJECT_URL = "http://127.0.0.1:8085/webhooks/bigclungus-main";
 const DISCORD_CHANNEL_ID = "1485343472952148008";
 
 // Extended walker data kept alongside the game-loop's AuditionWalker
@@ -23,12 +23,6 @@ export interface AuditionWalkerMeta {
 
 // In-memory metadata store keyed by walker ID
 const walkerMeta = new Map<string, AuditionWalkerMeta>();
-
-function getInjectSecret(): string {
-  const s = process.env.DISCORD_INJECT_SECRET;
-  if (!s) throw new Error("DISCORD_INJECT_SECRET not set");
-  return s;
-}
 
 // ── LLM-based persona generation ────────────────────────────────────────────
 
@@ -347,14 +341,12 @@ Discovered via the persona audition system on ${today}. Requires a Congress sess
 }
 
 async function notifyDiscord(meta: AuditionWalkerMeta): Promise<void> {
-  const secret = getInjectSecret();
   const message = `\u{1f31f} New persona candidate kept: **${meta.name}** ("${meta.title}") — saved to agents roster. Requires a Congress session to activate.`;
 
   const response = await fetch(DISCORD_INJECT_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-inject-secret": secret,
     },
     body: JSON.stringify({
       content: message,
