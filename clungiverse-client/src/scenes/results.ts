@@ -1,8 +1,8 @@
 // Clungiverse Results Scene
 // Post-run stats display
 
-import type { DungeonClientState } from '../state';
-import { PERSONAS, type PersonaSlug } from '../state';
+import type { DungeonClientState, PersonaSlug } from '../state';
+import { PERSONAS } from '../state';
 
 interface ResultsScene {
   enter(state: DungeonClientState): void;
@@ -119,7 +119,7 @@ export function createResultsScene(
         sy += 14;
 
         for (const pr of results.players) {
-          const persona = PERSONAS[pr.personaSlug as PersonaSlug];
+          const persona = PERSONAS[pr.personaSlug];
           const color = persona?.color ?? '#888888';
 
           // Colored dot

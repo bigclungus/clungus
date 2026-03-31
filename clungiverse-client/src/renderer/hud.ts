@@ -1,8 +1,8 @@
 // Clungiverse HUD Renderer
 // Draws overlay UI elements (not affected by camera)
 
-import type { DungeonClientState } from '../state';
-import { PERSONAS, TEMP_POWERUP_META, TEMP_POWERUP_MAX_DURATIONS, type PersonaSlug } from '../state';
+import type { DungeonClientState, PersonaSlug } from '../state';
+import { PERSONAS, TEMP_POWERUP_META, TEMP_POWERUP_MAX_DURATIONS } from '../state';
 import { TILE_WALL, TILE_FLOOR } from '../state';
 import { isTileExplored, isTileVisible } from './dungeon-renderer';
 
@@ -57,7 +57,7 @@ export function renderHud(
   const rosterX = 8;
 
   for (const player of state.players.values()) {
-    const persona = PERSONAS[player.personaSlug as PersonaSlug];
+    const persona = PERSONAS[player.personaSlug];
     const color = persona?.color ?? '#888888';
     const name = player.name || player.personaSlug;
     const isSpectating = player.spectating && !player.alive;
@@ -361,7 +361,7 @@ function renderMinimap(
   // Remote player dots
   for (const player of state.players.values()) {
     if (player.isLocal || !player.alive) continue;
-    const persona = PERSONAS[player.personaSlug as PersonaSlug];
+    const persona = PERSONAS[player.personaSlug];
     const color = persona?.color ?? '#8888ff';
     const pcol = player.x / 16;
     const prow = player.y / 16;
