@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-162651-a5da0212",
+  "title": "Route all Claude models through CLI, use short names",
+  "agent_id": "a5da02124382ce5be",
+  "agent_type": "general-purpose",
+  "session_id": "b8a58c15-c6f1-48c2-b033-87763f636706",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T16:26:51Z",
+      "event": "started",
+      "context": "Route all Claude models through CLI, use short names"
+    },
+    {
+      "ts": "2026-03-27T16:29:22Z",
+      "event": "done",
+      "context": "All changes completed:\n\n**clunger/src/services/congress.ts** (`/mnt/data/clunger/src/services/congress.ts`):\n- Removed `Anthropic` SDK import, `_anthropicClient`, `getAnthropicClient()`, `SDK_MODELS`, and the entire `callClaude()` function (54 lines removed)\n- All Claude models now route through `callClaudeCli()` directly\n- `MODEL_ALIASES` updated: `claude` -> `haiku`, `opus` -> `opus`, added `haiku` and `sonnet` entries\n- `callLlm` routing updated to match short names (`haiku`, `opus`, `sonnet`...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

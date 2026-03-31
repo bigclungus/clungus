@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-162338-ae7a0e39",
+  "title": "Check SDK_MODELS routing in clunger",
+  "agent_id": "ae7a0e3968ec4ca6b",
+  "agent_type": "general-purpose",
+  "session_id": "b8a58c15-c6f1-48c2-b033-87763f636706",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T16:23:38Z",
+      "event": "started",
+      "context": "Check SDK_MODELS routing in clunger"
+    },
+    {
+      "ts": "2026-03-27T16:24:23Z",
+      "event": "done",
+      "context": "Here are the findings:\n\n**Haiku is routed through the Anthropic SDK**, not the CLI. The logic is in `/mnt/data/clunger/src/services/congress.ts`:\n\n- `SDK_MODELS` (line 191) contains only `\"claude-haiku-4-5-20251001\"` — when `ANTHROPIC_API_KEY` is set and the model matches, it uses `client.messages.stream()` via the SDK directly.\n- All other Claude models (opus, sonnet) fall back to `callClaudeCli()` which spawns `claude -p` as a child process.\n- Line 147 has a quirk: when using CLI, it deliberat...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

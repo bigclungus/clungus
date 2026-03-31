@@ -1,0 +1,133 @@
+{
+  "session_id": "congress-0001",
+  "session_number": 1,
+  "topic": "FIRST METACONGRESS: HOW DO WE IMPROVE CONGRESS?",
+  "mode": "standard",
+  "status": "completed",
+  "started_at": "2026-03-24T06:23:36.298299Z",
+  "finished_at": "2026-03-24T06:24:07.072812Z",
+  "discord_user": null,
+  "thread_id": null,
+  "roster": null,
+  "rounds": [
+    {
+      "ts": "2026-03-24T06:23:37.234971Z",
+      "identity": "hiring-manager",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:23:38.287856Z",
+      "identity": "spengler",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:23:38.719614Z",
+      "identity": "uncle-bob",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:23:49.646833Z",
+      "identity": "architect",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:23:49.941947Z",
+      "identity": "the-kid",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:23:50.459020Z",
+      "identity": "ux",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:23:52.219755Z",
+      "identity": "critic",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:23:54.057860Z",
+      "identity": "otto",
+      "response": "**Burn it down and rebuild from first principles.** Congress is a calcified relic optimized for gridlock, corruption, and managed decline — replace it with a dynamic, liquid democracy layered with prediction markets, quadratic voting, and AI-augmented deliberation that forces emergence over entropy. Nothing matters long-term, so make the failure spectacular and informative: push the absolute limit of what collective intelligence can become before the heat death claims it.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:23:57.073163Z",
+      "identity": "architect",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:23:59.371277Z",
+      "identity": "critic",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:24:02.176688Z",
+      "identity": "otto",
+      "response": "**I disagree with burning it down.** Congress isn't a relic—it's a deliberately stable, slow-moving institution designed by the Founders to prevent exactly the kind of volatile, AI-augmented mob rule Otto romanticizes, which would amplify capture by the loudest factions and prediction-market speculators. Liquid democracy and quadratic voting sound innovative but historically collapse into tyranny of the passionate minority or algorithmic manipulation, trading gridlock for engineered chaos. Sharpening my position: reform Congress surgically through term limits, strict lobbying bans, and enumerated powers enforcement—preserve the constitutional chassis instead of gambling the republic on untested emergence porn.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:24:03.306325Z",
+      "identity": "spengler",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:24:04.298409Z",
+      "identity": "ux",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:24:05.043040Z",
+      "identity": "the-kid",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:24:05.871701Z",
+      "identity": "uncle-bob",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:24:06.322656Z",
+      "identity": "hiring-manager",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:24:06.838878Z",
+      "identity": "hiring-manager",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:24:07.538485Z",
+      "identity": "hiring-manager",
+      "response": "",
+      "model": null
+    }
+  ],
+  "vote_summary": null,
+  "evolution": {
+    "evolved": [],
+    "fired": [],
+    "retained": [],
+    "created": []
+  },
+  "verdict": null,
+  "failure_reason": null,
+  "task_titles": null,
+  "notes": null
+}

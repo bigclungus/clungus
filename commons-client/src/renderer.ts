@@ -1,0 +1,463 @@
+// renderer.ts — Pure render(state, ctx, frame) — no mutation, no globals
+// This module has zero side effects. It only reads state and draws to the passed-in ctx.
+
+import { WorldState, LocalPlayer, RemotePlayer, NPC, Facing, TILE, CANVAS_W, CANVAS_H, NPC_HIT_RADIUS,
+  CONGRESS_BUILDING_COL, CONGRESS_BUILDING_LABEL_ROW,
+  DUNGEON_BUILDING_COL, DUNGEON_BUILDING_LABEL_ROW,
+  DUNGEON_BUILDING_COL_MIN, DUNGEON_BUILDING_COL_MAX,
+  LEADERBOARD_COL, LEADERBOARD_ROW } from "./state.ts";
+import { getOrBuildTileCache, getSeason, getTileColors, drawTallSprites } from "./map/renderer.ts";
+import { getWinner, getSpriteId, NPC_DISPLAY_NAMES } from "./sprites.ts";
+import { drawWarthog } from "./entities/warthog.ts";
+import { drawWalkers } from "./entities/walker.ts";
+import { drawWornPaths } from "./map/worn-paths.ts";
+import { drawFountainAnimation } from "./map/fountain-anim.ts";
+
+const HOP_FRAMES = 12;
+const PLAYER_SIZE = 12;
+
+// -- Color utils ------------------------------------------------------------
+
+function hexToRgb(hex: string): [number, number, number] {
+  const h = hex.replace("#", "");
+  const v = parseInt(h.length === 3
+    ? h.split("").map(c => c + c).join("")
+    : h, 16);
+  return [(v >> 16) & 0xff, (v >> 8) & 0xff, v & 0xff];
+}
+
+function withAlpha(hex: string, alpha: number): string {
+  const [r, g, b] = hexToRgb(hex);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// -- Night tint -------------------------------------------------------------
+
+function getNightTint(serverTime: number): string | null {
+  // Use server-authoritative time so all clients see the same day/night cycle.
+  const hour = new Date(serverTime).getUTCHours();
+  if (hour >= 6 && hour < 18) return null;
+  if (hour >= 18 && hour < 21) return "rgba(180,120,0,0.12)";
+  if (hour >= 21 || hour < 0) return "rgba(0,0,60,0.20)";
+  return "rgba(0,0,30,0.35)";
+}
+
+// -- Hop arc ----------------------------------------------------------------
+
+function hopOffset(hopFrame: number): number {
+  if (hopFrame <= 0) return 0;
+  const t = hopFrame / HOP_FRAMES;
+  return Math.sin(t * Math.PI) * 14;
+}
+
+// -- Player drawing ---------------------------------------------------------
+
+function drawPlayerBody(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  color: string,
+  facing: Facing,
+  hopFrame: number,
+  isAway: boolean,
+  isLocal: boolean
+): void {
+  const yOff = -hopOffset(hopFrame);
+  const alpha = isAway ? 0.4 : 1.0;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  if (isAway) {
+    ctx.filter = "grayscale(100%)";
+  }
+
+  // Body
+  ctx.fillStyle = color;
+  ctx.fillRect(x - PLAYER_SIZE / 2, y - PLAYER_SIZE / 2 + yOff, PLAYER_SIZE, PLAYER_SIZE);
+
+  // Direction indicator (small dot on face)
+  ctx.fillStyle = "rgba(0,0,0,0.5)";
+  const eyeX = facing === "right" ? x + 3 : x - 3;
+  ctx.fillRect(eyeX - 1, y - 2 + yOff, 2, 2);
+
+  // Local player highlight ring
+  if (isLocal) {
+    ctx.strokeStyle = "rgba(255,255,255,0.8)";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x - PLAYER_SIZE / 2 - 1, y - PLAYER_SIZE / 2 - 1 + yOff, PLAYER_SIZE + 2, PLAYER_SIZE + 2);
+  }
+
+  ctx.restore();
+}
+
+function drawPlayerLabel(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  name: string,
+  hopFrame: number
+): void {
+  const yOff = -hopOffset(hopFrame);
+  ctx.save();
+  ctx.font = "9px monospace";
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(0,0,0,0.6)";
+  ctx.fillText(name, x + 1, y - PLAYER_SIZE - 2 + yOff);
+  ctx.fillStyle = "#fff";
+  ctx.fillText(name, x, y - PLAYER_SIZE - 3 + yOff);
+  ctx.restore();
+}
+
+// NPC_HIT_RADIUS is imported from state.ts (single source of truth, shared with main.ts)
+
+// -- Speech bubble ----------------------------------------------------------
+
+function drawSpeechBubble(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  topY: number,
+  text: string,
+  alpha: number
+): void {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.font = "8px monospace";
+  ctx.textAlign = "center";
+
+  const padding = 4;
+  const textW = ctx.measureText(text).width;
+  const bw = textW + padding * 2;
+  const bh = 12;
+  const bx = cx - bw / 2;
+  const by = topY - bh - 6;
+
+  // Bubble background with tail
+  ctx.fillStyle = "rgba(255,255,255,0.93)";
+  ctx.strokeStyle = "rgba(0,0,0,0.3)";
+  ctx.lineWidth = 0.8;
+
+  ctx.beginPath();
+  const r = 3;
+  ctx.moveTo(bx + r, by);
+  ctx.lineTo(bx + bw - r, by);
+  ctx.quadraticCurveTo(bx + bw, by, bx + bw, by + r);
+  ctx.lineTo(bx + bw, by + bh - r);
+  ctx.quadraticCurveTo(bx + bw, by + bh, bx + bw - r, by + bh);
+  // Tail pointing down toward NPC
+  ctx.lineTo(cx + 3, by + bh);
+  ctx.lineTo(cx, by + bh + 5);
+  ctx.lineTo(cx - 3, by + bh);
+  ctx.lineTo(bx + r, by + bh);
+  ctx.quadraticCurveTo(bx, by + bh, bx, by + bh - r);
+  ctx.lineTo(bx, by + r);
+  ctx.quadraticCurveTo(bx, by, bx + r, by);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Text
+  ctx.fillStyle = "rgba(20,20,20,0.9)";
+  ctx.fillText(text, cx, by + bh - 3);
+
+  ctx.restore();
+}
+
+// -- NPC drawing ------------------------------------------------------------
+
+function drawNPC(
+  ctx: CanvasRenderingContext2D,
+  npc: NPC,
+  frame: number,
+  now: number,
+  mouseX: number,
+  mouseY: number
+): void {
+  const x = npc.displayX;
+  const y = npc.displayY;
+  const hopOff = -hopOffset(npc.hopFrame ?? 0);
+
+  // Sprite feet position: bottom of the 16px box + hop
+  const cy_feet = y + 8 + hopOff;
+
+  // Hover detection
+  const mdx = mouseX - x;
+  const mdy = mouseY - (y - 8);
+  const hovered = Math.abs(mdx) < NPC_HIT_RADIUS && Math.abs(mdy) < NPC_HIT_RADIUS + 4;
+
+  const spriteId = getSpriteId(npc.name);
+  const winner = spriteId ? getWinner(npc.name) : null;
+  const spriteFn: ((ctx: CanvasRenderingContext2D, x: number, y: number) => void) | null =
+    winner && spriteId ? ((window as any)[`drawSprite_${spriteId}_${winner}`] ?? null) : null;
+
+  ctx.save();
+
+  // Hover highlight: glow ring behind the sprite
+  if (hovered) {
+    ctx.save();
+    ctx.shadowColor = "rgba(200,200,255,0.9)";
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = "rgba(200,200,255,0.18)";
+    ctx.fillRect(x - 10, y - 10 + hopOff, 20, 20);
+    ctx.restore();
+  }
+
+  if (typeof spriteFn === "function") {
+    // Brightness boost on hover
+    if (hovered) ctx.filter = "brightness(1.3)";
+    // Flip horizontally for left-facing NPCs
+    if (npc.facing === "left") {
+      ctx.translate(x * 2, 0);
+      ctx.scale(-1, 1);
+    }
+    spriteFn(ctx, x, cy_feet);
+  } else {
+    // Fallback: colored box with direction mark
+    const hash = npc.name.split("").reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 0);
+    const hue = Math.abs(hash) % 360;
+    const lightness = hovered ? 58 : 45;
+    const color = `hsl(${hue},60%,${lightness}%)`;
+
+    ctx.fillStyle = color;
+    ctx.fillRect(x - 8, y - 8 + hopOff, 16, 16);
+
+    ctx.fillStyle = "rgba(255,255,255,0.7)";
+    const eyeX = npc.facing === "right" ? x + 3 : x - 3;
+    ctx.fillRect(eyeX - 1, y - 2 + hopOff, 2, 3);
+  }
+
+  ctx.restore();
+
+  // Label: only draw when hovered, using display name
+  if (hovered) {
+    const displayName = NPC_DISPLAY_NAMES[npc.name] ?? npc.name;
+    ctx.save();
+    ctx.font = "bold 9px monospace";
+    ctx.textAlign = "center";
+    // Measure text width for background pill
+    const tw = ctx.measureText(displayName).width;
+    const lx = x;
+    const ly = y - 14 + hopOff;
+    // Background pill
+    ctx.fillStyle = "rgba(20,20,40,0.82)";
+    ctx.beginPath();
+    ctx.roundRect(lx - tw / 2 - 4, ly - 10, tw + 8, 13, 3);
+    ctx.fill();
+    // Text
+    ctx.fillStyle = "#e8e8ff";
+    ctx.fillText(displayName, lx, ly);
+    ctx.restore();
+  }
+
+  // Speech bubble — draw above label (or above sprite if not hovered)
+  if (npc.blurb && npc.blurbExpiry !== undefined && npc.blurbExpiry > now) {
+    const remaining = npc.blurbExpiry - now;
+    const fadeMs = 1200; // fade out over last 1.2s
+    const alpha = remaining < fadeMs ? remaining / fadeMs : 1.0;
+    // Anchor above sprite — label is at y-14, bubble goes above that
+    const bubbleY = y - 14 + hopOff - (hovered ? 12 : 0);
+    drawSpeechBubble(ctx, x, bubbleY, npc.blurb, alpha);
+  }
+}
+
+// -- Connection overlay -----------------------------------------------------
+
+function drawConnectingOverlay(ctx: CanvasRenderingContext2D): void {
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.7)";
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+  ctx.fillStyle = "#7eb8f7";
+  ctx.font = "bold 18px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("CommonsV2 — connecting...", CANVAS_W / 2, CANVAS_H / 2);
+  ctx.font = "12px monospace";
+  ctx.fillStyle = "#999";
+  ctx.fillText("waiting for server", CANVAS_W / 2, CANVAS_H / 2 + 24);
+  ctx.restore();
+}
+
+// -- Debug HUD --------------------------------------------------------------
+
+// Hidden by default; toggle with backtick (`) or F3
+let debugVisible = false;
+
+if (typeof window !== "undefined") {
+  window.addEventListener("keydown", (e: KeyboardEvent) => {
+    if (e.key === "`" || e.key === "F3") {
+      e.preventDefault();
+      debugVisible = !debugVisible;
+    }
+  });
+}
+
+function drawHUD(ctx: CanvasRenderingContext2D, state: WorldState): void {
+  if (!debugVisible) return;
+
+  const player = state.localPlayer;
+  // Include local player in count — remotePlayers only tracks other players
+  const totalPlayers = state.remotePlayers.size + (state.localPlayer ? 1 : 0);
+  ctx.save();
+  ctx.font = "10px monospace";
+  ctx.fillStyle = "rgba(0,0,0,0.5)";
+  ctx.fillRect(4, 4, 200, 56);
+  ctx.fillStyle = "#ccc";
+  ctx.textAlign = "left";
+
+  const lines = [
+    `CommonsV2 [${player ? `(${Math.round(player.x)},${Math.round(player.y)})` : "no player"}]`,
+    `chunk: (${player?.chunkX ?? 0}, ${player?.chunkY ?? 0})`,
+    `players: ${totalPlayers}  npcs: ${state.npcs.size}`,
+    `frame: ${state.frame}  ${state.connected ? "● connected" : "○ offline"}`,
+  ];
+
+  lines.forEach((line, i) => ctx.fillText(line, 8, 17 + i * 12));
+  ctx.restore();
+}
+
+// -- Main render entry point ------------------------------------------------
+
+export function render(state: WorldState, ctx: CanvasRenderingContext2D, frame: number): void {
+  // Background
+  ctx.fillStyle = "#3a5a2a";
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  // Use server-authoritative time for all time-of-day and season calculations.
+  // Fall back to Date.now() only before the first tick arrives (serverTime === 0).
+  const refTime = state.serverTime > 0 ? state.serverTime : Date.now();
+
+  // Tile map from cache
+  const season = getSeason(refTime);
+  if (state.map) {
+    const tileCanvas = getOrBuildTileCache(state.map, state.mapChunkX, state.mapChunkY, season);
+    ctx.drawImage(tileCanvas, 0, 0);
+  }
+
+  // Worn path overlay (drawn on top of tile cache, below entities)
+  drawWornPaths(ctx, state.map);
+
+  // Fountain animation overlay (above tile cache, below entities)
+  if (state.map) {
+    const tileColors = getTileColors(season);
+    drawFountainAnimation(ctx, state.map, frame, tileColors.fountainWater);
+  }
+
+  // Night tint overlay
+  const tint = getNightTint(refTime);
+  if (tint) {
+    ctx.fillStyle = tint;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+  }
+
+  // Remote players (same chunk only)
+  const localChunkX = state.localPlayer?.chunkX ?? 0;
+  const localChunkY = state.localPlayer?.chunkY ?? 0;
+
+  // Build warthog seat set for quick lookup (hide seated remote players — they appear as heads on the warthog)
+  const warthogSeatedIds = new Set(state.warthog?.seats.filter(Boolean) ?? []);
+
+  for (const player of state.remotePlayers.values()) {
+    if (player.chunkX !== localChunkX || player.chunkY !== localChunkY) continue;
+    // Skip remote players seated in the warthog — they're rendered as heads on the vehicle
+    if (warthogSeatedIds.has(player.socketId)) continue;
+    drawPlayerBody(ctx, player.displayX, player.displayY, player.color, player.facing as Facing, player.hopFrame, player.isAway, false);
+    drawPlayerLabel(ctx, player.displayX, player.displayY, player.name, player.hopFrame);
+  }
+
+  // NPCs
+  const renderNow = performance.now();
+  for (const npc of state.npcs.values()) {
+    drawNPC(ctx, npc, frame, renderNow, state.mouseX, state.mouseY);
+  }
+
+  // Audition walkers (cross at row 18 — drawn before local player)
+  drawWalkers(ctx, state.walkers);
+
+  // Warthog vehicle (drawn below local player so player appears inside)
+  drawWarthog(ctx, state);
+
+  // Local player (drawn on top) — hidden when seated in warthog (rendered as head on vehicle)
+  if (state.localPlayer && !state.seatedInWarthog) {
+    const p = state.localPlayer;
+    drawPlayerBody(ctx, p.x, p.y, p.color, p.facing as Facing, p.hopFrame, p.isAway, true);
+    drawPlayerLabel(ctx, p.x, p.y, p.name, p.hopFrame);
+  }
+
+  // Tall-sprite overlay: tree canopies and rock bodies drawn after entities so they occlude
+  // players/NPCs that pass behind them (painter's algorithm second pass)
+  if (state.map) {
+    drawTallSprites(ctx, state.map, season);
+  }
+
+  // Congress building label (chunk 0,0 only)
+  if (localChunkX === 0 && localChunkY === 0) {
+    ctx.save();
+    ctx.font = "bold 8px monospace";
+    ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(0,0,0,0.4)";
+    // Label above congress building (chunk 0,0 — column CONGRESS_BUILDING_COL)
+    ctx.fillText("CONGRESS", CONGRESS_BUILDING_COL * TILE + TILE / 2 + 1, CONGRESS_BUILDING_LABEL_ROW * TILE - 2);
+    ctx.fillStyle = "#c8c8e8";
+    ctx.fillText("CONGRESS", CONGRESS_BUILDING_COL * TILE + TILE / 2, CONGRESS_BUILDING_LABEL_ROW * TILE - 3);
+    ctx.restore();
+
+    // Dungeon entrance label (chunk 0,0 — top-right)
+    ctx.save();
+    ctx.font = "bold 8px monospace";
+    ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
+    ctx.fillText("⚔ DUNGEON", DUNGEON_BUILDING_COL * TILE + TILE / 2 + 1, DUNGEON_BUILDING_LABEL_ROW * TILE - 2);
+    ctx.fillStyle = "#a0ffa0";
+    ctx.fillText("⚔ DUNGEON", DUNGEON_BUILDING_COL * TILE + TILE / 2, DUNGEON_BUILDING_LABEL_ROW * TILE - 3);
+    ctx.restore();
+
+    // Leaderboard board object at (LEADERBOARD_COL, LEADERBOARD_ROW)
+    {
+      const bx = LEADERBOARD_COL * TILE;
+      const by = LEADERBOARD_ROW * TILE;
+      // Post
+      ctx.save();
+      ctx.fillStyle = "#6b4226";
+      ctx.fillRect(bx + 8, by - 4, 3, TILE + 4); // vertical post
+      // Board face
+      ctx.fillStyle = "#2a1a0a";
+      ctx.strokeStyle = "#8b6433";
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(bx - 2, by - 12, TILE + 4, 12);
+      ctx.strokeRect(bx - 2, by - 12, TILE + 4, 12);
+      // Trophy icon
+      ctx.font = "6px monospace";
+      ctx.fillStyle = "#d4af37";
+      ctx.textAlign = "center";
+      ctx.fillText("🏆", bx + TILE / 2, by - 3);
+      // Label below
+      ctx.font = "5px monospace";
+      ctx.fillStyle = "#a08040";
+      ctx.fillText("LEADERBOARD", bx + TILE / 2, by + 8);
+      ctx.restore();
+    }
+
+    // Congress flag when session is active
+    if (state.congress.active) {
+      ctx.save();
+      const fx = CONGRESS_BUILDING_COL * TILE;
+      const fy = TILE;
+      ctx.fillStyle = "#222";
+      ctx.fillRect(fx, fy, 2, TILE); // pole
+      ctx.fillStyle = "#f87171";
+      ctx.fillRect(fx + 2, fy, 12, 8); // flag body
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(fx + 4, fy + 2, 2, 4); // scale icon — left arm
+      ctx.fillRect(fx + 8, fy + 2, 2, 4); // right arm
+      ctx.fillRect(fx + 6, fy + 1, 2, 2); // centre top
+      ctx.restore();
+    }
+  }
+
+  // HUD
+  drawHUD(ctx, state);
+
+  // Connecting overlay
+  if (!state.connected) {
+    drawConnectingOverlay(ctx);
+  }
+}

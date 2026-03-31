@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-191056-a358cacc",
+  "title": "Add evolution explanations to Congress procedure",
+  "agent_id": "a358cacc54a81f302",
+  "agent_type": "general-purpose",
+  "session_id": "ef1a5e01-b3c3-41d6-abd3-172f68d92559",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T19:10:56Z",
+      "event": "started",
+      "context": "Add evolution explanations to Congress procedure"
+    },
+    {
+      "ts": "2026-03-26T19:11:58Z",
+      "event": "done",
+      "context": "Done. Here's a summary of what was changed in `/mnt/data/temporal-workflows/activities/congress_act.py`:\n\n**Change 1 — Evolution prompt (line 639):** The `LEARNED` field instruction was updated from \"one sentence to append to their persona as a lesson learned\" to requiring **2-3 sentences of specific guidance** — e.g. which argument to lead with, what framing shift to adopt, what blind spot to address. The instruction explicitly asks for concrete and actionable content, not generic observations....(truncated)",
+      "artifacts": []
+    }
+  ]
+}

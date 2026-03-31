@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-100214-a28fba72",
+  "title": "Post Discord status message",
+  "agent_id": "a28fba7207df7e9fa",
+  "agent_type": "general-purpose",
+  "session_id": "99a6e0de-4eac-4bab-aecc-2f8ba3f2bc3a",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T10:02:13Z",
+      "event": "started",
+      "context": "Post Discord status message"
+    },
+    {
+      "ts": "2026-03-27T10:02:31Z",
+      "event": "done",
+      "context": "Message posted successfully. The inject endpoint returned 200 OK — the NightOwl status message has been delivered to Discord channel `1485343472952148008`.",
+      "artifacts": []
+    }
+  ]
+}

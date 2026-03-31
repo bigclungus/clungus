@@ -1,0 +1,36 @@
+{
+  "id": "task-20260327-080835-ac3f701b9",
+  "title": "Add high-severity Discord escalation to post-merge reviewer",
+  "agent_id": "congress-87",
+  "agent_type": "congress",
+  "session_id": "congress-0087",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "requires_approval": false,
+  "log": [
+    {
+      "event": "started",
+      "ts": "2026-03-27T08:08:35Z",
+      "message": "Created from Congress #87 verdict on: Auto code review for newly-merged features: Should BigClungus implement an automated review step tha"
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-27T08:08:35Z",
+      "message": "Source verdict: Implement it, triggered by GitHub webhook post-merge \u2014 not periodic, not manual. Periodic misses the window where context is fresh; manual defeats the purpose. It should check for correctness regressi..."
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-27T08:15:53.344599Z",
+      "message": "Discord escalation for HIGH severity findings implemented in post-merge-review.ts"
+    },
+    {
+      "event": "done",
+      "ts": "2026-03-27T08:16:35.991224Z",
+      "message": "Discord HIGH-severity escalation shipped"
+    }
+  ],
+  "status": "done"
+}

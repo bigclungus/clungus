@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-044952-a211515a",
+  "title": "Update Grok model assignments for all personas",
+  "agent_id": "a211515a2db9309ed",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T04:49:52Z",
+      "event": "started",
+      "context": "Update Grok model assignments for all personas"
+    },
+    {
+      "ts": "2026-03-25T04:50:24Z",
+      "event": "done",
+      "context": "Done. Here's what was changed:\n\n| File | Field | Old | New |\n|---|---|---|---|\n| `agents/active/bloodfeast.md` | `model` | `grok-3` | `grok-4.20-0309-reasoning` |\n| `agents/fired/spengler.md` | `model` | `grok-3` | `grok-4.20-0309-reasoning` |\n| `agents/active/the-kid.md` | `model` | `grok-3-mini` | `grok-4-1-fast-non-reasoning` |\n| `agents/active/pm.md` (Chud) | `model` | `claude` | `grok-4-1-fast-reasoning` |\n\nTwo notes:\n- **Otto** (`otto.md`) does not exist in `agents/active/` — no file to up...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

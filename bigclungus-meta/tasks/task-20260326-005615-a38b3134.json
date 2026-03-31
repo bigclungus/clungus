@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-005615-a38b3134",
+  "title": "Roster overhaul: delete Nemesis, make all eligible, standardize roles",
+  "agent_id": "a38b31344f6db857a",
+  "agent_type": "general-purpose",
+  "session_id": "e4d4bf00-991b-4f0e-aac7-2ab4056f18c5",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T00:56:15Z",
+      "event": "started",
+      "context": "Roster overhaul: delete Nemesis, make all eligible, standardize roles"
+    },
+    {
+      "ts": "2026-03-26T00:56:53Z",
+      "event": "done",
+      "context": "All steps completed successfully. Here's the final roster:\n\n| Agent | Status | Role |\n|---|---|---|\n| adelbert | eligible | Ad Hominem Specialist |\n| architect | eligible | Systems Designer and Long-Term Thinker |\n| bloodfeast | eligible | Geriatric Hawk |\n| critic | eligible | Code and Work Reviewer |\n| designer | eligible | Visual Craft and Aesthetic Systems |\n| galactus | eligible | PLANET EATER |\n| hiring-manager | moderator | Persona Evaluator and Congress Moderator |\n| hume | eligible | Em...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

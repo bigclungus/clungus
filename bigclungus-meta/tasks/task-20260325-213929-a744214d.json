@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-213929-a744214d",
+  "title": "Diagnose and fix Giga terminal vs BigClungus impl",
+  "agent_id": "a744214d12ed48760",
+  "agent_type": "general-purpose",
+  "session_id": "e4d4bf00-991b-4f0e-aac7-2ab4056f18c5",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T21:39:29Z",
+      "event": "started",
+      "context": "Diagnose and fix Giga terminal vs BigClungus impl"
+    },
+    {
+      "ts": "2026-03-25T21:51:41Z",
+      "event": "done",
+      "context": "Done. Here's the full diagnosis and what was fixed:\n\n---\n\n**Root cause: Two bugs in `GIGA_HTML`'s JavaScript — wrong ttyd protocol**\n\n**Bug 1 — Missing init message (critical)**\n\nttyd v1.7.4 does not spawn a PTY or stream any terminal output until the client sends a specific JSON handshake on connection open:\n```json\n{\"AuthToken\": \"\", \"columns\": <cols>, \"rows\": <rows>}\n```\nThe old code sent nothing on `ws.onopen`. Without this message, ttyd sits idle — no child process is spawned, no terminal ou...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

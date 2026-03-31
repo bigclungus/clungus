@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-094302-adbd7221",
+  "title": "Check unresolved jaboostin threads",
+  "agent_id": "adbd722199d9b8c98",
+  "agent_type": "general-purpose",
+  "session_id": "3f336ddd-c437-4816-a9d4-b9b22c22e7a0",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T09:43:02Z",
+      "event": "started",
+      "context": "Check unresolved jaboostin threads"
+    },
+    {
+      "ts": "2026-03-27T09:43:47Z",
+      "event": "done",
+      "context": "I have enough information. Here's the status for all three items:\n\n---\n\n**1. Session history ingestion into a vector DB — COMPLETED**\n\nFully built and live. The thread at `1486946881069125713` shows the full conversation and implementation. The final system uses:\n- SQLite with `sqlite-vec` for vector storage\n- OpenAI `text-embedding-3-small` for embeddings\n- A Temporal schedule (`history-ingest-1m`) with SKIP overlap policy for continuous incremental ingestion (byte-offset watermark per file)\n- ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-050836-aec43a27",
+  "title": "Strengthen persona priors and adversarial framing",
+  "agent_id": "aec43a27da4f79bc4",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": "1485867448367321118",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T05:08:36Z",
+      "event": "started",
+      "context": "Strengthen persona priors and adversarial framing"
+    },
+    {
+      "ts": "2026-03-24T05:09:52Z",
+      "event": "done",
+      "context": "Everything done. Here's a summary of what was changed:\n\n---\n\n**Persona files** (`/home/clungus/work/bigclungus-meta/agents/active/`)\n\nEach of the three debating personas got a `## Strong Prior` section (~150 words each) inserted after their existing prose, before the `Learned` entries:\n\n- **critic.md (Priya)** — Default answer is \"no.\" Holds every proposed addition to a high burden of proof. Biased toward deletion. Explicitly named adversarial stances against Kwame's \"invest now\" and Yuki's \"use...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

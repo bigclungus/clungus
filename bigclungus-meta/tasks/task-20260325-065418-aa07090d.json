@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-065418-aa07090d",
+  "title": "Nemesis portrait A/B",
+  "agent_id": "aa07090da5f068a6c",
+  "agent_type": "general-purpose",
+  "session_id": "a73508af-b739-48f4-b9cb-a7829a4a15c0",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T06:54:18Z",
+      "event": "started",
+      "context": "Nemesis portrait A/B"
+    },
+    {
+      "ts": "2026-03-25T06:57:07Z",
+      "event": "done",
+      "context": "Both posted successfully. Here's the summary:\n\n**Scripts created:**\n- `/mnt/data/scripts/gen_nemesis_avatar_a.py` -> `/mnt/data/hello-world/static/avatars/nemesis_a.gif` (22KB, 24 frames)\n- `/mnt/data/scripts/gen_nemesis_avatar_b.py` -> `/mnt/data/hello-world/static/avatars/nemesis_b.gif` (25KB, 29 frames)\n\n**Concepts:**\n\n**A — \"The Gun on the Table\"**: Isometric throne room. The throne is center-back, empty, crowned with a notch. Nemesis sits to its right, robed in near-void black. The gun rest...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "id": "task-20260327-060752-aee62e08a",
+  "title": "Implement mode-gated FIRE enforcement in trial workflows",
+  "agent_id": "congress-85",
+  "agent_type": "congress",
+  "session_id": "congress-0085",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "requires_approval": false,
+  "log": [
+    {
+      "event": "started",
+      "ts": "2026-03-27T06:07:52Z",
+      "message": "Created from Congress #85 verdict on: Should Show Trial FIRE verdicts have real enforcement consequences?\n\nINVESTIGATION BRIEF (heartbeat "
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-27T06:07:52Z",
+      "message": "Source verdict: The crux here is simple: a FIRE verdict that does nothing is a lie to the audience, and systems that lie about their own consequences rot from the inside. The supermajority requirement is the tell \u2014 w..."
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-27T06:09:55.093816Z",
+      "message": "Added trial_apply_fire_verdict activity to trial_act.py with mode-gating: standard sets status=meme, meme-mode exits immediately"
+    },
+    {
+      "event": "done",
+      "ts": "2026-03-27T06:11:32.238327Z",
+      "message": "mode-gated FIRE enforcement implemented and committed to temporal-workflows (d521d68)"
+    }
+  ],
+  "status": "done"
+}

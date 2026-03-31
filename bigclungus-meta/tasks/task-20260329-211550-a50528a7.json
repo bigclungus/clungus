@@ -1,0 +1,25 @@
+{
+  "id": "task-20260329-211550-a50528a7",
+  "title": "Check SSE stream ownership and notification flow",
+  "agent_id": "a50528a73defd0d4b",
+  "agent_type": "general-purpose",
+  "session_id": "b5db222b-1a92-4725-a617-75c2c8992195",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-29T21:15:50Z",
+      "event": "started",
+      "context": "Check SSE stream ownership and notification flow"
+    },
+    {
+      "ts": "2026-03-29T21:16:23Z",
+      "event": "done",
+      "context": "Here is the full picture:\n\n**SSE stream ownership: the stdio proxy (discord-plugin)**\n\nThe active SSE stream (`sseStreams: 1`, `streamKeys: [\"_GET_stream\"]`) belongs to the inline stdio proxy process (`bun run --cwd /mnt/data/discord-plugin ... start`, PID 2165610). Claude Code is configured with `\"discord-clungus@inline\": true` in settings.json, which means Claude Code talks to discord-server exclusively through that bun stdio proxy — not via a direct HTTP connection.\n\nThe proxy opens a long-li...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

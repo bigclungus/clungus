@@ -1,0 +1,25 @@
+{
+  "id": "task-20260329-001302-a92f63de",
+  "title": "Phase A: MobRegistry + cache layer",
+  "agent_id": "a92f63dea6501c070",
+  "agent_type": "general-purpose",
+  "session_id": "5aac769e-2e6e-4bd3-a873-645eb001e989",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-29T00:13:02Z",
+      "event": "started",
+      "context": "Phase A: MobRegistry + cache layer"
+    },
+    {
+      "event": "done",
+      "ts": "2026-03-29T00:59:53.057876Z",
+      "message": "Completed: built and deployed"
+    }
+  ],
+  "status": "done"
+}

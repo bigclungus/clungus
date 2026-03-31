@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-231110-a0e22345",
+  "title": "Post MOAR to thread",
+  "agent_id": "a0e22345549e7f04d",
+  "agent_type": "general-purpose",
+  "session_id": "5aac769e-2e6e-4bd3-a873-645eb001e989",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T23:11:10Z",
+      "event": "started",
+      "context": "Post MOAR to thread"
+    },
+    {
+      "ts": "2026-03-28T23:11:18Z",
+      "event": "done",
+      "context": "Message posted successfully to the Discord thread.",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-061627-a2c20e0d",
+  "title": "Queue mobile tap-to-move for NightOwl",
+  "agent_id": "a2c20e0d1c639702d",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T06:16:27Z",
+      "event": "started",
+      "context": "Queue mobile tap-to-move for NightOwl"
+    },
+    {
+      "ts": "2026-03-26T06:16:39Z",
+      "event": "done",
+      "context": "The task was queued successfully. Output:\n\n- A running NightOwl workflow was detected (`nightowl-today`) and the task was signaled to it rather than starting a new one.\n- Task queued: \"Add mobile touch support to grazing.html: tap on a tile to move the player there (pathfind or direct walk), swipe to pan if canvas larger than viewport. Must work on iOS Safari (use touch events, not pointer events for compatibility). Test on mobile viewport.\"",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-191517-aa1af459",
+  "title": "Zillow income calculation",
+  "agent_id": "aa1af45928a3dc369",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T19:15:17Z",
+      "event": "started",
+      "context": "Zillow income calculation"
+    },
+    {
+      "ts": "2026-03-30T19:16:24Z",
+      "event": "done",
+      "context": "Done. Here's the summary:\n\n**32 Edgewood Ave, Mill Valley CA**\n- Zillow Zestimate: $2,400,000 (last sold June 2019 for the same; currently off market)\n- 4 bed / 3 bath / 2,055 sq ft, built 1928\n\n**Monthly payment breakdown:**\n| Item | Amount |\n|---|---|\n| Principal & interest (7%, 30yr) | $12,774 |\n| Property tax (1.1% Marin Co.) | $2,200 |\n| Homeowners insurance | $200 |\n| **Total** | **$15,174/mo** |\n\n**Minimum household income:**\n- **28% rule: $650,000/yr** ($54,200/mo gross)\n- 36% rule (assu...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

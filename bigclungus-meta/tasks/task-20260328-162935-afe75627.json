@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-162935-afe75627",
+  "title": "List all FalkorDB graphs",
+  "agent_id": "afe75627d4dfad35d",
+  "agent_type": "general-purpose",
+  "session_id": "cd97d7fe-d103-4d13-98e8-c7a6e540cf95",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T16:29:35Z",
+      "event": "started",
+      "context": "List all FalkorDB graphs"
+    },
+    {
+      "ts": "2026-03-28T16:29:54Z",
+      "event": "done",
+      "context": "Here are all FalkorDB graphs and their node counts:\n\n| Graph | Node Count |\n|---|---|\n| discord_history | 3,674 |\n| discord-history | 0 |\n| default_db | 0 |\n| graphiti | 0 |\n| infrastructure | 0 |\n| discord | 0 |\n| bigclungus | 79 |\n| clunger | 123 |\n| bokoen1_transcripts | 685 |\n\n**Total: 9 graphs, 4,561 nodes across all graphs.** Only 4 graphs have data; the other 5 are empty. `discord_history` is the largest by far, followed by `bokoen1_transcripts`, `clunger`, and `bigclungus`.",
+      "artifacts": []
+    }
+  ]
+}

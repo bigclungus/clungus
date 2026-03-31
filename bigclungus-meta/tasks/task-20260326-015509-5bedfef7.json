@@ -1,0 +1,44 @@
+{
+  "id": "task-20260326-015509-5bedfef7",
+  "title": "Build congress verdict tracking system",
+  "status": "done",
+  "body": "Add a verdict_tracking table to tasks.db. When a congress session finalizes, insert a row with: session_id, topic, verdict_ts, mode (serious/meme), requires_ack (true for HUMAN-approval tasks, false for AUTO tasks), ack_ts, task_id, task_status. Add a heartbeat hook to update rows (check Discord activity referencing session, check task status). Expose /api/congress/tracking endpoint on clung.us showing a dashboard of acted-on vs unacted verdicts. Source: centronias approval in verdict tracking thread 2026-03-26.",
+  "created_at": "2026-03-26T01:55:09Z",
+  "log": [
+    {
+      "ts": "2026-03-26T01:55:09Z",
+      "event": "created",
+      "msg": "Queued from centronias approval"
+    },
+    {
+      "ts": "2026-03-26T04:03:00Z",
+      "event": "stale",
+      "context": "Marked stale by watchdog \u2014 session likely ended before task completed"
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-27T06:31:02.116516Z",
+      "message": "Queued to NightOwl for implementation (centronias-approved, no GH issue exists yet)"
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-27T12:09:03.290014Z",
+      "message": "Re-queued to NightOwl 2026-03-27 \u2014 previous nightowl run did not implement it (verdict_tracking table not found in tasks.db)"
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-28T10:04:14.513779Z",
+      "message": "Created verdict_tracking table in tasks.db with columns: session_id, topic, verdict_ts, mode, requires_ack, ack_ts, task_id, task_status. Backfilled 68 existing sessions."
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-28T10:04:19.765815Z",
+      "message": "Added /api/congress/tracking endpoints to clunger: GET (public, with ?filter=unacted|acted|meme), POST (internal, upsert), PATCH /:session_id (internal, update ack_ts/task_id/task_status). Restarted clunger."
+    },
+    {
+      "event": "done",
+      "ts": "2026-03-28T10:04:23.832019Z",
+      "message": "Congress verdict tracking system complete. Table created, 68 sessions backfilled, 3 REST endpoints live, clunger restarted and tested."
+    }
+  ]
+}

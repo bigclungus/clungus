@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-023612-a6277e4b",
+  "title": "Simplify review on recent changes",
+  "agent_id": "a6277e4b32e11e653",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T02:36:12Z",
+      "event": "started",
+      "context": "Simplify review on recent changes"
+    },
+    {
+      "ts": "2026-03-25T02:40:31Z",
+      "event": "done",
+      "context": "Done. Here's a summary of what was found and fixed:\n\n---\n\n**Simplify review complete — 1 bug fixed, 2 structural issues cleaned up in `congress_act.py`.**\n\n**Bug (critical): `probationary_note` NameError in `congress_evolve`**\nThe variable was appended to `evolution_prompt` before it was defined. Every `congress_evolve` call would have raised `NameError: name 'probationary_note' is not defined` at the prompt-construction step. Fixed by moving the agent file index-building block and `probationary...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

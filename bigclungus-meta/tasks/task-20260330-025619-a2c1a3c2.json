@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-025619-a2c1a3c2",
+  "title": "Fix mob preview PNG image loading",
+  "agent_id": "a2c1a3c23ff70adfc",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T02:56:19Z",
+      "event": "started",
+      "context": "Fix mob preview PNG image loading"
+    },
+    {
+      "ts": "2026-03-30T02:58:01Z",
+      "event": "done",
+      "context": "Done. Here's a summary of what was changed:\n\n**File edited:** `/mnt/data/clungiverse-client/src/scenes/mob-preview.ts`\n\nChanges made:\n1. Added `mobSlug()` function mirroring server slug logic (lowercase, non-alphanumeric to underscores, trim leading/trailing underscores)\n2. Added module-level `mobImages = new Map<string, HTMLImageElement>()` cache\n3. In `enter()`: preloads PNGs for all roster mobs after the click handler setup, keyed by `entityName`, path derived from `mobSlug(displayName)`\n4. I...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

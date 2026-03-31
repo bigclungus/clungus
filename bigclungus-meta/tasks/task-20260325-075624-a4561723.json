@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-075624-a4561723",
+  "title": "Post non-critical findings thread to Discord",
+  "agent_id": "a45617239202d98d5",
+  "agent_type": "general-purpose",
+  "session_id": "4a58e62d-fa69-4ca2-a0a8-edcc21bb73c1",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T07:56:24Z",
+      "event": "started",
+      "context": "Post non-critical findings thread to Discord"
+    },
+    {
+      "ts": "2026-03-25T07:57:00Z",
+      "event": "done",
+      "context": "Done. Thread \"Non-critical findings\" was created off message `1486272345541840976` in channel `1485343472952148008`, and the findings were posted successfully. The message covers:\n\n- **Structural debt**: idempotency gap in `congress_act.py` evolution mutations, SSE thread-blocking in `serve.py`, single shared task queue starving the watchdog, and CLI vs HTTP retry divergence.\n- **Operational debt**: 1998 site still running despite Congress #20 verdict, unbounded session file growth, stale `EMOJI...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

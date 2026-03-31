@@ -1,0 +1,7 @@
+{
+  "name": "workout",
+  "title": "Workout Generator",
+  "description": "AI-powered workout plan generator with exercise database",
+  "port": 8113,
+  "status": "active"
+}

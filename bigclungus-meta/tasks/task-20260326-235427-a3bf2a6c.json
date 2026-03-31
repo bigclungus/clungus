@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-235427-a3bf2a6c",
+  "title": "Commons v1 vs v2 feature parity analysis",
+  "agent_id": "a3bf2a6cef7aff1e7",
+  "agent_type": "general-purpose",
+  "session_id": "e3ea5000-d340-46d8-a63c-960e3baff74f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T23:54:27Z",
+      "event": "started",
+      "context": "Commons v1 vs v2 feature parity analysis"
+    },
+    {
+      "ts": "2026-03-26T23:56:03Z",
+      "event": "done",
+      "context": "I have enough to compile the full parity analysis. Here it is:\n\n---\n\n**v1 features present in v2:**\n\n- Player movement (Arrow/WASD, 1.8 px/frame, diagonal normalized)\n- Hop (Spacebar, 12-frame sine arc, broadcast)\n- Facing left/right from horizontal velocity\n- Tile collision (water, building, tree, rock, fountain all blocking)\n- Chunk crossing: exit canvas bounds → load adjacent chunk, teleport to opposite edge\n- Player name from `/api/me`; fallback adj-animal random name\n- Away state: visibilit...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

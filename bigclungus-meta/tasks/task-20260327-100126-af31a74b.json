@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-100126-af31a74b",
+  "title": "NightOwl task 2: congress verdict tracking system",
+  "agent_id": "af31a74b34259057f",
+  "agent_type": "general-purpose",
+  "session_id": "99a6e0de-4eac-4bab-aecc-2f8ba3f2bc3a",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T10:01:26Z",
+      "event": "started",
+      "context": "NightOwl task 2: congress verdict tracking system"
+    },
+    {
+      "ts": "2026-03-27T11:05:00Z",
+      "event": "failed",
+      "msg": "closed during cleanup \u2014 created during restart storm; congress verdict tracking is tracked separately in open task task-20260326-015509-5bedfef7"
+    }
+  ],
+  "status": "failed"
+}

@@ -1,0 +1,31 @@
+{
+  "id": "task-20260325-203200-a6dcfdbd",
+  "title": "Discord plugin typing indicator toggle",
+  "agent_id": "a6dcfdbd149c9b8f1",
+  "agent_type": "general-purpose",
+  "session_id": "e4d4bf00-991b-4f0e-aac7-2ab4056f18c5",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T20:32:00Z",
+      "event": "started",
+      "context": "Discord plugin typing indicator toggle"
+    },
+    {
+      "ts": "2026-03-25T20:35:55Z",
+      "event": "done",
+      "context": "Everything is in place. Here's a summary of what was done:\n\n**Files changed:**\n\n- `/home/clungus/.claude/plugins/cache/claude-plugins-official/discord/0.0.4/server.ts` \u2014 added env var guard around `sendTyping()` call (line 992)\n- `/home/gigaclungus/.claude/plugins/cache/claude-plugins-official/discord/0.0.4/server.ts` \u2014 same patch applied\n- `/home/gigaclungus/.claude/channels/discord/.env` \u2014 appended `DISCORD_TYPING_INDICATORS=false`\n\n**Already patched (no change needed):**\n- `/home/clungus/.cla...(truncated)",
+      "artifacts": []
+    },
+    {
+      "event": "done",
+      "ts": "2026-03-25T20:45:42.196652Z",
+      "message": "Superseded by task-20260325-202838-a65eb00f \u2014 typing indicator toggle implemented and deployed."
+    }
+  ],
+  "status": "done"
+}

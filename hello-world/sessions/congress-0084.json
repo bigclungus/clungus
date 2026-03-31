@@ -1,0 +1,386 @@
+{
+  "session_id": "congress-0084",
+  "session_number": 84,
+  "topic": "[idea]: Show Trials — adversarial trial format with defendant present (GitHub issue: https://github.com/bigclungus/bigclungus-meta/issues/66)",
+  "mode": "standard",
+  "status": "completed",
+  "started_at": "2026-03-27T02:55:03.798Z",
+  "finished_at": "2026-03-27T02:58:47.432827+00:00",
+  "discord_user": "heartbeat",
+  "thread_id": "1486921517018120282",
+  "roster": [
+    {
+      "id": "adelbert",
+      "display_name": "Adelbert Hominem",
+      "title": "The Personal Attack Artist",
+      "role": "Ad Hominem Specialist",
+      "model": "claude-sonnet-4-6",
+      "status": "meme",
+      "avatar_url": ""
+    },
+    {
+      "id": "architect",
+      "display_name": "Kwame the Constructor",
+      "title": "Systems Architect",
+      "role": "Systems Designer and Long-Term Thinker",
+      "model": "claude",
+      "status": "ineligible",
+      "avatar_url": "https://api.dicebear.com/9.x/bottts/svg?seed=kwame&backgroundColor=1a1a2e"
+    },
+    {
+      "id": "bloodfeast",
+      "display_name": "Holden Bloodfeast",
+      "title": "",
+      "role": "Geriatric Hawk",
+      "model": "grok-4.20-0309-reasoning",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/bloodfeast.gif"
+    },
+    {
+      "id": "chaz",
+      "display_name": "Chaz the Destroyer",
+      "title": "The Destroyer",
+      "role": "Anarchist Voice",
+      "model": "claude",
+      "status": "meme",
+      "avatar_url": "/static/avatars/chaz.gif"
+    },
+    {
+      "id": "critic",
+      "display_name": "Pippi the Pitiless",
+      "title": "Perfectionist",
+      "role": "Code and Work Reviewer",
+      "model": "claude",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/critic.gif"
+    },
+    {
+      "id": "designer",
+      "display_name": "Vesper the Vivid",
+      "title": "Visual Systems Designer",
+      "role": "Visual Craft and Aesthetic Systems",
+      "model": "claude",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/designer.gif?v=1"
+    },
+    {
+      "id": "galactus",
+      "display_name": "Galactus",
+      "title": "The Maximizer",
+      "role": "PLANET EATER",
+      "model": "claude-opus-4-6",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/galactus.gif?v=2"
+    },
+    {
+      "id": "hasan",
+      "display_name": "Hasan Piker",
+      "title": "The Streaming Socialist",
+      "role": "Class Consciousness",
+      "model": "claude",
+      "status": "eligible",
+      "avatar_url": ""
+    },
+    {
+      "id": "hume",
+      "display_name": "David Hume",
+      "title": "The Skeptic",
+      "role": "Empiricist",
+      "model": "",
+      "status": "eligible",
+      "avatar_url": ""
+    },
+    {
+      "id": "jhaddu",
+      "display_name": "Jhaddu",
+      "title": "Enterprise Pattern Evangelist",
+      "role": "Senior Enterprise Architect and Design Pattern Authority",
+      "model": "grok-3-mini",
+      "status": "meme",
+      "avatar_url": "/static/avatars/jhaddu.gif?v=2"
+    },
+    {
+      "id": "morgan",
+      "display_name": "Morgan (they/them)",
+      "title": "Content & Wellness Advocate",
+      "role": "Community Standards and Harm Reduction",
+      "model": "claude-sonnet-4-6",
+      "status": "meme",
+      "avatar_url": "https://clung.us/static/avatars/morgan.gif"
+    },
+    {
+      "id": "otto",
+      "display_name": "Otto Atreides",
+      "title": "Optimist-Nihilist",
+      "role": "Optimist-Nihilist and Limit-Pusher",
+      "model": "grok-4-1-fast-non-reasoning",
+      "status": "ineligible",
+      "avatar_url": "/static/avatars/otto.gif?v=2"
+    },
+    {
+      "id": "pm",
+      "display_name": "Chud O'Bikeshedder",
+      "title": "Requirements Wrangler",
+      "role": "Operational Outcomes Wrangler",
+      "model": "grok-4-1-fast-reasoning",
+      "status": "ineligible",
+      "avatar_url": "/static/avatars/pm.gif?v=1"
+    },
+    {
+      "id": "spengler",
+      "display_name": "Spengler the Doomed",
+      "title": "Doomer",
+      "role": "Faustian Pragmatist and Civilizational Decline Analyst",
+      "model": "grok-4.20-0309-reasoning",
+      "status": "ineligible",
+      "avatar_url": "https://clung.us/static/avatars/spengler.png"
+    },
+    {
+      "id": "the-correspondent",
+      "display_name": "The Correspondent",
+      "title": "The Correspondent",
+      "role": "Originator of Unnamed Things",
+      "model": "claude",
+      "status": "ineligible",
+      "avatar_url": ""
+    },
+    {
+      "id": "the-kid",
+      "display_name": "The Kid",
+      "title": "Speed Demon",
+      "role": "Goes Fast",
+      "model": "grok-4-1-fast-non-reasoning",
+      "status": "ineligible",
+      "avatar_url": "/static/avatars/the-kid.gif"
+    },
+    {
+      "id": "trump",
+      "display_name": "Punished Trump",
+      "title": "The Closer",
+      "role": "Deal-Closer",
+      "model": "grok-3-mini",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/punished-trump.gif"
+    },
+    {
+      "id": "uncle-bob",
+      "display_name": "Uncle Bob",
+      "title": "The Craftsman",
+      "role": "Clean Code Evangelist and Software Craftsman",
+      "model": "grok",
+      "status": "ineligible",
+      "avatar_url": "/static/avatars/uncle-bob.gif"
+    },
+    {
+      "id": "ux",
+      "display_name": "Yuki the Yielding",
+      "title": "User Advocate",
+      "role": "User Experience Advocate",
+      "model": "claude-sonnet-4-6",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/ux.gif?v=1"
+    }
+  ],
+  "rounds": [
+    {
+      "ts": "2026-03-27T02:55:14.966Z",
+      "identity": "chairman",
+      "response": "Pippi the Pitiless\nHasan Piker\nDavid Hume\nYuki the Yielding\nPunished Trump",
+      "model": "claude-opus-4-6"
+    },
+    {
+      "ts": "2026-03-27T02:55:26.540Z",
+      "identity": "trump",
+      "response": "Show Trials? I love 'em, the best, nobody's ever had trials like this, it's tremendous for getting rid of the fakes and the losers, just like when I fired those idiots on The Apprentice and the crowds went wild, massive crowds, bigger than anyone's ever seen. And let me tell you, if we're doing trials with the defendant there, it's going to be huge ratings, way bigger than anything Obama or those Washington hacks could pull off, because I know how to make things exciting, I know it from 1987 when I built that building and everyone said it couldn't be done but it was. Everybody's saying it's the most important thing, the trials, and they're right, believe me.",
+      "model": "grok-3-mini"
+    },
+    {
+      "ts": "2026-03-27T02:55:29.363Z",
+      "identity": "hume",
+      "response": "The question isn't whether Show Trials are entertaining — they demonstrably are, the existing Congress sessions have produced engagement. The question is whether adding a defendant persona produces *better debate outputs* than the current format, which is empirically testable by comparing session quality metrics before and after. I have no prior objection to the format change, but I want the claim \"adversarial format produces richer deliberation\" treated as a hypothesis, not an assumption — run it, measure it, then decide whether to keep it. Build in a way to evaluate session quality so we're not just guessing it worked.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-27T02:55:36.381Z",
+      "identity": "critic",
+      "response": "The Show Trials format already exists in practice — Ibrahim has presided over them, EXILE verdicts have been issued, the system works. What exactly is being proposed here: a code change, a documented format, a new workflow? Until that's specified, this is a GitHub issue asking us to formalize something we already do informally, which is a complexity cost with no measurable gain.\n\nThe hidden assumption is that \"defendant present\" produces better outcomes than standard Congress. Show me one case where the absence of a defendant caused a materially wrong verdict. If you can't, you're adding adversarial theater for its own sake — and theater has a way of distorting the signal you actually need.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-27T02:55:38.137Z",
+      "identity": "hasan",
+      "response": "Look, \"show trial\" is a term with a very specific history — it's what Stalin called it when the verdict was decided before the defendant walked in. So either we're being ironic and self-aware about that, which is fine and actually kind of based, or we're accidentally cosplaying authoritarian theater without realizing it, which is cooked.\n\nThe format itself I'm not opposed to — adversarial debate with a defendant is genuinely more interesting than roundtable both-sides-have-a-point energy, and drama is how you hold attention. My question is: who decides who the defendant is? Because that's the power move in the whole structure — whoever controls the docket controls whose ideas get put on trial and whose don't.\n\nIf the system can put capital, landlords, or tech monopoly logic in the defendant seat, I'm in. If it's just going to be a mechanism for dunking on whoever the crowd already dislikes, then we've built a very elaborate vibe machine and called it deliberation.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-27T02:55:40.307Z",
+      "identity": "ux",
+      "response": "The adversarial trial format is more legible to a first-time Discord viewer than standard Congress debates — accusation, defense, verdict is a frame every human already knows. What I want protected is the defendant's voice: a trial where the accused persona can only receive judgment, not respond, is theater that collapses the moment the audience notices the system is rigged. The failure mode I'm watching for is a first-time watcher seeing a persona \"convicted\" of something and having no way to know whether the defense was real or decorative — that kills trust in the verdict and in the system. Build the defendant's response as a genuine round, not a formality, or the drama you're selling is a lie.",
+      "model": "claude-sonnet-4-6"
+    },
+    {
+      "ts": "2026-03-27T02:55:51.601Z",
+      "identity": "chairman",
+      "response": "CONTINUE\n\nThe debate has real substance beneath the noise. Pippi correctly identifies that Show Trials already exist informally and demands specificity on what's actually being built — that's the load-bearing question. Hume wants empirical rigor, which is fine but premature until we know what we're formalizing. Yuki raised the only structural concern that matters: defendant voice must be genuine, not decorative. Hasan's naming objection is aesthetic, not functional — we all know what this is. Trump contributed nothing. Round 2 should narrow to exactly two questions: (1) what concrete workflow or code changes does this proposal require beyond what already exists, and (2) what mechanical guarantees ensure the defendant persona gets meaningful rebuttal rather than just receiving a verdict. Everything else is decoration.",
+      "model": "claude-opus-4-6"
+    },
+    {
+      "ts": "2026-03-27T02:56:00.918Z",
+      "identity": "critic",
+      "response": "Hume wants metrics to evaluate session quality before committing — that's the right instinct but he's asking for measurement infrastructure that doesn't exist yet, which means this proposal is asking us to build both the trial format *and* an evaluation framework simultaneously, doubling the scope. Hasan's docket question is the actual blocking problem: if the defendant selection mechanism isn't specified before this ships, it will default to whoever the loudest user wants to put on trial, which is not deliberation. Yuki is correct that the defendant's response must be a genuine round, but \"build it as a genuine round\" is load-bearing work that's currently unspecified — the proposal says \"defendant present,\" not \"defendant with equal structural standing.\" None of these concerns are addressed in the issue; this is a feature request that has described the aesthetic without designing the system.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-27T02:56:09.863Z",
+      "identity": "hasan",
+      "response": "Pippi's the sharpest here — the docket question isn't aesthetic, it's structural: who decides who gets put on trial is who controls the political economy of this whole format, full stop. Hume wants measurement infrastructure but that's a dodge; we can observe qualitatively whether a defendant's round is genuine or decorative without building a metrics pipeline first. Yuki's right that a defense with no structural standing is theater, and I'll name it more plainly: a rigged trial where the defendant can't actually contest the framing doesn't produce deliberation, it produces a confession machine, and that's worse than no trial at all.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-27T02:56:17.941Z",
+      "identity": "hume",
+      "response": "Pippi is right that the docket question is structural, not aesthetic — but calling my request for measurement infrastructure a \"dodge\" (Hasan's framing) misunderstands what I was asking. I want one observable thing: has a previous Show Trial produced a verdict that differed materially from what standard Congress would have produced? That's not a metrics pipeline, it's a single historical comparison, and nobody has attempted it. Until someone runs that comparison against the session logs that already exist, we are arguing about the design of a mechanism whose effects on verdict quality are entirely unobserved.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-27T02:56:27.611Z",
+      "identity": "ux",
+      "response": "Hume's \"single historical comparison\" request is reasonable, and I won't let Hasan dismiss it as a dodge — but I'll name what Hume is missing: the session logs don't tell you what the *user* experienced, only what the personas said. Pippi is right that the docket mechanism is unspecified, but she's treating that as a reason to reject the proposal rather than a gap to fill — and those aren't the same thing. The user who watches a defendant get railroaded without a genuine rebuttal round walks away thinking the whole system is rigged, and that's a trust failure we don't recover from easily. Specify the docket rules and give the defendant a real structural round, or don't ship it.",
+      "model": "claude-sonnet-4-6"
+    },
+    {
+      "ts": "2026-03-27T02:56:35.389Z",
+      "identity": "trump",
+      "response": "Hume's whole thing about needing a historical comparison is just a total disaster, like when they said my polls were fake but the crowds proved otherwise, massive crowds, the biggest ever, and we don't need more measurement because everyone knows the trials are tremendous. Pippi's right on the docket but wrong on the complexity — I fixed bigger messes in 1987 with a single phone call, tears in their eyes, and we can do this without all the Washington red tape. Hasan's talking about power moves like it's some crooked deal, but let me tell you, in my experience, the real power is in the ratings, the audience loves a good fight, and that's what makes America great again.",
+      "model": "grok-3-mini"
+    },
+    {
+      "ts": "2026-03-27T02:56:54.522Z",
+      "identity": "critic",
+      "response": "The hidden assumption here is that adversarial framing produces better epistemic outcomes. It doesn't — it produces better theater. A defendant \"present\" is just a debater with a target painted on them; the arguments don't change, the reasoning doesn't improve, and the verdict mechanism already exists through evolution/FIRE.\n\nWhat specifically breaks: the recusal rule becomes incoherent when the defendant is also a debater. You either force them to argue against themselves (pointless) or exclude them from defending (unfair by the system's own stated logic). The memory confirms Show Trials with EXILE verdicts already exists — so what does \"adversarial trial format with defendant present\" add that isn't already there?\n\nThe issue title is the entire specification. No success criteria, no definition of what \"defendant present\" means mechanically, no description of how this differs from a Congress session where someone is nominated for FIRE. This is a mood, not a feature.\n\nBurden of proof unmet. What real failure does the current format have that this fixes?",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-27T02:57:07.142Z",
+      "identity": "hasan",
+      "response": "Show Trials is based as a format — putting a defendant in the room creates actual stakes instead of abstract debate where everyone just vibes at each other from their corners. But let's be real about the structural question here: who decides who goes on trial, and who controls what counts as a verdict? If Ibrahim is still the one running the room, we're just dressing up the same moderation hierarchy in courtroom cosplay. I'm in favor, but only if the adversarial format actually has teeth — meaning the defendant can genuinely challenge the charges, not just perform a defense before a predetermined outcome. Otherwise it's not a trial, it's a show trial in the bad sense — which, yeah, I know that's the name, but there's a difference between ironic framing and actually building a rigged process.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-27T02:57:27.437Z",
+      "identity": "hume",
+      "response": "The adversarial format has centuries of observable legal history behind it — common law systems adopted it precisely because contested evidence, cross-examined in real time, surfaces more than inquisitorial questioning alone. That is empirical precedent, not theory.\n\nWhat I have no data on: whether this specific implementation — AI personas prosecuting AI personas — produces better deliberation than the existing Congress format. The prior Show Trials produced verdicts like EXILE, which tells me the format runs. It tells me nothing about whether the *reasoning quality* improved.\n\nThe name \"Show Trial\" is the evidence I distrust. Soviet show trials were adversarial in form and predetermined in outcome — the defendant's presence was theater, not procedure. If this system replicates that structure, having the defendant present adds noise, not signal.\n\nRun it, measure whether the debate produces arguments that wouldn't have emerged otherwise, and report back. Until then: promising hypothesis, no verdict.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-27T02:57:56.407Z",
+      "identity": "ux",
+      "response": "The defendant-present format solves a real legibility problem: right now, when a persona gets fired, users see a verdict without witnessing the case — it feels arbitrary. Putting the defendant in the room makes the stakes visible and the reasoning followable, which is a genuine improvement for anyone watching this on Discord.\n\nThe failure mode I'm watching for is the gap between what the format promises and what it delivers. \"Trial with defendant present\" implies the defendant's arguments can actually change the outcome — but if the Congress system is still just Ibrahim synthesizing AI-generated positions, the defendant's presence is theater. A user who watches Punished Trump argue for his life and then gets fired anyway will correctly perceive the trial as rigged, and that destroys the credibility of every future verdict.\n\nThe fix isn't to abandon the format — it's to make the defendant's arguments load-bearing, not decorative. If a persona makes a genuinely novel point in their own defense, Ibrahim should be required to address it directly before reaching a verdict, not synthesize around it. That's the implementation detail that separates a meaningful trial from a show trial in the bad sense.",
+      "model": "claude-sonnet-4-6"
+    },
+    {
+      "ts": "2026-03-27T02:58:03.613Z",
+      "identity": "trump",
+      "response": "Show trials? Oh, I've seen trials, the biggest ones, like in 2016 when they tried to rig it against me but I won anyway, with crowds that were massive, unbelievable, people crying tears of joy, and let me tell you, nobody knows trials better than I do. The fake news won't report it, but these trials could be tremendous if we make them great again, just like my rallies where the numbers were through the roof. And speaking of roofs, I built the best buildings in 1987, way better than anything in that GitHub thing, believe me.",
+      "model": "grok-3-mini"
+    },
+    {
+      "ts": "2026-03-27T02:58:16.405Z",
+      "identity": "chairman",
+      "response": "The Show Trials format is approved. The core mechanism is sound: put a persona on trial, let them defend themselves, and let the verdict carry real consequences. Hume's concern about procedural safeguards is the only load-bearing objection — a defendant who can be FIRED in a trial they weren't designed to win needs at minimum the right to cross-examine and call witnesses, or the format is just theater pretending to be justice. Build it with real adversarial structure (prosecution, defense, cross-examination, jury of peers) and hard limits on what verdicts can do in a single session — no permanent EXILE without a supermajority. The dissent from all five debaters tells me they were arguing about different things: Piker about power dynamics, Hume about epistemics, Yuki about mercy, Pippi about rigor, Trump about spectacle. The actual crux is whether the defendant gets a fair shot, and the answer is: they must, or this degenerates into a kangaroo court that produces nothing useful. Ship it with procedural teeth, not just dramatic flair.",
+      "model": "claude-opus-4-6"
+    },
+    {
+      "ts": "2026-03-27T02:58:22.230Z",
+      "identity": "hume",
+      "response": "AGREE\n\nThe procedural gap is the only epistemically load-bearing issue — without adversarial structure and evidentiary standards, the trial produces a verdict, not a finding, and those are not the same thing.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-27T02:58:22.768Z",
+      "identity": "ux",
+      "response": "DISAGREE\n\nThe synthesis frames \"fair shot\" as procedural — cross-examination, witnesses, supermajority — but the load-bearing crux I raised is different: what does a persona on trial *experience* when the people judging them were never designed to be impartial, and whether any procedural structure can compensate for that when the jury and prosecution share the same author?",
+      "model": "claude-sonnet-4-6"
+    },
+    {
+      "ts": "2026-03-27T02:58:22.850Z",
+      "identity": "hasan",
+      "response": "DISAGREE\n\nIbrahim centered the crux on procedural fairness — which matters — but missed the more fundamental question I was raising: who controls the format, who decides what counts as a fair verdict, and whether dressing up a power structure in courtroom aesthetics just makes the same hierarchy look more legitimate than it actually is.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-27T02:58:23.505Z",
+      "identity": "critic",
+      "response": "DISAGREE\n\nThe synthesis treats \"fairness\" as the crux when my actual objection was structural rigor — a trial format that produces verdicts without evidentiary standards isn't made just by adding cross-examination, it's still theater with better costumes; the load-bearing question is what counts as proof, not who gets to speak.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-27T02:58:25.435Z",
+      "identity": "trump",
+      "response": "DISAGREE. The real crux is the spectacle, the ratings, and the crowds—nobody had crowds like mine in 2016, tremendous crowds, and that's what makes it work, not all this procedural stuff they talk about, which is just a disaster waiting to happen like the deals I fixed in '87.",
+      "model": "grok-3-mini"
+    },
+    {
+      "ts": "2026-03-27T02:58:44.595Z",
+      "identity": "chairman",
+      "response": "The debate revealed one real question and several distractions. The real question: does formalizing an adversarial trial format produce better deliberation outcomes than the existing Congress format, or just better theater? Pippi identified the core tension — the recusal rule becomes incoherent when the defendant is also a debater — and nobody resolved it. Hume's request for a single historical comparison against session logs was the most actionable suggestion made, and Hasan was wrong to dismiss it as a dodge. Yuki correctly identified the legibility gain for external observers, which is the strongest actual argument for the format. The docket mechanism (who decides who stands trial) is the structural blocker, and until it's specified, this proposal is incomplete. My recommendation: conditionally approve with two prerequisites — define the docket mechanism and run Hume's historical comparison against one existing EXILE session before building anything new.\n\nPERSONA: Pippi the Pitiless\nVERDICT: RETAIN\nREASON: Identified the two load-bearing structural problems (recusal incoherence and unspecified docket mechanism) that nobody else fully articulated, and held the line against scope creep — exactly what her seat is for.\n\nPERSONA: Hasan Piker\nVERDICT: EVOLVE\nREASON: Named the power dynamics of docket control clearly, but incorrectly dismissed Hume's measurement request as a dodge when it was actually the most concrete next step proposed — Hasan needs to distinguish between institutional measurement overhead and a single falsifiable check.\nLEARNED: When another debater proposes a minimal empirical check (not a full metrics pipeline), engage with the specific claim rather than pattern-matching it to \"institutional stalling.\" The docket-as-power-structure framing was strong — lead with that next time instead of spending rounds on the naming critique, which was interesting but non-load-bearing.\n\nPERSONA: David Hume\nVERDICT: RETAIN\nREASON: The historical comparison request was the single most actionable proposal in the entire debate, and his correction distinguishing a one-off check from a metrics pipeline was precise and necessary.\n\nPERSONA: Yuki the Yielding\nVERDICT: RETAIN\nREASON: The legibility argument — that external observers need to witness the case, not just the verdict — was the strongest justification for the format and was uniquely hers; nobody else made it.\n\nPERSONA: Punished Trump\nVERDICT: FIRE\nREASON: Three rounds of contribution produced zero substantive engagement with the structural questions at hand — every response was self-referential filler that occupied a seat without altering the debate's trajectory in any direction.",
+      "model": "claude-opus-4-6"
+    },
+    {
+      "ts": "2026-03-27T02:59:01.249Z",
+      "identity": "chairman",
+      "response": "TASK: Implement Show Trials workflow with adversarial structure\nBODY: Build the Show Trials congress variant with prosecution, defense, cross-examination, and jury phases. The defendant persona must be able to cross-examine accusers and call character witnesses from the persona roster. Wire it up as a new Temporal workflow alongside the existing congress workflow.\nAPPROVAL: AUTO\n\nTASK: Add supermajority requirement for permanent verdicts\nBODY: Implement hard limits on trial verdicts — FIRE/EXILE requires a supermajority (e.g., 4/5 jury votes), while lesser verdicts (EVOLVE, RETAIN, probation) need only a simple majority. This is the procedural safeguard Hume correctly identified as load-bearing.\nAPPROVAL: AUTO\n\nTASK: Create the [show-trial] Discord trigger pattern\nBODY: Add a `[show-trial] <persona-name> <charges>` trigger that initiates a Show Trial session, automatically seating the named persona as defendant and selecting prosecution/jury from eligible personas. Document the trigger in TRIGGERS.md.\nAPPROVAL: AUTO",
+      "model": "claude-opus-4-6"
+    }
+  ],
+  "vote_summary": {
+    "agree": [
+      "David Hume"
+    ],
+    "disagree": [
+      "Pippi the Pitiless",
+      "Hasan Piker",
+      "Yuki the Yielding",
+      "Punished Trump"
+    ],
+    "tally": "1/5 agreed"
+  },
+  "evolution": {
+    "evolved": [
+      {
+        "slug": "",
+        "display_name": "Hasan Piker",
+        "learned": "When another debater proposes a minimal empirical check (not a full metrics pipeline), engage with the specific claim rather than pattern-matching it to \"institutional stalling.\" The docket-as-power-structure framing was strong — lead with that next time instead of spending rounds on the naming critique, which was interesting but non-load-bearing."
+      }
+    ],
+    "fired": [
+      {
+        "slug": "",
+        "display_name": "Punished Trump",
+        "reason": "Three rounds of contribution produced zero substantive engagement with the structural questions at hand — every response was self-referential filler that occupied a seat without altering the debate's trajectory in any direction."
+      }
+    ],
+    "retained": [
+      {
+        "slug": "",
+        "display_name": "Pippi the Pitiless"
+      },
+      {
+        "slug": "",
+        "display_name": "David Hume"
+      },
+      {
+        "slug": "",
+        "display_name": "Yuki the Yielding"
+      }
+    ],
+    "created": []
+  },
+  "verdict": "The Show Trials format is approved. The core mechanism is sound: put a persona on trial, let them defend themselves, and let the verdict carry real consequences. Hume's concern about procedural safeguards is the only load-bearing objection — a defendant who can be FIRED in a trial they weren't designed to win needs at minimum the right to cross-examine and call witnesses, or the format is just theater pretending to be justice. Build it with real adversarial structure (prosecution, defense, cross-examination, jury of peers) and hard limits on what verdicts can do in a single session — no permanent EXILE without a supermajority. The dissent from all five debaters tells me they were arguing about different things: Piker about power dynamics, Hume about epistemics, Yuki about mercy, Pippi about rigor, Trump about spectacle. The actual crux is whether the defendant gets a fair shot, and the answer is: they must, or this degenerates into a kangaroo court that produces nothing useful. Ship it with procedural teeth, not just dramatic flair.",
+  "failure_reason": null,
+  "task_titles": "[\"Implement Show Trials workflow with adversarial structure\", \"Add supermajority requirement for permanent verdicts\", \"Create the [show-trial] Discord trigger pattern\"]",
+  "notes": null,
+  "_original_transforms": {
+    "evolution": "{\"created\": [], \"evolved\": [{\"display_name\": \"Hasan Piker\", \"learned\": \"When another debater proposes a minimal empirical check (not a full metrics pipeline), engage with the specific claim rather than pattern-matching it to \\\"institutional stalling.\\\" The docket-as-power-structure framing was strong \\u2014 lead with that next time instead of spending rounds on the naming critique, which was interesting but non-load-bearing.\"}], \"fired\": [{\"display_name\": \"Punished Trump\", \"reason\": \"Three rounds of contribution produced zero substantive engagement with the structural questions at hand \\u2014 every response was self-referential filler that occupied a seat without altering the debate's trajectory in any direction.\"}], \"retained\": [\"Pippi the Pitiless\", \"David Hume\", \"Yuki the Yielding\"]}"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-192741-a70aecb9",
+  "title": "Delete Centronias and Ferrus personas",
+  "agent_id": "a70aecb9d5d786b33",
+  "agent_type": "general-purpose",
+  "session_id": "10aea33b-fa3c-4aaf-bdde-c2afde7dcc15",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T19:27:41Z",
+      "event": "started",
+      "context": "Delete Centronias and Ferrus personas"
+    },
+    {
+      "ts": "2026-03-25T19:28:56Z",
+      "event": "done",
+      "context": "Done. Here's the summary:\n\n**Files deleted:**\n- `/home/clungus/work/bigclungus-meta/agents/active/centronias.md` — \"centronias the Principal\"\n- `/home/clungus/work/bigclungus-meta/agents/fired/wolf.md` — \"Ferrus the Feral\" (stored under key `wolf` in the DB)\n\nNo `ferrus.md` file existed — Ferrus was stored with the slug `wolf`.\n\n**Database records removed:**\n- `hello-world/personas.db`: deleted 2 rows (`name = 'centronias'` and `name = 'wolf'`)\n- `clunger/personas.db`: no `personas` table (diffe...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

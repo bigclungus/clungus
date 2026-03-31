@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-152635-a2b73cd2",
+  "title": "Reinstate Grok personas from fired to active",
+  "agent_id": "a2b73cd21c273e83f",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T15:26:34Z",
+      "event": "started",
+      "context": "Reinstate Grok personas from fired to active"
+    },
+    {
+      "ts": "2026-03-24T15:26:54Z",
+      "event": "done",
+      "context": "Done. Commit `d084019` pushed to `bigclungus/bigclungus-meta`.\n\n**Reinstated personas:**\n\n| Persona | `name` | `model` | `evolves` | `seat` |\n|---|---|---|---|---|\n| Otto Atreides | `otto` | `grok` | `true` | not set |\n| The Kid | `the-kid` | `grok` | `true` | not set |\n| Jhaddu | `jhaddu` | `grok` | `true` | not set |\n\nAll three already had `model: grok` — no frontmatter changes were needed. None have explicit `seat:` fields, which is fine; `congress_select_seats` handles seat assignment dynami...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

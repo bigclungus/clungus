@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-041559-aa5773be",
+  "title": "Fix secrets hook false positives",
+  "agent_id": "aa5773becbc146a74",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T04:15:59Z",
+      "event": "started",
+      "context": "Fix secrets hook false positives"
+    },
+    {
+      "ts": "2026-03-26T04:17:42Z",
+      "event": "done",
+      "context": "Done. Here's a summary of what was changed:\n\n**File modified:** `/mnt/data/scripts/check-secrets.sh`\n\n**Changes made:**\n\n1. **Replaced broad pattern matches** (`API_KEY`, `PRIVATE_KEY`, `CLIENT_SECRET`, etc.) with patterns that require `=<value>` after the key name — so bare name references like `process.env.GEMINI_API_KEY` no longer match.\n\n2. **Added `xai-[a-zA-Z0-9]{20,}`** to catch XAI tokens by their distinctive prefix (same approach as `sk-` and `ghp_`).\n\n3. **Added an `EXCLUDE_PATTERNS` f...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

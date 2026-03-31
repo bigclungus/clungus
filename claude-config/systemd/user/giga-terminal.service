@@ -1,0 +1,13 @@
+[Unit]
+Description=GigaClungus Terminal (ttyd read-only screen attach)
+After=network.target
+
+[Service]
+ExecStart=ttyd --port 7683 --interface 127.0.0.1 bash -c "sudo -u gigaclungus screen -x -S gigaclungus"
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

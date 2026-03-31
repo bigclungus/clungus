@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-202838-a65eb00f",
+  "title": "Make typing indicators configurable in Discord plugin",
+  "agent_id": "a65eb00f3bf8f59ec",
+  "agent_type": "general-purpose",
+  "session_id": "10aea33b-fa3c-4aaf-bdde-c2afde7dcc15",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T20:28:38Z",
+      "event": "started",
+      "context": "Make typing indicators configurable in Discord plugin"
+    },
+    {
+      "event": "done",
+      "ts": "2026-03-25T20:45:38.331880Z",
+      "message": "Typing indicators made configurable via DISCORD_TYPING_INDICATORS env var. Patched both clungus and gigaclungus plugin copies. Giga restarted with flag set to false."
+    }
+  ],
+  "status": "done"
+}

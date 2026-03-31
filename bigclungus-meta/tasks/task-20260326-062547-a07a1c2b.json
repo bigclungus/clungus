@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-062547-a07a1c2b",
+  "title": "Queue smooth remote player + avatar→sprite consistency for NightOwl",
+  "agent_id": "a07a1c2b6ff7591ab",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T06:25:47Z",
+      "event": "started",
+      "context": "Queue smooth remote player + avatar→sprite consistency for NightOwl"
+    },
+    {
+      "ts": "2026-03-26T06:26:00Z",
+      "event": "done",
+      "context": "Both tasks queued successfully. The NightOwl workflow was already running and received both signals:\n\n1. **grazing.html smooth movement** — fix sendPlayerMove to send pixel coords (px/py) instead of tile coords, add per-frame lerp in drawRemotePlayers, and throttle WS updates to 100ms intervals while moving.\n\n2. **avatar vs sprite consistency** — audit all personas for style mismatches between their 64x64 GIF avatar and commons pixel art sprite, regenerate any mismatched sprites to match the ava...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

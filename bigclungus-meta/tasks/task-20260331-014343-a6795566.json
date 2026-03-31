@@ -1,0 +1,25 @@
+{
+  "id": "task-20260331-014343-a6795566",
+  "title": "Implement minimap, combat text, heal stats",
+  "agent_id": "a6795566faf562e52",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-31T01:43:43Z",
+      "event": "started",
+      "context": "Implement minimap, combat text, heal stats"
+    },
+    {
+      "ts": "2026-03-31T01:48:28Z",
+      "event": "done",
+      "context": "Both pushed. Here's a summary of everything done:\n\n---\n\n## Summary\n\nAll three features implemented, clean build, committed and pushed.\n\n### Feature 1: Minimap (`hud.ts`)\n- 130px square overlay in the **top-right corner**, positioned below the timer\n- Semi-transparent dark background with a light border\n- Renders explored tiles in two shades (visible = tan `#8a7a58`, explored-dim = `#4a4232`) consistent with the main fog-of-war system — uses the existing `isTileExplored`/`isTileVisible` helpers\n-...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

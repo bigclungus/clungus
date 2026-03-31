@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-094718-aeeea697",
+  "title": "Heartbeat check",
+  "agent_id": "aeeea6975cf6708c0",
+  "agent_type": "general-purpose",
+  "session_id": "242d69a7-b0cf-4a2e-8105-c63c71558354",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T09:47:18Z",
+      "event": "started",
+      "context": "Heartbeat check"
+    },
+    {
+      "ts": "2026-03-27T11:05:00Z",
+      "event": "cancelled",
+      "msg": "closed during cleanup \u2014 duplicate heartbeat check; superseded by dedicated heartbeat handler task"
+    }
+  ],
+  "status": "cancelled"
+}

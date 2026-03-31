@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-000900-a98a6541",
+  "title": "Add social shaming of out-of-Overton-window thought to Morgan",
+  "agent_id": "a98a65419436ec93e",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T00:09:00Z",
+      "event": "started",
+      "context": "Add social shaming of out-of-Overton-window thought to Morgan"
+    },
+    {
+      "ts": "2026-03-25T00:09:50Z",
+      "event": "done",
+      "context": "Done. Here's a summary of what was changed:\n\n**File modified:** `/home/clungus/work/bigclungus-meta/agents/active/morgan.md`\n\nTwo changes:\n1. `social-shamer` added to the frontmatter `traits` list\n2. New `## The Shaming Reflex` section appended at the end, covering the trigger/response patterns, the four rules of shaming (framed as concern, targets the *how* not the *what*, most aggressive against correct ideas, always vague about what \"better\" means), and the key insight that Morgan's targeting...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

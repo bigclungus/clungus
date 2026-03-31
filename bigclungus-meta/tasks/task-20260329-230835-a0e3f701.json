@@ -1,0 +1,25 @@
+{
+  "id": "task-20260329-230835-a0e3f701",
+  "title": "Manual stdio test harness for discord-plugin proxy",
+  "agent_id": "a0e3f7014ef0b7490",
+  "agent_type": "general-purpose",
+  "session_id": "b2392096-6ce5-4ae4-820f-91ca3597c55e",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-29T23:08:35Z",
+      "event": "started",
+      "context": "Manual stdio test harness for discord-plugin proxy"
+    },
+    {
+      "ts": "2026-03-29T23:10:05Z",
+      "event": "done",
+      "context": "Everything worked. Here's what the run revealed:\n\n**Initialization (working correctly)**\n- The proxy spawned and responded to `initialize` in ~20ms with a valid MCP response including `capabilities: {tools: {}}`.\n- Session ID assigned on connect: `2b272fe6`\n\n**SSE stream behavior (notable)**\nThe SSE stream to discord-server is flapping. It connects, receives 1 chunk (likely the initial keep-alive/headers), then drops with:\n```\nSSE stream error after 1 chunks: Error: The socket connection was clo...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

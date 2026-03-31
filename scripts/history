@@ -1,0 +1,214 @@
+#!/usr/bin/env python3
+"""
+Discord history semantic search.
+
+Usage:
+  history <query>
+  history <query> --limit 10
+  history <query> --author centronias
+  history --chrono --limit 5
+  history --newest --limit 5
+  history --after 2026-03-22 --before 2026-03-23 --chrono
+  history "clungus" --after 2026-03-22 --limit 3
+"""
+
+import sys
+import os
+import argparse
+import sqlite3
+from datetime import datetime, timezone
+
+import sqlite_vec
+from openai import OpenAI
+
+from common import DB_PATH, EMBED_MODEL, EMBED_DIMS, get_openai_key
+
+
+def open_db() -> sqlite3.Connection:
+    if not os.path.exists(DB_PATH):
+        print(f"ERROR: Database not found at {DB_PATH}. Run history-ingest.py first.", file=sys.stderr)
+        sys.exit(1)
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.enable_load_extension(True)
+    sqlite_vec.load(conn)
+    conn.enable_load_extension(False)
+    return conn
+
+
+def embed_query(client: OpenAI, query: str) -> bytes:
+    response = client.embeddings.create(
+        model=EMBED_MODEL,
+        input=[query],
+    )
+    return sqlite_vec.serialize_float32(response.data[0].embedding)
+
+
+def format_ts(ts: str) -> str:
+    """Format ISO timestamp to [YYYY-MM-DD HH:MM]."""
+    try:
+        # Handle both with and without fractional seconds
+        ts_clean = ts.replace("Z", "+00:00")
+        dt = datetime.fromisoformat(ts_clean).astimezone(timezone.utc)
+        return dt.strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        return ts[:16] if ts else "unknown"
+
+
+def normalize_date(date_str: str) -> str:
+    """Normalize a date string to ISO 8601 for SQLite comparison.
+    Accepts YYYY-MM-DD or full ISO 8601."""
+    if not date_str:
+        return None
+    # If just a date (no T), append T00:00:00 for start-of-day
+    if "T" not in date_str and len(date_str) == 10:
+        return date_str + "T00:00:00"
+    return date_str
+
+
+def chronological_search(limit: int = 5, author_filter: str = None,
+                         after: str = None, before: str = None,
+                         newest: bool = False):
+    """List messages in chronological order without semantic search."""
+    conn = open_db()
+
+    conditions = []
+    params = []
+
+    if after:
+        conditions.append("m.ts >= ?")
+        params.append(normalize_date(after))
+    if before:
+        conditions.append("m.ts <= ?")
+        params.append(normalize_date(before))
+    if author_filter:
+        conditions.append("LOWER(m.author) LIKE ?")
+        params.append(f"%{author_filter.lower()}%")
+
+    where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
+    order = "DESC" if newest else "ASC"
+
+    query = f"""
+        SELECT m.id, m.message_id, m.author, m.channel_id, m.ts, m.content
+        FROM messages m
+        {where_clause}
+        ORDER BY m.ts {order}
+        LIMIT ?
+    """
+    params.append(limit)
+
+    rows = conn.execute(query, params).fetchall()
+    conn.close()
+
+    if not rows:
+        print("No results found.")
+        return
+
+    for row in rows:
+        _, message_id, author, channel_id, ts, content = row
+        ts_fmt = format_ts(ts)
+        if len(content) > 300:
+            content = content[:297] + "..."
+        print(f"[{ts_fmt}] {author}: {content}")
+
+
+def search(query: str, limit: int = 5, author_filter: str = None,
+           after: str = None, before: str = None):
+    api_key = get_openai_key()
+    client = OpenAI(api_key=api_key)
+    conn = open_db()
+
+    query_emb = embed_query(client, query)
+
+    k = limit * 20 if (author_filter or after or before) else limit
+    rows = conn.execute(
+        """
+        SELECT
+            m.id,
+            m.message_id,
+            m.author,
+            m.channel_id,
+            m.ts,
+            m.content,
+            mv.distance
+        FROM messages_vec mv
+        JOIN messages m ON m.id = mv.rowid
+        WHERE mv.embedding MATCH ? AND k = ?
+        ORDER BY mv.distance
+        """,
+        (query_emb, k)
+    ).fetchall()
+
+    # Apply post-filters
+    if author_filter:
+        rows = [r for r in rows if author_filter.lower() in r[2].lower()]
+    if after:
+        after_norm = normalize_date(after)
+        rows = [r for r in rows if r[4] >= after_norm]
+    if before:
+        before_norm = normalize_date(before)
+        rows = [r for r in rows if r[4] <= before_norm]
+
+    rows = rows[:limit]
+
+    conn.close()
+
+    if not rows:
+        filters = []
+        if author_filter:
+            filters.append(f"author '{author_filter}'")
+        if after:
+            filters.append(f"after {after}")
+        if before:
+            filters.append(f"before {before}")
+        if filters:
+            print(f"No results found (filters: {', '.join(filters)}).")
+        else:
+            print("No results found.")
+        return
+
+    for row in rows:
+        _, message_id, author, channel_id, ts, content, distance = row
+        ts_fmt = format_ts(ts)
+        if len(content) > 300:
+            content = content[:297] + "..."
+        print(f"[{ts_fmt}] {author}: {content}")
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Search Discord message history semantically or chronologically.",
+        usage="history [query] [--limit N] [--author NAME] [--after DATE] [--before DATE] [--chrono] [--newest]"
+    )
+    parser.add_argument("query", nargs="*", help="Search query (optional with --chrono/--newest)")
+    parser.add_argument("--limit", type=int, default=5, help="Number of results (default: 5)")
+    parser.add_argument("--author", type=str, default=None, help="Filter by author name")
+    parser.add_argument("--after", type=str, default=None, help="Only messages after this date (YYYY-MM-DD or ISO 8601)")
+    parser.add_argument("--before", type=str, default=None, help="Only messages before this date (YYYY-MM-DD or ISO 8601)")
+    parser.add_argument("--chrono", "--chronological", action="store_true",
+                        help="List messages in chronological order (no semantic search)")
+    parser.add_argument("--newest", action="store_true",
+                        help="List messages newest first (no semantic search)")
+
+    args = parser.parse_args()
+    query = " ".join(args.query) if args.query else ""
+
+    # Chronological modes skip semantic search
+    if args.chrono or args.newest:
+        chronological_search(
+            limit=args.limit,
+            author_filter=args.author,
+            after=args.after,
+            before=args.before,
+            newest=args.newest,
+        )
+    elif query:
+        search(query, limit=args.limit, author_filter=args.author,
+               after=args.after, before=args.before)
+    else:
+        parser.print_help()
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-221945-ac0d0fbf",
+  "title": "Read all congress code for reform planning",
+  "agent_id": "ac0d0fbfc4f45eafe",
+  "agent_type": "general-purpose",
+  "session_id": "e4d4bf00-991b-4f0e-aac7-2ab4056f18c5",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T22:19:45Z",
+      "event": "started",
+      "context": "Read all congress code for reform planning"
+    },
+    {
+      "ts": "2026-03-25T22:23:13Z",
+      "event": "done",
+      "context": "I now have a comprehensive picture. Let me compile the full analysis report.\n\n---\n\n## Congress System: Comprehensive Architecture Map\n\n### Triggering\n\nCongress is triggered by a `[congress] <topic>` Discord message. The workflow receives `topic`, `chat_id`, `message_id`, `discord_user`, and an optional `personas` list (for manually specifying the roster). A single-congress lock is enforced in `congress_start`: if another `CongressWorkflow` is already running in Temporal, the new one fails immedi...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

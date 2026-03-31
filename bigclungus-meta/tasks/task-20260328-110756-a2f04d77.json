@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-110756-a2f04d77",
+  "title": "Log giga intervention",
+  "agent_id": "a2f04d772604e5b47",
+  "agent_type": "general-purpose",
+  "session_id": "1472c3c4-27d0-4800-9541-cb30a7f5ef18",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T11:07:56Z",
+      "event": "started",
+      "context": "Log giga intervention"
+    },
+    {
+      "ts": "2026-03-28T11:08:15Z",
+      "event": "done",
+      "context": "Appended the `vc-response-delay` giga intervention entry to `/mnt/data/giga-log.md`.",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-200536-a40d77df",
+  "title": "Investigate clunger crash and fix",
+  "agent_id": "a40d77df704a56334",
+  "agent_type": "general-purpose",
+  "session_id": "ef1a5e01-b3c3-41d6-abd3-172f68d92559",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T20:05:36Z",
+      "event": "started",
+      "context": "Investigate clunger crash and fix"
+    },
+    {
+      "ts": "2026-03-26T20:10:42Z",
+      "event": "done",
+      "context": "**Root cause and fix summary:**\n\n**Root cause:** `MemoryMax=512M` was set in the installed systemd unit (`~/.config/systemd/user/clunger.service`), but the source of truth in `~/work/claude-config/systemd/user/clunger.service` had `MemoryMax=2G`. The sync script only copied settings.json/CLAUDE.md/skills — it never synced systemd service files. During congress sessions, clunger spawns 3-4 simultaneous claude CLI subprocesses for debaters, which collectively push memory well past 512MB (observed ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

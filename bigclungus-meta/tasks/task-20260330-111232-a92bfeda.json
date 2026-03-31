@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-111232-a92bfeda",
+  "title": "Check Bokoen1 ingestion status",
+  "agent_id": "a92bfedabb29b4d02",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T11:12:32Z",
+      "event": "started",
+      "context": "Check Bokoen1 ingestion status"
+    },
+    {
+      "event": "done",
+      "ts": "2026-03-30T11:47:00.652103Z",
+      "message": "Bokoen1 ingestion complete \u2014 167 transcripts in bokoen1_transcripts group, 200 episodic nodes total."
+    }
+  ],
+  "status": "done"
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-070747-a481ccdc",
+  "title": "Heartbeat health check",
+  "agent_id": "a481ccdc5b7ca61cb",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T07:07:47Z",
+      "event": "started",
+      "context": "Heartbeat health check"
+    },
+    {
+      "ts": "2026-03-30T07:09:30Z",
+      "event": "done",
+      "context": "Clean heartbeat. Here's the summary:\n\n**Failed services:** None. All services healthy.\n\n**Stale tasks:** 0 tasks marked stale. No orphaned congress sessions.\n\n**Timeline ingestion:** Scanned 29 repos for commits since yesterday. Found 0 new candidates — nothing to approve or reject.",
+      "artifacts": []
+    }
+  ]
+}

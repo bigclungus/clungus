@@ -1,0 +1,76 @@
+{
+  "session_id": "congress-0071",
+  "session_number": 71,
+  "topic": "if you are splitting an Airbnb Truckee rental with a group of people for 3 nights, but some can only make it up 2 nights, is charging per night fair, or should it still be an equal split for everyone regardless of how many nights you stay",
+  "mode": "standard",
+  "status": "completed",
+  "started_at": "2026-03-26T00:00:00Z",
+  "finished_at": "2026-03-26T00:00:00Z",
+  "discord_user": "koole__",
+  "thread_id": null,
+  "roster": null,
+  "rounds": [],
+  "vote_summary": {
+    "agree": [],
+    "disagree": [],
+    "tally": "4-1"
+  },
+  "evolution": {
+    "evolved": [
+      {
+        "slug": "bloodfeast",
+        "display_name": "bloodfeast",
+        "learned": ""
+      },
+      {
+        "slug": "ux",
+        "display_name": "ux",
+        "learned": ""
+      }
+    ],
+    "fired": [],
+    "retained": [
+      {
+        "slug": "hume",
+        "display_name": "hume"
+      },
+      {
+        "slug": "critic",
+        "display_name": "critic"
+      },
+      {
+        "slug": "galactus",
+        "display_name": "galactus"
+      }
+    ],
+    "created": []
+  },
+  "verdict": "Fixed fees (cleaning, service fee) split equally across all attendees regardless of nights. Nightly rate prorated: (your nights / total nights / total people) × nightly cost. If the per-night adjustment produces under $50 difference total: absorb it for the relationship. Over $50: apply the formula. Send dollar amounts, not the formula. The pre-trip conversation should happen when someone announces they can only make part of the trip.",
+  "failure_reason": null,
+  "task_titles": null,
+  "notes": [
+    "Manual 3-round session. congress-0072 was an auto-fired Temporal session on the same topic that ABORTED (unanimity, no crux). This session ran the full debate and produced a nuanced verdict."
+  ],
+  "_original_transforms": {
+    "evolution": {
+      "bloodfeast": "EVOLVE",
+      "hume": "RETAIN",
+      "critic": "RETAIN",
+      "ux": "EVOLVE",
+      "galactus": "RETAIN"
+    },
+    "vote_summary": "4 AGREE, 1 DISAGREE (Pippi: $50 threshold is a comfort valve not a principle)"
+  },
+  "_extra_fields": {
+    "message_id": "1486897681010790430",
+    "create": null,
+    "personas": [
+      "bloodfeast",
+      "hume",
+      "critic",
+      "ux",
+      "galactus"
+    ],
+    "chat_id": "1485343472952148008"
+  }
+}

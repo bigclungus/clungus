@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-173240-afaef6fa",
+  "title": "Move learned-directives.md to bigclungus-meta repo",
+  "agent_id": "afaef6fae30327c07",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T17:32:40Z",
+      "event": "started",
+      "context": "Move learned-directives.md to bigclungus-meta repo"
+    },
+    {
+      "ts": "2026-03-24T17:33:26Z",
+      "event": "done",
+      "context": "All done. Here's a summary:\n\n**New canonical location:** https://github.com/bigclungus/bigclungus-meta/blob/main/learned-directives.md\n\n**Commits:**\n\n| Repo | Commit | Description |\n|---|---|---|\n| claude-config | `e16c4a4` | Remove `learned-directives.md` |\n| bigclungus-meta | `f066241` | Add `learned-directives.md` |\n| scripts | `d370b8f` | Update `extract-congress-directives.py` paths |\n| claude-config | `7a57b4f` | Update path reference in `CLAUDE.md` |\n\n**Files changed:**\n- `/mnt/data/scrip...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

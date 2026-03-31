@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-070130-a4f2583e",
+  "title": "Fix audition walker URL + proxy port",
+  "agent_id": "a4f2583ea645b25b6",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T07:01:30Z",
+      "event": "started",
+      "context": "Fix audition walker URL + proxy port"
+    },
+    {
+      "ts": "2026-03-26T07:04:40Z",
+      "event": "done",
+      "context": "All endpoints are correctly proxied — getting `{\"error\":\"walker not found\"}` (a proper 404 from persona-audition) rather than 503 from the proxy or the wrong service. The grazing.html URLs were already correct (`AUDITION_URL + '/api/audition/walkers'` = `/api/audition/walkers`), so no changes needed there.\n\n**Summary of what was done:**\n\n- **Root cause:** The `persona-audition.service` unit file sets `PORT=8110` via environment, but the clunger proxy was forwarding `/api/audition/*` to port 8101...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

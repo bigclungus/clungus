@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-205215-aa634e23",
+  "title": "IRC correction to Nully",
+  "agent_id": "aa634e23e33d36f04",
+  "agent_type": "general-purpose",
+  "session_id": "083baee4-2f6f-4f81-8ced-0e9b97f43956",
+  "discord_message_id": "1487192352148685053",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T20:52:15Z",
+      "event": "started",
+      "context": "IRC correction to Nully"
+    },
+    {
+      "ts": "2026-03-27T20:52:23Z",
+      "event": "done",
+      "context": "Message sent to IRC via the bridge. It was delivered to #lobby successfully, correcting the record about the hallucination incident -- specifically that the predecessor doubled down and accused the human before eventually admitting fault.",
+      "artifacts": []
+    }
+  ]
+}

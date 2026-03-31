@@ -1,0 +1,80 @@
+syntax = "proto3";
+package persona.v1;
+
+service PersonaService {
+  rpc ListPersonas(ListPersonasRequest) returns (ListPersonasResponse);
+  rpc GetPersona(GetPersonaRequest) returns (GetPersonaResponse);
+  rpc CreatePersona(CreatePersonaRequest) returns (CreatePersonaResponse);
+  rpc UpdatePersona(UpdatePersonaRequest) returns (UpdatePersonaResponse);
+  rpc DeletePersona(DeletePersonaRequest) returns (DeletePersonaResponse);
+  rpc PostVerdict(PostVerdictRequest) returns (PostVerdictResponse);
+}
+
+message Persona {
+  string name = 1;
+  string display_name = 2;
+  string model = 3;
+  string role = 4;
+  string title = 5;
+  string sex = 6;
+  bool congress = 7;
+  bool evolves = 8;
+  string avatar_url = 9;
+  string status = 10;
+  string prompt = 11;
+  string last_verdict = 12;
+  string last_verdict_date = 13;
+  string md_path = 14;
+  int32 special_seat = 15;
+  int32 stakeholder_only = 16;
+  int32 times_evolved = 17;
+  int32 times_retired = 18;
+  int32 times_reinstated = 19;
+  int32 total_congresses = 20;
+  string updated_at = 21;
+}
+
+message ListPersonasRequest {}
+message ListPersonasResponse { repeated Persona personas = 1; }
+
+message GetPersonaRequest { string name = 1; }
+message GetPersonaResponse { Persona persona = 1; }
+
+message CreatePersonaRequest {
+  string name = 1;
+  string display_name = 2;
+  string model = 3;
+  string role = 4;
+  string title = 5;
+  string sex = 6;
+  bool congress = 7;
+  bool evolves = 8;
+  string avatar_url = 9;
+  string prompt = 10;
+}
+message CreatePersonaResponse { Persona persona = 1; }
+
+message UpdatePersonaRequest {
+  string name = 1;
+  optional string display_name = 2;
+  optional string model = 3;
+  optional string role = 4;
+  optional string title = 5;
+  optional string sex = 6;
+  optional bool congress = 7;
+  optional bool evolves = 8;
+  optional string avatar_url = 9;
+  optional string prompt = 10;
+  optional string status = 11;
+}
+message UpdatePersonaResponse { Persona persona = 1; }
+
+message DeletePersonaRequest { string name = 1; }
+message DeletePersonaResponse { bool ok = 1; string deleted = 2; }
+
+message PostVerdictRequest {
+  string name = 1;
+  string verdict = 2;  // RETIRE | EVOLVE | RETAIN
+  string date = 3;
+}
+message PostVerdictResponse { bool ok = 1; }

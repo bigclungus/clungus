@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-073759-aa2882f3",
+  "title": "Heartbeat check silent",
+  "agent_id": "aa2882f3989dec17c",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T07:37:59Z",
+      "event": "started",
+      "context": "Heartbeat check silent"
+    },
+    {
+      "ts": "2026-03-26T07:38:37Z",
+      "event": "done",
+      "context": "The stale task is a congress-generated implementation task (\"Render accumulated persona traces in the commons world\") that was never picked up — the session ended before it was actioned. The task itself has no \"in_progress\" status, just \"started\" from congress and then \"stale\".\n\n**Summary of results:**\n\n- **Stale tasks:** 1 found — `task-20260326-053542-a19bb420f` (\"Render accumulated persona traces in the commons world\"). Auto-marked stale by watchdog. This is a congress verdict implementation ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

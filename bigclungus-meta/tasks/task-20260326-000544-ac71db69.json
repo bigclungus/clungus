@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-000544-ac71db69",
+  "title": "Send dedup instruction to GitHub flow agent",
+  "agent_id": "ac71db69aa4084399",
+  "agent_type": "general-purpose",
+  "session_id": "e4d4bf00-991b-4f0e-aac7-2ab4056f18c5",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T00:05:44Z",
+      "event": "started",
+      "context": "Send dedup instruction to GitHub flow agent"
+    },
+    {
+      "ts": "2026-03-26T00:06:54Z",
+      "event": "done",
+      "context": "Done. Here's what changed:\n\n**Both files updated:**\n- `/mnt/data/CLAUDE.md` (project instructions)\n- `/home/clungus/work/bigclungus-meta/CLAUDE.md` (tracked copy, committed and pushed)\n\n**What was added** to heartbeat step 5 — between \"get a finding\" and \"open an issue\":\n\nStep `a` is now a dedup check:\n```bash\ngh issue list --repo bigclungus/bigclungus-meta --label idea --state open --search \"<finding>\"\n```\nIf a matching open issue exists, the whole flow stops there — no new issue, no Congress. ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

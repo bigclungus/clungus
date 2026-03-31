@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-235217-aef42472",
+  "title": "Re-fire Congress and kill stale workflow",
+  "agent_id": "aef424725eb2e8c43",
+  "agent_type": "general-purpose",
+  "session_id": "e4d4bf00-991b-4f0e-aac7-2ab4056f18c5",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T23:52:17Z",
+      "event": "started",
+      "context": "Re-fire Congress and kill stale workflow"
+    },
+    {
+      "ts": "2026-03-25T23:52:42Z",
+      "event": "done",
+      "context": "Both actions completed:\n\n1. **Stale workflow terminated**: `reminder-grok-key-20260324` — terminated successfully with reason \"stale, 269+ attempts\".\n\n2. **Congress workflow started**: `congress-1774482756` — running on `listings-queue` with the heartbeat self-improvement topic for jaboostin.\n\nNote: `WorkflowIDReusePolicy` had to be imported from `temporalio.common` rather than `temporalio.client` — minor import path difference from what the script assumed, but it worked fine once corrected.",
+      "artifacts": []
+    }
+  ]
+}

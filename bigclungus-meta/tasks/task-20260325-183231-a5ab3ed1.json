@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-183231-a5ab3ed1",
+  "title": "Check stale tasks in bigclungus-meta",
+  "agent_id": "a5ab3ed14cbefa429",
+  "agent_type": "general-purpose",
+  "session_id": "4a58e62d-fa69-4ca2-a0a8-edcc21bb73c1",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T18:32:31Z",
+      "event": "started",
+      "context": "Check stale tasks in bigclungus-meta"
+    },
+    {
+      "ts": "2026-03-25T18:33:55Z",
+      "event": "done",
+      "context": "Here are the findings:\n\n---\n\n**Stale Task Audit**\n\nTotal tasks in directory: ~892. All but 2 are either done, failed, cancelled, or have no status (blank = old format tasks that were never given status fields).\n\n**2 tasks are open/stale and the watchdog misses both:**\n\n**task-20260325-060941-a5cf1a33e** (age: ~12.4h)\n- Title: Create an epistemologically adversarial congress persona\n- Source: Congress #33 verdict on \"how do we make congress more extreme\"\n- Last log event: `milestone` @ 2026-03-25...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

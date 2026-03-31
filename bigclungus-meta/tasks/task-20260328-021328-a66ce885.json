@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-021328-a66ce885",
+  "title": "Log ASMR giga to giga-log",
+  "agent_id": "a66ce88526aa0fb7d",
+  "agent_type": "general-purpose",
+  "session_id": "4b512792-9717-4aea-80d7-c6d3d56a2841",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T02:13:28Z",
+      "event": "started",
+      "context": "Log ASMR giga to giga-log"
+    },
+    {
+      "ts": "2026-03-28T02:13:41Z",
+      "event": "done",
+      "context": "Done. Appended the `no-asmr` entry to the end of `/mnt/data/giga-log.md`, after the last existing entry (`resume-subject-confusion`).",
+      "artifacts": []
+    }
+  ]
+}

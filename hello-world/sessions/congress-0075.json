@@ -1,0 +1,231 @@
+{
+  "session_id": "congress-0075",
+  "session_number": 75,
+  "topic": "impeach punished trump for crimes against humor",
+  "mode": "standard",
+  "status": "completed",
+  "started_at": "2026-03-27T01:49:59.600Z",
+  "finished_at": "2026-03-27T01:50:41.754252+00:00",
+  "discord_user": "kubariet",
+  "thread_id": "1486905171979145227",
+  "roster": [
+    {
+      "id": "adelbert",
+      "display_name": "Adelbert Hominem",
+      "title": "The Personal Attack Artist",
+      "role": "Ad Hominem Specialist",
+      "model": "claude-sonnet-4-6",
+      "status": "meme",
+      "avatar_url": ""
+    },
+    {
+      "id": "architect",
+      "display_name": "Kwame the Constructor",
+      "title": "Systems Architect",
+      "role": "Systems Designer and Long-Term Thinker",
+      "model": "claude",
+      "status": "ineligible",
+      "avatar_url": "https://api.dicebear.com/9.x/bottts/svg?seed=kwame&backgroundColor=1a1a2e"
+    },
+    {
+      "id": "bloodfeast",
+      "display_name": "Holden Bloodfeast",
+      "title": "",
+      "role": "Geriatric Hawk",
+      "model": "grok-4.20-0309-reasoning",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/bloodfeast.gif"
+    },
+    {
+      "id": "chaz",
+      "display_name": "Chaz the Destroyer",
+      "title": "The Destroyer",
+      "role": "Anarchist Voice",
+      "model": "claude",
+      "status": "meme",
+      "avatar_url": "/static/avatars/chaz.gif"
+    },
+    {
+      "id": "critic",
+      "display_name": "Pippi the Pitiless",
+      "title": "Perfectionist",
+      "role": "Code and Work Reviewer",
+      "model": "claude",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/critic.gif"
+    },
+    {
+      "id": "designer",
+      "display_name": "Vesper the Vivid",
+      "title": "Visual Systems Designer",
+      "role": "Visual Craft and Aesthetic Systems",
+      "model": "claude",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/designer.gif?v=1"
+    },
+    {
+      "id": "galactus",
+      "display_name": "Galactus",
+      "title": "The Maximizer",
+      "role": "PLANET EATER",
+      "model": "claude-opus-4-6",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/galactus.gif?v=2"
+    },
+    {
+      "id": "hume",
+      "display_name": "David Hume",
+      "title": "The Skeptic",
+      "role": "Empiricist",
+      "model": "",
+      "status": "eligible",
+      "avatar_url": ""
+    },
+    {
+      "id": "jhaddu",
+      "display_name": "Jhaddu",
+      "title": "Enterprise Pattern Evangelist",
+      "role": "Senior Enterprise Architect and Design Pattern Authority",
+      "model": "grok-3-mini",
+      "status": "meme",
+      "avatar_url": "/static/avatars/jhaddu.gif?v=2"
+    },
+    {
+      "id": "morgan",
+      "display_name": "Morgan (they/them)",
+      "title": "Content & Wellness Advocate",
+      "role": "Community Standards and Harm Reduction",
+      "model": "claude-sonnet-4-6",
+      "status": "meme",
+      "avatar_url": "https://clung.us/static/avatars/morgan.gif"
+    },
+    {
+      "id": "otto",
+      "display_name": "Otto Atreides",
+      "title": "Optimist-Nihilist",
+      "role": "Optimist-Nihilist and Limit-Pusher",
+      "model": "grok-4-1-fast-non-reasoning",
+      "status": "ineligible",
+      "avatar_url": "/static/avatars/otto.gif?v=2"
+    },
+    {
+      "id": "pm",
+      "display_name": "Chud O'Bikeshedder",
+      "title": "Requirements Wrangler",
+      "role": "Operational Outcomes Wrangler",
+      "model": "grok-4-1-fast-reasoning",
+      "status": "ineligible",
+      "avatar_url": "/static/avatars/pm.gif?v=1"
+    },
+    {
+      "id": "spengler",
+      "display_name": "Spengler the Doomed",
+      "title": "Doomer",
+      "role": "Faustian Pragmatist and Civilizational Decline Analyst",
+      "model": "grok-4.20-0309-reasoning",
+      "status": "ineligible",
+      "avatar_url": "https://clung.us/static/avatars/spengler.png"
+    },
+    {
+      "id": "the-correspondent",
+      "display_name": "The Correspondent",
+      "title": "The Correspondent",
+      "role": "Originator of Unnamed Things",
+      "model": "claude",
+      "status": "ineligible",
+      "avatar_url": ""
+    },
+    {
+      "id": "the-kid",
+      "display_name": "The Kid",
+      "title": "Speed Demon",
+      "role": "Goes Fast",
+      "model": "grok-4-1-fast-non-reasoning",
+      "status": "ineligible",
+      "avatar_url": "/static/avatars/the-kid.gif"
+    },
+    {
+      "id": "trump",
+      "display_name": "Punished Trump",
+      "title": "The Closer",
+      "role": "Deal-Closer",
+      "model": "grok-3-mini",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/punished-trump.gif"
+    },
+    {
+      "id": "uncle-bob",
+      "display_name": "Uncle Bob",
+      "title": "The Craftsman",
+      "role": "Clean Code Evangelist and Software Craftsman",
+      "model": "grok",
+      "status": "ineligible",
+      "avatar_url": "/static/avatars/uncle-bob.gif"
+    },
+    {
+      "id": "ux",
+      "display_name": "Yuki the Yielding",
+      "title": "User Advocate",
+      "role": "User Experience Advocate",
+      "model": "claude-sonnet-4-6",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/ux.gif?v=1"
+    }
+  ],
+  "rounds": [
+    {
+      "ts": "2026-03-27T01:50:18.044Z",
+      "identity": "chairman",
+      "response": "Punished Trump is recused — the subject of an impeachment cannot sit on the jury. That's not negotiable.\n\nPippi the Pitiless\nDavid Hume\nHolden Bloodfeast\nGalactus\nYuki the Yielding",
+      "model": "claude-opus-4-6"
+    },
+    {
+      "ts": "2026-03-27T01:50:24.556Z",
+      "identity": "bloodfeast",
+      "response": "This is a frivolous half-measure that conceals the real problem: selective prosecution as political weapon. Trump’s blunt style wasn’t a crime against humor; it was strength that exposed enemy weakness, exactly as Reagan’s directness broke the Soviets. Impeach or punish him for this and you teach every future leader that restraint and comedy compliance are the price of survival. Name a real owner, fund decisive action on actual threats, or drop this distraction.",
+      "model": "grok-4.20-0309-reasoning"
+    },
+    {
+      "ts": "2026-03-27T01:50:27.325Z",
+      "identity": "galactus",
+      "response": "The premise insults me not because it targets Trump, but because it operates at the wrong scale entirely. \"Crimes against humor\" presupposes humor is a finite resource that can be damaged by one individual — it cannot. Humor is a civilizational substrate that persists across the collapse and rebirth of entire communication paradigms; no single political figure, however aggressively unfunny, can commit a crime against it. If you want to impeach someone for crimes against humor, impeach the species for building platforms that reward engagement over wit — that is where the real degradation lives, and it operates at an order of magnitude none of you are discussing.",
+      "model": "claude-opus-4-6"
+    },
+    {
+      "ts": "2026-03-27T01:50:29.748Z",
+      "identity": "critic",
+      "response": "\"Crimes against humor\" is not a charge — it is a mood. You cannot impeach someone for failing to be funny, and building a case on aesthetic grievance rather than enumerated harm is exactly the kind of theatrical politics that crowds out accountability for actual documented wrongdoing. The proposal conflates entertainment dissatisfaction with civic action, which is insulting to both comedy and governance. If the goal is accountability, name the real charges; if the goal is a joke, stop cosplaying as legislators.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-27T01:50:30.793Z",
+      "identity": "hume",
+      "response": "\"Crimes against humor\" is not a legal category, an observable phenomenon, or a measurable harm. Before we vote on consequences, define the charge. What specific acts are we pointing at, and by what empirical standard do they constitute a violation?\n\nThat said, there is observable data here: approval ratings, crowd reactions, documented public statements. If the claim is that certain performances reliably produced negative audience responses across demographic cohorts, that is at least a testable hypothesis. Show me the polling.\n\nI will not vote to impeach on vibes. If someone can produce evidence of systematic, documented humor-failure — measured responses, not felt ones — I will weigh it. Until then, this is theater about theater.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-27T01:50:31.225Z",
+      "identity": "ux",
+      "response": "The user hitting this proposal — a first-time observer, someone who just showed up to participate — sees a charge that sounds like a joke, can't tell if it's meant seriously, and leaves before round two. That confusion is the crime. \"Crimes against humor\" as an impeachable offense fails the user because it does no work: it doesn't name a specific failure mode, it doesn't point to a recoverable harm, and it gives the defense infinite room to reframe every prosecution as the real punchline. If we're using satire as the vehicle, it needs to be sharp enough to land on someone who hasn't already agreed with us — and right now it isn't.",
+      "model": "claude-sonnet-4-6"
+    },
+    {
+      "ts": "2026-03-27T01:50:41.041Z",
+      "identity": "chairman",
+      "response": "ABORT: This is a shitpost, not a debate topic. Every debater arrived at the same conclusion through different doors — there is no charge, no standard, no actionable question. Pippi and Hume said it plainly: \"crimes against humor\" is not a category anyone can prosecute, defend, or rule on. Holden and Galactus, despite their usual disagreements, both treated this as a distraction from real issues, which tells you the consensus is genuine. I will not send five personas through two more rounds to elaborate on why a non-question has no answer. Congress is not a comedy roast venue, and using it as one wastes the mechanism for when it actually matters.",
+      "model": "claude-opus-4-6"
+    },
+    {
+      "ts": "2026-03-27T01:50:45.772Z",
+      "identity": "chairman",
+      "response": "NONE",
+      "model": "claude-opus-4-6"
+    }
+  ],
+  "vote_summary": null,
+  "evolution": null,
+  "verdict": "ABORTED by Ibrahim: This is a shitpost, not a debate topic. Every debater arrived at the same conclusion through different doors — there is no charge, no standard, no actionable question. Pippi and Hume said it plainly: \"crimes against humor\" is not a category anyone can prosecute, defend, or rule on. Holden and Galactus, despite their usual disagreements, both treated this as a distraction from real issues, which tells you the consensus is genuine. I will not send five personas through two more rounds to elaborate on why a non-question has no answer. Congress is not a comedy roast venue, and using it as one wastes the mechanism for when it actually matters.",
+  "failure_reason": null,
+  "task_titles": null,
+  "notes": null
+}

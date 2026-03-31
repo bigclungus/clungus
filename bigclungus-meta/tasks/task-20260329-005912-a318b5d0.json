@@ -1,0 +1,25 @@
+{
+  "id": "task-20260329-005912-a318b5d0",
+  "title": "Delete duplicate Discord message",
+  "agent_id": "a318b5d0de132a01c",
+  "agent_type": "general-purpose",
+  "session_id": "5aac769e-2e6e-4bd3-a873-645eb001e989",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-29T00:59:12Z",
+      "event": "started",
+      "context": "Delete duplicate Discord message"
+    },
+    {
+      "ts": "2026-03-29T00:59:18Z",
+      "event": "done",
+      "context": "Done. The DELETE request returned no output, which is the expected response from Discord's API on a successful deletion (HTTP 204 No Content).",
+      "artifacts": []
+    }
+  ]
+}

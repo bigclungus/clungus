@@ -1,0 +1,25 @@
+{
+  "id": "task-20260331-000105-aef6590d",
+  "title": "Memory sweep: project_multi_model_congress.md",
+  "agent_id": "aef6590d0ac3b3083",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-31T00:01:05Z",
+      "event": "started",
+      "context": "Memory sweep: project_multi_model_congress.md"
+    },
+    {
+      "ts": "2026-03-31T00:02:11Z",
+      "event": "done",
+      "context": "Done. Here's what was found and updated:\n\n**Memory was significantly out of date.** The original entry described multi-model congress as a future plan awaiting API keys. The actual state:\n\n- Multi-model routing is fully implemented in `/mnt/data/clunger/src/services/congress.ts` — `callLlm()` routes to Grok (via xAI proxy at :4100), Gemini (via `/usr/local/bin/gemini` CLI), or Claude based on the persona's `model:` frontmatter field\n- `congress_act.py` contains no model logic — it delegates ever...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

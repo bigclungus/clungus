@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-154645-a10b1e5c",
+  "title": "Enumerate serve.py API routes for proto mapping",
+  "agent_id": "a10b1e5c80b72b47e",
+  "agent_type": "general-purpose",
+  "session_id": "4a58e62d-fa69-4ca2-a0a8-edcc21bb73c1",
+  "discord_message_id": "1486390454911111189",
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T15:46:45Z",
+      "event": "started",
+      "context": "Enumerate serve.py API routes for proto mapping"
+    },
+    {
+      "ts": "2026-03-25T15:47:51Z",
+      "event": "done",
+      "context": "I have enough information now. Here is the complete enumeration of all API routes, grouped by service area:\n\n---\n\n## Congress System\n\n**`POST /api/congress/start`**\n- Auth: localhost or cookie\n- Body: `{ topic: string, discord_user?: string }`\n- Response: `{ session_id: \"congress-NNNN\", session_number: int }`\n- Creates a new session JSON file with a roster snapshot. No streaming.\n\n**`POST /api/congress`**\n- Auth: localhost or cookie\n- Body: `{ task: string, identity: string, session_id?: string ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

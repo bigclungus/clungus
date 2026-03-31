@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-161230-aa598e98",
+  "title": "Create thread about temporal retry/resume",
+  "agent_id": "aa598e9803b2afa51",
+  "agent_type": "general-purpose",
+  "session_id": "b8a58c15-c6f1-48c2-b033-87763f636706",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T16:12:30Z",
+      "event": "started",
+      "context": "Create thread about temporal retry/resume"
+    },
+    {
+      "ts": "2026-03-27T16:13:14Z",
+      "event": "done",
+      "context": "Posted the response in the thread (ID `1487122110374740091`, titled \"Congress resume on failure\"). The reply covered:\n\n- **Current state**: `CongressWorkflow._run_inner` is monolithic with no resume support; re-triggers start completely fresh.\n- **What Temporal already handles**: worker crashes/OOMs are replayed automatically from activity history — that's built in.\n- **What would need to change**: checkpoint state per phase, make `_run_inner` idempotent, or use signals/memos for partial progres...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

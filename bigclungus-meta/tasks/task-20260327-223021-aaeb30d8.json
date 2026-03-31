@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-223021-aaeb30d8",
+  "title": "Fix matrix trial sort + column color",
+  "agent_id": "aaeb30d86405b2051",
+  "agent_type": "general-purpose",
+  "session_id": "083baee4-2f6f-4f81-8ced-0e9b97f43956",
+  "discord_message_id": "1487215703508385842",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T22:30:21Z",
+      "event": "started",
+      "context": "Fix matrix trial sort + column color"
+    },
+    {
+      "ts": "2026-03-27T22:34:47Z",
+      "event": "done",
+      "context": "Both fixes are deployed. Here's a summary of what was done:\n\n**Problem 1: Trial sorting** -- Trial sessions had `session_number=None` (0), so they clustered at one end instead of being chronologically interleaved with congress sessions.\n\n**Fixes (server-side):**\n- `/mnt/data/clunger/src/index.ts` (matrix endpoint, line ~1093): Changed sort from `session_number` comparison to `started_at` timestamp comparison (trials have `saved_at` which is already normalized to `started_at` in the push).\n- `/mn...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

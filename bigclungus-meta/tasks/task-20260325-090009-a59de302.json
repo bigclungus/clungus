@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-090009-a59de302",
+  "title": "Simplify codebase scan hourly",
+  "agent_id": "a59de3020978f888e",
+  "agent_type": "general-purpose",
+  "session_id": "4a58e62d-fa69-4ca2-a0a8-edcc21bb73c1",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T09:00:09Z",
+      "event": "started",
+      "context": "Simplify codebase scan hourly"
+    },
+    {
+      "ts": "2026-03-25T09:01:23Z",
+      "event": "done",
+      "context": "One real cleanup applied in `temporal-workflows/activities/congress_act.py`:\n\n- **Dead code removed:** The `COOKIE` module-level variable (reading `CONGRESS_COOKIE` env var) and the `elif COOKIE:` fallback branch in `_headers()` were unreachable — `CONGRESS_COOKIE` is not set in `.env` and `INTERNAL_TOKEN` is the sole auth mechanism. Keeping them was misleading and added noise.\n- **Module docstring updated:** Still said \"internal admin cookie (read from CONGRESS_COOKIE env var)\" — corrected to r...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

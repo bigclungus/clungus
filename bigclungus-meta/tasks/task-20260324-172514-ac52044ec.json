@@ -1,0 +1,29 @@
+{
+  "id": "task-20260324-172514-ac52044ec",
+  "title": "Build startup directive-extraction step",
+  "agent_id": "congress-19",
+  "agent_type": "congress",
+  "session_id": "congress-0019",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "event": "started",
+      "ts": "2026-03-24T17:25:14Z",
+      "message": "Created from Congress #19 verdict on: BigClungus loses all in-session context on restart and verdicts land in session JSONs but never auto"
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-24T17:25:14Z",
+      "message": "Source verdict: **SYNTHESIS**\n\nThe crux is not technical \u2014 it's governance. Every debater proposed some variant of \"read past verdicts and auto-apply learnings,\" but they split on whether this should be autonomous or..."
+    },
+    {
+      "ts": "2026-03-24T18:10:05Z",
+      "event": "done",
+      "message": "extract-congress-directives.py built and deployed; learned-directives.md created in bigclungus-meta; wired into CLAUDE.md startup instructions (commits 9b7051f, 8437f69, 7a57b4f)."
+    }
+  ]
+}

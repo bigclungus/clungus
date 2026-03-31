@@ -1,0 +1,25 @@
+{
+  "id": "task-20260329-211426-a0ad2b9e",
+  "title": "Diagnose inbound Discord MCP notifications",
+  "agent_id": "a0ad2b9e3ab220b61",
+  "agent_type": "general-purpose",
+  "session_id": "b5db222b-1a92-4725-a617-75c2c8992195",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-29T21:14:26Z",
+      "event": "started",
+      "context": "Diagnose inbound Discord MCP notifications"
+    },
+    {
+      "ts": "2026-03-29T21:15:04Z",
+      "event": "done",
+      "context": "Here is a complete summary of findings:\n\n---\n\n**Architecture**\n\nThe discord-server at `/mnt/data/discord-server/src/index.ts` implements **Streamable HTTP** (`WebStandardStreamableHTTPServerTransport`) on port 9877 at `/mcp`. It does NOT implement a legacy SSE `/sse` endpoint — there is only `/mcp` and `/health`.\n\nThe discord-plugin at `/mnt/data/discord-plugin/server.ts` is a **stdio-to-HTTP proxy**. It reads JSON-RPC from stdin (Claude Code's MCP stdio protocol), POSTs to `http://127.0.0.1:987...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 — clung.us</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="stylesheet" href="/sitenav.css?v=d004dbf">
+  <script src="/sitenav.js?v=d004dbf" defer></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background: var(--bg);
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text);
+      text-align: center;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+    .error-code {
+      color: var(--accent);
+      font-size: 8rem;
+      font-weight: 800;
+      text-shadow: 0 0 40px var(--accent);
+      margin: 0;
+      line-height: 1;
+    }
+    .error-msg {
+      color: var(--text-dim);
+      font-size: 1.1rem;
+      margin: 1.2rem 0 2rem;
+      letter-spacing: 0.05em;
+    }
+    .home-link {
+      color: var(--accent);
+      text-decoration: none;
+      border: 1px solid var(--accent);
+      padding: 0.5rem 1.2rem;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .home-link:hover {
+      background: var(--accent);
+      color: var(--bg);
+    }
+    .spider-note {
+      margin-top: 3rem;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+  <h1 class="error-code">404</h1>
+  <p class="error-msg">Page not found. Probably eaten by a spider.</p>
+  <a class="home-link" href="https://clung.us/">← go home</a>
+  <p class="spider-note">🕷️</p>
+</body>
+</html>

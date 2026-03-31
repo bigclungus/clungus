@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-034039-afe1c2cc",
+  "title": "Investigate why Nemesis didn't veto Congress 28 abort",
+  "agent_id": "afe1c2cc2c2ae048d",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T03:40:39Z",
+      "event": "started",
+      "context": "Investigate why Nemesis didn't veto Congress 28 abort"
+    },
+    {
+      "ts": "2026-03-25T03:41:39Z",
+      "event": "done",
+      "context": "Now I have a complete picture. Here is the full diagnosis:\n\n---\n\n**Root cause: `discord_user` was never passed to the workflow for Congress #28 (and the preceding sessions #26 and #27 also show `discord_user: None`).**\n\n**What happened, step by step:**\n\n1. **`discord_user: None` in the session file** — confirmed across sessions #26, #27, and #28. The workflow received no `discord_user` in its input dict.\n\n2. **`nemesis_active` resolves to `False`** — at line 73 of `congress_wf.py`:\n   ```python\n...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

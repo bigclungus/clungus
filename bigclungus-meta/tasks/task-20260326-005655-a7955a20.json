@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-005655-a7955a20",
+  "title": "Rename Ibrahim slug to chairman",
+  "agent_id": "a7955a200af32ea42",
+  "agent_type": "general-purpose",
+  "session_id": "e4d4bf00-991b-4f0e-aac7-2ab4056f18c5",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T00:56:55Z",
+      "event": "started",
+      "context": "Rename Ibrahim slug to chairman"
+    },
+    {
+      "ts": "2026-03-26T00:59:41Z",
+      "event": "done",
+      "context": "Both services restarted and are active. Here's a summary of everything changed:\n\n**Agent file (bigclungus-meta):**\n- `agents/hiring-manager.md` → `agents/chairman.md` (git mv)\n- Frontmatter `name: hiring-manager` → `name: chairman`\n- Frontmatter `label: [hiring-manager]` → `label: [chairman]`\n\n**`temporal-workflows/activities/congress_act.py`:**\n- All 4 `_call_congress_api(..., \"hiring-manager\", ...)` calls → `\"chairman\"`\n- `congress_evolve` identity filter: `\"hiring-manager\"` → `\"chairman\"`\n- 3...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

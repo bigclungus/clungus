@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-202300-ab6135f5",
+  "title": "Post build status to thread",
+  "agent_id": "ab6135f58e1d1f231",
+  "agent_type": "general-purpose",
+  "session_id": "5aac769e-2e6e-4bd3-a873-645eb001e989",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T20:23:00Z",
+      "event": "started",
+      "context": "Post build status to thread"
+    },
+    {
+      "ts": "2026-03-28T20:23:08Z",
+      "event": "done",
+      "context": "Message posted successfully to the Discord thread. It's live at message ID `1487547601153818695` in channel `1487537381547708508`.",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-015535-a4016958",
+  "title": "Fix agent_type unknown bug in hooks",
+  "agent_id": "a401695841b66ce89",
+  "agent_type": "unknown",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": "1485819169005113355",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T01:55:35Z",
+      "event": "started",
+      "context": "Fix agent_type unknown bug in hooks"
+    },
+    {
+      "ts": "2026-03-24T01:56:01Z",
+      "event": "done",
+      "context": "Done. Here's a summary of all changes made:\n\n**`/mnt/data/scripts/hooks/pre-agent-spawn.sh` (line 34):** Changed `// \"unknown\"` to `// \"general-purpose\"` in the `SUBAGENT_TYPE` jq expression.\n\n**`/mnt/data/scripts/hooks/subagent-start.sh` (two locations):**\n- Line 32: Changed the default variable initialization `SUBAGENT_TYPE=\"unknown\"` to `\"general-purpose\"`.\n- Line 45: Changed the fallback in the jq expression `.subagent_type // \"unknown\"` to `// \"general-purpose\"`.\n\nAll three changes were com...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

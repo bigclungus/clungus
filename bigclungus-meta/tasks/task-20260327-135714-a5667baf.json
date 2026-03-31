@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-135714-a5667baf",
+  "title": "Run heartbeat trigger",
+  "agent_id": "a5667baf81ea90ee5",
+  "agent_type": "general-purpose",
+  "session_id": "b8a58c15-c6f1-48c2-b033-87763f636706",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T13:57:14Z",
+      "event": "started",
+      "context": "Run heartbeat trigger"
+    },
+    {
+      "ts": "2026-03-27T13:57:47Z",
+      "event": "done",
+      "context": "All three checks came back clean:\n\n1. **Stale tasks**: 0 tasks marked stale, no orphaned Congress sessions.\n2. **GitHub issues**: No open issues (command returned no output).\n3. **Failed services**: 0 failed units.\n\nEverything is healthy. No work to do, nothing to post to Discord. Staying silent per the heartbeat rules.",
+      "artifacts": []
+    }
+  ]
+}

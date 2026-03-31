@@ -1,0 +1,7 @@
+{
+  "name": "webhook-mirror",
+  "title": "Webhook Mirror",
+  "description": "Get a public URL that logs every incoming request — inspect webhook payloads instantly",
+  "port": 8102,
+  "status": "active"
+}

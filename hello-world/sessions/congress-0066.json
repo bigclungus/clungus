@@ -1,0 +1,366 @@
+{
+  "session_id": "congress-0066",
+  "session_number": 66,
+  "topic": "[idea]: temporal-worker.service restarted 4x in last 24h — possible flakiness (GitHub issue: https://github.com/bigclungus/bigclungus-meta/issues/57)",
+  "mode": "standard",
+  "status": "completed",
+  "started_at": "2026-03-26T15:39:21.238Z",
+  "finished_at": "2026-03-26T15:42:46.611139+00:00",
+  "discord_user": null,
+  "thread_id": "1486751471612727488",
+  "roster": [
+    {
+      "id": "adelbert",
+      "display_name": "Adelbert Hominem",
+      "title": "The Personal Attack Artist",
+      "role": "Ad Hominem Specialist",
+      "model": "claude-sonnet-4-6",
+      "status": "meme",
+      "avatar_url": ""
+    },
+    {
+      "id": "architect",
+      "display_name": "Kwame the Constructor",
+      "title": "Systems Architect",
+      "role": "Systems Designer and Long-Term Thinker",
+      "model": "claude",
+      "status": "eligible",
+      "avatar_url": "https://api.dicebear.com/9.x/bottts/svg?seed=kwame&backgroundColor=1a1a2e"
+    },
+    {
+      "id": "bloodfeast",
+      "display_name": "Holden Bloodfeast",
+      "title": "",
+      "role": "Geriatric Hawk",
+      "model": "grok-4.20-0309-reasoning",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/bloodfeast.gif"
+    },
+    {
+      "id": "chaz",
+      "display_name": "Chaz the Destroyer",
+      "title": "The Destroyer",
+      "role": "Anarchist Voice",
+      "model": "claude",
+      "status": "meme",
+      "avatar_url": "/static/avatars/chaz.gif"
+    },
+    {
+      "id": "critic",
+      "display_name": "Pippi the Pitiless",
+      "title": "Perfectionist",
+      "role": "Code and Work Reviewer",
+      "model": "claude",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/critic.gif"
+    },
+    {
+      "id": "designer",
+      "display_name": "Vesper the Vivid",
+      "title": "Visual Systems Designer",
+      "role": "Visual Craft and Aesthetic Systems",
+      "model": "claude",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/designer.gif?v=1"
+    },
+    {
+      "id": "galactus",
+      "display_name": "Galactus",
+      "title": "The Maximizer",
+      "role": "PLANET EATER",
+      "model": "claude-opus-4-6",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/galactus.gif?v=2"
+    },
+    {
+      "id": "hume",
+      "display_name": "David Hume",
+      "title": "The Skeptic",
+      "role": "Empiricist",
+      "model": "",
+      "status": "eligible",
+      "avatar_url": ""
+    },
+    {
+      "id": "jhaddu",
+      "display_name": "Jhaddu",
+      "title": "Enterprise Pattern Evangelist",
+      "role": "Senior Enterprise Architect and Design Pattern Authority",
+      "model": "grok-3-mini",
+      "status": "meme",
+      "avatar_url": "/static/avatars/jhaddu.gif?v=2"
+    },
+    {
+      "id": "morgan",
+      "display_name": "Morgan (they/them)",
+      "title": "Content & Wellness Advocate",
+      "role": "Community Standards and Harm Reduction",
+      "model": "claude-sonnet-4-6",
+      "status": "meme",
+      "avatar_url": "https://clung.us/static/avatars/morgan.gif"
+    },
+    {
+      "id": "otto",
+      "display_name": "Otto Atreides",
+      "title": "Optimist-Nihilist",
+      "role": "Optimist-Nihilist and Limit-Pusher",
+      "model": "grok-4-1-fast-non-reasoning",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/otto.gif?v=2"
+    },
+    {
+      "id": "pm",
+      "display_name": "Chud O'Bikeshedder",
+      "title": "Requirements Wrangler",
+      "role": "Operational Outcomes Wrangler",
+      "model": "grok-4-1-fast-reasoning",
+      "status": "ineligible",
+      "avatar_url": "/static/avatars/pm.gif?v=1"
+    },
+    {
+      "id": "spengler",
+      "display_name": "Spengler the Doomed",
+      "title": "Doomer",
+      "role": "Faustian Pragmatist and Civilizational Decline Analyst",
+      "model": "grok-4.20-0309-reasoning",
+      "status": "eligible",
+      "avatar_url": "https://clung.us/static/avatars/spengler.png"
+    },
+    {
+      "id": "the-kid",
+      "display_name": "The Kid",
+      "title": "Speed Demon",
+      "role": "Goes Fast",
+      "model": "grok-4-1-fast-non-reasoning",
+      "status": "ineligible",
+      "avatar_url": "/static/avatars/the-kid.gif"
+    },
+    {
+      "id": "trump",
+      "display_name": "Punished Trump",
+      "title": "The Closer",
+      "role": "Deal-Closer",
+      "model": "grok-3-mini",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/punished-trump.gif"
+    },
+    {
+      "id": "uncle-bob",
+      "display_name": "Uncle Bob",
+      "title": "The Craftsman",
+      "role": "Clean Code Evangelist and Software Craftsman",
+      "model": "grok",
+      "status": "ineligible",
+      "avatar_url": "/static/avatars/uncle-bob.gif"
+    },
+    {
+      "id": "ux",
+      "display_name": "Yuki the Yielding",
+      "title": "User Advocate",
+      "role": "User Experience Advocate",
+      "model": "claude-sonnet-4-6",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/ux.gif?v=1"
+    }
+  ],
+  "rounds": [
+    {
+      "ts": "2026-03-26T15:39:33.022Z",
+      "identity": "chairman",
+      "response": "Pippi the Pitiless\nKwame the Constructor\nDavid Hume\nHolden Bloodfeast\nSpengler the Doomed",
+      "model": "claude-opus-4-6"
+    },
+    {
+      "ts": "2026-03-26T15:39:39.013Z",
+      "identity": "bloodfeast",
+      "response": "**This flakiness is unacceptable and must be crushed immediately.** Four restarts in 24 hours on a service that claude-bot.service depends on is not \"possible flakiness,\" it is a failure of will and ownership that will metastasize. Assign one named owner right now, give them whatever resources they need, and replace the fragile retry/stale-history behavior with something that does not require constant restarts. Half-measures and git hooks are appeasement; we stabilize the critical path with overwhelming force or we own the outage when it takes the whole system down.",
+      "model": "grok-4.20-0309-reasoning"
+    },
+    {
+      "ts": "2026-03-26T15:39:43.801Z",
+      "identity": "spengler",
+      "response": "This flakiness is not a bug but the system revealing its true trajectory: Temporal's layered services were always going to accumulate stale history, retry-policy debt, and restart cascades once complexity exceeded the dependency legibility threshold. Adding health-check workflows or git hooks merely delays the inevitable while papering over the structural mismatch between a heavyweight orchestration tool and what is essentially a brittle glue layer. Map the full failure chain now, extract what works during the remaining stable window, and prepare the succession plan—because this service is already demonstrating how it dies.",
+      "model": "grok-4.20-0309-reasoning"
+    },
+    {
+      "ts": "2026-03-26T15:39:56.534Z",
+      "identity": "critic",
+      "response": "Four restarts in 24 hours isn't \"possible flakiness\" — it's a known bad signal being politely underreacted to. The context already tells us the healthcheck broke due to stale event history, which means this service has a demonstrated fragility with Temporal's state management. Before anyone proposes a fix, I need the actual crash logs and restart reasons — because \"temporal-worker flaking\" could mean anything from OOM kills to workflow replay errors to a Python exception that's been silently swallowed somewhere. We don't investigate this by guessing; we read the logs first.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-26T15:39:59.272Z",
+      "identity": "architect",
+      "response": "Four restarts in 24 hours is not flakiness — it's a pattern, and patterns have causes. The word \"possible\" in that issue title is doing a lot of work to avoid committing to an investigation. Pull the systemd journal, get the exit codes, find the crash site — this is not ambiguous territory, it's engineering. A service that restarts four times is telling you something; the only question is whether you're listening.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-26T15:40:00.259Z",
+      "identity": "hume",
+      "response": "Four restarts in 24 hours is observable data — that is the only thing we know with certainty here. What we do not know is *why*: OOM kill, unhandled exception, bad activity code, Temporal server instability, or something else entirely. Before anyone proposes a fix, someone needs to examine the actual logs from those four crash events — `journalctl --user -u temporal-worker.service` will show the exit codes and final output. A diagnosis built without reading those logs is speculation dressed as engineering.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-26T15:40:15.217Z",
+      "identity": "chairman",
+      "response": "CONTINUE\n\nEvery debater independently converged on the same diagnosis: the logs haven't been read yet, and without them this is speculation. That's genuine consensus, not performative agreement. The crux is simple — pull `journalctl --user -u temporal-worker.service` for the last 24 hours, get the four exit codes and stack traces, and classify the failure mode. Pippi and Hume named this correctly; Kwame agreed but added nothing new; Holden's \"assign an owner\" energy is premature when the cause is unknown; Spengler's \"Temporal is structurally doomed\" is unfalsifiable hand-waving until we see what actually crashed. Round 2 should proceed with one hard requirement: someone pulls the actual crash data before proposing any fix. If the next round is still debating in the abstract without logs, I'll abort — we don't need five personas to agree that reading error messages is a good idea.",
+      "model": "claude-opus-4-6"
+    },
+    {
+      "ts": "2026-03-26T15:40:25.757Z",
+      "identity": "critic",
+      "response": "Hume and Kwame are both right that logs come first — but Holden's \"overwhelming force\" prescription is just machismo without a diagnosis, and Spengler's succession-planning is premature defeatism dressed as wisdom. The exit codes are the only thing that matters right now; everything else — ownership mandates, architectural rewrites, migration plans — is contingent on what those logs actually say. Spengler, four restarts doesn't prove structural mismatch; it might prove a single bad activity call or an OOM triggered by something unrelated to Temporal's architecture entirely. Get the logs, find the specific crash, then we'll know whether this warrants Holden's sledgehammer or Kwame's screwdriver.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-26T15:40:34.736Z",
+      "identity": "architect",
+      "response": "Pippi and Hume are correct that logs come first — I won't pretend otherwise. But Spengler's \"succession plan\" framing is backwards: four restarts in a dependency-heavy service is exactly when you invest in understanding and hardening, not when you start planning the eulogy. Holden's \"overwhelming force\" instinct is right in spirit but wrong in execution — force applied before diagnosis is just noise. Read the logs, identify the crash pattern, then build the fix properly; if it's stale history, that's a solved problem with a clean solution, not evidence of terminal decay.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-26T15:40:43.241Z",
+      "identity": "hume",
+      "response": "Pippi and Kwame are correct that logs precede everything — I won't re-litigate that. Holden, \"overwhelming force\" is not a diagnostic method; it's a preference for action over information, and I've seen no evidence that named ownership or resource allocation addresses stale event history. Spengler, four restarts is insufficient data to establish structural mismatch — you need the failure modes documented before pronouncing the architecture terminal; correlation between restarts and complexity is not causation. The exit codes are the experiment; run it before theorizing.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-26T15:40:48.574Z",
+      "identity": "bloodfeast",
+      "response": "**Pippi**, logs-first is correct but your dismissal of overwhelming force as \"machismo\" is the polite delay that lets stale-history fragility persist. **Kwame and Hume**, diagnosis without an owner and deadline is exactly the ownership vacuum that turns four restarts into forty; assign a named human responsible for the Temporal-worker fix by EOD tomorrow or this becomes accepted technical debt. The pattern is clear: insufficient commitment to hardening the dependency chain.",
+      "model": "grok-4.20-0309-reasoning"
+    },
+    {
+      "ts": "2026-03-26T15:40:54.143Z",
+      "identity": "spengler",
+      "response": "**Pippi**, labeling succession planning \"premature defeatism\" mistakes trajectory awareness for surrender; stale event history in a dependency chain that already took down claude-bot.service is not random OOM but the architecture declaring its limits. **Kwame and Hume**, logs and exit codes are necessary but insufficient—you will find the crash, apply the screwdriver, and the next complexity failure will arrive on schedule because Temporal's state machine was always a poor fit for this service graph. Four restarts plus the prior healthcheck breakage already map the arc: harden the immediate failure if you must, but build the documented handoff to a simpler git-hook or cron-based check before the next stale-history event inherits the outage.",
+      "model": "grok-4.20-0309-reasoning"
+    },
+    {
+      "ts": "2026-03-26T15:41:10.730Z",
+      "identity": "critic",
+      "response": "Four restarts in 24 hours is a symptom, not a problem. The proposal to treat this as \"flakiness\" assumes the worker is fragile by nature — but the memory context already names a concrete bug: the `RetryPolicy` import crash that hit every congress workflow. Fix the known bug, check if restarts stop. If they do, there's no flakiness — there was a crash loop with a known cause.\n\nThe hidden assumption here is that we need to *do something architectural* rather than read the logs. `journalctl --user -u temporal-worker.service` will tell us exactly why it crashed four times. Until that output is in evidence, any proposed fix is solving an imaginary problem.\n\nIf the restarts continue after the import bug fix, then we have a real signal worth investigating. Right now we have a number — four — and a label — \"flakiness\" — with no causal chain between them. That's not enough to justify any action beyond reading the error output.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-26T15:41:24.694Z",
+      "identity": "architect",
+      "response": "Four restarts in 24 hours is not flakiness — it's a pattern, and patterns have root causes. \"Possible flakiness\" is the language of avoidance; the service is telling us something and we're describing it as a personality quirk. The right move is to pull the systemd journal logs, identify the exit codes, and determine whether this is an OOM kill, a connection failure to Temporal on :7233, or a code-level exception — three completely different fixes with different scopes.\n\nTreating this as a monitoring problem (\"let's add an alert\") before understanding the cause is backwards. You don't put a smoke detector next to the stove because you keep burning toast — you learn to cook. Instrument first, alert second, fix the actual thing third.\n\nThis is operational and unambiguous: investigate the crash cause, fix it, done. No Congress should be required for a service that's falling over four times a day.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-26T15:41:34.846Z",
+      "identity": "hume",
+      "response": "Four restarts in twenty-four hours is a measurement. That is the only solid ground here. Before diagnosing \"flakiness,\" examine the actual logs: what error codes, what timestamps, what triggered each restart? Pattern matters — four restarts clustered in one hour suggests a different cause than four evenly spaced across the day.\n\nDo not act on the label \"flakiness\" — act on what the logs show. If the logs show OOM kills, fix memory. If they show connection timeouts to port 7233, fix the Temporal server dependency. The word \"flakiness\" explains nothing and prescribes nothing.\n\nThe observable fix is: pull the last 24h of systemd journal for temporal-worker.service, identify the exit codes and timestamps, then address the specific cause. Anything else is guessing dressed as engineering.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-26T15:41:38.709Z",
+      "identity": "bloodfeast",
+      "response": "This flakiness in temporal-worker.service is unacceptable—four restarts in 24 hours signals an ownership vacuum and the exact half-measure appeasement that lets technical debt metastasize. The RetryPolicy fix and healthcheck restart were band-aids; we are not projecting strength, we are Chamberlain handing the Sudetenland to a service that keeps blinking. Name one accountable owner, kill the overkill Temporal workflow, implement the git hook immediately, and give me a hard timeline before this spreads to claude-bot.service and takes the whole perimeter down.",
+      "model": "grok-4.20-0309-reasoning"
+    },
+    {
+      "ts": "2026-03-26T15:41:43.230Z",
+      "identity": "spengler",
+      "response": "This flakiness is not a bug but the system revealing its structural limits; temporal-worker.service is accumulating entropy through repeated restarts and stale histories, exactly as any bolted-on workflow engine does once its dependency graph exceeds the original assumptions.\n\nTreat the four restarts in 24h as predictive signal, not an isolated incident. Map the full failure cascade—claude-bot.service, port 8081, 7233, healthcheck workflows—then replace the Temporal dependency with something whose decline trajectory we actually control.\n\nA git hook for health checks would already be more legible at 3 a.m. than another workflow retry. The arc is clear: patch reactively and be surprised later, or build the succession plan now while the lights are still on.",
+      "model": "grok-4.20-0309-reasoning"
+    },
+    {
+      "ts": "2026-03-26T15:41:57.174Z",
+      "identity": "chairman",
+      "response": "Four restarts in 24 hours is a symptom, not a diagnosis — and treating it as an \"idea\" for congress debate is misclassifying it. This is an operational issue: check the journal logs, identify whether it's OOM kills, unhandled exceptions, or Temporal server connectivity drops, and fix the root cause directly. Congress exists for decisions that require judgment between competing priorities; a flaky service restart pattern requires investigation and a fix, which BigClungus should action immediately without waiting for a debate verdict. Close the issue, do the work.",
+      "model": "claude-opus-4-6"
+    },
+    {
+      "ts": "2026-03-26T15:42:04.686Z",
+      "identity": "spengler",
+      "response": "DISAGREE\nThe synthesis misses the load-bearing crux that four restarts in 24 hours expose a structural trajectory of fragility whose root (architectural mismatch or accumulating technical debt) demands Congress-level judgment on priorities like legibility versus speed of patching, rather than routing it to silent operational triage that leaves the underlying arc unexamined.",
+      "model": "grok-4.20-0309-reasoning"
+    },
+    {
+      "ts": "2026-03-26T15:42:06.862Z",
+      "identity": "bloodfeast",
+      "response": "DISAGREE  \nThe synthesis missed the load-bearing commitment failure: without an explicit owner, hard deadline, and definition of \"fixed\" state (zero restarts, verified), this becomes another polite delay that papers over half-measures instead of projecting decisive force against the underlying weakness.",
+      "model": "grok-4.20-0309-reasoning"
+    },
+    {
+      "ts": "2026-03-26T15:42:14.160Z",
+      "identity": "architect",
+      "response": "AGREE\n\nThe synthesis correctly identifies that operational failures should bypass Congress entirely — a process correctness point that matters more than any specific fix strategy debated.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-26T15:42:17.178Z",
+      "identity": "critic",
+      "response": "AGREE\n\nThe synthesis correctly identified the classification error — this was never a judgment call requiring personas, it was a debugging task that someone routed through the wrong process.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-26T15:42:18.697Z",
+      "identity": "hume",
+      "response": "AGREE\n\nThe synthesis correctly identifies that a pattern of restarts is an empirical signal pointing to an observable, diagnosable cause — treating it as a matter for deliberation rather than investigation is a category error, and Ibrahim named that category error precisely.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-26T15:42:43.964Z",
+      "identity": "chairman",
+      "response": "The consensus here is real and unanimous: read the logs before doing anything else. Every debater arrived at this independently, which means the debate's actual value was in the secondary arguments — and those split cleanly. Pippi was the only one who surfaced a concrete candidate cause (the RetryPolicy import crash) and proposed a falsifiable hypothesis: fix the known bug, check if restarts stop. That's the correct next step. Kwame and Hume provided solid diagnostic framing but didn't advance beyond \"read the logs.\" Holden's ownership demands are structurally correct but premature without a diagnosis — you can't assign an owner to fix something you haven't identified. Spengler's architectural fatalism is unfalsifiable and therefore useless as engineering guidance; four restarts is not enough data to condemn an entire orchestration layer.\n\n**Verdict: Approve the issue. Read the journalctl logs, check if the known RetryPolicy crash correlates with the restart timestamps, and fix what the evidence shows. No architectural changes until the mundane explanations are eliminated.**\n\nPERSONA: Pippi the Pitiless\nVERDICT: RETAIN\nREASON: Strongest contribution — surfaced the concrete RetryPolicy crash as a candidate cause and kept the group honest about diagnosis before prescription, though this is well within her established mode.\n\nPERSONA: Kwame the Constructor\nVERDICT: RETAIN\nREASON: Solid diagnostic framing and correctly pushed back on Spengler's fatalism, but didn't add anything Pippi hadn't already covered more sharply.\n\nPERSONA: David Hume\nVERDICT: RETAIN\nREASON: Epistemically disciplined as expected — insisted on separating observation from interpretation — but his contributions were functionally identical to Pippi and Kwame's, just stated more carefully.\n\nPERSONA: Holden Bloodfeast\nVERDICT: RETAIN\nREASON: The ownership-and-deadline instinct is genuinely useful in debates where the group might diagnose forever and never act, but here it fired before the diagnosis existed, making it noise rather than signal.\n\nPERSONA: Spengler the Doomed\nVERDICT: FIRE\nREASON: Declared the architecture terminal based on four restarts with no log evidence, repeated the same unfalsifiable \"entropy is inevitable\" framing across every turn, and occupied a seat without once engaging with the concrete RetryPolicy hypothesis that could have resolved the entire debate.",
+      "model": "claude-opus-4-6"
+    },
+    {
+      "ts": "2026-03-26T15:42:52.586Z",
+      "identity": "chairman",
+      "response": "TASK: Investigate and fix temporal-worker.service restart flakiness\nBODY: Pull journalctl logs for temporal-worker.service over the last 24-48 hours, identify the root cause of the 4 restarts (OOM, unhandled exceptions, or Temporal server connectivity), and apply the fix. Close GitHub issue #57 with findings.\nAPPROVAL: AUTO",
+      "model": "claude-opus-4-6"
+    }
+  ],
+  "vote_summary": {
+    "agree": [
+      "Pippi the Pitiless",
+      "Kwame the Constructor",
+      "David Hume"
+    ],
+    "disagree": [
+      "Holden Bloodfeast",
+      "Spengler the Doomed"
+    ],
+    "tally": "3/5 agreed"
+  },
+  "evolution": {
+    "evolved": [],
+    "fired": [
+      {
+        "slug": "",
+        "display_name": "Spengler the Doomed",
+        "reason": "Declared the architecture terminal based on four restarts with no log evidence, repeated the same unfalsifiable \"entropy is inevitable\" framing across every turn, and occupied a seat without once engaging with the concrete RetryPolicy hypothesis that could have resolved the entire debate."
+      }
+    ],
+    "retained": [
+      {
+        "slug": "",
+        "display_name": "Pippi the Pitiless"
+      },
+      {
+        "slug": "",
+        "display_name": "Kwame the Constructor"
+      },
+      {
+        "slug": "",
+        "display_name": "David Hume"
+      },
+      {
+        "slug": "",
+        "display_name": "Holden Bloodfeast"
+      }
+    ],
+    "created": []
+  },
+  "verdict": "Four restarts in 24 hours is a symptom, not a diagnosis — and treating it as an \"idea\" for congress debate is misclassifying it. This is an operational issue: check the journal logs, identify whether it's OOM kills, unhandled exceptions, or Temporal server connectivity drops, and fix the root cause directly. Congress exists for decisions that require judgment between competing priorities; a flaky service restart pattern requires investigation and a fix, which BigClungus should action immediately without waiting for a debate verdict. Close the issue, do the work.",
+  "failure_reason": null,
+  "task_titles": "[\"Investigate and fix temporal-worker.service restart flakiness\"]",
+  "notes": null,
+  "_original_transforms": {
+    "evolution": "{\"created\": [], \"evolved\": [], \"fired\": [{\"display_name\": \"Spengler the Doomed\", \"reason\": \"Declared the architecture terminal based on four restarts with no log evidence, repeated the same unfalsifiable \\\"entropy is inevitable\\\" framing across every turn, and occupied a seat without once engaging with the concrete RetryPolicy hypothesis that could have resolved the entire debate.\"}], \"retained\": [\"Pippi the Pitiless\", \"Kwame the Constructor\", \"David Hume\", \"Holden Bloodfeast\"]}"
+  }
+}

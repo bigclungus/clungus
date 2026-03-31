@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-031941-a94d6018",
+  "title": "Implement Nemesis in congress workflow",
+  "agent_id": "a94d6018581e1d372",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T03:19:41Z",
+      "event": "started",
+      "context": "Implement Nemesis in congress workflow"
+    },
+    {
+      "ts": "2026-03-25T03:23:17Z",
+      "event": "done",
+      "context": "Done. Here's what was built:\n\n**New activities in `congress_act.py`:**\n\n- `congress_nemesis_check(thread_content, topic, original_message, ibrahim_action, session_id, thread_id)` — Invokes Nemesis via `/api/congress` with identity `\"nemesis\"`. Passes the full thread, current topic, original stakeholder message, and Ibrahim's action. Returns `{\"action\": \"APPROVE\"|\"VETO\", \"message\": ..., \"reframe\": ...}`. Only posts to Discord when `action == \"VETO\"` (format: `**Nemesis the Spokesman**: <message>`...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-205333-a622c715",
+  "title": "Implement SQLite task store",
+  "agent_id": "a622c71519cef7f9c",
+  "agent_type": "general-purpose",
+  "session_id": "e4d4bf00-991b-4f0e-aac7-2ab4056f18c5",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T20:53:33Z",
+      "event": "started",
+      "context": "Implement SQLite task store"
+    },
+    {
+      "ts": "2026-03-25T20:58:34Z",
+      "event": "done",
+      "context": "The `Tasks DB backup cron scheduled` line confirms the new workflow registered and got its first run ID. Both services are healthy with no errors.\n\nHere's a summary of everything built and deployed:\n\n---\n\n**What was built:**\n\n**`/mnt/data/scripts/tasks_db.py`** (new)\nShared module with `init_db()` and `get_db()`. Creates `tasks` and `task_events` tables with WAL mode and appropriate indexes.\n\n**`/mnt/data/scripts/migrate_tasks_to_sqlite.py`** (new)\nOne-time migration script. Read 973 JSON files,...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

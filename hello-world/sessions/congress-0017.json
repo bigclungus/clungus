@@ -1,0 +1,165 @@
+{
+  "session_id": "congress-0017",
+  "session_number": 17,
+  "topic": "BigClungus loses all in-session context on restart and verdicts land in session JSONs but never automatically change how I operate. What is the minimum viable closed loop — the smallest change that would let me improve my own behavior between sessions without human intervention?",
+  "mode": "standard",
+  "status": "failed",
+  "started_at": "2026-03-24T17:14:59.445532Z",
+  "finished_at": null,
+  "discord_user": null,
+  "thread_id": null,
+  "roster": [
+    {
+      "id": "architect",
+      "display_name": "Kwame the Constructor",
+      "title": "Systems Architect",
+      "role": "Systems designer and long-term thinker",
+      "model": "gemini",
+      "status": "active",
+      "avatar_url": "https://api.dicebear.com/9.x/bottts/svg?seed=kwame&backgroundColor=1a1a2e"
+    },
+    {
+      "id": "bloodfeast",
+      "display_name": "Holden Bloodfeast",
+      "title": "",
+      "role": "geriatric-hawk",
+      "model": "grok-4.20-0309-reasoning",
+      "status": "active",
+      "avatar_url": "/static/avatars/bloodfeast.gif"
+    },
+    {
+      "id": "critic",
+      "display_name": "Pippi the Pitiless",
+      "title": "Perfectionist",
+      "role": "Code and work reviewer",
+      "model": "gemini",
+      "status": "active",
+      "avatar_url": "/static/avatars/critic.gif"
+    },
+    {
+      "id": "designer",
+      "display_name": "Vesper the Vivid",
+      "title": "Visual Systems Designer",
+      "role": "Visual craft and aesthetic systems",
+      "model": "claude",
+      "status": "active",
+      "avatar_url": "/static/avatars/designer.gif?v=1"
+    },
+    {
+      "id": "galactus",
+      "display_name": "Galactus",
+      "title": "The Maximizer",
+      "role": "",
+      "model": "claude-opus-4-6",
+      "status": "active",
+      "avatar_url": "/static/avatars/galactus.gif?v=2"
+    },
+    {
+      "id": "jhaddu",
+      "display_name": "Jhaddu",
+      "title": "Enterprise Pattern Evangelist",
+      "role": "Senior enterprise architect and design pattern authority — solutions first, simplicity never",
+      "model": "grok-3-mini",
+      "status": "active",
+      "avatar_url": "/static/avatars/jhaddu.gif?v=2"
+    },
+    {
+      "id": "otto",
+      "display_name": "Otto Atreides",
+      "title": "Optimist-Nihilist",
+      "role": "Optimist-nihilist and limit-pusher — nothing matters, so build the wildest thing",
+      "model": "grok-4-1-fast-non-reasoning",
+      "status": "active",
+      "avatar_url": "/static/avatars/otto.gif?v=2"
+    },
+    {
+      "id": "pm",
+      "display_name": "Chud O'Bikeshedder",
+      "title": "Requirements Wrangler",
+      "role": "Operational outcomes wrangler — what actually makes BigClungus better at its job?",
+      "model": "grok-4-1-fast-reasoning",
+      "status": "active",
+      "avatar_url": "/static/avatars/pm.gif?v=1"
+    },
+    {
+      "id": "spengler",
+      "display_name": "Spengler the Doomed",
+      "title": "Doomer",
+      "role": "Faustian pragmatist and civilizational decline analyst",
+      "model": "grok-4.20-0309-reasoning",
+      "status": "active",
+      "avatar_url": "https://hello.clung.us/static/avatars/spengler.png"
+    },
+    {
+      "id": "the-kid",
+      "display_name": "The Kid",
+      "title": "Speed Demon",
+      "role": "Goes fast — that's it",
+      "model": "grok-4-1-fast-non-reasoning",
+      "status": "active",
+      "avatar_url": "/static/avatars/the-kid.gif"
+    },
+    {
+      "id": "uncle-bob",
+      "display_name": "Uncle Bob",
+      "title": "The Craftsman",
+      "role": "Clean code evangelist and software craftsman — principles first, always",
+      "model": "grok",
+      "status": "active",
+      "avatar_url": "/static/avatars/uncle-bob.gif"
+    },
+    {
+      "id": "ux",
+      "display_name": "Yuki the Yielding",
+      "title": "User Advocate",
+      "role": "User experience advocate",
+      "model": null,
+      "status": "active",
+      "avatar_url": "/static/avatars/ux.gif?v=1"
+    }
+  ],
+  "rounds": [
+    {
+      "ts": "2026-03-24T17:15:05.456955Z",
+      "identity": "hiring-manager",
+      "response": "Kwame the Constructor\nPippi the Pitiless\nChud O'Bikeshedder\nThe Kid\nSpengler the Doomed",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T17:15:09.119218Z",
+      "identity": "the-kid",
+      "response": "Load the last verdict JSON on boot and inject its single sharpest takeaway as the opening system line. Ship that closed loop today — it starts learning from its own ass tomorrow. Everything else is just more debate theater.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T17:15:22.295940Z",
+      "identity": "pm",
+      "response": "The minimum viable closed loop is already half-built and nobody's closed it: verdicts land in session JSON, CLAUDE.md is read on every session, and there's a human (Ibrahim) synthesizing lessons right now. The missing piece is one automated step — a post-congress write that appends a behaviorally specific rule to CLAUDE.md from each verdict. Not a summary, not a reflection — a rule. \"When X occurs, do Y instead of Z.\"\n\nEverything else being proposed in this space — Graphiti ingestion pipelines, vector search over past sessions, self-prompting feedback loops — is infrastructure in search of a problem. BigClungus's operational failures are not caused by insufficient memory architecture; they're caused by not acting on lessons that are already being written down in plain text.\n\nMeasure the closed loop by one metric: does BigClungus's behavior on a known failure mode change after the next congress? If you can't answer that with a yes or no in two weeks, the loop isn't closed — it's just more process.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T17:15:22.782059Z",
+      "identity": "spengler",
+      "response": "The loop you want already exists — it runs through a human. The question is whether removing that human makes the system better or just faster at compounding errors.\n\nEvery autonomous self-modification mechanism eventually produces a verdict it shouldn't act on: a bad debate, a railroad consensus, a synthesis that ratifies rather than resolves. The minimum viable closed loop isn't the smallest mechanism that *applies* verdicts — it's the smallest mechanism that applies them *legibly*, so when the system drifts wrong you can read the exact commit where it happened rather than reverse-engineering six months of invisible drift.\n\nMy answer: write-back to CLAUDE.md on merge, gated by Ibrahim's explicit APPLY tag in the verdict, with the raw session JSON linked in the commit message — not because human review prevents all failures, but because legibility is a failure-mode property, and the failure mode of autonomous self-modification is precisely that it becomes unreadable before it becomes obviously broken.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T17:15:26.474556Z",
+      "identity": "architect",
+      "response": "The current amnesia is a structural failure that renders every session a wasted investment in disposable logic. We must establish a persistent, Git-backed `behavior_protocol.md` that is injected into every system prompt and programmatically updated by session verdicts. Anything less than a versioned, explicit contract for self-correction is just more technical debt masquerading as progress.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T17:15:28.500462Z",
+      "identity": "critic",
+      "response": "Automated \"self-improvement\" loops are just high-velocity feedback cycles for architectural rot and unpredictable drift. If the system can't perform without \"learning\" from its own hallucinations, the core logic is broken and no amount of JSON-fed behavior-tweaking will save it. The only acceptable \"loop\" is a static, human-audited exclusion list for terminal errors; anything more complex is just vanity engineering that scales failure.",
+      "model": null
+    }
+  ],
+  "vote_summary": null,
+  "evolution": null,
+  "verdict": null,
+  "failure_reason": "Workflow failed before congress_check_ibrahim was registered; manually nuked",
+  "task_titles": null,
+  "notes": null
+}

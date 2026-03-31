@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-191544-ad65116c",
+  "title": "Find moffstation patch files",
+  "agent_id": "ad65116cd9045ca4b",
+  "agent_type": "general-purpose",
+  "session_id": "10aea33b-fa3c-4aaf-bdde-c2afde7dcc15",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T19:15:44Z",
+      "event": "started",
+      "context": "Find moffstation patch files"
+    },
+    {
+      "ts": "2026-03-25T19:15:59Z",
+      "event": "done",
+      "context": "No patch files were found. The moffstation directory is at `/mnt/data/moff-station-14` (not `/mnt/data/moffstation`), but it contains no `.patch` files and no `patches/` subdirectory.\n\nSummary:\n- The directory is `/mnt/data/moff-station-14`\n- No `.patch` files exist anywhere under it\n- No `patches/` subdirectory exists under it",
+      "artifacts": []
+    }
+  ]
+}

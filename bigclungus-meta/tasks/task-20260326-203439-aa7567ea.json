@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-203439-aa7567ea",
+  "title": "Fix meme-mode persona filtering in congress_identities",
+  "agent_id": "aa7567ead65a23d3c",
+  "agent_type": "general-purpose",
+  "session_id": "ef1a5e01-b3c3-41d6-abd3-172f68d92559",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T20:34:39Z",
+      "event": "started",
+      "context": "Fix meme-mode persona filtering in congress_identities"
+    },
+    {
+      "ts": "2026-03-26T20:35:44Z",
+      "event": "done",
+      "context": "All done. Here's a summary of the fix:\n\n**Bug:** `congress_identities` in `/mnt/data/temporal-workflows/activities/congress_act.py` had a hardcoded `ALLOWED_STATUSES = {\"eligible\", \"moderator\"}` that dropped `status: meme` personas before they ever reached the workflow. The workflow's meme-mode filter at line 180 (`eligible_statuses = (\"eligible\", \"meme\") if is_meme else (\"eligible\",)`) was therefore operating on an empty set of meme personas.\n\n**Fix applied to two files:**\n\n1. `/mnt/data/tempor...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

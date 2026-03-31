@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-234435-af67763f",
+  "title": "Update heartbeat Congress rules in TRIGGERS.md and CLAUDE.md",
+  "agent_id": "af67763fec866a66d",
+  "agent_type": "general-purpose",
+  "session_id": "ef1a5e01-b3c3-41d6-abd3-172f68d92559",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T23:44:35Z",
+      "event": "started",
+      "context": "Update heartbeat Congress rules in TRIGGERS.md and CLAUDE.md"
+    },
+    {
+      "event": "done",
+      "ts": "2026-03-27T00:32:26.123886Z",
+      "message": "Completed \u2014 TRIGGERS.md heartbeat section updated per jaboostin directive (commit 723172e)"
+    }
+  ],
+  "status": "done"
+}

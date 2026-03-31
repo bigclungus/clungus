@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-185704-abcbbfb5",
+  "title": "Find SS14 player count faking options",
+  "agent_id": "abcbbfb527eece507",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T18:57:04Z",
+      "event": "started",
+      "context": "Find SS14 player count faking options"
+    },
+    {
+      "ts": "2026-03-24T18:58:53Z",
+      "event": "done",
+      "context": "I now have a complete picture. Here's the summary:\n\n---\n\n## Viable Options for Faking 30 Players Locally\n\n### 1. `AddDummySessions` — Integration Test / Benchmark API (Best Option, Non-Release Only)\n\n**Location:** `RobustToolbox/Robust.UnitTesting/RobustIntegrationTest.cs:823` and `Robust.Server/Player/PlayerManager.cs:182`\n\n`PlayerManager.AddDummySession()` injects a `DummySession` directly into the player manager's internal session table with no real network connection. This increments `Player...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

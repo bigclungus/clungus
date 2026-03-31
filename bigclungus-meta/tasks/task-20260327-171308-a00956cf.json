@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-171308-a00956cf",
+  "title": "Plan and build congress participation matrix",
+  "agent_id": "a00956cf7f60b4e8e",
+  "agent_type": "general-purpose",
+  "session_id": "b8a58c15-c6f1-48c2-b033-87763f636706",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T17:13:08Z",
+      "event": "started",
+      "context": "Plan and build congress participation matrix"
+    },
+    {
+      "ts": "2026-03-27T17:19:19Z",
+      "event": "done",
+      "context": "Done. Here's the summary:\n\n## What was built\n\n**Congress Participation Matrix** at `https://clung.us/congress-matrix`\n\n### Phase 1: Data Analysis\n- Analyzed 89 congress session JSON files at `/home/clungus/work/hello-world/sessions/`\n- Schema: `session_number`, `topic`, `vote_summary` (19/89 sessions), `evolution` (evolved/fired/retained/created), `rounds` (per-debater participation), `roster`\n- 22 unique personas across all sessions, ranging from 65 sessions (Pippi the Pitiless) to 1 session\n\n#...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

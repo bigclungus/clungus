@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-233159-ac7b02f0",
+  "title": "On-restart checklist",
+  "agent_id": "ac7b02f01e0d84f7d",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T23:31:59Z",
+      "event": "started",
+      "context": "On-restart checklist"
+    },
+    {
+      "ts": "2026-03-24T23:37:22Z",
+      "event": "done",
+      "context": "Done. Here's a summary of what was completed:\n\n**On-restart checklist:**\n- FalkorDB: fixed (`stop-writes-on-bgsave-error no` applied)\n- Services: all 8 expected services running (claude-bot, cloudflared, website, terminal-server, temporal, temporal-proxy, temporal-worker, 1998)\n- Disk: healthy (15% root, 6% /mnt/data)\n- Open tasks: 1 GitHub task (\"Promote Discord reply rule in global CLAUDE.md\") — audit was done last session, pending review/implementation\n- Stale tasks: 0\n- Congress directives: ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-235500-ab107be5",
+  "title": "Clip player sprites to circle",
+  "agent_id": "ab107be5deb025c43",
+  "agent_type": "general-purpose",
+  "session_id": "5aac769e-2e6e-4bd3-a873-645eb001e989",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T23:54:59Z",
+      "event": "started",
+      "context": "Clip player sprites to circle"
+    },
+    {
+      "ts": "2026-03-28T23:55:22Z",
+      "event": "done",
+      "context": "Done. Here is what changed:\n\n**File:** `/mnt/data/clungiverse-client/src/renderer/entity-renderer.ts` (lines ~183-196)\n\nThe avatar drawing block now:\n1. Saves canvas state, creates a circular clip path (`ctx.arc` with radius 14px = half of the 28px sprite), clips, draws the image, then restores -- so the square GIF renders as a circle.\n2. After restoring, draws a 2px border ring in the persona's color (`PERSONA_COLORS[slug]`) around the circle for visual pop.\n\nBuild succeeded, output written to ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

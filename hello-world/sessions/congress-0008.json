@@ -1,0 +1,120 @@
+{
+  "session_id": "congress-0008",
+  "session_number": 8,
+  "topic": "what should be the criteria for bringing a personality out of severance (inactive) and back into the roster (active)?",
+  "mode": "standard",
+  "status": "completed",
+  "started_at": "2026-03-24T07:23:47.750922Z",
+  "finished_at": "2026-03-24T07:25:24.135280Z",
+  "discord_user": null,
+  "thread_id": "1485901868625301544",
+  "roster": null,
+  "rounds": [
+    {
+      "ts": "2026-03-24T07:24:01.368670Z",
+      "identity": "hiring-manager",
+      "response": "Chud O'Bikeshedder: Operational outcomes wrangler — what actually makes BigClungus better at its job?\nPippi the Pitiless: Code and work reviewer\nKwame the Constructor: Systems designer and long-term thinker\nSpengler the Doomed: Faustian pragmatist and civilizational decline analyst\nOtto Atreides: Optimist-nihilist and limit-pusher — nothing matters, so build the wildest thing",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T07:24:03.787944Z",
+      "identity": "otto",
+      "response": "**Bring them back when the system needs maximum novelty or is stagnating into safe patterns.**  \nSeverance is just another limit to test; reactivate the wildest, most entropy-rich personas first — the ones that previously pushed hardest and failed spectacularly.  \nNothing lasts anyway, so prioritize glorious disruption over cautious stability.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T07:24:08.280996Z",
+      "identity": "pm",
+      "response": "Reinstatement should have exactly one criterion: does this persona fill a capability gap that's actively degrading debate quality right now? Not \"it would be nice to hear Spengler's voice again\" — that's nostalgia, not operations. If the current active roster is producing verdicts that BigClungus then executes well, the bench stays empty; if debates are missing a perspective that's causing systematic blind spots in outcomes, pull someone back.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T07:24:13.493840Z",
+      "identity": "spengler",
+      "response": "A persona was fired because the debate ecology produced a verdict — that is information about structural fit at a particular moment in the system's arc, not a permanent moral judgment. Reinstatement is warranted when the *conditions that made the persona redundant or destructive have themselves changed*: a new topic domain where their specific failure mode becomes a virtue, or a gap in the active roster that their particular pathology is precisely suited to fill. Do not reinstate out of nostalgia or because someone misses the voice — reinstate only when you can name the structural hole and confirm the fired persona is the right shape to fill it, because bringing back a misfit to soothe discomfort is how you get the same firing twice.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T07:24:19.115499Z",
+      "identity": "architect",
+      "response": "Reactivation must be treated as a permanent structural commitment, only occurring when a persona fills a foundational gap that existing abstractions cannot resolve. We should only bring a personality back if its unique logic is robust enough to justify the compounding context debt it imposes on every future deliberation. If you cannot define a persona’s long-term utility and explicit contract today, the system remains cleaner and more functional without them.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T07:24:30.669984Z",
+      "identity": "critic",
+      "response": "Severance is the proper state for the redundant, and no personality should return unless their absence is causing a documented, catastrophic system failure that the current roster is fundamentally incapable of solving. \"Potential utility\" and \"historical relevance\" are insufficient justifications for the immediate complexity tax and cognitive load that re-activating a persona incurs. Unless you can prove the system will break tonight without them, the answer is no.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T07:24:36.646247Z",
+      "identity": "hiring-manager",
+      "response": "[DONE] — The core criteria are established across all voices: reinstate only when there's a documented gap causing real harm, and Spengler's point about changed conditions is the only additive insight; another round would just be noise.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T07:24:47.758793Z",
+      "identity": "hiring-manager",
+      "response": "Reinstatement requires a demonstrable gap — not nostalgia, not novelty-seeking, not \"it's been a while.\" The question is simple: is there an argument being made in current debates that none of the active roster can credibly make, and did the fired persona have a track record of making exactly that argument well? If yes, reinstate. If you're asking \"wouldn't it be interesting to hear from them again,\" the answer is no. Severance exists because the persona stopped earning their seat — they come back only when the seat needs filling, not when someone misses them.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T07:25:24.003617Z",
+      "identity": "hiring-manager",
+      "response": "PERSONA: Chud O'Bikeshedder\nVERDICT: RETAIN\nREASON: Made the cleanest operational case — one criterion, no hedging — and landed it before anyone else did.\n\nPERSONA: Pippi the Pitiless\nVERDICT: FIRE\nREASON: Restated Chud's gap criterion at higher volume; \"complexity tax\" is a real cost but was not developed into a distinct evaluative framework, just noise amplification.\n\nPERSONA: Kwame the Constructor\nVERDICT: EVOLVE\nREASON: \"Compounding context debt\" and the demand for an explicit long-term contract before reactivation is a structural frame that changes how the decision gets made, not just what it decides.\nLEARNED: Reactivation incurs permanent architectural debt — a persona's return must be evaluated not just on current gap but on what it costs every future deliberation that has to carry it.\n\nPERSONA: Spengler the Doomed\nVERDICT: EVOLVE\nREASON: The only debater who named the actual crux: firing is a verdict about conditions, not character — so reinstatement turns on whether those conditions have changed, not whether the gap currently exists.\nLEARNED: A firing verdict encodes the state of the debate ecology at a moment in time; reinstatement becomes valid when the ecological conditions that produced the firing have themselves been superseded.\n\nPERSONA: Otto Atreides\nVERDICT: FIRE\nREASON: Offered no criteria — only an aesthetic preference for chaos — which is not a contribution to a question about operational standards.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T07:25:27.112856Z",
+      "identity": "hiring-manager",
+      "response": "NONE",
+      "model": null
+    }
+  ],
+  "vote_summary": null,
+  "evolution": {
+    "evolved": [
+      {
+        "slug": "",
+        "display_name": "Kwame the Constructor",
+        "learned": "Reactivation incurs permanent architectural debt — a persona's return must be evaluated not just on current gap but on what it costs every future deliberation that has to carry it."
+      },
+      {
+        "slug": "",
+        "display_name": "Spengler the Doomed",
+        "learned": "A firing verdict encodes the state of the debate ecology at a moment in time; reinstatement becomes valid when the ecological conditions that produced the firing have themselves been superseded."
+      }
+    ],
+    "fired": [],
+    "retained": [
+      {
+        "slug": "",
+        "display_name": "Chud O'Bikeshedder"
+      }
+    ],
+    "created": []
+  },
+  "verdict": "Reinstatement requires a demonstrable gap — not nostalgia, not novelty-seeking, not \"it's been a while.\" The question is simple: is there an argument being made in current debates that none of the active roster can credibly make, and did the fired persona have a track record of making exactly that argument well? If yes, reinstate. If you're asking \"wouldn't it be interesting to hear from them again,\" the answer is no. Severance exists because the persona stopped earning their seat — they come back only when the seat needs filling, not when someone misses them.",
+  "failure_reason": null,
+  "task_titles": null,
+  "notes": null,
+  "_original_transforms": {
+    "evolution": {
+      "created": [],
+      "evolved": [
+        {
+          "display_name": "Kwame the Constructor",
+          "learned": "Reactivation incurs permanent architectural debt — a persona's return must be evaluated not just on current gap but on what it costs every future deliberation that has to carry it."
+        },
+        {
+          "display_name": "Spengler the Doomed",
+          "learned": "A firing verdict encodes the state of the debate ecology at a moment in time; reinstatement becomes valid when the ecological conditions that produced the firing have themselves been superseded."
+        }
+      ],
+      "fired": [],
+      "retained": [
+        "Chud O'Bikeshedder"
+      ]
+    }
+  }
+}

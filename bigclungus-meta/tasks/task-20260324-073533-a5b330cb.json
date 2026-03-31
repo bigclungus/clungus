@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-073533-a5b330cb",
+  "title": "Auto-commit evolved personas after congress",
+  "agent_id": "a5b330cb52864d7f4",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": "1485904522940256326",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T07:35:33Z",
+      "event": "started",
+      "context": "Auto-commit evolved personas after congress"
+    },
+    {
+      "ts": "2026-03-24T07:36:22Z",
+      "event": "done",
+      "context": "Everything is done. Here is a summary of what changed:\n\n**File modified:** `/mnt/data/temporal-workflows/activities/congress_act.py`\n\nAt the end of `congress_evolve` (lines 489-509, just before `return results`), a git commit/push block was added. It:\n\n1. Runs `git -C /home/clungus/work/bigclungus-meta add -A` to stage all persona file changes (written EVOLVE appends, FIRE moves, CREATE new files).\n2. Checks `git status --porcelain` — only proceeds if there are actually dirty files.\n3. Commits w...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

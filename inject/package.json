@@ -1,0 +1,9 @@
+{
+  "name": "inject",
+  "version": "1.0.0",
+  "description": "Proxy: old /inject endpoint (9876) -> omni-gateway (8085)",
+  "module": "src/index.ts",
+  "scripts": {
+    "start": "bun run src/index.ts"
+  }
+}

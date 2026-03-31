@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="icon" type="image/png" href="https://clung.us/favicon.png">
+  <title>Knowledge Graph — BigClungus</title>
+  <script src="/gamecube-sounds.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #0d1117;
+      font-family: monospace;
+    }
+    #graph-canvas {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+    }
+    #toolbar {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      z-index: 20;
+      background: rgba(13, 17, 23, 0.82);
+      border: 1px solid #2a2a4e;
+      border-radius: 5px;
+      padding: 6px 10px;
+      backdrop-filter: blur(4px);
+    }
+    .graph-btn {
+      background: #161628;
+      border: 1px solid #2a2a4e;
+      color: #aaa;
+      font-size: 10px;
+      padding: 3px 8px;
+      cursor: pointer;
+      border-radius: 3px;
+      font-family: monospace;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .graph-btn:hover { border-color: #58a6ff; color: #58a6ff; }
+    #back-link {
+      position: fixed;
+      bottom: 12px;
+      left: 12px;
+      z-index: 20;
+      background: rgba(13, 17, 23, 0.82);
+      border: 1px solid #2a2a4e;
+      border-radius: 5px;
+      padding: 5px 10px;
+      backdrop-filter: blur(4px);
+    }
+    #back-link a {
+      color: #8b949e;
+      text-decoration: none;
+      font-size: 11px;
+      font-family: monospace;
+      transition: color 0.15s;
+    }
+    #back-link a:hover { color: #58a6ff; }
+    #counts {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 20;
+      background: rgba(13, 17, 23, 0.82);
+      border: 1px solid #2a2a4e;
+      border-radius: 5px;
+      padding: 6px 12px;
+      backdrop-filter: blur(4px);
+      color: #8b949e;
+      font-size: 11px;
+      font-family: monospace;
+    }
+    #loading {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #58a6ff;
+      font-size: 13px;
+      font-family: monospace;
+      z-index: 30;
+      pointer-events: none;
+    }
+    #auto-refresh-indicator {
+      font-size: 10px;
+      font-family: monospace;
+      color: #3fb950;
+      opacity: 0.7;
+      white-space: nowrap;
+      padding-left: 4px;
+      border-left: 1px solid #2a2a4e;
+      margin-left: 2px;
+      transition: opacity 0.2s;
+    }
+    #auto-refresh-indicator.pulse {
+      opacity: 1;
+      color: #56d364;
+    }
+
+    /* Node search overlay */
+    #node-search-overlay {
+      display: block;
+      position: fixed;
+      top: 52px;
+      right: 12px;
+      z-index: 100;
+      width: 260px;
+      background: rgba(13, 17, 23, 0.96);
+      border: 1px solid #6b5ce7;
+      border-radius: 6px;
+      padding: 8px;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 4px 24px rgba(107, 92, 231, 0.25);
+      font-family: monospace;
+    }
+    #node-search-input {
+      width: 100%;
+      background: #1a1a2e;
+      border: 1px solid #6b5ce7;
+      border-radius: 4px;
+      color: #e6edf3;
+      font-family: monospace;
+      font-size: 12px;
+      padding: 5px 8px;
+      outline: none;
+      box-sizing: border-box;
+    }
+    #node-search-input::placeholder { color: #555; }
+    #node-search-input:focus { border-color: #8b7cf8; }
+    #node-search-results {
+      margin-top: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .node-search-result {
+      padding: 4px 8px;
+      color: #aaa;
+      font-size: 11px;
+      cursor: pointer;
+      border-radius: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: background 0.1s, color 0.1s;
+    }
+    .node-search-result:hover,
+    .node-search-result.active {
+      background: #1a1a2e;
+      color: #e6edf3;
+    }
+    .node-search-result .ns-group {
+      font-size: 9px;
+      color: #6b5ce7;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+    #node-search-hint {
+      margin-top: 5px;
+      font-size: 9px;
+      color: #444;
+      text-align: right;
+    }
+    #ingestion-status {
+      font-size: 10px;
+      font-family: monospace;
+      color: #8b949e;
+      white-space: nowrap;
+      padding-left: 8px;
+      border-left: 1px solid #2a2a4e;
+      margin-left: 2px;
+    }
+    /* Leaf panel sidebar */
+    #leaf-panel {
+      display: none;
+      position: fixed;
+      right: 0;
+      top: 0;
+      width: 320px;
+      height: 100vh;
+      background: #111318;
+      color: #eee;
+      overflow-y: auto;
+      padding: 16px;
+      font-family: monospace;
+      border-left: 1px solid #2a2a4e;
+      z-index: 1000;
+      box-shadow: -4px 0 24px rgba(0,0,0,0.5);
+    }
+    #leaf-panel-title {
+      margin: 0;
+      color: #79b8ff;
+      font-size: 14px;
+    }
+    #leaf-panel-close {
+      background: none;
+      border: none;
+      color: #555;
+      font-size: 18px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px 4px;
+      transition: color 0.15s;
+    }
+    #leaf-panel-close:hover { color: #f85149; }
+    #leaf-panel-meta {
+      font-size: 10px;
+      color: #555;
+      margin-top: 4px;
+    }
+    #leaf-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 11px;
+    }
+    #leaf-table thead tr {
+      color: #79b8ff;
+      text-align: left;
+      border-bottom: 1px solid #2a2a4e;
+    }
+    #leaf-table th {
+      padding: 4px 6px;
+      font-weight: normal;
+    }
+    #leaf-table-body tr {
+      border-bottom: 1px solid #1a1a2e;
+    }
+    #leaf-table-body tr:hover {
+      background: #1a1a2e;
+    }
+    #leaf-table-body td {
+      padding: 6px 6px;
+      vertical-align: top;
+    }
+    .lt-label { color: #ccc; }
+    .lt-rel   { color: #6b5ce7; font-size: 10px; }
+    .lt-content { color: #666; font-size: 10px; max-width: 180px; word-break: break-word; }
+    .lt-row-highlight {
+      background: #1f1a3a !important;
+      outline: 1px solid #6b5ce7;
+    }
+
+    #legend {
+      position: fixed;
+      bottom: 14px;
+      left: 14px;
+      background: rgba(13,17,23,0.85);
+      border: 1px solid #2a2a4e;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-family: monospace;
+      font-size: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      backdrop-filter: blur(4px);
+      z-index: 10;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #aaa;
+    }
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="graph-canvas"></div>
+  <div id="toolbar">
+    <button class="graph-btn" onclick="refreshGraph()">Refresh</button>
+    <button class="graph-btn" onclick="fitGraph()">Fit</button>
+    <button class="graph-btn" id="reset-isolation-btn" onclick="resetIsolation(); closeLeafPanel();" style="display:none">reset filter</button>
+    <button class="graph-btn" id="orphan-toggle-btn" onclick="toggleOrphans()" style="display:none">show orphans (0)</button>
+    <span id="auto-refresh-indicator">auto-refresh: 60s</span>
+    <span id="ingestion-status">&#x1F4CA; loading...</span>
+  </div>
+  <div id="counts">loading...</div>
+
+  <!-- Node search overlay -->
+  <div id="node-search-overlay">
+    <input id="node-search-input" type="text" placeholder="Search nodes... (Enter to go, Esc to close)" autocomplete="off" spellcheck="false">
+    <div id="node-search-results"></div>
+    <div id="node-search-hint"></div>
+  </div>
+  <div id="legend"></div>
+  <div id="back-link"><a href="/">&#x2190; terminal</a></div>
+  <div id="loading">Loading graph...</div>
+
+  <!-- Leaf node sidebar panel -->
+  <div id="leaf-panel">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3 id="leaf-panel-title"></h3>
+      <button id="leaf-panel-close" onclick="closeLeafPanel()" title="Close">&#x2715;</button>
+    </div>
+    <div id="leaf-panel-meta"></div>
+    <table id="leaf-table">
+      <thead>
+        <tr>
+          <th>attribute</th>
+          <th>relationship</th>
+        </tr>
+      </thead>
+      <tbody id="leaf-table-body"></tbody>
+    </table>
+  </div>
+
+  <!-- Sigma.js + Graphology from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/graphology@0.25.4/dist/graphology.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sigma@2.4.0/build/sigma.min.js"></script>
+
+  <script>
+    // ── Color palette ──────────────────────────────────────────────────────────
+    const GROUP_COLORS = {
+      Person:    '#f0883e',
+      Place:     '#bc8cff',
+      Company:   '#58a6ff',
+      Tech:      '#3fb950',
+      Politics:  '#f85149',
+      Concept:   '#d29922',
+      Entity:    '#8b949e',
+    };
+    const DEFAULT_COLOR = '#8b949e';
+
+    // Build legend
+    (function () {
+      const el = document.getElementById('legend');
+      Object.entries(GROUP_COLORS).filter(([g]) => g !== 'Entity').forEach(function ([group, col]) {
+        el.innerHTML += '<div class="legend-item"><div class="legend-dot" style="background:' + col + '"></div> ' + group + '</div>';
+      });
+    })();
+
+    // ── State ──────────────────────────────────────────────────────────────────
+    let sigmaInstance = null;
+    let graph = null;                   // Graphology instance (full graph minus orphans)
+    let fullGraph = null;               // Graphology instance (full graph including orphans when shown)
+
+    let isolatedNodeId = null;
+    let hiddenNodes = new Set();
+    let hiddenEdges = new Set();
+
+    // Leaf-node collapse state
+    let leafDetails = {};
+    let leafNodeSet = new Set();
+    let leafSearchIndex = [];
+
+    // Orphan state
+    let orphanNodes = [];
+    let orphanNodeData = [];            // raw node objects for orphans
+    let showOrphans = false;
+
+    // Raw data cache for refresh
+    let rawNodes = [];
+    let rawEdges = [];
+
+    // Person node identifiers
+    const PERSON_LABELS = [
+      'jaboostin', 'justin',
+      'centronias', 'charles', 'kyle', 'dylan',
+      'graeme', 'kubariet', 'koole',
+      'bigclungus',
+    ];
+
+    function isPersonNode(node) {
+      if (!node || !node.label) return false;
+      const lc = node.label.toLowerCase();
+      return PERSON_LABELS.some(p => lc.includes(p));
+    }
+
+    // ── Leaf node processing ───────────────────────────────────────────────────
+    function processLeafNodes(nodes, edges) {
+      leafDetails = {};
+      leafNodeSet = new Set();
+
+      const nodeById = {};
+      nodes.forEach(n => { nodeById[n.id] = n; });
+
+      const degree = {};
+      edges.forEach(e => {
+        degree[e.from] = (degree[e.from] || 0) + 1;
+        degree[e.to]   = (degree[e.to]   || 0) + 1;
+      });
+
+      nodes.forEach(n => {
+        if ((degree[n.id] || 0) !== 1) return;
+        const edge = edges.find(e => e.from === n.id || e.to === n.id);
+        if (!edge) return;
+        const otherId = edge.from === n.id ? edge.to : edge.from;
+        const other   = nodeById[otherId];
+        if (!isPersonNode(other)) return;
+
+        leafNodeSet.add(n.id);
+        if (!leafDetails[otherId]) leafDetails[otherId] = [];
+        leafDetails[otherId].push({
+          label:        n.label        || '(unlabeled)',
+          relationship: edge.label     || edge.title || '',
+          content:      n.title        || '',
+        });
+      });
+
+      Object.values(leafDetails).forEach(arr =>
+        arr.sort((a, b) => a.label.localeCompare(b.label))
+      );
+
+      // Build search index
+      leafSearchIndex = [];
+      nodes.filter(n => !leafNodeSet.has(n.id)).forEach(n => {
+        leafSearchIndex.push({
+          label: n.label || '',
+          group: n.group || '',
+          isLeaf: false,
+          parentId: null,
+          parentLabel: null,
+          relationship: null,
+          content: n.title || '',
+          _nodeId: n.id,
+        });
+      });
+      Object.entries(leafDetails).forEach(([parentId, leaves]) => {
+        const parentNode = nodeById[parentId];
+        const parentLabel = parentNode ? (parentNode.label || parentId) : parentId;
+        leaves.forEach(leaf => {
+          leafSearchIndex.push({
+            label: leaf.label,
+            group: '',
+            isLeaf: true,
+            parentId: parentId,
+            parentLabel: parentLabel,
+            relationship: leaf.relationship,
+            content: leaf.content,
+            _nodeId: null,
+          });
+        });
+      });
+
+      const visibleNodes = nodes.filter(n => !leafNodeSet.has(n.id));
+      const visibleEdges = edges.filter(e => !leafNodeSet.has(e.from) && !leafNodeSet.has(e.to));
+      return { visibleNodes, visibleEdges };
+    }
+
+    function identifyOrphans(visibleNodes, visibleEdges) {
+      const visibleDegree = {};
+      visibleEdges.forEach(e => {
+        visibleDegree[e.from] = (visibleDegree[e.from] || 0) + 1;
+        visibleDegree[e.to]   = (visibleDegree[e.to]   || 0) + 1;
+      });
+
+      orphanNodeData = visibleNodes.filter(n => (visibleDegree[n.id] || 0) === 0);
+      orphanNodes = orphanNodeData;
+      const orphanSet = new Set(orphanNodeData.map(n => n.id));
+
+      orphanNodeData.forEach(n => {
+        leafSearchIndex.push({
+          label: n.label || '',
+          group: n.group || '',
+          isLeaf: false,
+          isOrphan: true,
+          parentId: null,
+          parentLabel: null,
+          relationship: null,
+          content: n.title || '',
+          _nodeId: n.id,
+        });
+      });
+
+      const mainNodes = visibleNodes.filter(n => !orphanSet.has(n.id));
+      return { mainNodes, mainEdges: visibleEdges };
+    }
+
+    // ── Orphan toggle ──────────────────────────────────────────────────────────
+    function toggleOrphans() {
+      showOrphans = !showOrphans;
+      if (showOrphans) {
+        addOrphansToGraph();
+      } else {
+        removeOrphansFromGraph();
+      }
+      syncOrphanButton();
+    }
+
+    function addOrphansToGraph() {
+      if (!graph) return;
+      const cols = Math.ceil(Math.sqrt(orphanNodeData.length + 1));
+      const cellW = 80;
+      const cellH = 60;
+      const originX = 1200;
+      const originY = 1200;
+      orphanNodeData.forEach((n, i) => {
+        const key = String(n.id);
+        if (graph.hasNode(key)) return;
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const hasLeaves = !!leafDetails[n.id];
+        graph.addNode(key, {
+          x: originX + col * cellW,
+          y: originY + row * cellH,
+          label: n.label || '',
+          size: hasLeaves ? 8 : 5,
+          color: GROUP_COLORS[n.group] || DEFAULT_COLOR,
+          type: 'circle',
+          _group: n.group || '',
+          _title: n.title || '',
+          _isOrphan: true,
+          _hasLeaves: hasLeaves,
+          _borderColor: hasLeaves ? '#79b8ff' : null,
+        });
+      });
+      if (sigmaInstance) sigmaInstance.refresh();
+    }
+
+    function removeOrphansFromGraph() {
+      if (!graph) return;
+      orphanNodeData.forEach(n => {
+        const key = String(n.id);
+        if (graph.hasNode(key)) graph.dropNode(key);
+      });
+      if (sigmaInstance) sigmaInstance.refresh();
+    }
+
+    function syncOrphanButton() {
+      const btn = document.getElementById('orphan-toggle-btn');
+      if (!btn) return;
+      if (orphanNodeData.length === 0) {
+        btn.style.display = 'none';
+        return;
+      }
+      btn.style.display = '';
+      if (showOrphans) {
+        btn.textContent = 'hide orphans (' + orphanNodeData.length + ')';
+        btn.style.color = '#79b8ff';
+        btn.style.borderColor = '#79b8ff';
+      } else {
+        btn.textContent = 'show orphans (' + orphanNodeData.length + ')';
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      }
+    }
+
+    // ── Isolation ──────────────────────────────────────────────────────────────
+    function isolateNode(nodeId) {
+      const key = String(nodeId);
+      if (!graph || !graph.hasNode(key)) return;
+
+      const connectedNodeIds = new Set([key]);
+      const connectedEdgeIds = new Set();
+
+      graph.forEachEdge(key, (edge, attrs, source, target) => {
+        connectedNodeIds.add(source);
+        connectedNodeIds.add(target);
+        connectedEdgeIds.add(edge);
+      });
+
+      hiddenNodes = new Set();
+      hiddenEdges = new Set();
+
+      graph.forEachNode((node) => {
+        if (!connectedNodeIds.has(node)) {
+          hiddenNodes.add(node);
+        }
+      });
+
+      graph.forEachEdge((edge) => {
+        if (!connectedEdgeIds.has(edge)) {
+          hiddenEdges.add(edge);
+        }
+      });
+
+      isolatedNodeId = nodeId;
+
+      // Update sigma node/edge reducers to hide
+      if (sigmaInstance) sigmaInstance.refresh();
+
+      const resetBtn = document.getElementById('reset-isolation-btn');
+      const nodeAttrs = graph.getNodeAttributes(key);
+      resetBtn.textContent = 'showing: ' + (nodeAttrs.label || 'selected');
+      resetBtn.style.display = '';
+      resetBtn.style.color = '#79b8ff';
+      resetBtn.style.borderColor = '#79b8ff';
+    }
+
+    function resetIsolation() {
+      if (!isolatedNodeId) return;
+      hiddenNodes = new Set();
+      hiddenEdges = new Set();
+      isolatedNodeId = null;
+      if (sigmaInstance) sigmaInstance.refresh();
+      document.getElementById('reset-isolation-btn').style.display = 'none';
+    }
+
+    // ── Leaf panel ─────────────────────────────────────────────────────────────
+    function closeLeafPanel() {
+      document.getElementById('leaf-panel').style.display = 'none';
+      document.getElementById('node-search-overlay').style.right = '12px';
+      document.getElementById('counts').style.right = '12px';
+    }
+
+    function openLeafPanel(nodeId, nodeLabel, highlightLabel) {
+      const items = leafDetails[nodeId] || [];
+      document.getElementById('leaf-panel-title').textContent = nodeLabel || nodeId;
+      document.getElementById('leaf-panel-meta').textContent =
+        items.length + ' collapsed attribute' + (items.length !== 1 ? 's' : '');
+
+      const tbody = document.getElementById('leaf-table-body');
+      tbody.innerHTML = items.map(item => {
+        const rel     = item.relationship ? escapeHtml(item.relationship) : '<span style="color:#333">-</span>';
+        const content = item.content
+          ? '<div class="lt-content">' + escapeHtml(item.content) + '</div>'
+          : '';
+        const rowClass = (highlightLabel && item.label === highlightLabel)
+          ? ' class="lt-row-highlight"'
+          : '';
+        const dataAttr = ' data-label="' + escapeHtml(item.label) + '"';
+        return '<tr' + rowClass + dataAttr + '>' +
+          '<td class="lt-label">' + escapeHtml(item.label) + content + '</td>' +
+          '<td class="lt-rel">'  + rel + '</td>' +
+          '</tr>';
+      }).join('');
+
+      document.getElementById('leaf-panel').style.display = 'block';
+      document.getElementById('node-search-overlay').style.right = '332px';
+      document.getElementById('counts').style.right = '332px';
+
+      if (highlightLabel) {
+        const highlightedRow = tbody.querySelector('.lt-row-highlight');
+        if (highlightedRow) {
+          setTimeout(() => highlightedRow.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
+        }
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    // ── ForceAtlas2 in Web Worker ──────────────────────────────────────────────
+    // We inline a small worker that runs ForceAtlas2 iterations
+    function runForceAtlas2(graph, iterations, callback) {
+      // Extract positions and adjacency for the worker
+      const nodes = [];
+      const nodeIndex = {};
+      let idx = 0;
+      graph.forEachNode((key, attrs) => {
+        nodeIndex[key] = idx;
+        nodes.push({
+          key: key,
+          x: attrs.x || (Math.random() * 1000 - 500),
+          y: attrs.y || (Math.random() * 1000 - 500),
+          size: attrs.size || 5,
+        });
+        idx++;
+      });
+
+      const edges = [];
+      graph.forEachEdge((edge, attrs, source, target) => {
+        if (nodeIndex[source] !== undefined && nodeIndex[target] !== undefined) {
+          edges.push([nodeIndex[source], nodeIndex[target]]);
+        }
+      });
+
+      // Build worker code as a blob
+      const workerCode = `
+        self.onmessage = function(e) {
+          const { nodes, edges, iterations } = e.data;
+          const n = nodes.length;
+          if (n === 0) { self.postMessage({ nodes: [] }); return; }
+
+          // Simple ForceAtlas2-like force-directed layout
+          const settings = {
+            gravity: 1.0,
+            scalingRatio: 10.0,
+            slowDown: 5.0,
+            edgeWeightInfluence: 1.0,
+            barnesHutTheta: 1.5,
+            strongGravityMode: false,
+          };
+
+          // Build adjacency
+          const adj = new Array(n);
+          for (let i = 0; i < n; i++) adj[i] = [];
+          for (const [s, t] of edges) {
+            adj[s].push(t);
+            adj[t].push(s);
+          }
+
+          // Degree
+          const degree = new Float64Array(n);
+          for (let i = 0; i < n; i++) degree[i] = adj[i].length + 1;
+
+          // Positions
+          const x = new Float64Array(n);
+          const y = new Float64Array(n);
+          for (let i = 0; i < n; i++) {
+            x[i] = nodes[i].x;
+            y[i] = nodes[i].y;
+          }
+
+          for (let iter = 0; iter < iterations; iter++) {
+            const dx = new Float64Array(n);
+            const dy = new Float64Array(n);
+
+            // Repulsion (O(n^2) - fine for <10k nodes with few iterations)
+            for (let i = 0; i < n; i++) {
+              for (let j = i + 1; j < n; j++) {
+                let xDist = x[i] - x[j];
+                let yDist = y[i] - y[j];
+                let dist = Math.sqrt(xDist * xDist + yDist * yDist);
+                if (dist < 0.01) dist = 0.01;
+
+                // LinLog repulsion scaled by degree
+                const repForce = settings.scalingRatio * degree[i] * degree[j] / dist;
+
+                const fx = xDist / dist * repForce;
+                const fy = yDist / dist * repForce;
+                dx[i] += fx;
+                dy[i] += fy;
+                dx[j] -= fx;
+                dy[j] -= fy;
+              }
+            }
+
+            // Attraction (edges)
+            for (const [s, t] of edges) {
+              let xDist = x[s] - x[t];
+              let yDist = y[s] - y[t];
+              let dist = Math.sqrt(xDist * xDist + yDist * yDist);
+              if (dist < 0.01) dist = 0.01;
+
+              const attForce = dist;
+              const fx = xDist / dist * attForce;
+              const fy = yDist / dist * attForce;
+              dx[s] -= fx;
+              dy[s] -= fy;
+              dx[t] += fx;
+              dy[t] += fy;
+            }
+
+            // Gravity
+            for (let i = 0; i < n; i++) {
+              const dist = Math.sqrt(x[i] * x[i] + y[i] * y[i]);
+              if (dist > 0) {
+                const gForce = settings.gravity * degree[i];
+                dx[i] -= gForce * x[i] / dist;
+                dy[i] -= gForce * y[i] / dist;
+              }
+            }
+
+            // Apply forces with slowdown
+            const speed = 1.0 / settings.slowDown;
+            for (let i = 0; i < n; i++) {
+              const dLen = Math.sqrt(dx[i] * dx[i] + dy[i] * dy[i]);
+              if (dLen > 0) {
+                const factor = speed * Math.min(10, dLen) / dLen;
+                x[i] += dx[i] * factor;
+                y[i] += dy[i] * factor;
+              }
+            }
+          }
+
+          // Return result
+          const result = [];
+          for (let i = 0; i < n; i++) {
+            result.push({ key: nodes[i].key, x: x[i], y: y[i] });
+          }
+          self.postMessage({ nodes: result });
+        };
+      `;
+
+      const blob = new Blob([workerCode], { type: 'application/javascript' });
+      const workerUrl = URL.createObjectURL(blob);
+      const worker = new Worker(workerUrl);
+
+      worker.onmessage = function(e) {
+        const result = e.data.nodes;
+        result.forEach(n => {
+          if (graph.hasNode(n.key)) {
+            graph.setNodeAttribute(n.key, 'x', n.x);
+            graph.setNodeAttribute(n.key, 'y', n.y);
+          }
+        });
+        worker.terminate();
+        URL.revokeObjectURL(workerUrl);
+        callback();
+      };
+
+      worker.postMessage({ nodes, edges, iterations });
+    }
+
+    // ── Data fetch ─────────────────────────────────────────────────────────────
+    async function fetchGraphData() {
+      const resp = await fetch('/graph-data');
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      return resp.json();
+    }
+
+    // ── Render ─────────────────────────────────────────────────────────────────
+    // Hover state
+    let hoveredNode = null;
+    let hoveredEdge = null;
+    let hoveredNodeEdges = new Set();
+
+    function renderGraph(data) {
+      const canvasEl = document.getElementById('graph-canvas');
+
+      // Destroy previous instance
+      if (sigmaInstance) {
+        sigmaInstance.kill();
+        sigmaInstance = null;
+      }
+
+      // Create Graphology graph
+      graph = new graphology.Graph({ type: 'directed', multi: true, allowSelfLoops: true });
+
+      // Add nodes
+      data.nodes.forEach(n => {
+        const key = String(n.id);
+        const hasLeaves = !!leafDetails[n.id];
+        graph.addNode(key, {
+          x: Math.random() * 1000 - 500,
+          y: Math.random() * 1000 - 500,
+          label: n.label || '',
+          size: hasLeaves ? 8 : 5,
+          color: GROUP_COLORS[n.group] || DEFAULT_COLOR,
+          _group: n.group || '',
+          _title: n.title || '',
+          _hasLeaves: hasLeaves,
+          _borderColor: hasLeaves ? '#79b8ff' : null,
+          _isOrphan: false,
+        });
+      });
+
+      // Add edges
+      data.edges.forEach((e, i) => {
+        const source = String(e.from);
+        const target = String(e.to);
+        if (!graph.hasNode(source) || !graph.hasNode(target)) return;
+        // Handle multi-edges by generating unique keys
+        const edgeKey = 'e-' + i;
+        try {
+          graph.addEdgeWithKey(edgeKey, source, target, {
+            label: e.label || '',
+            _title: e.title || '',
+            color: '#444',
+            size: 1,
+            type: 'arrow',
+          });
+        } catch (err) {
+          // Skip duplicate edges
+        }
+      });
+
+      // Run layout in worker
+      const loadingEl = document.getElementById('loading');
+      loadingEl.textContent = 'Computing layout...';
+      loadingEl.style.display = 'block';
+
+      const layoutIterations = Math.min(500, Math.max(100, Math.round(50000 / (data.nodes.length + 1))));
+
+      runForceAtlas2(graph, layoutIterations, () => {
+        loadingEl.style.display = 'none';
+        createSigmaInstance(canvasEl);
+      });
+    }
+
+    function createSigmaInstance(canvasEl) {
+      // Node reducer: handles isolation hiding and hover highlighting
+      const nodeReducer = (node, data) => {
+        const res = { ...data };
+
+        // Hidden by isolation
+        if (hiddenNodes.has(node)) {
+          res.hidden = true;
+          return res;
+        }
+
+        // Dim nodes not connected to hovered node
+        if (hoveredNode && hoveredNode !== node) {
+          const isConnected = graph.hasEdge(hoveredNode, node) || graph.hasEdge(node, hoveredNode);
+          if (!isConnected) {
+            res.color = '#333';
+            res.label = null;
+          }
+        }
+
+        return res;
+      };
+
+      // Edge reducer: handles isolation hiding, hover labels, arrow display
+      const edgeReducer = (edge, data) => {
+        const res = { ...data };
+        res.forceLabel = false;
+
+        // Hidden by isolation
+        if (hiddenEdges.has(edge)) {
+          res.hidden = true;
+          return res;
+        }
+
+        // Show label on hover
+        if (hoveredEdge === edge) {
+          res.forceLabel = true;
+          res.color = '#58a6ff';
+          res.size = 2;
+        }
+
+        // Show labels for edges connected to hovered node
+        if (hoveredNodeEdges.has(edge)) {
+          res.forceLabel = true;
+          res.color = '#58a6ff';
+          res.size = 2;
+        }
+
+        // Dim edges not connected to hovered node
+        if (hoveredNode && !hoveredNodeEdges.has(edge)) {
+          res.color = '#222';
+        }
+
+        return res;
+      };
+
+      sigmaInstance = new Sigma(graph, canvasEl, {
+        renderLabels: true,
+        renderEdgeLabels: true,
+        labelFont: 'monospace',
+        labelSize: 11,
+        labelColor: { color: '#e6edf3' },
+        edgeLabelFont: 'monospace',
+        edgeLabelSize: 9,
+        edgeLabelColor: { color: '#888' },
+        defaultEdgeType: 'arrow',
+        defaultNodeColor: DEFAULT_COLOR,
+        defaultEdgeColor: '#444',
+        labelDensity: 0.12,
+        labelGridCellSize: 80,
+        labelRenderedSizeThreshold: 4,
+        nodeReducer: nodeReducer,
+        edgeReducer: edgeReducer,
+        stagePadding: 30,
+        allowInvalidContainer: true,
+        minCameraRatio: 0.02,
+        maxCameraRatio: 20,
+      });
+
+      // ── Click handler ──────────────────────────────────────────────────────
+      sigmaInstance.on('clickNode', ({ node, event }) => {
+        const nodeId = node;
+
+        // If clicking the already-isolated node, reset
+        if (isolatedNodeId && String(isolatedNodeId) === nodeId) {
+          resetIsolation();
+          closeLeafPanel();
+          return;
+        }
+
+        // Reset existing isolation
+        if (isolatedNodeId) resetIsolation();
+
+        // Isolate clicked node
+        isolateNode(nodeId);
+
+        // Open leaf panel if person node with leaves
+        if (leafDetails[nodeId]) {
+          const attrs = graph.getNodeAttributes(nodeId);
+          openLeafPanel(nodeId, attrs.label || nodeId);
+        } else {
+          closeLeafPanel();
+        }
+      });
+
+      sigmaInstance.on('clickStage', () => {
+        resetIsolation();
+        closeLeafPanel();
+      });
+
+      // ── Hover handlers ─────────────────────────────────────────────────────
+      sigmaInstance.on('enterNode', ({ node }) => {
+        hoveredNode = node;
+        hoveredNodeEdges = new Set();
+        graph.forEachEdge(node, (edge) => {
+          hoveredNodeEdges.add(edge);
+        });
+        sigmaInstance.refresh();
+        canvasEl.style.cursor = 'pointer';
+      });
+
+      sigmaInstance.on('leaveNode', () => {
+        hoveredNode = null;
+        hoveredNodeEdges = new Set();
+        sigmaInstance.refresh();
+        canvasEl.style.cursor = 'default';
+      });
+
+      sigmaInstance.on('enterEdge', ({ edge }) => {
+        hoveredEdge = edge;
+        sigmaInstance.refresh();
+      });
+
+      sigmaInstance.on('leaveEdge', () => {
+        hoveredEdge = null;
+        sigmaInstance.refresh();
+      });
+    }
+
+    // ── Load graph ─────────────────────────────────────────────────────────────
+    async function loadGraph() {
+      const loadingEl = document.getElementById('loading');
+      const countsEl = document.getElementById('counts');
+      loadingEl.style.display = 'block';
+      loadingEl.textContent = 'Loading graph...';
+      countsEl.textContent = 'loading...';
+      try {
+        const data = await fetchGraphData();
+        rawNodes = data.nodes;
+        rawEdges = data.edges;
+        loadingEl.style.display = 'none';
+        const { visibleNodes, visibleEdges } = processLeafNodes(data.nodes, data.edges);
+        const { mainNodes, mainEdges } = identifyOrphans(visibleNodes, visibleEdges);
+        showOrphans = false;
+        syncOrphanButton();
+        renderGraph({ nodes: mainNodes, edges: mainEdges });
+        const leafCount = data.nodes.length - visibleNodes.length;
+        countsEl.textContent =
+          mainNodes.length + ' nodes  |  ' + mainEdges.length + ' edges' +
+          (leafCount > 0 ? '  |  ' + leafCount + ' collapsed' : '') +
+          (orphanNodeData.length > 0 ? '  |  ' + orphanNodeData.length + ' orphaned' : '');
+      } catch (e) {
+        loadingEl.textContent = 'Error: ' + e.message;
+        countsEl.textContent = 'error';
+      }
+    }
+
+    async function refreshGraph() {
+      resetIsolation();
+      const countsEl = document.getElementById('counts');
+      try {
+        const data = await fetchGraphData();
+        rawNodes = data.nodes;
+        rawEdges = data.edges;
+        const { visibleNodes, visibleEdges } = processLeafNodes(data.nodes, data.edges);
+        const { mainNodes, mainEdges } = identifyOrphans(visibleNodes, visibleEdges);
+
+        // If no sigma instance yet, do full load
+        if (!sigmaInstance || !graph) {
+          showOrphans = false;
+          syncOrphanButton();
+          renderGraph({ nodes: mainNodes, edges: mainEdges });
+        } else {
+          // Incremental update: update graph in-place, preserve positions
+          const existingPositions = {};
+          graph.forEachNode((key, attrs) => {
+            existingPositions[key] = { x: attrs.x, y: attrs.y };
+          });
+
+          // Find nodes to add/remove
+          const newNodeIds = new Set(mainNodes.map(n => String(n.id)));
+          const currentNodeIds = new Set();
+          graph.forEachNode((key, attrs) => {
+            if (!attrs._isOrphan) currentNodeIds.add(key);
+          });
+
+          // Remove old nodes (and their edges)
+          currentNodeIds.forEach(key => {
+            if (!newNodeIds.has(key)) {
+              graph.dropNode(key);
+            }
+          });
+
+          // Add or update nodes
+          mainNodes.forEach(n => {
+            const key = String(n.id);
+            const hasLeaves = !!leafDetails[n.id];
+            const attrs = {
+              label: n.label || '',
+              size: hasLeaves ? 8 : 5,
+              color: GROUP_COLORS[n.group] || DEFAULT_COLOR,
+              _group: n.group || '',
+              _title: n.title || '',
+              _hasLeaves: hasLeaves,
+              _borderColor: hasLeaves ? '#79b8ff' : null,
+              _isOrphan: false,
+            };
+            if (graph.hasNode(key)) {
+              // Update attributes, keep position
+              Object.entries(attrs).forEach(([k, v]) => graph.setNodeAttribute(key, k, v));
+            } else {
+              // New node: random position or run mini-layout later
+              const pos = existingPositions[key] || { x: Math.random() * 1000 - 500, y: Math.random() * 1000 - 500 };
+              graph.addNode(key, { ...attrs, x: pos.x, y: pos.y });
+            }
+          });
+
+          // Clear and re-add edges
+          graph.clearEdges();
+          mainEdges.forEach((e, i) => {
+            const source = String(e.from);
+            const target = String(e.to);
+            if (!graph.hasNode(source) || !graph.hasNode(target)) return;
+            try {
+              graph.addEdgeWithKey('e-' + i, source, target, {
+                label: e.label || '',
+                _title: e.title || '',
+                color: '#444',
+                size: 1,
+                type: 'arrow',
+              });
+            } catch (err) {}
+          });
+
+          // Refresh orphans
+          if (showOrphans) {
+            addOrphansToGraph();
+          }
+          syncOrphanButton();
+          sigmaInstance.refresh();
+        }
+
+        const leafCount = data.nodes.length - visibleNodes.length;
+        countsEl.textContent =
+          mainNodes.length + ' nodes  |  ' + mainEdges.length + ' edges' +
+          (leafCount > 0 ? '  |  ' + leafCount + ' collapsed' : '') +
+          (orphanNodeData.length > 0 ? '  |  ' + orphanNodeData.length + ' orphaned' : '');
+        pulseIndicator();
+      } catch (e) {
+        countsEl.textContent = 'refresh error';
+      }
+    }
+
+    function fitGraph() {
+      if (sigmaInstance) {
+        const camera = sigmaInstance.getCamera();
+        camera.animatedReset({ duration: 400 });
+      }
+    }
+
+    // ── Auto-refresh ───────────────────────────────────────────────────────────
+    const AUTO_REFRESH_INTERVAL = 60;
+    let autoRefreshCountdown = AUTO_REFRESH_INTERVAL;
+    let autoRefreshTimer = null;
+    let countdownTimer = null;
+
+    function pulseIndicator() {
+      const el = document.getElementById('auto-refresh-indicator');
+      el.classList.add('pulse');
+      setTimeout(() => el.classList.remove('pulse'), 600);
+    }
+
+    function updateIndicator() {
+      const el = document.getElementById('auto-refresh-indicator');
+      el.textContent = 'auto-refresh: ' + autoRefreshCountdown + 's';
+    }
+
+    function startAutoRefresh() {
+      autoRefreshCountdown = AUTO_REFRESH_INTERVAL;
+      updateIndicator();
+
+      countdownTimer = setInterval(() => {
+        autoRefreshCountdown -= 1;
+        if (autoRefreshCountdown < 0) autoRefreshCountdown = AUTO_REFRESH_INTERVAL;
+        updateIndicator();
+      }, 1000);
+
+      autoRefreshTimer = setInterval(async () => {
+        autoRefreshCountdown = AUTO_REFRESH_INTERVAL;
+        updateIndicator();
+        await refreshGraph();
+      }, AUTO_REFRESH_INTERVAL * 1000);
+    }
+
+    // ── Ingestion status ───────────────────────────────────────────────────────
+    async function refreshIngestionStatus() {
+      const el = document.getElementById('ingestion-status');
+      try {
+        const resp = await fetch('/ingestion-status');
+        if (!resp.ok) { el.textContent = '\uD83D\uDCCA unavailable'; return; }
+        const d = await resp.json();
+        let text = '\uD83D\uDCCA Graph: ' + d.episodes + '/' + d.total_episodes + ' episodes \u00B7 ' + d.entities + ' entities \u00B7 ' + d.edges + ' edges';
+        if (d.workers_running > 0) text += ' \u00B7 \u23F3 ingesting...';
+        el.textContent = text;
+      } catch (e) {
+        el.textContent = '\uD83D\uDCCA unavailable';
+      }
+    }
+
+    refreshIngestionStatus();
+    setInterval(refreshIngestionStatus, 10000);
+
+    loadGraph().then(startAutoRefresh);
+
+    // GameCube OS sounds
+    document.querySelectorAll('.graph-btn').forEach(function (btn) {
+      btn.addEventListener('mouseenter', function () { if (window.GCSounds) GCSounds.hover(); });
+      btn.addEventListener('click', function () { if (window.GCSounds) GCSounds.click(); }, true);
+    });
+
+    // ── Node Search (Ctrl+F / Cmd+F) ─────────────────────────────────────────
+    (function () {
+      const overlay  = document.getElementById('node-search-overlay');
+      const input    = document.getElementById('node-search-input');
+      const results  = document.getElementById('node-search-results');
+      let activeIdx  = -1;
+      let matchCache = [];
+
+      function clearSearch() {
+        input.value = '';
+        results.innerHTML = '';
+        matchCache = [];
+        activeIdx = -1;
+      }
+
+      function buildResults(query) {
+        results.innerHTML = '';
+        activeIdx = -1;
+        if (!query) { matchCache = []; return; }
+
+        const q = query.toLowerCase();
+        let candidates;
+        if (leafSearchIndex && leafSearchIndex.length > 0) {
+          candidates = leafSearchIndex.filter(entry =>
+            entry.label && entry.label.toLowerCase().includes(q)
+          );
+        } else if (graph) {
+          candidates = [];
+          graph.forEachNode((key, attrs) => {
+            if (attrs.label && attrs.label.toLowerCase().includes(q)) {
+              candidates.push({ label: attrs.label, group: attrs._group || '', isLeaf: false, _nodeId: key, parentId: null, parentLabel: null });
+            }
+          });
+        } else {
+          candidates = [];
+        }
+
+        matchCache = candidates.slice(0, 12);
+
+        matchCache.forEach(function (entry, i) {
+          const div = document.createElement('div');
+          div.className = 'node-search-result';
+          div.dataset.idx = i;
+          const groupLabel = entry.group || '';
+          const dotColor = GROUP_COLORS[groupLabel] || DEFAULT_COLOR;
+
+          if (entry.isLeaf) {
+            div.innerHTML =
+              escapeHtml(entry.label) +
+              '<span class="ns-group" style="color:#79b8ff"> in ' + escapeHtml(entry.parentLabel || '?') + '</span>';
+          } else if (entry.isOrphan) {
+            div.innerHTML =
+              escapeHtml(entry.label) +
+              (groupLabel ? '<span class="ns-group" style="color:' + dotColor + '">&#9679; ' + escapeHtml(groupLabel) + '</span>' : '') +
+              '<span class="ns-group" style="color:#555"> orphan</span>';
+          } else {
+            div.innerHTML =
+              escapeHtml(entry.label) +
+              (groupLabel ? '<span class="ns-group" style="color:' + dotColor + '">&#9679; ' + escapeHtml(groupLabel) + '</span>' : '');
+          }
+
+          div.addEventListener('mouseenter', function () { setActive(i); });
+          div.addEventListener('click', function () { selectResult(i); });
+          results.appendChild(div);
+        });
+      }
+
+      function setActive(idx) {
+        const items = results.querySelectorAll('.node-search-result');
+        items.forEach(function (el, i) {
+          el.classList.toggle('active', i === idx);
+        });
+        activeIdx = idx;
+      }
+
+      function focusAndFlashNode(nodeId) {
+        if (!sigmaInstance || !graph || !graph.hasNode(String(nodeId))) return;
+        const key = String(nodeId);
+        const attrs = graph.getNodeAttributes(key);
+
+        // Animate camera to center on node
+        const camera = sigmaInstance.getCamera();
+        const nd = sigmaInstance.getNodeDisplayData(key);
+        if (nd) {
+          // nodeDisplayData x/y are in sigma's internal coordinate space (same as camera)
+          camera.animate(
+            { x: nd.x, y: nd.y, ratio: 0.3 },
+            { duration: 500 }
+          );
+        }
+
+        // Flash: temporarily increase size and change color
+        const origSize = attrs.size;
+        const origColor = attrs.color;
+        graph.setNodeAttribute(key, 'size', origSize * 2.5);
+        graph.setNodeAttribute(key, 'color', '#6b5ce7');
+        sigmaInstance.refresh();
+
+        setTimeout(() => {
+          if (graph.hasNode(key)) {
+            graph.setNodeAttribute(key, 'size', origSize);
+            graph.setNodeAttribute(key, 'color', origColor);
+            sigmaInstance.refresh();
+          }
+        }, 800);
+      }
+
+      function selectResult(idx) {
+        if (!matchCache[idx]) return;
+        const entry = matchCache[idx];
+        clearSearch();
+
+        if (entry.isLeaf) {
+          const parentId = entry.parentId;
+          focusAndFlashNode(parentId);
+          const parentNode = graph ? (graph.hasNode(String(parentId)) ? graph.getNodeAttributes(String(parentId)) : null) : null;
+          openLeafPanel(parentId, parentNode ? parentNode.label : (entry.parentLabel || parentId), entry.label);
+        } else if (entry.isOrphan) {
+          if (!showOrphans) toggleOrphans();
+          focusAndFlashNode(entry._nodeId);
+        } else {
+          focusAndFlashNode(entry._nodeId);
+        }
+      }
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', function (e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+          e.preventDefault();
+          input.focus();
+          input.select();
+          return;
+        }
+
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          clearSearch();
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setActive(Math.min(activeIdx + 1, matchCache.length - 1));
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setActive(Math.max(activeIdx - 1, 0));
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          const idx = activeIdx >= 0 ? activeIdx : 0;
+          selectResult(idx);
+        }
+      });
+
+      input.addEventListener('input', function () {
+        buildResults(input.value.trim());
+        if (matchCache.length > 0) setActive(0);
+      });
+    })();
+  </script>
+</body>
+</html>

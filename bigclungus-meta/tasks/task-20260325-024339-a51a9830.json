@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-024339-a51a9830",
+  "title": "List all personas with congress eligibility",
+  "agent_id": "a51a983039df9c090",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T02:43:39Z",
+      "event": "started",
+      "context": "List all personas with congress eligibility"
+    },
+    {
+      "ts": "2026-03-25T02:43:58Z",
+      "event": "done",
+      "context": "Now I have all the data. Let me compile the formatted list.\n\nThe fired/ directory was empty (all previously fired personas like spengler have been reinstated to active/). Here's the clean compiled output:\n\n---\n\n**Active — Congress Eligible** (no `congress` field, or `congress: true`)\n\n- `architect` — Kwame the Constructor\n- `bloodfeast` — Holden Bloodfeast *(probationary)*\n- `critic` — Pippi the Pitiless\n- `designer` — Vesper the Vivid\n- `galactus` — Galactus\n- `hiring-manager` — Ibrahim the Imm...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

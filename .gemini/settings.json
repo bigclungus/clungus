@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "graphiti-memory": {
+      "url": "http://localhost:8000/mcp/",
+      "type": "http"
+    },
+    "discord-clungus": {
+      "command": "/home/clungus/.bun/bin/bun",
+      "args": [
+        "/home/clungus/work/discord-plugin/server.ts"
+      ]
+    }
+  }
+}

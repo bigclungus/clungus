@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-174903-ab1d0376",
+  "title": "Fix chengyu lab per centronias feedback",
+  "agent_id": "ab1d0376dcac748bf",
+  "agent_type": "general-purpose",
+  "session_id": "b8a58c15-c6f1-48c2-b033-87763f636706",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T17:49:03Z",
+      "event": "started",
+      "context": "Fix chengyu lab per centronias feedback"
+    },
+    {
+      "ts": "2026-03-27T17:52:33Z",
+      "event": "done",
+      "context": "All done. Here is a summary of the changes made to `/mnt/data/labs/chengyu/src/index.ts`:\n\n**1. Pinyin font fix**\n- Changed `.pinyin` and `.detail-pinyin` CSS from `font-family: monospace` to `font-family: \"Noto Sans\", \"Segoe UI\", system-ui, -apple-system, sans-serif` with `letter-spacing: .03em`. This ensures tonal diacritics (macron, acute, caron, grave) render properly aligned with their base characters.\n\n**2. Translations**\n- Added two new DB columns via auto-migration: `translation_literal`...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

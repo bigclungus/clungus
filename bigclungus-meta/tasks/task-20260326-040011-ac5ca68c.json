@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-040011-ac5ca68c",
+  "title": "Research Temporal proto workflow representation",
+  "agent_id": "ac5ca68c7141e1a8d",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T04:00:11Z",
+      "event": "started",
+      "context": "Research Temporal proto workflow representation"
+    },
+    {
+      "ts": "2026-03-26T04:02:37Z",
+      "event": "done",
+      "context": "Both messages posted successfully. Here's a summary of the findings:\n\n**Research complete. Two messages posted to Discord.**\n\nKey findings:\n\n1. **Proto for Temporal Python inputs** — Supported natively (default data converter handles `google.protobuf.message.Message`), but this is payload serialization only. No proto-based workflow DSL exists.\n\n2. **Official SDK recommendation** — `@dataclass` (or Pydantic) as the single parameter type for workflow/activity inputs. Explicitly documented. Raw dic...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

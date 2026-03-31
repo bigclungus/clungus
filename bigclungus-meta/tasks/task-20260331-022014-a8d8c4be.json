@@ -1,0 +1,25 @@
+{
+  "id": "task-20260331-022014-a8d8c4be",
+  "title": "Heartbeat reliability check",
+  "agent_id": "a8d8c4bec2a8ae3f6",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-31T02:20:14Z",
+      "event": "started",
+      "context": "Heartbeat reliability check"
+    },
+    {
+      "ts": "2026-03-31T02:22:08Z",
+      "event": "done",
+      "context": "All checks complete. Here's the full heartbeat scan report:\n\n---\n\n**Heartbeat Scan Results — 2026-03-31**\n\n**Stale tasks:** 0 stale tasks. No deliberating congress sessions orphaned.\n\n**GitHub issues:** No open issues returned (repo is clean or within limits).\n\n**Failed services:** 0 failed services. All services running normally.\n\n**Timeline ingestion:** 3 candidates found across repos (commons-server, clung.us, clunger). All 3 rejected as routine maintenance (tile addition, cache-busting strin...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

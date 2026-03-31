@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-014836-aca316c9",
+  "title": "Terminate Trump impeachment Congress and restart without Trump",
+  "agent_id": "aca316c96cfbe2daf",
+  "agent_type": "general-purpose",
+  "session_id": "e3ea5000-d340-46d8-a63c-960e3baff74f",
+  "discord_message_id": "1486904439209070742",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T01:48:36Z",
+      "event": "started",
+      "context": "Terminate Trump impeachment Congress and restart without Trump"
+    },
+    {
+      "ts": "2026-03-27T01:50:25Z",
+      "event": "done",
+      "context": "The new workflow is running. Let me verify that the recusal logic will properly exclude Trump this time by checking the updated keyword list in the current code:\n\nThe current code at lines 239-243 of `congress_wf.py` contains:\n```python\nfiring_keywords = {\n    \"fire\", \"fired\", \"firing\", \"terminate\", \"termination\", \"severance\",\n    \"retire\", \"retirement\", \"remove\", \"removal\", \"dismiss\", \"dismissal\",\n    \"kick out\", \"let go\", \"impeach\", \"impeachment\",\n}\n```\n\n\"impeach\" is now present. The topic \"im...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

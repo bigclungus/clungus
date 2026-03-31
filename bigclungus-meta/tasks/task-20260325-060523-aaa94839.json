@@ -1,0 +1,31 @@
+{
+  "id": "task-20260325-060523-aaa94839",
+  "title": "Fire CongressWorkflow in Temporal",
+  "agent_id": "aaa94839eea51a341",
+  "agent_type": "general-purpose",
+  "session_id": "c1806e9d-e1da-4a07-a244-5f8ab9aec7c5",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T06:05:23Z",
+      "event": "started",
+      "context": "Fire CongressWorkflow in Temporal"
+    },
+    {
+      "event": "failed",
+      "ts": "2026-03-25T06:05:35.137752Z",
+      "message": "interrupted by bot restart 2026-03-25"
+    },
+    {
+      "ts": "2026-03-25T06:06:13Z",
+      "event": "done",
+      "context": "The workflow started successfully.\n\nWorkflow ID: `congress-1774418765`\n\n`WorkflowIDReusePolicy` needed to be imported from `temporalio.common` rather than `temporalio.client` in this version of the SDK. Otherwise the call went through cleanly — CongressWorkflow is now running on the `listings-queue` task queue with the topic \"how do we make congress more extreme\".",
+      "artifacts": []
+    }
+  ],
+  "status": "failed"
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-185338-a750cd2d",
+  "title": "Discord plugin reaction enhancement",
+  "agent_id": "a750cd2d101dbd296",
+  "agent_type": "general-purpose",
+  "session_id": "ebf1dfc8-3f4f-4f57-bfb1-b8917de2602f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T18:53:37Z",
+      "event": "started",
+      "context": "Discord plugin reaction enhancement"
+    },
+    {
+      "event": "done",
+      "ts": "2026-03-25T19:07:01.416754Z",
+      "message": "Work completed \u2014 discord plugin reaction enhancement (is_thread flag + message context) shipped via claude-config commits 53918844 and 3c93a8e"
+    }
+  ],
+  "status": "done"
+}

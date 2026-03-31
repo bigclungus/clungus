@@ -1,0 +1,6 @@
+[Unit]
+Description=BigClungus Memory Sweeper — verify all stale memories (runs every 4h)
+
+[Service]
+ExecStart=/usr/bin/python3 /mnt/data/scripts/memory-sweep-cron.py
+Type=oneshot

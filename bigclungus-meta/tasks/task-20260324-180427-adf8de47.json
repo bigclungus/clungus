@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-180427-adf8de47",
+  "title": "Site cleanup: retire 1998, kill deaths/changelog/cost",
+  "agent_id": "adf8de47b13df8cbb",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T18:04:27Z",
+      "event": "started",
+      "context": "Site cleanup: retire 1998, kill deaths/changelog/cost"
+    },
+    {
+      "ts": "2026-03-24T18:06:18Z",
+      "event": "done",
+      "context": "All 4 tunnel connections registered. Everything is done. Here's the summary:\n\n**1. 1998.clung.us retired**\n- `1998.service` stopped and disabled (removed from systemd wants)\n- `/mnt/data/1998` moved to `/mnt/data/1998-archived`\n- Tunnel route removed from `/home/clungus/.cloudflared/config.yml`\n\n**2. cost.clung.us cleaned up**\n- Tunnel route removed from config\n- No service file found under `~/.config/systemd/user/` matching \"cost\"\n- No relevant data found in `/mnt/data` (`cost_watchdog.py` is a...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

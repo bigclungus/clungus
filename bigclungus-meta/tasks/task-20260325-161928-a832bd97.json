@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-161928-a832bd97",
+  "title": "Enable clunger systemd service",
+  "agent_id": "a832bd979a05c7b67",
+  "agent_type": "general-purpose",
+  "session_id": "4a58e62d-fa69-4ca2-a0a8-edcc21bb73c1",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T16:19:28Z",
+      "event": "started",
+      "context": "Enable clunger systemd service"
+    },
+    {
+      "ts": "2026-03-25T16:19:34Z",
+      "event": "done",
+      "context": "The command succeeded. A symlink was created at `/home/clungus/.config/systemd/user/default.target.wants/clunger.service` pointing to `/home/clungus/.config/systemd/user/clunger.service`. The `clunger.service` user unit is now enabled and will auto-start on boot.",
+      "artifacts": []
+    }
+  ]
+}

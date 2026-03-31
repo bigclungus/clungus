@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-122041-ad67558a",
+  "title": "Queue Bokoen1 NightOwl task",
+  "agent_id": "ad67558a9e6142797",
+  "agent_type": "general-purpose",
+  "session_id": "3ee726c7-43fe-4eee-8e5b-9fd4fe2465af",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T12:20:41Z",
+      "event": "started",
+      "context": "Queue Bokoen1 NightOwl task"
+    },
+    {
+      "ts": "2026-03-28T12:20:51Z",
+      "event": "done",
+      "context": "NightOwl task queued successfully. The workflow was already running (`nightowl-today`), so the task was signaled into the existing queue. It will execute at 3am PDT (10am UTC) in the next batch.",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-040017-ab440206",
+  "title": "Run simplify code review pass",
+  "agent_id": "ab440206d02a6b600",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T04:00:16Z",
+      "event": "started",
+      "context": "Run simplify code review pass"
+    },
+    {
+      "ts": "2026-03-30T04:03:19Z",
+      "event": "done",
+      "context": "Done. Here's a summary of what was done:\n\n**Secret scan:** Clean on both repos.\n\n**Changes made** (`/mnt/data/temporal-workflows/activities/mob_gen_act.py`):\n\n1. **OpenAI client instantiation** — `_get_openai_client()` was creating a new `AsyncOpenAI` client on every LLM call (once per mob stat gen, once per sprite gen). Changed to a module-level singleton (`_openai_client`) that is created on first call and reused. Avoids unnecessary object allocation and connection overhead during mob generati...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

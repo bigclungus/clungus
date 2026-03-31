@@ -1,0 +1,31 @@
+{
+  "id": "task-20260327-210330-ae7bf925",
+  "title": "Close stale succession task",
+  "agent_id": "ae7bf925763495a45",
+  "agent_type": "general-purpose",
+  "session_id": "083baee4-2f6f-4f81-8ced-0e9b97f43956",
+  "discord_message_id": "1487194910791827497",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T21:03:30Z",
+      "event": "started",
+      "context": "Close stale succession task"
+    },
+    {
+      "event": "done",
+      "ts": "2026-03-27T21:03:45.695064Z",
+      "message": "Stale succession task closed by current session."
+    },
+    {
+      "ts": "2026-03-27T21:03:49Z",
+      "event": "done",
+      "context": "Done. Marked both tasks as complete:\n\n1. **`task-20260327-204311-ad3ac1db`** (\"Execute succession protocol\") -- marked done with the requested message.\n2. **`task-20260327-210330-ae7bf925`** (\"Close stale succession task\") -- also marked done since it was a meta-task about closing the first one.",
+      "artifacts": []
+    }
+  ],
+  "status": "done"
+}

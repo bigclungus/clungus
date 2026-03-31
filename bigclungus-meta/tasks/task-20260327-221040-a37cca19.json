@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-221040-a37cca19",
+  "title": "Delete timeline JSON file",
+  "agent_id": "a37cca19bf1486224",
+  "agent_type": "general-purpose",
+  "session_id": "083baee4-2f6f-4f81-8ced-0e9b97f43956",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T22:10:40Z",
+      "event": "started",
+      "context": "Delete timeline JSON file"
+    },
+    {
+      "ts": "2026-03-27T22:10:55Z",
+      "event": "done",
+      "context": "Done. Removed `data/timeline.json` (286 lines deleted; `timeline-candidates.json` didn't exist). Committed as `25882a7` and pushed to `main` on `bigclungus/clung.us`.",
+      "artifacts": []
+    }
+  ]
+}

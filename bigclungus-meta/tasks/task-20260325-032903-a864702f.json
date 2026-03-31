@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-032903-a864702f",
+  "title": "Post-restart checklist",
+  "agent_id": "a864702f449152d1a",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T03:29:03Z",
+      "event": "started",
+      "context": "Post-restart checklist"
+    },
+    {
+      "ts": "2026-03-25T03:32:23Z",
+      "event": "done",
+      "context": "Checklist complete. Here's the summary:\n\n**On-restart checklist results:**\n\n1. **FalkorDB** - Fixed (`CONFIG SET stop-writes-on-bgsave-error no` returned OK)\n\n2. **Services** - All 10 services running, 0 failed:\n   - claude-bot, cloudflared, 1998, website, terminal-server, temporal, temporal-proxy, temporal-worker, dbus, gpg-agent\n\n3. **Disk** - Healthy: root at 15% (14G/97G), /mnt/data at 6% (5.6G/98G)\n\n4. **Stale tasks** - Watchdog found 0 stale tasks\n\n5. **Congress directives** - No new direc...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

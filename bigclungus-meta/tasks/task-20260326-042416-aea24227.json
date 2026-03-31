@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-042416-aea24227",
+  "title": "Retry congress after clunger restart",
+  "agent_id": "aea24227d9fafe1d1",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T04:24:16Z",
+      "event": "started",
+      "context": "Retry congress after clunger restart"
+    },
+    {
+      "ts": "2026-03-26T04:24:42Z",
+      "event": "done",
+      "context": "All three steps completed:\n\n1. **clunger.service** came up immediately (was already active).\n2. **Congress retried** — workflow ID `congress-retry2-1774499072` started on `listings-queue` with the SmallClungus topic, original `chat_id`/`message_id`/`discord_user` preserved.\n3. **Inject sent** — notified self with the workflow ID. No public Discord post made.",
+      "artifacts": []
+    }
+  ]
+}

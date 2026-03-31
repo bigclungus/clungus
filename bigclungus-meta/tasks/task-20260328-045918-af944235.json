@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-045918-af944235",
+  "title": "Restart claude-bot service",
+  "agent_id": "af9442357e02e5929",
+  "agent_type": "general-purpose",
+  "session_id": "c292e4ea-af5d-4856-aa25-4a8040477813",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T04:59:17Z",
+      "event": "started",
+      "context": "Restart claude-bot service"
+    },
+    {
+      "event": "done",
+      "ts": "2026-03-28T05:14:29.727305Z",
+      "message": "Service restarted successfully - session CCXV running"
+    }
+  ],
+  "status": "done"
+}

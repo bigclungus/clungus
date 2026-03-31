@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-083617-af477f26",
+  "title": "Add task logging to subagent prompts",
+  "agent_id": "af477f26f46bc10c4",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T08:36:17Z",
+      "event": "started",
+      "context": "Add task logging to subagent prompts"
+    },
+    {
+      "ts": "2026-03-24T08:37:09Z",
+      "event": "done",
+      "context": "Done. Here's a summary of what was done:\n\n**`/mnt/data/CLAUDE.md`** — already had a `## Task Logging` section, but it was missing the event type list and concrete examples. Updated it to match the full requested format with event types (`milestone` | `user_feedback` | `blocked` | `done` | `failed`) and two example invocations.\n\n**`/home/clungus/work/claude-config/CLAUDE.md`** (the global CLAUDE.md source of truth) — had no Task Logging section at all. Added the full section there, then committed...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

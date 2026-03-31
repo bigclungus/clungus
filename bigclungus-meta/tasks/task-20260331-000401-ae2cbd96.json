@@ -1,0 +1,25 @@
+{
+  "id": "task-20260331-000401-ae2cbd96",
+  "title": "Check Clungiverse playable characters",
+  "agent_id": "ae2cbd96906bf779f",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-31T00:04:01Z",
+      "event": "started",
+      "context": "Check Clungiverse playable characters"
+    },
+    {
+      "ts": "2026-03-31T00:04:47Z",
+      "event": "done",
+      "context": "Here's the full picture:\n\n---\n\n**Playable Characters (4 total)**\n\nDefined in two places that must stay in sync: `state.ts` (client) and `dungeon-loop.ts` (server).\n\n| Slug | Name | Role | Color | Special Power |\n|---|---|---|---|---|\n| `holden` | Holden | tank | red `#e63946` | Overwhelming Force — 60deg cone stun, 48px range, 1.5s stun, 8s CD |\n| `broseidon` | Broseidon | dps | blue `#457b9d` | Progressive Overload — +2 ATK per kill in 10s window, 10s CD |\n| `deckard_cain` | Deckard Cain | supp...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

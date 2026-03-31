@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-154006-ad2f0028",
+  "title": "Heartbeat check - services/stale tasks",
+  "agent_id": "ad2f00288c33d8289",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T15:40:06Z",
+      "event": "started",
+      "context": "Heartbeat check - services/stale tasks"
+    },
+    {
+      "ts": "2026-03-24T15:40:17Z",
+      "event": "done",
+      "context": "All clear:\n\n- **Stale tasks**: 0 tasks marked stale\n- **Failed services**: 0 failed units\n- **Open GitHub issues**: No open issues returned (empty output)\n\nEverything looks healthy. Nothing to act on.",
+      "artifacts": []
+    }
+  ]
+}

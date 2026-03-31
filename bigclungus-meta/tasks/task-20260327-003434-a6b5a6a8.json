@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-003434-a6b5a6a8",
+  "title": "Fix clunger duplicate exception handlers",
+  "agent_id": "a6b5a6a86e01ed760",
+  "agent_type": "general-purpose",
+  "session_id": "e3ea5000-d340-46d8-a63c-960e3baff74f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T00:34:34Z",
+      "event": "started",
+      "context": "Fix clunger duplicate exception handlers"
+    },
+    {
+      "ts": "2026-03-27T00:35:25Z",
+      "event": "done",
+      "context": "Done. Here's what was changed in `/mnt/data/clunger/src/index.ts`:\n\n**Removed** the duplicate handlers at the bottom of the file (~lines 2469-2475):\n- `process.on(\"unhandledRejection\", ...)` — logged to console but no alert\n- `process.on(\"uncaughtException\", ...)` — logged but no exit\n\n**Updated** the surviving top-of-file `uncaughtException` handler (line 33):\n- Changed `console.error(\"[clunger] uncaughtException:\", err)` to log `err.stack ?? err` so stack traces appear in logs\n- Removed `proce...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

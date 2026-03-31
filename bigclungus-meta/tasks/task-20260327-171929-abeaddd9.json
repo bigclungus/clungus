@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-171929-abeaddd9",
+  "title": "Post matrix results to thread",
+  "agent_id": "abeaddd93d2aeb828",
+  "agent_type": "general-purpose",
+  "session_id": "b8a58c15-c6f1-48c2-b033-87763f636706",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T17:19:29Z",
+      "event": "started",
+      "context": "Post matrix results to thread"
+    },
+    {
+      "ts": "2026-03-27T17:19:40Z",
+      "event": "done",
+      "context": "Message posted successfully to the Discord thread (message ID `1487139032839360653` in channel `1487137261534314807`). The congress participation matrix completion summary is now visible in the thread.",
+      "artifacts": []
+    }
+  ]
+}

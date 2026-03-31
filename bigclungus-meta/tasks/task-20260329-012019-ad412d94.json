@@ -1,0 +1,25 @@
+{
+  "id": "task-20260329-012019-ad412d94",
+  "title": "Fix mob gen loading screen visibility",
+  "agent_id": "ad412d94487fb96b2",
+  "agent_type": "general-purpose",
+  "session_id": "5aac769e-2e6e-4bd3-a873-645eb001e989",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-29T01:20:19Z",
+      "event": "started",
+      "context": "Fix mob gen loading screen visibility"
+    },
+    {
+      "ts": "2026-03-29T01:20:56Z",
+      "event": "done",
+      "context": "Done. Here's what was done:\n\n**Fix applied: server-side delay in `/mnt/data/commons-server/src/index.ts`**\n\nThe `d_start` handler was sending `d_mob_progress` (status: `complete`) and then immediately calling `initFloor()`, which caused `d_floor` to arrive on the client almost simultaneously — making the loading overlay appear and vanish before the user could see it.\n\nThe fix wraps `initFloor(started)` in a `setTimeout(..., 800)`, giving the client 800ms of guaranteed overlay visibility before t...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

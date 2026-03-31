@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-073505-a764d397",
+  "title": "Stop congress refire",
+  "agent_id": "a764d397e227f6f84",
+  "agent_type": "general-purpose",
+  "session_id": "a73508af-b739-48f4-b9cb-a7829a4a15c0",
+  "discord_message_id": "1486266824638201856",
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T07:35:05Z",
+      "event": "started",
+      "context": "Stop congress refire"
+    },
+    {
+      "ts": "2026-03-25T07:36:13Z",
+      "event": "done",
+      "context": "Done. Here's what was done:\n\n**Commit:** `c35c3d6` — `Improve custom persona ID lookup with case-insensitive and display_name matching`\n\n**The bug:** The custom persona seat selection (introduced in `4e3802c`) only did exact `name` field matching. If a caller passed a display name (e.g. `\"Spengler the Doomed\"`) or a differently-cased slug (e.g. `\"Critic\"` instead of `\"critic\"`), the persona would be silently skipped and the workflow would fall back to the full candidate list.\n\n**The fix** (alrea...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

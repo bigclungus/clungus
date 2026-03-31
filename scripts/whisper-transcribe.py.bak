@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+"""Transcribe a WAV file using OpenAI Whisper (small model, CPU).
+
+Usage: python3 whisper-transcribe.py <path-to-wav>
+
+Prints the transcribed text to stdout. Exits 0 on success, 1 on error.
+Uses the model cached at ~/.cache/whisper/small.pt if available.
+"""
+
+import sys
+import os
+
+def main() -> None:
+    if len(sys.argv) < 2:
+        print("usage: whisper-transcribe.py <wav-path>", file=sys.stderr)
+        sys.exit(1)
+
+    wav_path = sys.argv[1]
+    if not os.path.isfile(wav_path):
+        print(f"error: file not found: {wav_path}", file=sys.stderr)
+        sys.exit(1)
+
+    import whisper  # type: ignore[import-untyped]
+
+    model = whisper.load_model("small")
+    result = model.transcribe(wav_path, fp16=False)
+    text = result.get("text", "").strip()
+    print(text)
+
+
+if __name__ == "__main__":
+    main()

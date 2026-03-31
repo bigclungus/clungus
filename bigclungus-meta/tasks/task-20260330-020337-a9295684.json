@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-020337-a9295684",
+  "title": "Enable nearest-neighbor rendering for game canvas",
+  "agent_id": "a92956846bb1d77d2",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T02:03:36Z",
+      "event": "started",
+      "context": "Enable nearest-neighbor rendering for game canvas"
+    },
+    {
+      "ts": "2026-03-30T02:05:36Z",
+      "event": "done",
+      "context": "Both repos committed and pushed. Here's what was done:\n\n**Files changed:**\n\n1. `/mnt/data/clungiverse-client/src/renderer/canvas.ts`\n   - Added `ctx.imageSmoothingEnabled = false` immediately after `getContext('2d')` in `initCanvas()`\n   - Added `if (ctx) ctx.imageSmoothingEnabled = false` in `resize()` — canvas resize wipes all context state including this flag, so it must be re-applied every time the canvas is resized\n\n2. `/mnt/data/hello-world/clungiverse.html`\n   - Added `image-rendering: pi...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-110456-ab796fc9",
+  "title": "Verify VC patches applied",
+  "agent_id": "ab796fc9c79189720",
+  "agent_type": "general-purpose",
+  "session_id": "1472c3c4-27d0-4800-9541-cb30a7f5ef18",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T11:04:56Z",
+      "event": "started",
+      "context": "Verify VC patches applied"
+    },
+    {
+      "ts": "2026-03-28T11:05:49Z",
+      "event": "done",
+      "context": "All three patches are confirmed in place:\n\n**1. Bot speech logged to transcript via `logBotSpeech()`** -- Present in `server.ts` at lines 922-926. After audio playback completes, if `spokenText` was provided, it retrieves the teardown from `connection._voiceReceiveTeardown` and calls `teardown.logBotSpeech(spokenText)`. The `logBotSpeech` function is defined in `voice-receive.ts` at lines 625-632, pushing entries to the transcript with `isBot: true`.\n\n**2. Teardown properly awaited before `conne...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-012508-acddbf76",
+  "title": "Log giga intervention for Congress thread failure",
+  "agent_id": "acddbf7676aed319f",
+  "agent_type": "general-purpose",
+  "session_id": "e3ea5000-d340-46d8-a63c-960e3baff74f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T01:25:08Z",
+      "event": "started",
+      "context": "Log giga intervention for Congress thread failure"
+    },
+    {
+      "ts": "2026-03-27T01:26:47Z",
+      "event": "done",
+      "context": "Done. Here's what was done:\n\n- Read `/mnt/data/bigclungus-meta/giga-log.md` — confirmed no existing \"announce-before-verifying\" category. The closest existing entry (`announce-fix-before-verifying`) covers announcing fixes too early, but the Congress #71 failure is distinct: announcing a workflow invocation before verifying the workflow actually started.\n- Added a new category `announce-before-workflow-verified` (count: 1, 2026-03-27, severity: suggestion) with root cause noted: session stub cre...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

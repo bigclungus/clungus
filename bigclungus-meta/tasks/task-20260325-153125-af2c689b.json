@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-153125-af2c689b",
+  "title": "Full codebase simplification analysis",
+  "agent_id": "af2c689b8f4916dca",
+  "agent_type": "general-purpose",
+  "session_id": "4a58e62d-fa69-4ca2-a0a8-edcc21bb73c1",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T15:31:25Z",
+      "event": "started",
+      "context": "Full codebase simplification analysis"
+    },
+    {
+      "ts": "2026-03-25T15:34:37Z",
+      "event": "done",
+      "context": "The analysis is complete and posted to Discord in 5 messages. Here is a summary of what was found:\n\n---\n\n**Bugs found:**\n\n1. **`task_titles` silently dropped** — `congress_act.py` line 1061 PATCHes session JSON with `task_titles`, but `serve.py` line 1380's ALLOWED set doesn't include it. Task titles generated from congress verdicts are never persisted to session files, so the congress viewer always shows nothing. One-line fix: add `'task_titles'` to the ALLOWED set.\n\n2. **`INJECT_SECRET` module...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "print-calc",
+  "title": "3D Print Calculator",
+  "description": "Estimate print time and filament usage from layer count, layer height, print speed, and material density — quick sanity check before you send a job",
+  "port": 8108,
+  "status": "active",
+  "rationale": "Graph signal: multiple facts from discord_history show jaboostin actively discussing a 3D printer (showing it to his dad, episode ac0471a6 and episode 5c3e92f4). No existing lab covers 3D printing tooling. A quick in-browser calculator for print time and filament estimation is a directly useful utility that doesn't require any backend persistence."
+}

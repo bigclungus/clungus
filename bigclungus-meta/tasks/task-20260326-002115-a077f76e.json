@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-002115-a077f76e",
+  "title": "Explore Graphiti graph for lab proposal 1",
+  "agent_id": "a077f76e49a70f05a",
+  "agent_type": "general-purpose",
+  "session_id": "e4d4bf00-991b-4f0e-aac7-2ab4056f18c5",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T00:21:15Z",
+      "event": "started",
+      "context": "Explore Graphiti graph for lab proposal 1"
+    },
+    {
+      "ts": "2026-03-26T00:22:35Z",
+      "event": "done",
+      "context": "I have everything I need. Here's my proposal:\n\n---\n\n```\nNAME: verdict-oracle\nTITLE: Verdict Oracle\nDESCRIPTION: Paste any decision, debate, or dilemma and get a structured congress-style verdict — pro arguments, con arguments, and a synthesis — without needing Discord or a Temporal workflow. A standalone, low-friction front door to the congress system's reasoning engine.\nWHAT IT DOES:\n- Single text input: paste a question or topic (200–2000 chars)\n- Hits the existing /api/congress persona endpoi...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

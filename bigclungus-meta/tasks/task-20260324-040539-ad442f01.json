@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-040539-ad442f01",
+  "title": "Add persona evolution via congress to congress workflow",
+  "agent_id": "ad442f01344dfbd82",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T04:05:39Z",
+      "event": "started",
+      "context": "Add persona evolution via congress to congress workflow"
+    },
+    {
+      "ts": "2026-03-24T04:07:07Z",
+      "event": "done",
+      "context": "Worker is running. Done.\n\nHere's a summary of everything that was changed:\n\n**Files modified:**\n\n- `/mnt/data/temporal-workflows/activities/congress_act.py` — Added `congress_evolve` activity (calls hiring manager with structured evaluation prompt, parses `PERSONA/VERDICT/REASON/LEARNED` blocks, appends `## Learned` sections or moves files to `agents/fired/`). Updated `congress_report` signature to accept optional `evolution_results: dict` and appends fire/evolve lines to the closing message.\n\n-...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

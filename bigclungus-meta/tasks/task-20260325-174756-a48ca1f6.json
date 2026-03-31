@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-174756-a48ca1f6",
+  "title": "Fix connectrpc timeout for LLM debate calls",
+  "agent_id": "a48ca1f62e9c81958",
+  "agent_type": "general-purpose",
+  "session_id": "4a58e62d-fa69-4ca2-a0a8-edcc21bb73c1",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T17:47:56Z",
+      "event": "started",
+      "context": "Fix connectrpc timeout for LLM debate calls"
+    },
+    {
+      "ts": "2026-03-25T17:49:00Z",
+      "event": "done",
+      "context": "Done. Here is a summary of what was changed:\n\n**Changes made to `/mnt/data/temporal-workflows/activities/congress_act.py`:**\n\n1. `_call_congress_api` default `timeout` parameter: `60` → `180` seconds. This function is the shared helper used by evolution, hiring-manager synthesis, vote, seat selection, and task extraction calls.\n\n2. All callers passing `timeout=130` explicitly: updated to `timeout=180`. This covered lines 588, 917, and 1143 (congress_evolve, congress_nemesis_check via the helper,...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

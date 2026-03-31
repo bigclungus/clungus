@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-065150-a3730da5",
+  "title": "Queue chunk registry note to NightOwl",
+  "agent_id": "a3730da55f07db4ed",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T06:51:50Z",
+      "event": "started",
+      "context": "Queue chunk registry note to NightOwl"
+    },
+    {
+      "ts": "2026-03-26T06:51:58Z",
+      "event": "done",
+      "context": "The command ran successfully. Output:\n\n- A nightowl workflow was already running (`nightowl-today`)\n- The task was signaled to the existing workflow and queued: the named-chunk registry requirement for the Frontend TypeScript migration has been added to the queue",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-151252-a7aae380",
+  "title": "Fix simplify cron to use inject",
+  "agent_id": "a7aae380240edef2f",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T15:12:52Z",
+      "event": "started",
+      "context": "Fix simplify cron to use inject"
+    },
+    {
+      "ts": "2026-03-24T15:13:21Z",
+      "event": "done",
+      "context": "Done. Here's the summary:\n\n- `/mnt/data/temporal-workflows/activities/simplify_act.py` was gutted from 280 lines down to 28. All file-scanning, subprocess/Claude CLI, and Discord posting logic was removed.\n- The activity now just POSTs `{\"content\": \"[simplify]\", ...}` to the inject endpoint at `127.0.0.1:9876/inject` and returns `\"injected [simplify]\"`.\n- Commit `0a1beda` pushed to `bigclungus/temporal-workflows` on master.\n- `temporal-worker.service` restarted and is **active**.",
+      "artifacts": []
+    }
+  ]
+}

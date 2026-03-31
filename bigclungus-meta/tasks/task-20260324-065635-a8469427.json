@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-065635-a8469427",
+  "title": "Restructure congress_evolve: CREATE as meta-level verdict",
+  "agent_id": "a846942762d7f35c4",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T06:56:35Z",
+      "event": "started",
+      "context": "Restructure congress_evolve: CREATE as meta-level verdict"
+    },
+    {
+      "ts": "2026-03-24T06:57:20Z",
+      "event": "done",
+      "context": "Done. Here's what changed:\n\n**File:** `/mnt/data/temporal-workflows/activities/congress_act.py` (lines 245–274, the `evolution_prompt` string in `congress_evolve`)\n\n**Changes made:**\n\n1. **CREATE is now meta-level only.** The prompt explicitly states: \"Emit one PERSONA block per debater. Do NOT include CREATE inside a PERSONA block.\" CREATE appears as a separate section after all PERSONA blocks, framed as a structural observation about a missing perspective — not tied to any individual.\n\n2. **Sh...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

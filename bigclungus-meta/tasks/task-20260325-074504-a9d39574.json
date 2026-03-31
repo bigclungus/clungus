@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-074504-a9d39574",
+  "title": "Kwame and Pippi review",
+  "agent_id": "a9d3957401fe71194",
+  "agent_type": "general-purpose",
+  "session_id": "fcea62ef-ffd3-4ecd-bf71-4c6ef6583b7e",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T07:45:04Z",
+      "event": "started",
+      "context": "Kwame and Pippi review"
+    },
+    {
+      "event": "done",
+      "ts": "2026-03-25T08:15:09.349115Z",
+      "message": "completed - work done in prior sessions"
+    }
+  ],
+  "status": "done"
+}

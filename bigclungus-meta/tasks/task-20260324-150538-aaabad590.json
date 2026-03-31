@@ -1,0 +1,29 @@
+{
+  "id": "task-20260324-150538-aaabad590",
+  "title": "Implement heartbeat Temporal workflow",
+  "agent_id": "congress-13",
+  "agent_type": "congress",
+  "session_id": "congress-0013",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "event": "started",
+      "ts": "2026-03-24T15:05:38Z",
+      "message": "Created from Congress #13 verdict on: RFC-1 BigClungus Heartbeat Proposal: Should we implement a Heartbeat workflow that runs every 15 min"
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-24T15:05:38Z",
+      "message": "Source verdict: The heartbeat is operationally sound \u2014 overnight drift is a real failure mode, and a 15-minute pulse with a narrow, GitHub-anchored task scope is a reasonable constraint. The \"self-improvement autonom..."
+    },
+    {
+      "ts": "2026-03-24T18:10:05Z",
+      "event": "done",
+      "message": "HeartbeatWorkflow implemented in temporal-workflows/workflows/heartbeat_wf.py, registered in worker.py. 15-minute inject pulse fires [heartbeat] to main channel."
+    }
+  ]
+}

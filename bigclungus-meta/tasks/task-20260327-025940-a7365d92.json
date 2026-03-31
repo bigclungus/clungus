@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-025940-a7365d92",
+  "title": "Implement Show Trials Temporal workflow",
+  "agent_id": "a7365d9264aae7102",
+  "agent_type": "general-purpose",
+  "session_id": "e3ea5000-d340-46d8-a63c-960e3baff74f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T02:59:40Z",
+      "event": "started",
+      "context": "Implement Show Trials Temporal workflow"
+    },
+    {
+      "ts": "2026-03-27T03:05:51Z",
+      "event": "done",
+      "context": "Done. Here's what was built:\n\n---\n\n**Show Trials — implementation complete**\n\n**New files:**\n- `/mnt/data/temporal-workflows/workflows/trial_wf.py` — `TrialWorkflow` orchestrating 6 sequential phases\n- `/mnt/data/temporal-workflows/activities/trial_act.py` — 6 activities: `trial_announce`, `trial_generate_speech`, `trial_phase_separator`, `trial_verdict`, `trial_save_session`, `trial_alert_failure`\n\n**Modified files:**\n- `/mnt/data/temporal-workflows/worker.py` — `TrialWorkflow` + all trial acti...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

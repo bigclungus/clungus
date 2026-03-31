@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-045741-af43f35d",
+  "title": "Gate wallet page and API behind auth",
+  "agent_id": "af43f35d03adbd7f8",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": "1485865061678321734",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T04:57:41Z",
+      "event": "started",
+      "context": "Gate wallet page and API behind auth"
+    },
+    {
+      "ts": "2026-03-24T04:58:10Z",
+      "event": "done",
+      "context": "Done. Here's a summary of what was changed:\n\n**File modified:** `/home/clungus/work/hello-world/serve.py`\n\nTwo auth checks were added to `do_GET`:\n\n1. `/api/wallet/balance` — added `_is_authed` / `_json_auth_error` guard before calling `_serve_wallet_balance()` (the route existed but was missing the check).\n\n2. `/wallet` and `/wallet.html` — added an explicit auth check block before the static file fallback. Without this, the fallback at line 210 would serve `wallet.html` to anyone since it catc...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

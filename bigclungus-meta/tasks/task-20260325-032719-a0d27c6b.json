@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-032719-a0d27c6b",
+  "title": "Debug why Nemesis didn't veto Ibrahim's abort in Congress #26",
+  "agent_id": "a0d27c6bc3b5381d3",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T03:27:19Z",
+      "event": "started",
+      "context": "Debug why Nemesis didn't veto Ibrahim's abort in Congress #26"
+    },
+    {
+      "event": "done",
+      "ts": "2026-03-25T04:15:19.915277Z",
+      "message": "Debug why Nemesis didn't veto Ibrahim's abort in Congress #26 \u2014 investigated and fixed in session (Nemesis wiring corrected)"
+    }
+  ],
+  "status": "done"
+}

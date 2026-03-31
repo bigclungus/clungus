@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-161252-a7b75ed2",
+  "title": "Fix personas.db sonnet entries and retry congress",
+  "agent_id": "a7b75ed2d273b1a6c",
+  "agent_type": "general-purpose",
+  "session_id": "b8a58c15-c6f1-48c2-b033-87763f636706",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T16:12:52Z",
+      "event": "started",
+      "context": "Fix personas.db sonnet entries and retry congress"
+    },
+    {
+      "ts": "2026-03-27T16:13:56Z",
+      "event": "done",
+      "context": "All three steps completed:\n\n1. **DB updated** (`/mnt/data/hello-world/personas.db`): Changed 3 personas from `claude-sonnet-4-6` to `claude-haiku-4-5` — morgan, ux, and adelbert. The clunger copy at `/mnt/data/clunger/personas.db` had no tables (empty DB), so only the hello-world one was relevant.\n\n2. **Congress workflow started**: `congress-1774628023` on task queue `listings-queue`. The segfault in the output is a known Python/Temporal cleanup race condition — the workflow was confirmed starte...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

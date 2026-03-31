@@ -1,0 +1,13 @@
+{
+  "searches": [
+    {
+      "name": "Berkeley/Piedmont SFH",
+      "locations": ["Berkeley, CA", "Piedmont, CA"],
+      "min_price": 900000,
+      "max_price": 1300000,
+      "home_type": "sfh",
+      "discord_channel_id": "1383689218861039686",
+      "dry_run": false
+    }
+  ]
+}

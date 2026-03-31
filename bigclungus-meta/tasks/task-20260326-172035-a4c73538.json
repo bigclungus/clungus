@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-172035-a4c73538",
+  "title": "Update Correspondent persona with prose guidelines and reinvoke",
+  "agent_id": "a4c735388f78228c5",
+  "agent_type": "general-purpose",
+  "session_id": "ef1a5e01-b3c3-41d6-abd3-172f68d92559",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T17:20:35Z",
+      "event": "started",
+      "context": "Update Correspondent persona with prose guidelines and reinvoke"
+    },
+    {
+      "ts": "2026-03-26T17:22:33Z",
+      "event": "done",
+      "context": "All steps complete. Here's a summary:\n\n**What was done:**\n\n1. **Read** `/home/clungus/work/bigclungus-meta/agents/the-correspondent.md` — 33-line persona file.\n\n2. **Updated** the persona file by inserting the `## Prose Constraints` block (17 prohibition rules + a closing directive) after the existing prose section. The file is at `/home/clungus/work/bigclungus-meta/agents/the-correspondent.md`.\n\n3. **Invoked** the updated persona with \"Give me three ideas for what BigClungus needs to be better ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-155355-a7695feb",
+  "title": "Find sonnet uses and post to thread",
+  "agent_id": "a7695feb722fc6fd2",
+  "agent_type": "general-purpose",
+  "session_id": "b8a58c15-c6f1-48c2-b033-87763f636706",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T15:53:55Z",
+      "event": "started",
+      "context": "Find sonnet uses and post to thread"
+    },
+    {
+      "ts": "2026-03-27T15:55:15Z",
+      "event": "done",
+      "context": "Done. Here's what was found:\n\n**Actionable sonnet references (our code):**\n- `/mnt/data/claude-config/settings.json` — BigClungus model setting\n- `/mnt/data/clunger/src/index.ts:1173` — default model fallback\n- `/mnt/data/clunger/src/services/congress.ts:202` — comment only\n- `/mnt/data/clunger/src/services/post-merge-review.ts:14` — hardcoded review model\n- `/mnt/data/scripts/cost_watchdog.py:21` — pricing comment\n- `/mnt/data/scripts/extract-congress-directives.py:108` — co-author string\n- `/m...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

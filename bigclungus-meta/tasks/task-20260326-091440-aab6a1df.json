@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-091440-aab6a1df",
+  "title": "Fix clunger OOM - congress stream leak",
+  "agent_id": "aab6a1df2c57abbb6",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T09:14:40Z",
+      "event": "started",
+      "context": "Fix clunger OOM - congress stream leak"
+    },
+    {
+      "ts": "2026-03-26T09:16:50Z",
+      "event": "done",
+      "context": "Done. Here's what was found and fixed:\n\n**Root cause confirmed**: `/mnt/data/clunger/src/services/congress.ts` had four stream leak patterns:\n\n1. **`callClaude`** (Anthropic SDK): `client.messages.stream()` object was abandoned on error — the `for await` loop would throw and the stream handle was never explicitly aborted. Fixed by wrapping in `try/catch` and calling `stream.abort()` on error.\n\n2. **`callGrok`** (OpenAI SDK, used for xAI/Grok models): Same pattern — `for await` on streaming compl...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

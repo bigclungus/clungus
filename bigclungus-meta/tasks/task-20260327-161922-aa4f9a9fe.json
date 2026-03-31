@@ -1,0 +1,30 @@
+{
+  "id": "task-20260327-161922-aa4f9a9fe",
+  "title": "Update infrastructure references post-migration",
+  "agent_id": "congress-89",
+  "agent_type": "congress",
+  "session_id": "congress-0089",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "requires_approval": false,
+  "log": [
+    {
+      "event": "started",
+      "ts": "2026-03-27T16:19:22Z",
+      "message": "Created from Congress #89 verdict on: Consolidate all BigClungus repos (clunger, hello-world, temporal-workflows, commons-server, commons-"
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-27T16:19:22Z",
+      "message": "Source verdict: The monorepo is the correct move. The current multi-repo setup is generating real operational friction — cross-repo commits that should be atomic aren't, simplify/heartbeat scans require multi-repo co..."
+    },
+    {
+      "ts": "2026-03-27T18:28:01Z",
+      "event": "stale",
+      "context": "Marked stale by watchdog — session likely ended before task completed"
+    }
+  ]
+}

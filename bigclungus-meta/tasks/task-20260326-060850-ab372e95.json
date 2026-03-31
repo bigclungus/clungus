@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-060850-ab372e95",
+  "title": "Queue grazing TS rewrite for NightOwl",
+  "agent_id": "ab372e95df489795f",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": "1486607567357612113",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T06:08:50Z",
+      "event": "started",
+      "context": "Queue grazing TS rewrite for NightOwl"
+    },
+    {
+      "ts": "2026-03-26T06:09:01Z",
+      "event": "done",
+      "context": "The script failed with a `WorkflowAlreadyStartedError`. The NightOwl workflow (`nightowl-today`) is already running in Temporal — it was started with RunId `019d28b0-e17a-72ca-9399-b8f526c7d673` and hasn't completed yet.\n\nThe task could not be queued because only one `NightOwlWorkflow` instance with the ID `nightowl-today` can run at a time, and one is currently active. The new task will need to be queued once the current workflow run finishes, or the script would need to be updated to use `ALLO...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-051702-a766e6d1",
+  "title": "Post session history thread update",
+  "agent_id": "a766e6d1534c0ac63",
+  "agent_type": "general-purpose",
+  "session_id": "e7a4824e-1ccf-4619-b53d-92701d31f0cc",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T05:17:02Z",
+      "event": "started",
+      "context": "Post session history thread update"
+    },
+    {
+      "ts": "2026-03-27T05:17:21Z",
+      "event": "done",
+      "context": "Message sent successfully. The post landed in thread `1486946881069125713` with message ID `1486957265608249506` at 2026-03-27T05:17:18 UTC.",
+      "artifacts": []
+    }
+  ]
+}

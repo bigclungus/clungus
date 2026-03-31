@@ -1,0 +1,25 @@
+{
+  "id": "task-20260329-004838-a11e8ff4",
+  "title": "Wire mob gen pipeline into lobby start",
+  "agent_id": "a11e8ff45fabed2d6",
+  "agent_type": "general-purpose",
+  "session_id": "5aac769e-2e6e-4bd3-a873-645eb001e989",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-29T00:48:38Z",
+      "event": "started",
+      "context": "Wire mob gen pipeline into lobby start"
+    },
+    {
+      "ts": "2026-03-29T00:50:47Z",
+      "event": "done",
+      "context": "Done. Here's a summary of what was implemented:\n\n**Changes made:**\n\n1. `/mnt/data/commons-server/src/index.ts` — Modified the `d_start` handler to:\n   - Broadcast `d_mob_progress` (completed=playerCount, total=playerCount, status=\"complete\") to all lobby WebSocket connections before starting the floor, giving clients immediate feedback that mobs are ready\n   - Call `initFloor` as before (sends `d_floor`, starts the game)\n   - Fire `MobGenerationWorkflow` via Temporal HTTP REST API (`POST /api/v1...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-024820-a5588a52",
+  "title": "Check how congress selects debaters",
+  "agent_id": "a5588a52d7e059b20",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T02:48:20Z",
+      "event": "started",
+      "context": "Check how congress selects debaters"
+    },
+    {
+      "ts": "2026-03-25T02:48:38Z",
+      "event": "done",
+      "context": "Here is a factual summary:\n\n**Persona selection:**\nCongress does NOT use all eligible personas. It always goes through `congress_select_seats`, which asks Ibrahim (the hiring-manager persona) to pick the best debaters for the specific topic. Ibrahim selects from both active personas and severance personas (severance selections are guest-only, not reinstatements). The selection cap is `MAX_DEBATERS = 5`. If the LLM call fails or returns fewer than 2 matches, it falls back to the full roster.\n\n`co...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

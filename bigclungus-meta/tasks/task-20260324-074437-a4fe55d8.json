@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-074437-a4fe55d8",
+  "title": "Close stale orphaned task files",
+  "agent_id": "a4fe55d82033cf561",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": "1485906798874595428",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T07:44:37Z",
+      "event": "started",
+      "context": "Close stale orphaned task files"
+    },
+    {
+      "ts": "2026-03-24T07:45:10Z",
+      "event": "done",
+      "context": "Three files closed. Here's the summary:\n\n**Files closed (done event appended):**\n\n1. `task-20260324-070412-a4a5b6c4.json` — \"Verify feralhosting SSH and FTP access\" — note: blocked by panel IP restriction, user notified\n2. `task-20260324-063650-a18c1375.json` — \"Stop background agent before firing congress\" — note: obsolete\n3. `task-20260324-064354-ac98135a.json` — \"Update congress context injection prompt\" — note: completed (CONGRESS_CONTEXT preamble added)\n\n**Already closed (skipped):**\n- `tas...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

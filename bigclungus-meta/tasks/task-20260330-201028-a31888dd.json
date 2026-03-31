@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-201028-a31888dd",
+  "title": "Check name exclusion list",
+  "agent_id": "a31888dd6df0010af",
+  "agent_type": "general-purpose",
+  "session_id": "be7f2246-d19e-4b3a-b9bb-9cf802884ac9",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T20:10:28Z",
+      "event": "started",
+      "context": "Check name exclusion list"
+    },
+    {
+      "ts": "2026-03-30T20:10:31Z",
+      "event": "done",
+      "context": "Serafim\nThessalindra\nOrvantine",
+      "artifacts": []
+    }
+  ]
+}

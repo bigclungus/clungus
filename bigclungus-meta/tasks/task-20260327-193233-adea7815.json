@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-193233-adea7815",
+  "title": "Bump RunPod idle timeout to 5 min",
+  "agent_id": "adea78155ac1398aa",
+  "agent_type": "general-purpose",
+  "session_id": "b8a58c15-c6f1-48c2-b033-87763f636706",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T19:32:33Z",
+      "event": "started",
+      "context": "Bump RunPod idle timeout to 5 min"
+    },
+    {
+      "ts": "2026-03-27T19:33:05Z",
+      "event": "done",
+      "context": "Done. The `pepe-70b-serverless` endpoint (`o1b0e41cm3obbh`) idle timeout has been updated from 1800s to 300s (5 minutes). Note: the previous value was actually 1800s (30 minutes), not 60s as assumed -- so this is a decrease, not an increase. The mutation returned successfully with `idleTimeout: 300` confirmed.",
+      "artifacts": []
+    }
+  ]
+}

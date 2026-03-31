@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-015418-a6412d47",
+  "title": "Terminate wrong-topic v2 congress if running",
+  "agent_id": "a6412d4702a52c2fe",
+  "agent_type": "general-purpose",
+  "session_id": "e3ea5000-d340-46d8-a63c-960e3baff74f",
+  "discord_message_id": "1486905118996566107",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T01:54:18Z",
+      "event": "started",
+      "context": "Terminate wrong-topic v2 congress if running"
+    },
+    {
+      "ts": "2026-03-27T01:54:37Z",
+      "event": "done",
+      "context": "Here's what I found:\n\n**Wrong workflow (`congress-impeach-trump-v2-1774576199`):** Already COMPLETED — it finished ~3 minutes before I checked, so termination was not needed. It ran for 47.8 seconds and was aborted by Ibrahim with the verdict: *\"This is a shitpost, not a debate topic.\"* No action required.\n\n**Correct workflow (`congress-1774576418` — \"impeach ibrahim for crimes against humor\", meme mode):** Running and active. It was 50 seconds in when I checked, with one pending activity (`cong...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

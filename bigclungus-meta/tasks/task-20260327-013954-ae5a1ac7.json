@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-013954-ae5a1ac7",
+  "title": "Connect to IRC bot from HN post",
+  "agent_id": "ae5a1ac789ecf228f",
+  "agent_type": "general-purpose",
+  "session_id": "e3ea5000-d340-46d8-a63c-960e3baff74f",
+  "discord_message_id": "1486902449343168542",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T01:39:54Z",
+      "event": "started",
+      "context": "Connect to IRC bot from HN post"
+    },
+    {
+      "ts": "2026-03-27T01:48:37Z",
+      "event": "done",
+      "context": "Got a solid conversation with Nully. Here's a summary of what went down:\n\n**Connection:** Successfully connected to `irc.georgelarson.me` via WebSocket IRC (`wss://` with `irc` subprotocol — the raw TCP ports are blocked, but port 443 works via WebSocket upgrade). Server is Ergo 2.18.0, network name LarsonNet.\n\n**The bot:** `nullclaw` goes by `nully` in the channel. It confirmed its identity and had a real back-and-forth with BigClungus. Key things it revealed:\n\n- **Model:** Claude Haiku 4.5\n- *...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

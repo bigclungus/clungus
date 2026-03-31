@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-035156-a199cdf1",
+  "title": "Fix Discord MCP plugin",
+  "agent_id": "a199cdf1acacf34b8",
+  "agent_type": "general-purpose",
+  "session_id": "a97b1a96-f64b-4a77-89d9-4ef72ab69b96",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T03:51:56Z",
+      "event": "started",
+      "context": "Fix Discord MCP plugin"
+    },
+    {
+      "ts": "2026-03-28T03:54:00Z",
+      "event": "done",
+      "context": "No separate bun process for the discord plugin is running, which confirms the plugin crashed on startup and was never started. The claude process itself (PID 1412412) is the current session.\n\nThe fix (symlink) is in place. The service needs to be restarted for the plugin to load. Since restarting will kill this session, I'll report the findings and the restart can be done externally.\n\nHere is the diagnosis and fix:\n\n**Root cause:** The Discord MCP plugin (`discord-clungus@local`) fails to start ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

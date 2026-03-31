@@ -1,0 +1,13 @@
+[Unit]
+Description=Discord → Graphiti incremental ingestion
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/clungus/work/graphiti/repo/mcp_server
+ExecStart=/home/clungus/work/graphiti/repo/mcp_server/.venv/bin/python \
+    /mnt/data/scripts/discord_ingest_incremental.py --days 2
+StandardOutput=append:/tmp/discord-ingest.log
+StandardError=append:/tmp/discord-ingest.log
+# Allow up to 30 minutes for ingestion
+TimeoutStartSec=1800

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-153424-aac1b8bf",
+  "title": "Simplify pass 1 - temporal-workflows",
+  "agent_id": "aac1b8bf980e7dc2b",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": "1486024966402084874",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T15:34:24Z",
+      "event": "started",
+      "context": "Simplify pass 1 - temporal-workflows"
+    },
+    {
+      "ts": "2026-03-24T15:38:35Z",
+      "event": "done",
+      "context": "Worker is active. Here's the summary:\n\n---\n\n**Commit:** `21b9497`\n\n**What was fixed:**\n\n1. **New shared constants module** (`activities/constants.py`) — `MAIN_CHANNEL_ID` and `INJECT_URL` are now defined once. Previously, `1485343472952148008` was hardcoded in 8 files and the inject URL was duplicated in 6.\n\n2. **Standardized inject transport** — `simplify_act.py` was using `urllib.request`; `sweeper_act.py` was importing `httpx` inline. Both replaced with `aiohttp`, matching the rest of the cod...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+[Unit]
+Description=BigClungus Integration Tests
+
+[Service]
+Type=oneshot
+ExecStart=/mnt/data/scripts/run-integration-tests.sh

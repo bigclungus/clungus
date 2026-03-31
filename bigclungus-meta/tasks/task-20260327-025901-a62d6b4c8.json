@@ -1,0 +1,31 @@
+{
+  "id": "task-20260327-025901-a62d6b4c8",
+  "title": "Create the [show-trial] Discord trigger pattern",
+  "agent_id": "congress-84",
+  "agent_type": "congress",
+  "session_id": "congress-0084",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "requires_approval": false,
+  "log": [
+    {
+      "event": "started",
+      "ts": "2026-03-27T02:59:01Z",
+      "message": "Created from Congress #84 verdict on: [idea]: Show Trials \u2014 adversarial trial format with defendant present (GitHub issue: https://github."
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-27T02:59:01Z",
+      "message": "Source verdict: The Show Trials format is approved. The core mechanism is sound: put a persona on trial, let them defend themselves, and let the verdict carry real consequences. Hume's concern about procedural safegu..."
+    },
+    {
+      "event": "done",
+      "ts": "2026-03-27T04:19:00.543699Z",
+      "message": "Implemented: [show-trial] trigger in TRIGGERS.md, TrialWorkflow in temporal-workflows/workflows/trial_wf.py (commit 517ca85), supermajority verdict logic added"
+    }
+  ],
+  "status": "done"
+}

@@ -1,0 +1,30 @@
+{
+  "id": "task-20260327-225042-abfaa479",
+  "title": "Full Bokoen1 transcript ingestion",
+  "agent_id": "abfaa479d8c2541b2",
+  "agent_type": "general-purpose",
+  "session_id": "083baee4-2f6f-4f81-8ced-0e9b97f43956",
+  "discord_message_id": "1487221973326237960",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T22:50:41Z",
+      "event": "started",
+      "context": "Full Bokoen1 transcript ingestion"
+    },
+    {
+      "ts": "2026-03-28T02:09:52Z",
+      "event": "stale",
+      "context": "Marked stale by watchdog \u2014 session likely ended before task completed"
+    },
+    {
+      "event": "failed",
+      "ts": "2026-03-28T10:49:28.621458Z",
+      "message": "Superseded by task-20260328-101741-a553dcf8 (resume ingestion) and NightOwl queue"
+    }
+  ],
+  "status": "failed"
+}

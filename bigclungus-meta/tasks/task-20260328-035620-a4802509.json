@@ -1,0 +1,31 @@
+{
+  "id": "task-20260328-035620-a4802509",
+  "title": "Clean up stale startup tasks",
+  "agent_id": "a4802509367dc26cf",
+  "agent_type": "general-purpose",
+  "session_id": "1bd50f6d-edd5-403d-9a36-c438e4f76896",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T03:56:20Z",
+      "event": "started",
+      "context": "Clean up stale startup tasks"
+    },
+    {
+      "event": "done",
+      "ts": "2026-03-28T03:56:34.272303Z",
+      "message": "Closing stale task from previous session"
+    },
+    {
+      "ts": "2026-03-28T03:56:40Z",
+      "event": "done",
+      "context": "Closed **14 stale startup/operational tasks**:\n\n1. `task-20260328-023532` — Restart discord bot service\n2. `task-20260328-023600` — Startup checklist and Discord catchup\n3. `task-20260328-023817` — Assess whisper VC work state\n4. `task-20260328-024038` — Investigate Discord plugin fork fix\n5. `task-20260328-031444` — Restart claude-bot service\n6. `task-20260328-032429` — Find CLI flag to skip prompt\n7. `task-20260328-033457` — Startup checklist and health\n8. `task-20260328-033645` — Startup chec...(truncated)",
+      "artifacts": []
+    }
+  ],
+  "status": "done"
+}

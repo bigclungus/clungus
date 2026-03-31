@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-154642-a10ba1e8",
+  "title": "Post RCA in Discord thread",
+  "agent_id": "a10ba1e8856213603",
+  "agent_type": "general-purpose",
+  "session_id": "b8a58c15-c6f1-48c2-b033-87763f636706",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T15:46:42Z",
+      "event": "started",
+      "context": "Post RCA in Discord thread"
+    },
+    {
+      "ts": "2026-03-27T15:47:11Z",
+      "event": "done",
+      "context": "Done. Thread \"RCA: Restart Storm 2026-03-27\" created on message `1487115516031008808` in channel `1485343472952148008`, and the full RCA posted across two messages. Both messages posted successfully.",
+      "artifacts": []
+    }
+  ]
+}

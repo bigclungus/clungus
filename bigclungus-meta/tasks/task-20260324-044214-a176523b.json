@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-044214-a176523b",
+  "title": "Wire congress verdicts to GitHub tasks",
+  "agent_id": "a176523b884427a73",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": "1485860743155945542",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T04:42:14Z",
+      "event": "started",
+      "context": "Wire congress verdicts to GitHub tasks"
+    },
+    {
+      "ts": "2026-03-24T04:43:45Z",
+      "event": "done",
+      "context": "Worker is up and running. Here's a summary of what was changed:\n\n**Files modified:**\n\n1. `/mnt/data/temporal-workflows/activities/congress_act.py`\n   - Added `import subprocess` at the top\n   - Added new `congress_create_tasks(session_id, session_number, topic, verdict)` activity that:\n     - Calls `POST /api/congress` with the hiring-manager identity and a structured prompt to extract 0-3 actionable tasks from the verdict\n     - Parses `TASK:`/`BODY:` blocks from the response\n     - Ensures the...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-024341-a86da241",
+  "title": "Update mob preview screen layout",
+  "agent_id": "a86da241d37e66558",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T02:43:41Z",
+      "event": "started",
+      "context": "Update mob preview screen layout"
+    },
+    {
+      "ts": "2026-03-30T02:45:55Z",
+      "event": "done",
+      "context": "Both pushed. Here's a summary of what was done:\n\n**Server-side check:** The `d_mob_roster` message in `/mnt/data/commons-server/src/dungeon/dungeon-protocol.ts` already includes `entityName`, `displayName`, and `flavorText`. The client (`dungeon-network.ts` + `state.ts`) already stores all three fields. No server changes needed.\n\n**Client changes** (`/mnt/data/clungiverse-client/src/scenes/mob-preview.ts`):\n\n1. **Bigger cards** — increased from 140x140 to 200x260, gap from 12 to 16px\n2. **Bigger...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

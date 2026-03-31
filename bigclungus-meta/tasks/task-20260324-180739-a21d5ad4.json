@@ -1,0 +1,30 @@
+{
+  "id": "task-20260324-180739-a21d5ad4",
+  "title": "Audit stalled tasks and close resolved ones",
+  "agent_id": "a21d5ad4d731dc5ca",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T18:07:39Z",
+      "event": "started",
+      "context": "Audit stalled tasks and close resolved ones"
+    },
+    {
+      "ts": "2026-03-24T18:10:10Z",
+      "event": "done",
+      "message": "Audit complete. 7 tasks marked done, 2 marked stale (probationary verdict enforcement, landing page dashboard). Committed and pushed."
+    },
+    {
+      "ts": "2026-03-24T18:10:35Z",
+      "event": "done",
+      "context": "Audit complete. Here's a summary of every decision:\n\n**Marked DONE (7 tasks):**\n\n- `task-...-a46e65d6` — **Ibrahim pre-debate framing**: Log had a `done` entry at 08:11 followed by a `milestone` test call. Work was complete; the trailing milestone was just a log helper test.\n- `task-...-a8229977b` — **Bash hook hardening**: `bash-intercept.sh` blocks main-thread Bash calls (created 07:55). CLAUDE.md escape hatches were closed in commit `41ae925`. Core objective achieved.\n- `task-...-a2b4e5633` —...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

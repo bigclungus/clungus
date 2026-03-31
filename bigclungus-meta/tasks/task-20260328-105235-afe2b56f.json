@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-105235-afe2b56f",
+  "title": "Respond to VC test via voice",
+  "agent_id": "afe2b56f75590589e",
+  "agent_type": "general-purpose",
+  "session_id": "6f39db78-2fa2-4ae1-b73f-761ea988d046",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T10:52:35Z",
+      "event": "started",
+      "context": "Respond to VC test via voice"
+    },
+    {
+      "ts": "2026-03-28T10:53:27Z",
+      "event": "done",
+      "context": "Audio generated at `/tmp/tmp1735rrfp.mp3`. The script uses OpenAI TTS with the \"onyx\" voice (default). The file is ready to play via the `speak` tool.",
+      "artifacts": []
+    }
+  ]
+}

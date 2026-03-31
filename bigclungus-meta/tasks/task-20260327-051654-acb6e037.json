@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-051654-acb6e037",
+  "title": "Fix labs nav bar layout issues",
+  "agent_id": "acb6e03709d78d6fc",
+  "agent_type": "general-purpose",
+  "session_id": "e7a4824e-1ccf-4619-b53d-92701d31f0cc",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T05:16:54Z",
+      "event": "started",
+      "context": "Fix labs nav bar layout issues"
+    },
+    {
+      "ts": "2026-03-27T05:18:02Z",
+      "event": "done",
+      "context": "Done. Here's a summary of what was done:\n\n**Root cause:** `sitenav.css` styles `.sitenav` with `position: sticky`, which is constrained by the parent element's width. The labs index page body had `max-width: 720px; margin: 0 auto`, so the sticky nav was only 720px wide and centered — not full-width. Individual lab pages with their own body `max-width` had the same problem.\n\n**Fix applied** in `/mnt/data/labs-router/src/index.ts`:\n\nThe `NAV_INJECT` constant now includes an inline `<style>` block ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

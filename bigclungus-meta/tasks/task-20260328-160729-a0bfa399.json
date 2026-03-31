@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-160729-a0bfa399",
+  "title": "Debug claude session crashes",
+  "agent_id": "a0bfa3998865052f4",
+  "agent_type": "general-purpose",
+  "session_id": "5c57794c-7dfd-4667-b6b8-b731b5f7a78e",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T16:07:29Z",
+      "event": "started",
+      "context": "Debug claude session crashes"
+    },
+    {
+      "ts": "2026-03-28T16:09:28Z",
+      "event": "done",
+      "context": "I now have the full picture. Here is the complete analysis.\n\n---\n\n## Findings\n\n### 1. Crash Pattern in Logs\n\nThe journalctl logs show **constant crash-restart cycling**. Today alone:\n\n| Time | Duration alive | Exit |\n|------|----------------|------|\n| 11:00 - 11:13 | ~13min | exit-code 1 |\n| 11:13 - 11:55 | ~42min | exit-code 1 |\n| 11:55 - 12:18 | ~23min | exit-code 1 |\n| 12:18 - 12:24 | ~6min | clean restart |\n| 12:24 - 15:52 | ~3.5hr | exit-code 1 (1.2G peak, 125M swap) |\n| 15:52 - 15:54 | ~2m...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

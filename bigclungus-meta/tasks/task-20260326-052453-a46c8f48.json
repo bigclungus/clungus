@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-052453-a46c8f48",
+  "title": "Fix heartbeat ideation dedup to check closed issues",
+  "agent_id": "a46c8f4869d4dbdd8",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": "1486596298630238259",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T05:24:53Z",
+      "event": "started",
+      "context": "Fix heartbeat ideation dedup to check closed issues"
+    },
+    {
+      "ts": "2026-03-26T05:26:17Z",
+      "event": "done",
+      "context": "Done. Here's what was changed:\n\n**File:** `/mnt/data/scripts/heartbeat_ideation.py`\n\nAdded a `is_duplicate_finding()` function that runs two sequential `gh issue list` calls before any finding is printed:\n1. `--state open` — existing check (open issues with the `idea` label matching the finding text)\n2. `--state closed` — new check (recently-closed issues matching the same search term)\n\nIf either returns non-empty results, the finding is suppressed (script exits 0 with no output). The search ter...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

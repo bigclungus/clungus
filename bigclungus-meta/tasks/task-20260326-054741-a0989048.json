@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-054741-a0989048",
+  "title": "Fix vote notification firing multiple times",
+  "agent_id": "a0989048c2208dce5",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": "1486602379183919224",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T05:47:40Z",
+      "event": "started",
+      "context": "Fix vote notification firing multiple times"
+    },
+    {
+      "ts": "2026-03-26T05:48:12Z",
+      "event": "done",
+      "context": "Done. Here's what was changed in `/mnt/data/clunger/src/index.ts`:\n\n**Before:** After each upsert, `getWinner()` was called on the new counts, and if any option had >= 3 votes, `notifyVoteWinner` fired — every single time that option was voted on after crossing the threshold.\n\n**Fix:** `getVoteCounts` is now called once *before* the upsert to capture `prevCounts`. After the upsert, the notification only fires if `prevCounts[winner] < 3` — meaning this vote is the one that first crossed the thres...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

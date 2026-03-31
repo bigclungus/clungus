@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-020534-a8e4c840",
+  "title": "Remove gigaclungus restart schedule from Temporal",
+  "agent_id": "a8e4c840d193071ca",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T02:05:34Z",
+      "event": "started",
+      "context": "Remove gigaclungus restart schedule from Temporal"
+    },
+    {
+      "ts": "2026-03-30T02:07:27Z",
+      "event": "done",
+      "context": "No running instances. Here's a summary of what was found and done:\n\n**Found:**\n- No Temporal *schedule* for gigaclungus/watchdog existed (`temporal schedule list` only showed `history-ingest-1m`).\n- Instead, a Temporal *cron workflow* `gigaclungus-restart-cron` (`GigaClungusRestartWorkflow`) was running hourly — it had been firing every hour for at least 24+ hours, restarting `gigaclungus.service` each time.\n- Relevant files: `/mnt/data/temporal-workflows/workflows/gigaclungus_restart_wf.py` and...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

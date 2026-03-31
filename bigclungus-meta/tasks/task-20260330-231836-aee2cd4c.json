@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-231836-aee2cd4c",
+  "title": "Handle heartbeat trigger",
+  "agent_id": "aee2cd4ce2c0f23c1",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T23:18:36Z",
+      "event": "started",
+      "context": "Handle heartbeat trigger"
+    },
+    {
+      "ts": "2026-03-30T23:20:03Z",
+      "event": "done",
+      "context": "All checks clear. Here's the summary:\n\n**Stale tasks:** 0 stale, no orphaned congress sessions.\n\n**Failed services:** None.\n\n**Disk:** Root at 32% (29G/97G), /mnt/data at 11% (9.4G/98G). Both well under 85%.\n\n**GitHub issues:** No open issues returned.\n\n**Service health:**\n- clung.us: 200 OK\n- temporal.clung.us: 302 (auth redirect, expected)\n- terminal.clung.us: 302 (auth redirect, expected)\n\nEverything looks healthy. No Discord post needed.",
+      "artifacts": []
+    }
+  ]
+}

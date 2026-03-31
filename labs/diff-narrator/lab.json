@@ -1,0 +1,7 @@
+{
+  "name": "diff-narrator",
+  "title": "Diff Narrator",
+  "description": "Paste two versions of anything and get a plain-English explanation of what changed and why",
+  "port": 8101,
+  "status": "active"
+}

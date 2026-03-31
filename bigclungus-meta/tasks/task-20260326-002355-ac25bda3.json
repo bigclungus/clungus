@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-002355-ac25bda3",
+  "title": "Build diff-narrator lab",
+  "agent_id": "ac25bda36d9e320a0",
+  "agent_type": "general-purpose",
+  "session_id": "e4d4bf00-991b-4f0e-aac7-2ab4056f18c5",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T00:23:55Z",
+      "event": "started",
+      "context": "Build diff-narrator lab"
+    },
+    {
+      "ts": "2026-03-26T00:28:24Z",
+      "event": "done",
+      "context": "Everything is live. Here's a summary of what was built:\n\n---\n\n**diff-narrator** is built, running, and pushed to GitHub.\n\n**What was created:**\n\n- `/mnt/data/labs/diff-narrator/src/index.ts` — Bun TypeScript server on port 8101\n- `/mnt/data/labs/diff-narrator/lab.json` — lab metadata\n- `/mnt/data/labs/diff-narrator/.gitignore` — excludes node_modules and SQLite db\n- `/home/clungus/work/claude-config/systemd/user/labs-diff-narrator.service` — systemd unit (enabled and running)\n\n**Routes:**\n- `GET...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

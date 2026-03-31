@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-051043-aa48cf81",
+  "title": "Check agent outputs and congress tasks",
+  "agent_id": "aa48cf81f317201f3",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T05:10:43Z",
+      "event": "started",
+      "context": "Check agent outputs and congress tasks"
+    },
+    {
+      "ts": "2026-03-26T05:11:10Z",
+      "event": "done",
+      "context": "Here are the final results from both tasks:\n\n---\n\n**Task a9725f3582f26564c** — Congress debater count safety checks\n\nSuccessfully completed. The agent added a \"debater count sanity check\" block to `/mnt/data/temporal-workflows/workflows/congress_wf.py`:\n- 0 debaters: raises `ApplicationError` (non-retryable), hard-failing the workflow\n- 1–4 debaters: logs a warning and fires `congress_alert_failure` to Discord, then continues with whatever is available\n\nCommit `8b3d0a0` was pushed to `bigclungus...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-061238-ac79d016",
+  "title": "Server-side auth gate for congress.html",
+  "agent_id": "ac79d0166ecc19864",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T06:12:37Z",
+      "event": "started",
+      "context": "Server-side auth gate for congress.html"
+    },
+    {
+      "ts": "2026-03-24T06:13:18Z",
+      "event": "done",
+      "context": "Done. Here's a summary of the changes:\n\n**serve.py** (`/home/clungus/work/hello-world/serve.py`, lines ~266-275): Added an explicit auth check for `/congress`, `/congress.html`, and `/congress/` paths in `do_GET`. If `_is_authed()` returns false, the server now immediately returns a `302` redirect to `CONGRESS_LOGIN_URL` (`https://terminal.clung.us/auth/github?next=https://hello.clung.us/congress`) before the static file handler ever runs.\n\n**congress.html** (`/home/clungus/work/hello-world/cong...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-102833-a33a089a",
+  "title": "Build VC transcript posting feature",
+  "agent_id": "a33a089afacca70e9",
+  "agent_type": "general-purpose",
+  "session_id": "39a8007c-3c86-47f0-b762-f5bf8cf2f776",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T10:28:33Z",
+      "event": "started",
+      "context": "Build VC transcript posting feature"
+    },
+    {
+      "ts": "2026-03-28T10:33:20Z",
+      "event": "done",
+      "context": "No worries, the backup is harmless. Here is a summary of all changes made.\n\n---\n\n## Changes Made\n\n### `/home/clungus/.claude/plugins/marketplaces/claude-plugins-official/external_plugins/discord/voice-receive.ts`\n\nComplete rewrite with these additions (all existing functionality preserved):\n\n1. **Session transcript accumulator** -- module-level `TranscriptEntry[]` array and `sessionStart` date, scoped per `setupVoiceReceive` call. Each entry stores `{ username, text, timestamp, isBot }`.\n\n2. **T...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

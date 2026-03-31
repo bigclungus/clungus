@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-031444-a5a13b2a",
+  "title": "Restart claude-bot service",
+  "agent_id": "a5a13b2a13d8a30af",
+  "agent_type": "general-purpose",
+  "session_id": "43e9d2af-7d2b-4765-a796-49da1a9b6141",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T03:14:44Z",
+      "event": "started",
+      "context": "Restart claude-bot service"
+    },
+    {
+      "event": "done",
+      "ts": "2026-03-28T03:56:33.550844Z",
+      "message": "Closing stale task from previous session"
+    }
+  ],
+  "status": "done"
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-012857-a44f0544",
+  "title": "Log giga interventions",
+  "agent_id": "a44f0544d148129e8",
+  "agent_type": "general-purpose",
+  "session_id": "1cc1a705-d77e-4211-91a5-8b826a8b2723",
+  "discord_message_id": "1487262102212055151",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T01:28:57Z",
+      "event": "started",
+      "context": "Log giga interventions"
+    },
+    {
+      "ts": "2026-03-28T01:29:20Z",
+      "event": "done",
+      "context": "Done. Appended the `resume-subject-confusion` entry to `/mnt/data/giga-log.md`. This is the first occurrence of the `confident-wrong-assertion` category (count: 1, severity: suggestion).",
+      "artifacts": []
+    }
+  ]
+}

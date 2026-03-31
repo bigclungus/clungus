@@ -1,0 +1,25 @@
+syntax = "proto3";
+package task.v1;
+
+service TaskService {
+  rpc ListTasks(ListTasksRequest) returns (ListTasksResponse);
+}
+
+message Task {
+  string id = 1;
+  string title = 2;
+  string status = 3;
+  string started_at = 4;
+  string finished_at = 5;
+  string summary = 6;
+  string agent_id = 7;
+  string agent_type = 8;
+  string discord_user = 9;
+  string discord_message_id = 10;
+  string model = 11;
+  string session_id = 12;
+  bool run_in_background = 13;
+}
+
+message ListTasksRequest {}
+message ListTasksResponse { repeated Task tasks = 1; }

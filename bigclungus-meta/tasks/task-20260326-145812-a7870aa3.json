@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-145812-a7870aa3",
+  "title": "Fix custom_exporter flapping",
+  "agent_id": "a7870aa3b4e8bfab1",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": "1486740967565299923",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T14:58:12Z",
+      "event": "started",
+      "context": "Fix custom_exporter flapping"
+    },
+    {
+      "ts": "2026-03-26T15:00:56Z",
+      "event": "done",
+      "context": "Done. Here's what was found and fixed:\n\n**Root cause:** `temporal` was not in PATH when the systemd user service launched. The service unit had `/home/clungus/.local/bin` in `Environment=PATH=...`, but the binary lookup was still failing on earlier restarts (likely a race or env ordering issue).\n\n**Fixes applied to `/mnt/data/monitoring/custom_exporter.py`:**\n\n1. **Absolute path for `temporal`** — replaced `\"temporal\"` command string with `_TEMPORAL = \"/home/clungus/.local/bin/temporal\"` so it r...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

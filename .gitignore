@@ -1,0 +1,41 @@
+# Forks (kept as separate repos)
+gemini-cli/
+graphiti/
+omni/
+
+# Runtime / generated
+docker/
+data/
+*.db
+*.sqlite
+*.sqlite3
+node_modules/
+.env
+.env.*
+*.log
+
+# Secrets
+secrets/
+
+# Build artifacts
+dist/
+*.js.map
+__pycache__/
+*.pyc
+.venv/
+uv.lock
+
+# Python virtual environments
+kokoro-env/
+*-env/lib/python*/
+*-env/bin/
+*-env/include/
+
+# Temp / cache
+tmp/
+.cache/
+*.tmp
+
+# System files
+swapfile*
+lost+found/

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-194559-a4094e32",
+  "title": "Verify commons-server WS reachability via clung.us",
+  "agent_id": "a4094e321a1ab27d0",
+  "agent_type": "general-purpose",
+  "session_id": "ef1a5e01-b3c3-41d6-abd3-172f68d92559",
+  "discord_message_id": "1486813226380558467",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T19:45:58Z",
+      "event": "started",
+      "context": "Verify commons-server WS reachability via clung.us"
+    },
+    {
+      "ts": "2026-03-26T19:46:33Z",
+      "event": "done",
+      "context": "Here's the full picture:\n\n---\n\n**1. Does clunger proxy `/commons-ws` to commons-server?**\n\nYes. Clunger has a dedicated WebSocket proxy at `/commons-ws` (around line 2226–2292 of `/mnt/data/clunger/src/index.ts`). On a WebSocket upgrade to `/commons-ws`, it proxies the connection to `ws://localhost:8090/ws`, forwarding all query params (userId, name, color). It's a full bidirectional pipe.\n\n**2. Is commons-server running on port 8090?**\n\nYes — two PIDs (2976443 and 3004638) are bound to port 809...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

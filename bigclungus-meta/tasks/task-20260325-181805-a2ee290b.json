@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-181805-a2ee290b",
+  "title": "Delete word of day workflow and all related code",
+  "agent_id": "a2ee290b1084549bb",
+  "agent_type": "general-purpose",
+  "session_id": "4a58e62d-fa69-4ca2-a0a8-edcc21bb73c1",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T18:18:05Z",
+      "event": "started",
+      "context": "Delete word of day workflow and all related code"
+    },
+    {
+      "ts": "2026-03-25T18:19:21Z",
+      "event": "done",
+      "context": "Everything is clean and the worker is healthy. Here's a summary of what was done:\n\n**Schedules cancelled (Temporal):**\n- `word-of-the-day-spanish`\n- `word-of-the-day-mandarin`\n- Two completed workflow runs were found but already finished (no termination needed)\n\n**Files deleted (7 total):**\n- `activities/word_activity.py`\n- `workflows/word_of_day.py`\n- `word_history.json`\n- `run_word_of_day.py`\n- `test_word_of_day.py`\n- `migrate_schedules.py`\n- (plus two `__pycache__` `.pyc` files)\n\n**`worker.py...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

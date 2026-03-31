@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-021630-a856cfb4",
+  "title": "Add auth to congress API endpoint",
+  "agent_id": "a856cfb482e44055b",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": "1485824475420164228",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T02:16:30Z",
+      "event": "started",
+      "context": "Add auth to congress API endpoint"
+    },
+    {
+      "ts": "2026-03-24T02:18:42Z",
+      "event": "done",
+      "context": "Everything is done. Here's a summary of what was changed:\n\n**`/home/clungus/work/hello-world/serve.py`**\n- Added `GITHUB_COOKIE`, `GITHUB_ALLOWED_USERS`, and `CONGRESS_LOGIN_URL` constants at module level, reading allowed users from env at startup\n- Added `_is_authed(request_headers)` function that parses the `Cookie` header for `tauth_github=<user>` and validates against the allowed set (empty set = any authed user passes)\n- Added `_json_auth_error()` method to `Handler` returning 401 JSON with...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

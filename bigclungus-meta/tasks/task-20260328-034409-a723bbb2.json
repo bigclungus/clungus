@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-034409-a723bbb2",
+  "title": "Rename discord plugin fork",
+  "agent_id": "a723bbb28a0ffa40d",
+  "agent_type": "general-purpose",
+  "session_id": "17540a00-4192-4cb1-8cb5-3c89bef93d82",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T03:44:09Z",
+      "event": "started",
+      "context": "Rename discord plugin fork"
+    },
+    {
+      "ts": "2026-03-28T03:45:10Z",
+      "event": "done",
+      "context": "All done. Here's the summary of changes:\n\n**Files modified:**\n\n1. `/mnt/data/discord-plugin/.claude-plugin/plugin.json` -- name changed from `\"discord\"` to `\"discord-clungus\"`\n2. `/mnt/data/discord-plugin/package.json` -- name changed from `\"claude-channel-discord\"` to `\"claude-channel-discord-clungus\"`\n3. `/mnt/data/discord-plugin/.mcp.json` -- MCP server key changed from `\"discord\"` to `\"discord-clungus\"`\n4. `~/.claude/plugins/installed_plugins.json` -- removed `discord@claude-plugins-official...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

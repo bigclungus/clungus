@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-184028-aadc012b",
+  "title": "Add congress cleanup to watchdog script",
+  "agent_id": "aadc012b75fc114ee",
+  "agent_type": "general-purpose",
+  "session_id": "4a58e62d-fa69-4ca2-a0a8-edcc21bb73c1",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T18:40:28Z",
+      "event": "started",
+      "context": "Add congress cleanup to watchdog script"
+    },
+    {
+      "ts": "2026-03-25T18:43:16Z",
+      "event": "done",
+      "context": "Done. Here's a summary of what changed in `/mnt/data/scripts/hooks/watchdog-stale-tasks.sh`:\n\n**New section added** — after the existing `>2h stale` session check, a new async Python block runs that:\n1. Finds all session JSONs with `status == \"deliberating\"`\n2. Queries Temporal for currently running `CongressWorkflow`s via the Python SDK\n3. If zero running workflows exist, marks all deliberating sessions failed immediately\n4. If some workflows are running but the session is older than 10 minutes...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

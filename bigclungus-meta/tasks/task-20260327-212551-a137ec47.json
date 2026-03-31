@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-212551-a137ec47",
+  "title": "Timeline scroll + centering tweaks",
+  "agent_id": "a137ec47a82524c23",
+  "agent_type": "general-purpose",
+  "session_id": "083baee4-2f6f-4f81-8ced-0e9b97f43956",
+  "discord_message_id": "1487200737229410305",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T21:25:51Z",
+      "event": "started",
+      "context": "Timeline scroll + centering tweaks"
+    },
+    {
+      "ts": "2026-03-27T21:26:47Z",
+      "event": "done",
+      "context": "Done. Changes committed and pushed (commit `54c4418`). Here is what was changed in `/mnt/data/hello-world/timeline.html`:\n\n1. **Mouse wheel horizontal scroll on desktop**: Added a wheel event listener on `.scroll-wrapper` that calls `e.preventDefault()` and maps `e.deltaY` to `wrapper.scrollLeft` when `window.innerWidth > 768`. Uses `{ passive: false }` to allow `preventDefault`.\n\n2. **Vertical centering on desktop**: Set `body` to `display: flex; flex-direction: column`, `#timeline-container` t...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

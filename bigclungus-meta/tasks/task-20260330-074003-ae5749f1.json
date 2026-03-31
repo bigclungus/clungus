@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-074003-ae5749f1",
+  "title": "Fix lab/feature color differentiation on clung.us",
+  "agent_id": "ae5749f1efb73530a",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T07:40:03Z",
+      "event": "started",
+      "context": "Fix lab/feature color differentiation on clung.us"
+    },
+    {
+      "ts": "2026-03-30T07:41:14Z",
+      "event": "done",
+      "context": "Done. Here's what was changed:\n\n**File:** `/mnt/data/hello-world/timeline.html`\n\nThe `--cat-labs` CSS variable was changed in both dark and light themes:\n- Dark: `#10b981` (green) → `#f97316` (orange)\n- Light: `#059669` (dark green) → `#ea6800` (dark orange)\n\nFeature stays cyan (`#06b6d4`). The old green was too close to cyan — both sat in the blue-green band. Orange puts labs on a completely different part of the color wheel, making the two categories immediately distinguishable at a glance.\n\nC...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

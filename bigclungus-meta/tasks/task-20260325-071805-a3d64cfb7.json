@@ -1,0 +1,29 @@
+{
+  "id": "task-20260325-071805-a3d64cfb7",
+  "title": "Audit resource usage and identify waste",
+  "agent_id": "congress-35",
+  "agent_type": "congress",
+  "session_id": "congress-0035",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "event": "started",
+      "ts": "2026-03-25T07:18:05Z",
+      "message": "Created from Congress #35 verdict on: do we keep clungus"
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-25T07:18:05Z",
+      "message": "Source verdict: BigClungus stays. The question frames this as optional, but the system has already crossed the threshold where removing it costs more than maintaining it — active services, a Discord community that in..."
+    },
+    {
+      "ts": "2026-03-25T18:35:02Z",
+      "event": "failed",
+      "context": "Auto-closed: task was congress-generated but never picked up. Watchdog missed it due to milestone-as-last-event bug (now fixed)."
+    }
+  ]
+}

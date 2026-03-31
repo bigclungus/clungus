@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-205310-af8e0c8d",
+  "title": "Add cache bust to grazing.html",
+  "agent_id": "af8e0c8d6d99c1a6a",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T20:53:10Z",
+      "event": "started",
+      "context": "Add cache bust to grazing.html"
+    },
+    {
+      "ts": "2026-03-30T20:54:30Z",
+      "event": "done",
+      "context": "Done. Here's what was found and changed:\n\n**Cache-busting (`/mnt/data/hello-world/grazing.html`):**\n- `sitenav.css` and `sitenav.js` already had `?v=d004dbf` version strings.\n- The 5 `sprites-batch*.js` includes had no version strings — browsers could cache stale sprite data indefinitely.\n- Added `?v=1594dea` (current git hash) to all five sprite batch includes.\n- No meta tag needed: clunger's `serveStaticFile` already sets `Cache-Control: no-cache` for all `.html` files (line 2352-2353 in `/mnt...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

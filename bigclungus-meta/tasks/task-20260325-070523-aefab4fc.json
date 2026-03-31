@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-070523-aefab4fc",
+  "title": "Shorten congress debate responses",
+  "agent_id": "aefab4fc69cf50556",
+  "agent_type": "general-purpose",
+  "session_id": "a73508af-b739-48f4-b9cb-a7829a4a15c0",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T07:05:23Z",
+      "event": "started",
+      "context": "Shorten congress debate responses"
+    },
+    {
+      "ts": "2026-03-25T07:06:29Z",
+      "event": "done",
+      "context": "Both services are back up. Here's what changed:\n\n**`/mnt/data/hello-world/serve.py`** (commit `5aca8bb`):\n- `LLM_MAX_TOKENS`: 600 → 300\n- Debater length instruction: \"Respond in 3-5 sentences\" → \"Be concise — 3-4 sentences maximum. No preamble, no hedging, just your position\"\n\n**`/mnt/data/temporal-workflows/activities/congress_act.py`** (commit `2c37e1e`):\n- Round 1 prompt: appended \"Be brief — 3-4 sentences max.\" after the \"challenge you in the next round\" line\n- Round 2 rebuttal prompt: appen...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-172116-ab68f84b",
+  "title": "Fix TVTropes Explorer broken buttons",
+  "agent_id": "ab68f84b03c4d16e6",
+  "agent_type": "general-purpose",
+  "session_id": "ef1a5e01-b3c3-41d6-abd3-172f68d92559",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T17:21:16Z",
+      "event": "started",
+      "context": "Fix TVTropes Explorer broken buttons"
+    },
+    {
+      "ts": "2026-03-26T17:22:43Z",
+      "event": "done",
+      "context": "The fix is in. Here's what was wrong and what was changed:\n\n**Root cause:** `/mnt/data/labs-router/src/index.ts` line 146 was calling `proxyRequest(req, lab, subpath || \"/\")` where `subpath` was computed from `url.pathname` only. The query string (`url.search`) was being silently discarded before the upstream request was built.\n\n**Effect:** Every labs.clung.us lab that uses query parameters was broken — not just TVTropes Explorer. Submitting the search form (`?q=...`), clicking navigation links ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

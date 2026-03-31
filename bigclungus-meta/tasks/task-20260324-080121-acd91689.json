@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-080121-acd91689",
+  "title": "Replace GitHub issues with local task JSON + show tasks in congress UI",
+  "agent_id": "acd91689b9a25aa67",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": "1485910995288326267",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T08:01:21Z",
+      "event": "started",
+      "context": "Replace GitHub issues with local task JSON + show tasks in congress UI"
+    },
+    {
+      "ts": "2026-03-24T08:04:09Z",
+      "event": "done",
+      "context": "Worker is up. Here's a summary of what was changed:\n\n**`/mnt/data/temporal-workflows/activities/congress_act.py`**\n- `congress_create_tasks`: Removed all GitHub issue creation logic (`gh issue create` calls, label creation via `gh label create`, the `issue_urls` list). Now only creates local task JSON files under `/home/clungus/work/bigclungus-meta/tasks/`. After all files are written, does a PATCH to the session JSON with `task_titles` (list of strings) so the UI can display them. Returns task ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

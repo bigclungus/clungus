@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-221657-aca528a4",
+  "title": "Fix onTick crash, speed, mobs, doors",
+  "agent_id": "aca528a4737202f17",
+  "agent_type": "general-purpose",
+  "session_id": "5aac769e-2e6e-4bd3-a873-645eb001e989",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T22:16:57Z",
+      "event": "started",
+      "context": "Fix onTick crash, speed, mobs, doors"
+    },
+    {
+      "ts": "2026-03-28T22:18:20Z",
+      "event": "done",
+      "context": "All four fixes applied, client rebuilt, server restarted. Here's a summary:\n\n**Fix 1: `cp is not defined` crash (critical)**\n- `/mnt/data/clungiverse-client/src/network/dungeon-network.ts` line 317\n- `cp` was a `ClientPlayer` variable defined inside an `else` block (for remote players), but referenced outside that block in the `if (isLocal)` section. After minification, this became the `cp is not defined` ReferenceError. Fixed by looking up the player from `s.players.get(sp.id)` instead.\n\n**Fix ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

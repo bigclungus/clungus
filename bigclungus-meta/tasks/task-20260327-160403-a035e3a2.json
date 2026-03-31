@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-160403-a035e3a2",
+  "title": "Check for post-merge review comments",
+  "agent_id": "a035e3a23b6ab0315",
+  "agent_type": "general-purpose",
+  "session_id": "b8a58c15-c6f1-48c2-b033-87763f636706",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T16:04:03Z",
+      "event": "started",
+      "context": "Check for post-merge review comments"
+    },
+    {
+      "ts": "2026-03-27T16:05:58Z",
+      "event": "done",
+      "context": "Here are the findings:\n\n**Commit comments posted: Zero.** Checked all 24 bigclungus repos -- none have any commit comments from the post-merge review system (or anything else).\n\n**The code is hooked up and wired correctly:**\n- `/mnt/data/clunger/src/services/post-merge-review.ts` exists (Congress #87 / GitHub issue #72)\n- `clunger/src/index.ts` line 354 handles `push` events and calls `runPostMergeReview()` on pushes to the default branch\n- The code fetches the diff, runs it through Claude (`cla...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

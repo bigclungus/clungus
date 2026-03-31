@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-100009-a663e1a3",
+  "title": "Simplify codebase scan hourly",
+  "agent_id": "a663e1a32d8279240",
+  "agent_type": "general-purpose",
+  "session_id": "4a58e62d-fa69-4ca2-a0a8-edcc21bb73c1",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T10:00:09Z",
+      "event": "started",
+      "context": "Simplify codebase scan hourly"
+    },
+    {
+      "ts": "2026-03-25T10:02:29Z",
+      "event": "done",
+      "context": "Both services restarted and confirmed active.\n\n**Summary of findings and fixes:**\n\nFound 9 instances of the deprecated `datetime.utcnow()` pattern across both codebases. This method returns naive (timezone-unaware) datetimes and is deprecated in Python 3.12+. The call sites were compensating manually by appending literal `\"Z\"` or `\"+00:00\"` strings to the ISO format output — a fragile workaround.\n\n**Fixed:**\n- `/mnt/data/temporal-workflows/activities/congress_act.py` (3 sites): replaced with `da...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

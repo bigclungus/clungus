@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-065459-a8929b1c",
+  "title": "NightOwl queue status + proxy audition through clunger",
+  "agent_id": "a8929b1cf1f4d6f54",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T06:54:59Z",
+      "event": "started",
+      "context": "NightOwl queue status + proxy audition through clunger"
+    },
+    {
+      "ts": "2026-03-26T06:58:35Z",
+      "event": "done",
+      "context": "Both tasks complete. Here's the summary:\n\n---\n\n## Task 1: NightOwl Queue\n\nThe `nightowl-today` workflow is **running** (started 12 min ago, no pending activities — it's sleeping waiting for tasks to be dispatched). It has **6 queued tasks**:\n\n1. **Frontend TypeScript migration** — rewrite grazing.html JS monolith into TS modules via Bun build (player.ts, npc.ts, sprites.ts, map.ts, websocket.ts, ui.ts, congress-modal.ts, main.ts). Keep all existing features. Don't touch Temporal.\n2. **Commons wo...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

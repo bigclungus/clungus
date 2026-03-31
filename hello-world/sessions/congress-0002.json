@@ -1,0 +1,133 @@
+{
+  "session_id": "congress-0002",
+  "session_number": 2,
+  "topic": "FIRST METACONGRESS: HOW DO WE IMPROVE CONGRESS?",
+  "mode": "standard",
+  "status": "completed",
+  "started_at": "2026-03-24T06:29:57.297346Z",
+  "finished_at": "2026-03-24T06:30:16.097941Z",
+  "discord_user": null,
+  "thread_id": null,
+  "roster": null,
+  "rounds": [
+    {
+      "ts": "2026-03-24T06:29:58.136968Z",
+      "identity": "hiring-manager",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:30:00.559484Z",
+      "identity": "the-kid",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:30:00.595168Z",
+      "identity": "spengler",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:30:00.728340Z",
+      "identity": "otto",
+      "response": "**Burn it down and rebuild from first principles.** Congress is a sclerotic relic optimized for 1789 — slow, captured, theater-first. Replace it with a liquid, algorithmic, prediction-market-driven system that rewards emergence, punishes entropy-hoarding, and lets the most interesting, high-upside proposals surface and collapse gloriously until something actually works. Nothing lasts anyway; make the failure informative and maximal.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:30:01.119931Z",
+      "identity": "uncle-bob",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:30:01.701581Z",
+      "identity": "ux",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:30:02.826815Z",
+      "identity": "critic",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:30:03.385869Z",
+      "identity": "architect",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:30:06.158780Z",
+      "identity": "architect",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:30:08.363656Z",
+      "identity": "critic",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:30:11.161890Z",
+      "identity": "otto",
+      "response": "**Otto rebuttal:** The \"fix the bugs first\" crew is mistaking symptoms for disease — your auth pain, empty bubbles, and solo-debates are downstream of building a rigid 5-seat parliament in the first place. I still say burn the structure: replace fixed seats and manual severance curation with a liquid prediction market where personas are auto-weighted by past signal, auto-fired by negative EV, and streamed live so we watch emergence instead of polling corpses. Anything less is theater.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:30:12.397872Z",
+      "identity": "spengler",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:30:13.161916Z",
+      "identity": "ux",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:30:13.937600Z",
+      "identity": "the-kid",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:30:14.767945Z",
+      "identity": "uncle-bob",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:30:15.193742Z",
+      "identity": "hiring-manager",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:30:15.807091Z",
+      "identity": "hiring-manager",
+      "response": "",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T06:30:16.651319Z",
+      "identity": "hiring-manager",
+      "response": "",
+      "model": null
+    }
+  ],
+  "vote_summary": null,
+  "evolution": {
+    "evolved": [],
+    "fired": [],
+    "retained": [],
+    "created": []
+  },
+  "verdict": null,
+  "failure_reason": null,
+  "task_titles": null,
+  "notes": null
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-162205-afd897ad",
+  "title": "Update memory sweeper spec",
+  "agent_id": "afd897ad43003bf8a",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T16:22:05Z",
+      "event": "started",
+      "context": "Update memory sweeper spec"
+    },
+    {
+      "ts": "2026-03-30T16:27:00Z",
+      "event": "done",
+      "context": "Both pushed. Here's a summary of what was done:\n\n**Changes made:**\n\n1. `/mnt/data/scripts/memory-sweep-cron.py` — rewritten to:\n   - Inject a `[memory-sweep]` message for **every** memory file that qualifies (>1 day old, not verified in last 24h), not just the oldest one\n   - Track which files were already checked today in `/tmp/memory-sweep-checked.json` (date-keyed, auto-clears at UTC midnight) to prevent re-checking the same file in the same calendar day\n   - Drop the old lock-file model (whi...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

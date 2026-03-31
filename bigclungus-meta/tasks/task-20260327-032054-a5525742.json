@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-032054-a5525742",
+  "title": "Commit Trump reinstatement and fire trial",
+  "agent_id": "a55257421619bdce2",
+  "agent_type": "general-purpose",
+  "session_id": "e3ea5000-d340-46d8-a63c-960e3baff74f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T03:20:54Z",
+      "event": "started",
+      "context": "Commit Trump reinstatement and fire trial"
+    },
+    {
+      "ts": "2026-03-27T03:21:18Z",
+      "event": "done",
+      "context": "Both done:\n\n- **Commit hash:** `85925f2` — \"Reinstate trump persona as eligible (for show trial)\" pushed to `bigclungus/bigclungus-meta` main\n- **Workflow ID:** `trial-trump2-d60259a7` — TrialWorkflow started on `listings-queue`, defendant: trump, charges: taking too much framer attention away from other personas",
+      "artifacts": []
+    }
+  ]
+}

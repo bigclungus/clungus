@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-101527-a875025f",
+  "title": "TTS greeting for relarey",
+  "agent_id": "a875025f0b6037d1f",
+  "agent_type": "general-purpose",
+  "session_id": "39a8007c-3c86-47f0-b762-f5bf8cf2f776",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T10:15:27Z",
+      "event": "started",
+      "context": "TTS greeting for relarey"
+    },
+    {
+      "ts": "2026-03-28T10:15:38Z",
+      "event": "done",
+      "context": "The generated audio file is at `/tmp/tmp8po78vlz.mp3`.",
+      "artifacts": []
+    }
+  ]
+}

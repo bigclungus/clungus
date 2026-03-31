@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-061056-a3d5f008",
+  "title": "Code quality review — congress system",
+  "agent_id": "a3d5f00868ffe4bcc",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T06:10:56Z",
+      "event": "started",
+      "context": "Code quality review — congress system"
+    },
+    {
+      "ts": "2026-03-24T06:11:50Z",
+      "event": "done",
+      "context": "Here are the findings, organized by actual severity:\n\n---\n\n## Issue 1: `congress_debate` does two distinct jobs (lines 92-172, `congress_act.py`)\n\nThis is the most significant structural problem. The function has two completely divergent code paths gated by `round_num`:\n\n- Round 1 (lines 102-109): constructs a position prompt from scratch using `task` and `display_name`\n- Round 2 (lines 112-135): ignores the incoming `task` as a prompt, fetches thread history via Discord API, then constructs a r...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

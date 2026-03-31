@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-003243-a8d8e490",
+  "title": "Close stale tasks",
+  "agent_id": "a8d8e4906556bb91b",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T00:32:43Z",
+      "event": "started",
+      "context": "Close stale tasks"
+    },
+    {
+      "ts": "2026-03-30T00:34:13Z",
+      "event": "done",
+      "context": "All done. Here's what was closed:\n\n| Task ID | Title | Action |\n|---|---|---|\n| task-20260329-232807-ad92de43 | Set up omni gateway service and update Claude config | cancelled |\n| task-20260329-223829-a7b62dbd | Startup checklist and Discord catchup | cancelled |\n| task-20260329-231142-a60b841d | Check recent changes that could cause regression | cancelled |\n| task-20260329-230807-ae6b7f47 | Check Claude debug log for MCP notification receipt | cancelled |\n| task-20260329-234837-aa286196 | Chec...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

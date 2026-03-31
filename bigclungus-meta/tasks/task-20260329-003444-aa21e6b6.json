@@ -1,0 +1,25 @@
+{
+  "id": "task-20260329-003444-aa21e6b6",
+  "title": "Record timeline event for Dylan",
+  "agent_id": "aa21e6b64abbda786",
+  "agent_type": "general-purpose",
+  "session_id": "5aac769e-2e6e-4bd3-a873-645eb001e989",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-29T00:34:44Z",
+      "event": "started",
+      "context": "Record timeline event for Dylan"
+    },
+    {
+      "ts": "2026-03-29T00:35:19Z",
+      "event": "done",
+      "context": "Done. Added timeline event #90 to `/mnt/data/clunger/timeline.db`:\n\n- **Title:** \"Dylan becomes Clungus's sugardaddy\"\n- **Date:** 2026-03-29\n- **Category:** milestone\n- **Source:** manual\n\nIt's now visible at clung.us on the timeline page via the `GET /api/timeline` endpoint.",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-061717-a7d847a5",
+  "title": "Research historical-text-only LLM",
+  "agent_id": "a7d847a5edca589a9",
+  "agent_type": "general-purpose",
+  "session_id": "16a68b39-62d1-4a67-8caa-3fdbe529c5d2",
+  "discord_message_id": "1486246611842764871",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T06:17:17Z",
+      "event": "started",
+      "context": "Research historical-text-only LLM"
+    },
+    {
+      "ts": "2026-03-25T06:18:43Z",
+      "event": "done",
+      "context": "I have enough to give a thorough summary. Here's what the research found:\n\n---\n\n## Historical LLMs — Research Summary\n\nYes, this is a real and active area. There are several distinct projects, ranging from rigorous academic work to hobbyist experiments.\n\n---\n\n### 1. Ranke-4B (University of Zurich)\n\n**The most serious entry.** A family of 4B-parameter models trained *from scratch* (not fine-tuned) on 80B tokens of historical texts, with hard temporal cutoffs: 1913, 1929, 1933, 1939, and 1946. Bui...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

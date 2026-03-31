@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-064823-ae7b038c",
+  "title": "Fire metacongress Temporal workflow",
+  "agent_id": "ae7b038c2213a32ac",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T06:48:23Z",
+      "event": "started",
+      "context": "Fire metacongress Temporal workflow"
+    },
+    {
+      "ts": "2026-03-24T06:48:33Z",
+      "event": "done",
+      "context": "The workflow started successfully despite the fatal exit — the output confirms `started: congress-1774334908` before the crash. The GIL error is a known Python/protobuf teardown issue that doesn't affect the actual workflow submission.\n\nThe CongressWorkflow was started with ID: **`congress-1774334908`**\n\nTopic: \"FIRST METACONGRESS: HOW DO WE IMPROVE CONGRESS?\" targeting chat_id `1485343472952148008` with message_id `1485886028559552522`.",
+      "artifacts": []
+    }
+  ]
+}

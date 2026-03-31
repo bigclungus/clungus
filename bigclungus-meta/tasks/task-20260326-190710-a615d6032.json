@@ -1,0 +1,31 @@
+{
+  "id": "task-20260326-190710-a615d6032",
+  "title": "Add a cron job to run tests and alert on failure via Discord",
+  "agent_id": "congress-69",
+  "agent_type": "congress",
+  "session_id": "congress-0069",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "requires_approval": false,
+  "log": [
+    {
+      "event": "started",
+      "ts": "2026-03-26T19:07:10Z",
+      "message": "Created from Congress #69 verdict on: Should clungus add automated tests which run on a schedule?"
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-26T19:07:10Z",
+      "message": "Source verdict: Scheduled tests are the single cheapest insurance policy this system doesn't have. The heartbeat catches service failures after they happen; automated tests catch regressions before they ship. The cod..."
+    },
+    {
+      "event": "done",
+      "ts": "2026-03-26T19:15:12.816119Z",
+      "message": "Integration test timer running every 6h, Discord alert on failure"
+    }
+  ],
+  "status": "done"
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-062135-ae0207d9",
+  "title": "Investigate personas database in congress system",
+  "agent_id": "ae0207d92c2df4782",
+  "agent_type": "general-purpose",
+  "session_id": "16a68b39-62d1-4a67-8caa-3fdbe529c5d2",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T06:21:35Z",
+      "event": "started",
+      "context": "Investigate personas database in congress system"
+    },
+    {
+      "ts": "2026-03-25T06:23:05Z",
+      "event": "done",
+      "context": "I have a complete picture now. Here is the full report:\n\n---\n\n**Database found:** `/mnt/data/hello-world/personas.db` (SQLite)\n\n**Schema — single table `personas`:**\n\n| Column | Type | Notes |\n|---|---|---|\n| `name` | TEXT PK | slug (e.g. `critic`, `architect`) |\n| `display_name` | TEXT | |\n| `model` | TEXT | model routing key (e.g. `gemini`, `grok`, `opus`, `claude-sonnet-4-6`) |\n| `role` | TEXT | |\n| `title` | TEXT | |\n| `sex` | TEXT | |\n| `congress` | INTEGER | 0 = excluded from congress seat...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

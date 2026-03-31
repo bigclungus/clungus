@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-120716-a5b77823",
+  "title": "Run heartbeat trigger",
+  "agent_id": "a5b77823e60a1c335",
+  "agent_type": "general-purpose",
+  "session_id": "b8a58c15-c6f1-48c2-b033-87763f636706",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T12:07:16Z",
+      "event": "started",
+      "context": "Run heartbeat trigger"
+    },
+    {
+      "ts": "2026-03-27T12:09:08Z",
+      "event": "done",
+      "context": "All checks complete. No Discord post needed — nothing urgent surfaced.\n\n**Heartbeat summary:**\n\n- **Stale tasks**: 0 stale, no orphaned congress sessions\n- **GitHub issues**: 0 open issues  \n- **Failed services**: 0 failed services\n\n**One open task found**: \"Build congress verdict tracking system\" (task-20260326-015509-5bedfef7) — centronias-approved from 2026-03-26. Was previously queued to NightOwl but the previous run (closed 10:10 UTC today) did not implement it — the `verdict_tracking` tabl...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

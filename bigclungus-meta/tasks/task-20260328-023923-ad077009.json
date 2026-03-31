@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-023923-ad077009",
+  "title": "Startup checklist execution",
+  "agent_id": "ad077009181d881d3",
+  "agent_type": "general-purpose",
+  "session_id": "61b33f4e-e126-4828-b9ed-1f65d3157c18",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T02:39:23Z",
+      "event": "started",
+      "context": "Startup checklist execution"
+    },
+    {
+      "ts": "2026-03-28T02:40:54Z",
+      "event": "done",
+      "context": "Here is the full restart checklist report:\n\n---\n\n**1. Redis/FalkorDB Fixes:** Both applied successfully (stop-writes-on-bgsave-error = no, graph timeout = 30000ms).\n\n**2. Services:** 29 services running. All expected services are up:\n- claude-bot, cloudflared, clunger, website (now via clunger on :8081), terminal-server\n- temporal, temporal-proxy, temporal-worker\n- labs-router + 12 individual lab services\n- commons-server, grok-proxy, giga-terminal\n- alert-webhook, alertmanager, custom-exporter\n...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

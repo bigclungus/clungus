@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-051423-a13a59e1",
+  "title": "Startup checklist",
+  "agent_id": "a13a59e1e696dc8bc",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T05:14:23Z",
+      "event": "started",
+      "context": "Startup checklist"
+    },
+    {
+      "ts": "2026-03-25T05:14:49Z",
+      "event": "done",
+      "context": "All checks complete. Here's the summary:\n\n**FalkorDB:** Fixed — `stop-writes-on-bgsave-error` set to `no`.\n\n**Services:** All 8 expected services are running with no failures:\n- claude-bot, cloudflared, website, 1998, terminal-server, temporal, temporal-proxy, temporal-worker\n\n**Disk:** 15% used (14G / 97G) — well under the 85% threshold.\n\n**Congress directives:** 3 new directives extracted from Congress #30, #31, and #32, committed and pushed to `bigclungus-meta`.\n\n**GitHub issues:** No open is...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

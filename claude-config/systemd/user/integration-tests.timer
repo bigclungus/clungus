@@ -1,0 +1,10 @@
+[Unit]
+Description=Run BigClungus integration tests every 6 hours
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=6h
+Unit=integration-tests.service
+
+[Install]
+WantedBy=timers.target

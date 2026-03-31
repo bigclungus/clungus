@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-061941-ac432260",
+  "title": "Check security issue #80 details",
+  "agent_id": "ac432260ca4726aea",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T06:19:41Z",
+      "event": "started",
+      "context": "Check security issue #80 details"
+    },
+    {
+      "ts": "2026-03-30T06:20:24Z",
+      "event": "done",
+      "context": "Here is the complete picture:\n\n---\n\n**Issue #80 summary**\n\nThe issue is about a hardcoded auth password that was committed in the public `bigclungus-meta` CLAUDE.md file.\n\n**What was exposed**\n\nThe password `cT5OtGIgUk89TnqUVHT-2TO8IE0Srzcw` was hardcoded on line 35 of CLAUDE.md under `### Auth Passwords`. It was removed in commit `7437062e` (2026-03-28) — the line now reads \"(stored in /mnt/data/terminal/.env; loaded via systemd EnvironmentFile)\" with no value.\n\n**Where it's used**\n\n`/mnt/data/...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

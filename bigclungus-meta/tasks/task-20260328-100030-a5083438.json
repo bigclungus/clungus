@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-100030-a5083438",
+  "title": "NightOwl: commons tile collision fix",
+  "agent_id": "a5083438bf8951d77",
+  "agent_type": "general-purpose",
+  "session_id": "39a8007c-3c86-47f0-b762-f5bf8cf2f776",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T10:00:30Z",
+      "event": "started",
+      "context": "NightOwl: commons tile collision fix"
+    },
+    {
+      "ts": "2026-03-28T10:02:37Z",
+      "event": "done",
+      "context": "Done. Here is the summary:\n\n**Problem:** Server-side player tile collision was disabled in `game-loop.ts` because a stale comment claimed the server used different tile dimensions (25x19 @ 32px) than the client (50x35 @ 20px). In reality, `map.ts` already had the correct matching dimensions (`CHUNK_TILES_W=50`, `CHUNK_TILES_H=35`, `TILE_SIZE=20`). The `isPixelWalkable` import had been removed and `validateAndApplyMove` accepted any position without checking walkability.\n\n**Fix applied to `/mnt/d...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

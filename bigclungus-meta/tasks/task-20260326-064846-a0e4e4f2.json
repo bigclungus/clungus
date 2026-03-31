@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-064846-a0e4e4f2",
+  "title": "Fix remote player smoothing + NPC first-sync snap + tabbed-out grey",
+  "agent_id": "a0e4e4f25f70b6f6b",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T06:48:46Z",
+      "event": "started",
+      "context": "Fix remote player smoothing + NPC first-sync snap + tabbed-out grey"
+    },
+    {
+      "ts": "2026-03-26T07:00:45Z",
+      "event": "done",
+      "context": "All three fixes are applied and deployed. Here's a summary:\n\n**Fix 1 - Remote player snap to grid** (`/mnt/data/hello-world/grazing.html` + `/mnt/data/clunger/src/index.ts`):\n- `sendPlayerMove()` now sends `px`/`py` (pixel coords) alongside `tx`/`ty`\n- Server stores `px`/`py` in `CommonsPlayer` and broadcasts them\n- `players` message handler stores `targetX`/`targetY` from pixel coords, initializes `renderX`/`renderY` on first receive (snap) then preserves across updates\n- `drawRemotePlayers()` ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

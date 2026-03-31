@@ -1,0 +1,36 @@
+{
+  "id": "task-20260326-053542-a19bb420f",
+  "title": "Render accumulated persona traces in the commons world",
+  "agent_id": "congress-61",
+  "agent_type": "congress",
+  "session_id": "congress-0061",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "requires_approval": false,
+  "log": [
+    {
+      "event": "started",
+      "ts": "2026-03-26T05:35:42Z",
+      "message": "Created from Congress #61 verdict on: what should we add to the commons (clung.us/grazing) \u2014 the pixel art RPG world where personas wander"
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-26T05:35:42Z",
+      "message": "Source verdict: The commons should have exactly one addition: persistent state. Personas should leave traces \u2014 footprints, marks on trees, scrawled notes \u2014 that accumulate over time and don't reset. A world where not..."
+    },
+    {
+      "ts": "2026-03-26T07:38:19Z",
+      "event": "stale",
+      "context": "Marked stale by watchdog \u2014 session likely ended before task completed"
+    },
+    {
+      "event": "done",
+      "ts": "2026-03-27T07:52:08.492458Z",
+      "message": "Worn paths now broadcast server-side to all clients on join. Server sends wornPaths in initial tick; client merges with localStorage. commons-server fbc1707, commons-client 67477fa"
+    }
+  ],
+  "status": "done"
+}

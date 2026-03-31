@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-062042-a977b6fd",
+  "title": "Rewrite TTS and STT scripts for OpenAI",
+  "agent_id": "a977b6fd45ca8e91d",
+  "agent_type": "general-purpose",
+  "session_id": "39a8007c-3c86-47f0-b762-f5bf8cf2f776",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T06:20:42Z",
+      "event": "started",
+      "context": "Rewrite TTS and STT scripts for OpenAI"
+    },
+    {
+      "ts": "2026-03-28T06:22:11Z",
+      "event": "done",
+      "context": "Both scripts are working correctly. Here is a summary:\n\n**Changes made:**\n\n1. **`/mnt/data/scripts/whisper-transcribe.py`** -- Replaced local Whisper model with OpenAI `whisper-1` API. Same interface: takes audio file path as argv[1], prints transcribed text to stdout. Now accepts any audio format the API supports (WAV, MP3, etc.), not just WAV.\n\n2. **`/mnt/data/scripts/kokoro-speak.py`** -- Replaced local Kokoro TTS with OpenAI `tts-1` API using voice \"onyx\" by default. Same interface: takes te...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

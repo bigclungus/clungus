@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-234044-afe718b7",
+  "title": "Fix stale lobby on refresh",
+  "agent_id": "afe718b7619cf18f6",
+  "agent_type": "general-purpose",
+  "session_id": "5aac769e-2e6e-4bd3-a873-645eb001e989",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T23:40:44Z",
+      "event": "started",
+      "context": "Fix stale lobby on refresh"
+    },
+    {
+      "ts": "2026-03-28T23:41:48Z",
+      "event": "done",
+      "context": "Build succeeded. Here is what changed in `/mnt/data/clungiverse-client/src/main.ts`:\n\n1. **Added `clearLobbyParam()` helper** -- removes the `?lobby=` URL parameter via `history.replaceState`.\n\n2. **Lobby join failure falls through to create** -- when joining a lobby from the URL param fails (404, network error, any error), the code catches the error, logs a warning, clears the stale URL param, and falls through to creating a fresh lobby instead of hard-failing with `lobbyStatus = 'error'`.\n\n3. ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

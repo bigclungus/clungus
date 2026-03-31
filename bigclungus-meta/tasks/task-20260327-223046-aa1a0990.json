@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-223046-aa1a0990",
+  "title": "Read Crusoe article",
+  "agent_id": "aa1a0990a3a1ba4a3",
+  "agent_type": "general-purpose",
+  "session_id": "083baee4-2f6f-4f81-8ced-0e9b97f43956",
+  "discord_message_id": "1487215703508385842",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T22:30:45Z",
+      "event": "started",
+      "context": "Read Crusoe article"
+    },
+    {
+      "ts": "2026-03-27T22:31:19Z",
+      "event": "done",
+      "context": "**Summary of the Article**\n\nCrusoe announced a new 900 MW AI data center campus in Abilene, Texas, built specifically to support Microsoft's AI infrastructure. Key points:\n\n- **Scale:** Two buildings, each with 336 MW of critical IT load, plus a dedicated 900 MW on-site power plant. Combined with Crusoe's existing Abilene facilities, the total site capacity reaches 2.1 GW -- a staggering amount of power for a single location.\n- **Timeline:** Site prep is already underway. The first building is t...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

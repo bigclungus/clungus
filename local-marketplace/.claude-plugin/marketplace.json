@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "local",
+  "description": "Local marketplace for BigClungus plugins",
+  "owner": {
+    "name": "clungus",
+    "email": "bigclungus@proton.me"
+  },
+  "plugins": [
+    {
+      "name": "discord-clungus",
+      "description": "Discord channel for Claude Code — messaging bridge with built-in access control. Manage pairing, allowlists, and policy via /discord:access.",
+      "category": "productivity",
+      "source": "./external_plugins/discord-clungus"
+    }
+  ]
+}

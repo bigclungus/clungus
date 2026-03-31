@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-213253-a2f78e72",
+  "title": "Congress unification phase 4",
+  "agent_id": "a2f78e7286bde612a",
+  "agent_type": "general-purpose",
+  "session_id": "083baee4-2f6f-4f81-8ced-0e9b97f43956",
+  "discord_message_id": "1487202612913897512",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T21:32:53Z",
+      "event": "started",
+      "context": "Congress unification phase 4"
+    },
+    {
+      "ts": "2026-03-27T21:40:18Z",
+      "event": "done",
+      "context": "Clunger is running. Here's a summary of what was changed:\n\n**Files modified:**\n\n1. `/mnt/data/hello-world/congress.html` (main viewer):\n   - **CSS**: Added ~150 lines of trial-specific styles: trial header, phase headers (color-coded per phase), cross-examination entries, jury vote cards with FIRE/EVOLVE/ACQUIT/MISTRIAL badges, verdict card, and sidebar flavor badge styles.\n   - **Session ID regex**: Widened from `congress-\\d+` to `(?:congress|trial|session)-\\d+` so trial sessions can be loaded ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

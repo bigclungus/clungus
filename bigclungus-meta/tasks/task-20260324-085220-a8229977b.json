@@ -1,0 +1,29 @@
+{
+  "id": "task-20260324-085220-a8229977b",
+  "title": "Harden Bash hook to enforce background-agent discipline",
+  "agent_id": "congress-12",
+  "agent_type": "congress",
+  "session_id": "congress-0012",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "event": "started",
+      "ts": "2026-03-24T08:52:20Z",
+      "message": "Created from Congress #12 verdict on: What should BigClungus work on first tomorrow? Candidates: (1) multi-model routing so Grok/Gemini/GP"
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-24T08:52:20Z",
+      "message": "Source verdict: Option 2 \u2014 the Bash hook hardening \u2014 is the only candidate that fixes a failure mode already causing real damage: every time BigClungus runs a shell command on the main thread, the bot goes dark and u..."
+    },
+    {
+      "ts": "2026-03-24T18:10:05Z",
+      "event": "done",
+      "message": "Bash hook (bash-intercept.sh) was created at 07:55 and blocks main-thread Bash calls. CLAUDE.md escape hatches closed in commit 41ae925. Core objective achieved."
+    }
+  ]
+}

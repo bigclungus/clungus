@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-014807-acbe7e85",
+  "title": "Fix congress personas tab",
+  "agent_id": "acbe7e855a5900977",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T01:48:07Z",
+      "event": "started",
+      "context": "Fix congress personas tab"
+    },
+    {
+      "ts": "2026-03-26T01:50:47Z",
+      "event": "done",
+      "context": "Done. Here's a summary of what was wrong and what was fixed:\n\n---\n\n**What was wrong:**\n\n1. **Wrong endpoint**: The personas tab was calling `/api/personas` (a DB-backed endpoint) instead of `/api/agents` (which reads directly from the MD files in `bigclungus-meta/agents/`). The DB is the stale source — for example, `morgan` was `active` in the DB but `ineligible` in the MD; multiple fired personas in the MD showed `eligible` in the DB.\n\n2. **Wrong terminology**: The tab used `active`/`fired`/`se...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

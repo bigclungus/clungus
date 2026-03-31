@@ -1,0 +1,4904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>congress — clung.us</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="stylesheet" href="/sitenav.css?v=d004dbf">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <script src="/sitenav.js?v=d004dbf" defer></script>
+  <style>
+    :root {
+      --card-bg: #22223a;
+      --card-border: #333350;
+      --panel-bg: #16162a;
+      --panel-border: #2a2a45;
+      --seat-bg: #1e1e38;
+      --seat-border: #333355;
+      --retired-bg: #1a1226;
+      --retired-border: #3a2040;
+      --btn-bg: #22223a;
+      --btn-border: #444466;
+      --node-idle: #22223a;
+      --node-border-idle: #444466;
+      --node-border-active: #f59e0b;
+      --node-border-done: #4ecca3;
+      --bubble-bg: #1e1e38;
+      --bubble-border: #444466;
+      --review-bg: #141425;
+      --teal: #4ecca3;
+    }
+    [data-theme="light"] {
+      --card-bg: #fff8ea;
+      --card-border: #d0c9b0;
+      --panel-bg: #f0ece0;
+      --panel-border: #ccc4a8;
+      --seat-bg: #fdf6e3;
+      --seat-border: #d0c9b0;
+      --retired-bg: #f5e8f0;
+      --retired-border: #c8a8c0;
+      --btn-bg: #ede7d4;
+      --btn-border: #bbb5a0;
+      --node-idle: #f5efe0;
+      --node-border-idle: #c9b8a0;
+      --node-border-active: #f59e0b;
+      --node-border-done: #2aa198;
+      --bubble-bg: #ede7d4;
+      --bubble-border: #c9b8a0;
+      --review-bg: #f0e8d8;
+      --teal: #2aa198;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text);
+      transition: background 0.2s ease, color 0.2s ease;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Three-column layout ── */
+    .congress-layout {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 240px 1fr 240px;
+      min-height: 0;
+    }
+
+    /* ── Shared sidebar styles ── */
+    .sidebar {
+      background: var(--panel-bg);
+      display: flex;
+      flex-direction: column;
+      border-top: none;
+      overflow: hidden;
+    }
+    .sidebar-left { border-right: 1px solid var(--panel-border); }
+    .sidebar-right { border-left: 1px solid var(--panel-border); }
+
+    .sidebar-header {
+      padding: 11px 13px 9px;
+      border-bottom: 1px solid var(--panel-border);
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .sidebar-header h2 {
+      margin: 0;
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      text-shadow: 0 0 7px var(--accent);
+    }
+    .sidebar-header .count-badge {
+      font-size: 0.6rem;
+      color: var(--text-muted);
+    }
+
+    .sidebar-body {
+      flex: 1;
+      padding: 9px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      overflow-y: auto;
+    }
+
+    /* ── Roster seat card ── */
+    .seat-card {
+      background: var(--seat-bg);
+      border: 1px solid var(--seat-border);
+      border-radius: 4px;
+      padding: 9px 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      position: relative;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      min-height: 72px;
+    }
+    .seat-card.occupied {
+      border-color: var(--sc, var(--accent));
+      box-shadow: 0 0 5px color-mix(in srgb, var(--sc, var(--accent)) 25%, transparent);
+    }
+    .seat-card.empty {
+      opacity: 0.3;
+      border-style: dashed;
+    }
+    .seat-num {
+      position: absolute;
+      top: 3px;
+      right: 6px;
+      font-size: 0.5rem;
+      color: var(--text-muted);
+      opacity: 0.45;
+    }
+    .seat-emoji { font-size: 1.3rem; flex-shrink: 0; line-height: 1; }
+    .seat-avatar { width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0; }
+    .seat-info { flex: 1; min-width: 0; padding-top: 4px; }
+    .seat-name {
+      font-size: 0.73rem;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .seat-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 1px;
+    }
+    /* ── Session roster status badges ── */
+    .roster-badge {
+      font-size: 0.5rem;
+      padding: 1px 5px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      font-weight: 700;
+      flex-shrink: 0;
+      align-self: flex-start;
+      margin-top: 1px;
+    }
+    .roster-badge.seated {
+      background: color-mix(in srgb, var(--sc, var(--accent)) 20%, transparent);
+      color: var(--sc, var(--accent));
+      border: 1px solid color-mix(in srgb, var(--sc, var(--accent)) 60%, transparent);
+    }
+    .seat-card.bench {
+      opacity: 0.38;
+      border-style: dashed;
+      border-color: var(--seat-border);
+      box-shadow: none;
+    }
+    .seat-card.bench .seat-name { color: var(--text-muted); }
+    /* ── Severance cards in session mode ── */
+    .retired-card.seated {
+      border-color: var(--sc, var(--accent));
+      box-shadow: 0 0 5px color-mix(in srgb, var(--sc, var(--accent)) 25%, transparent);
+    }
+    .retired-card.bench {
+      opacity: 0.38;
+      border-style: dashed;
+      box-shadow: none;
+    }
+    .retired-card.bench .seat-name { color: var(--text-muted); }
+
+    .btn-remove {
+      background: none;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      font-size: 0.6rem;
+      font-family: 'JetBrains Mono', monospace;
+      cursor: pointer;
+      padding: 2px 5px;
+      border-radius: 3px;
+      flex-shrink: 0;
+      transition: color 0.12s, border-color 0.12s;
+    }
+    .btn-remove:hover { color: var(--accent); border-color: var(--accent); }
+
+    /* ── Fired card (severance) — same layout as seat-card ── */
+    .retired-card {
+      background: var(--retired-bg);
+      border: 1px solid var(--retired-border);
+      border-radius: 4px;
+      padding: 9px 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      position: relative;
+      min-height: 72px;
+      border-color: color-mix(in srgb, var(--sc, var(--retired-border)) 50%, var(--retired-border));
+    }
+    .retired-reason { font-size: 0.55rem; color: var(--text-muted); font-style: italic; line-height: 1.4; margin-top: 2px; }
+    .seat-stats { font-size: 0.6rem; color: var(--text-muted); line-height: 1.4; margin-top: 2px; letter-spacing: 0.03em; opacity: 0.75; }
+
+    .sidebar-empty {
+      font-size: 0.67rem;
+      color: var(--text-muted);
+      opacity: 0.45;
+      text-align: center;
+      padding: 18px 6px;
+    }
+
+    /* ── Center arena column ── */
+    .arena-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-y: auto;
+      padding: 20px 16px 32px;
+      gap: 16px;
+    }
+
+    .page-header {
+      text-align: center;
+    }
+    .page-header h1 {
+      margin: 0 0 3px;
+      font-size: 1.4rem;
+      color: var(--accent);
+      text-shadow: 0 0 14px var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .session-badge {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
+      border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+      border-radius: 4px;
+      padding: 2px 8px;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+    .page-header .subtitle {
+      color: var(--text-muted);
+      font-size: 0.72rem;
+    }
+
+    /* ── Session list (sidebar version) ── */
+    .sidebar-session-item {
+      background: var(--seat-bg);
+      border: 1px solid var(--seat-border);
+      border-radius: 4px;
+      padding: 7px 9px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      text-decoration: none;
+      color: inherit;
+      font-size: 0.68rem;
+    }
+    .sidebar-session-item:hover { border-color: var(--accent); }
+    .sidebar-session-item.selected {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 8%, var(--seat-bg));
+    }
+    .sidebar-session-item.deliberating {
+      box-shadow: 0 0 6px color-mix(in srgb, #f59e0b 30%, transparent);
+      border-color: color-mix(in srgb, #f59e0b 50%, var(--seat-border));
+    }
+    .sidebar-session-num {
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: var(--accent);
+      min-width: 26px;
+      flex-shrink: 0;
+    }
+    .sidebar-session-topic {
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 0.65rem;
+      color: var(--text);
+    }
+    .session-list-empty {
+      font-size: 0.67rem;
+      color: var(--text-muted);
+      opacity: 0.45;
+      padding: 10px 4px;
+    }
+
+    /* ── Legacy session-list-panel (center) — hidden, replaced by sidebar ── */
+    .session-list-panel { display: none !important; }
+
+    /* ── Sidebar section divider ── */
+    .sidebar-section-divider {
+      padding: 8px 9px 4px;
+      font-size: 0.58rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      border-top: 1px solid var(--panel-border);
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+
+    /* Compact session items */
+    .session-item {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 4px;
+      padding: 10px 13px;
+      margin-bottom: 7px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+      text-decoration: none;
+      color: inherit;
+    }
+    .session-item:hover { border-color: var(--accent); }
+    .session-item-num {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--accent);
+      min-width: 38px;
+      flex-shrink: 0;
+    }
+    .session-item-body { flex: 1; min-width: 0; }
+    .session-item-topic {
+      font-size: 0.75rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .session-item-meta {
+      font-size: 0.58rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .session-item-status {
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      border: 1px solid var(--card-border);
+      border-radius: 3px;
+      padding: 2px 6px;
+      flex-shrink: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .session-item-status.deliberating { color: var(--accent); border-color: var(--accent); }
+    .session-item-status.complete { color: var(--teal); border-color: var(--teal); }
+
+    /* ── Circle visual ── */
+    .arena {
+      position: relative;
+      width: min(440px, 80vw);
+      height: min(440px, 80vw);
+      flex-shrink: 0;
+    }
+
+    .center-label {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 110px;
+      height: 110px;
+      text-align: center;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--panel-bg);
+      border: 2px solid var(--accent);
+      border-radius: 14px;
+      box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 20%, transparent);
+      z-index: 3;
+      gap: 2px;
+      overflow: hidden;
+    }
+    .center-label .mod-emoji { font-size: 1.5rem; display: block; line-height: 1; }
+    .center-label .mod-name { font-size: 0.6rem; color: var(--accent); text-shadow: 0 0 6px var(--accent); text-transform: uppercase; letter-spacing: 0.08em; }
+    .center-label .mod-role { font-size: 0.48rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+    .center-label .mod-deliberating {
+      font-size: 0.5rem;
+      color: #f59e0b;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      display: none;
+    }
+    .center-label.deliberating-active .mod-deliberating { display: block; }
+    /* Done state: hide name/role, show brief adjourned status */
+    .center-label.done .mod-name { display: none; }
+    .center-label.done .mod-role { display: none; }
+    .center-label.done .mod-deliberating {
+      display: block;
+      color: var(--teal);
+      font-size: 0.45rem;
+      line-height: 1.3;
+    }
+    /* Remove task-preview from center — topic shown in topic-display bar above */
+    .center-label .task-preview { display: none; }
+
+    /* Persona nodes around circle */
+    .persona-node {
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      transform: translate(-50%, -50%);
+      cursor: default;
+      z-index: 2;
+    }
+    .persona-node .node-circle {
+      width: 120px;
+      min-height: 120px;
+      border-radius: 12px;
+      background: var(--node-idle);
+      border: 2px solid var(--node-border-idle);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 8px 6px;
+      box-sizing: border-box;
+      transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+    }
+    .persona-node.empty-node .node-circle {
+      opacity: 0.2;
+      border-style: dashed;
+    }
+    .persona-node .node-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .persona-node .node-emoji { font-size: 1.45rem; line-height: 1; }
+    .persona-node .node-display-name {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text);
+      text-align: center;
+      max-width: 110px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      transition: color 0.3s;
+      display: none; /* shown on hover via JS — too cramped at node size */
+    }
+    .persona-node:hover .node-display-name { display: block; }
+    .persona-node .node-title {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: center;
+      max-width: 110px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-top: 0px;
+      display: none; /* shown on hover */
+    }
+    .persona-node:hover .node-title { display: block; }
+    .persona-node.active .node-circle {
+      background: #2a1f00;
+      border-color: var(--node-border-active);
+      box-shadow: 0 0 20px #f59e0b, 0 0 40px rgba(245,158,11,0.3);
+    }
+    .persona-node.active .node-display-name { color: #f59e0b; }
+    .persona-node.done .node-circle {
+      background: #102820;
+      border-color: var(--node-border-done);
+      box-shadow: 0 0 10px rgba(78,204,163,0.3);
+    }
+    .persona-node.done .node-display-name { color: var(--teal); }
+
+    @keyframes dotpulse {
+      0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
+      30% { opacity: 1; transform: scale(1.1); }
+    }
+
+    /* Status line */
+    .status-line {
+      text-align: center;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      min-height: 1.1em;
+    }
+
+    /* ── Session hint banner ── */
+    .session-hint {
+      display: none;
+      width: 100%;
+      max-width: 520px;
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      box-sizing: border-box;
+      padding: 2px 0 0;
+      opacity: 0.6;
+    }
+    .session-hint strong { color: var(--text-muted); }
+    .session-hint code { color: var(--teal); font-size: 0.65rem; }
+
+    /* ── Status badge dots ── */
+    .status-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      margin-right: 5px;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+    .status-dot.deliberating {
+      background: #f59e0b;
+      animation: pulse-dot 1.2s infinite;
+    }
+    .status-dot.complete { background: #4ecca3; }
+    .status-dot.failed { background: #e94560; }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.7); }
+    }
+    .session-item-status { display: flex; align-items: center; }
+
+    .btn {
+      padding: 9px 18px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      white-space: nowrap;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--card-border);
+      color: var(--text);
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); opacity: 1; }
+    .btn-yes { background: #2d6a4f; }
+    .btn-yes:hover { background: #3a8c66; opacity: 1; }
+    .btn-no { background: #6b2737; }
+    .btn-no:hover { background: #8c3347; opacity: 1; }
+
+    /* ── Review bar ── */
+    .review-bar {
+      background: var(--review-bg);
+      border: 1px solid var(--card-border);
+      border-top: 2px solid var(--accent);
+      border-radius: 4px;
+      padding: 16px 18px;
+      display: none;
+      width: 100%;
+      max-width: 520px;
+      box-sizing: border-box;
+    }
+    .review-bar.visible { display: block; }
+    .review-label {
+      font-size: 0.65rem;
+      color: var(--accent);
+      letter-spacing: 0.12em;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .review-synthesis {
+      font-size: 0.78rem;
+      line-height: 1.7;
+      color: var(--text);
+      margin-bottom: 14px;
+      border-left: 3px solid var(--accent);
+      padding-left: 10px;
+    }
+    .review-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .verdict-msg {
+      margin-top: 12px;
+      font-size: 0.75rem;
+      padding: 7px 11px;
+      border-radius: 4px;
+      display: none;
+    }
+    .verdict-msg.yes { background: #102820; border: 1px solid var(--teal); color: var(--teal); display: block; }
+    .verdict-msg.no { background: #200d10; border: 1px solid var(--accent); color: var(--accent); display: block; }
+    .verdict-msg.again { background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text-muted); display: block; }
+
+
+    /* ── Mobile ── */
+    @media (max-width: 860px) {
+      .congress-layout {
+        grid-template-columns: 1fr;
+      }
+      .sidebar-left { order: 2; border-right: none; border-bottom: 1px solid var(--panel-border); }
+      .sidebar-right { order: 3; border-left: none; border-top: 1px solid var(--panel-border); }
+      .arena-col { order: 1; }
+      .debate-feed { flex-direction: column; }
+      .debate-round-col { min-width: 0; }
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0a0a0f; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #555; }
+    * { scrollbar-width: thin; scrollbar-color: #333 #0a0a0f; }
+
+    /* ── Speech bubbles (in-arena, beside each node) ── */
+    .arena {
+      overflow: visible; /* allow bubbles to extend beyond arena bounds */
+    }
+    .node-bubble {
+      position: absolute;
+      width: 150px;
+      max-height: 100px;
+      overflow-y: auto;
+      background: var(--bubble-bg);
+      border: 1px solid var(--bubble-border);
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-size: 0.75rem;
+      line-height: 1.4;
+      color: var(--text);
+      display: none;
+      z-index: 5;
+      top: 50%;
+      transform: translateY(-50%);
+      animation: bubbleFadeIn 0.25s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+    .node-bubble.visible { display: block; }
+    /* Bubble tail pseudo-element */
+    .node-bubble::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 6px solid transparent;
+    }
+    /* Right-side bubble: bubble is to the right of the node */
+    .persona-node.bubble-right .node-bubble {
+      left: calc(100% + 10px);
+    }
+    .persona-node.bubble-right .node-bubble::before {
+      left: -12px;
+      border-right-color: var(--bubble-border);
+    }
+    /* Left-side bubble: bubble is to the left of the node */
+    .persona-node.bubble-left .node-bubble {
+      right: calc(100% + 10px);
+    }
+    .persona-node.bubble-left .node-bubble::before {
+      right: -12px;
+      border-left-color: var(--bubble-border);
+    }
+    @keyframes bubbleFadeIn {
+      from { opacity: 0; transform: translateY(-50%) scale(0.97); }
+      to   { opacity: 1; transform: translateY(-50%) scale(1); }
+    }
+    .node-bubble .bubble-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      margin-bottom: 4px;
+    }
+    .node-bubble .bubble-text {
+      color: var(--text-muted);
+    }
+    .node-bubble .bubble-text p { margin: 0 0 0.35em; }
+    .node-bubble .bubble-text p:last-child { margin-bottom: 0; }
+    .node-bubble .bubble-text strong { font-weight: 700; }
+    .node-bubble .bubble-text em { font-style: italic; }
+    .node-bubble .bubble-text code { font-size: 0.85em; background: var(--panel-bg); padding: 0 3px; border-radius: 2px; }
+
+    /* ── Persona-specific fonts (bubbles + feed entries) ── */
+    .persona-font-spengler    { font-family: Georgia, 'Times New Roman', serif; }
+    .persona-font-galactus    { font-family: Impact, 'Arial Narrow', sans-serif; }
+    .persona-font-pm          { font-family: Arial, Helvetica, sans-serif; }
+    .persona-font-uncle-bob   { font-family: 'Courier New', Courier, monospace; }
+    .persona-font-vesper      { font-family: 'Raleway', sans-serif; }
+    .persona-font-architect   { font-family: 'Trebuchet MS', sans-serif; }
+    .persona-font-chairman { font-family: 'JetBrains Mono', 'Courier New', monospace; }
+    .persona-font-ux          { font-family: 'Comic Sans MS', cursive; }
+    .persona-font-jhaddu      { font-family: Papyrus, 'Comic Sans MS', cursive; }
+
+    /* ── Round/status banner ── */
+    .round-banner {
+      display: none;
+      width: 100%;
+      max-width: 560px;
+      border-radius: 5px;
+      padding: 10px 16px;
+      box-sizing: border-box;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      text-align: center;
+      border: 1px solid;
+    }
+    .round-banner.visible { display: block; }
+    .round-banner.deliberating {
+      background: color-mix(in srgb, #f59e0b 10%, transparent);
+      border-color: #f59e0b;
+      color: #f59e0b;
+    }
+    .round-banner.done {
+      background: color-mix(in srgb, var(--teal) 10%, transparent);
+      border-color: var(--teal);
+      color: var(--teal);
+    }
+
+    /* ── Soundtrack (in left sidebar) ── */
+    #soundtrackWrap {
+      display: none;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 4px;
+      padding: 8px 12px 10px;
+      border-top: 1px solid var(--panel-border);
+      margin-top: 4px;
+    }
+    #soundtrackWrap.visible { display: flex; }
+    #soundtrackLabel {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      animation: soundtrackPulse 1.6s ease-in-out infinite;
+    }
+    @keyframes soundtrackPulse {
+      0%, 100% { opacity: 0.5; }
+      50%       { opacity: 1;   color: var(--teal); }
+    }
+    #soundtrackFrame {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+      border: none;
+    }
+    /* keep the old id as an alias so nothing else breaks */
+    #soundtrackLink { display: none; }
+
+    /* ── Bottom music bar ── */
+    #musicBar {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 16px;
+      background: var(--panel-bg);
+      border-top: 1px solid var(--panel-border);
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+    }
+    #musicBar.visible { display: flex; }
+    #musicBarLabel {
+      flex: 1;
+      animation: soundtrackPulse 1.6s ease-in-out infinite;
+      letter-spacing: 0.04em;
+    }
+    #musicMuteBtn {
+      background: var(--btn-bg);
+      border: 1px solid var(--btn-border);
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.62rem;
+      padding: 3px 9px;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: border-color 0.12s, color 0.12s;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    #musicMuteBtn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Topic display ── */
+    .topic-display {
+      display: none;
+      width: 100%;
+      max-width: 560px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-left: 3px solid var(--accent);
+      border-radius: 4px;
+      padding: 12px 16px;
+      box-sizing: border-box;
+    }
+    .topic-display.visible { display: block; }
+    .topic-display-label {
+      font-size: 0.6rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .topic-display-text {
+      font-size: 0.95rem;
+      color: var(--text);
+      line-height: 1.5;
+      word-wrap: break-word;
+      white-space: normal;
+    }
+    .topic-display-text:hover { color: var(--accent); }
+
+    /* ── Debate feed ── */
+    .debate-feed {
+      display: none;
+      width: 100%;
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .debate-feed.visible { display: flex; }
+
+    /* ── Per-round columns ── */
+    .debate-round-col {
+      flex: 1 1 0;
+      min-width: 220px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      min-height: 0;
+    }
+    .debate-round-col-header {
+      font-size: 0.6rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.13em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 6px;
+      margin-bottom: 10px;
+    }
+    .debate-round-col.synthesis-col .debate-round-col-header {
+      color: var(--teal);
+      border-bottom-color: color-mix(in srgb, var(--teal) 40%, transparent);
+    }
+    .debate-round-col.votes-col .debate-round-col-header {
+      color: #a78bfa;
+      border-bottom-color: color-mix(in srgb, #a78bfa 40%, transparent);
+    }
+    .feed-entry-round-tag.votes { color: #a78bfa; border-color: #a78bfa; }
+    .feed-entry.votes-entry {
+      border-color: color-mix(in srgb, #a78bfa 40%, transparent);
+      background: color-mix(in srgb, #a78bfa 4%, var(--card-bg));
+    }
+    .vote-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 3px;
+      letter-spacing: 0.04em;
+    }
+    .vote-badge.agree { color: #34d399; background: color-mix(in srgb, #34d399 12%, transparent); border: 1px solid color-mix(in srgb, #34d399 40%, transparent); }
+    .vote-badge.disagree { color: #f87171; background: color-mix(in srgb, #f87171 12%, transparent); border: 1px solid color-mix(in srgb, #f87171 40%, transparent); }
+
+    /* Keep sep class available but hidden — no longer rendered */
+    .feed-round-sep { display: none; }
+    .feed-entry {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-left: 3px solid var(--fe-color, var(--card-border));
+      border-radius: 5px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      animation: feedSlide 0.2s ease;
+    }
+    @keyframes feedSlide {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .feed-entry-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .feed-entry-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .feed-entry-emoji {
+      font-size: 1.1rem;
+      width: 28px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .feed-entry-name {
+      font-size: 0.75rem;
+      font-weight: 700;
+      flex: 1;
+      min-width: 0;
+    }
+    .feed-entry-round-tag {
+      font-size: 0.57rem;
+      color: var(--text-muted);
+      border: 1px solid var(--card-border);
+      border-radius: 3px;
+      padding: 1px 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      flex-shrink: 0;
+    }
+    .feed-entry-round-tag.synthesis { color: var(--teal); border-color: var(--teal); }
+    .feed-entry-model-badge {
+      font-size: 0.5rem;
+      padding: 1px 5px;
+      border-radius: 3px;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      flex-shrink: 0;
+    }
+    .feed-entry-body {
+      font-size: 0.75rem;
+      line-height: 1.65;
+      color: var(--text-muted);
+    }
+    .feed-entry-body p { margin: 0 0 0.4em; }
+    .feed-entry-body p:last-child { margin-bottom: 0; }
+    .feed-entry-body strong { font-weight: 700; color: var(--text); }
+    .feed-entry-body em { font-style: italic; }
+    .feed-entry-body code { font-size: 0.85em; background: var(--panel-bg); padding: 0 3px; border-radius: 2px; }
+    .feed-entry.synthesis-entry {
+      border-color: color-mix(in srgb, var(--teal) 40%, transparent);
+      background: color-mix(in srgb, var(--teal) 4%, var(--card-bg));
+    }
+    .feed-loading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    /* ── Verdict card ── */
+    .verdict-card {
+      display: none;
+      width: 100%;
+      max-width: 560px;
+      background: color-mix(in srgb, var(--teal) 5%, var(--card-bg));
+      border: 2px solid var(--teal);
+      border-radius: 6px;
+      padding: 18px 20px;
+      box-sizing: border-box;
+    }
+    .verdict-card.visible { display: block; }
+    .verdict-card-heading {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--teal);
+      text-shadow: 0 0 10px rgba(78,204,163,0.4);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .verdict-card-text {
+      font-size: 0.78rem;
+      line-height: 1.7;
+      color: var(--text);
+      border-left: 2px solid var(--teal);
+      padding-left: 12px;
+      margin-bottom: 14px;
+    }
+    .verdict-card-text p { margin: 0 0 0.5em; }
+    .verdict-card-text p:last-child { margin-bottom: 0; }
+    .verdict-card-text strong { font-weight: 700; }
+    .verdict-card-text em { font-style: italic; }
+    .verdict-card-text code { font-size: 0.85em; background: var(--panel-bg); padding: 0 3px; border-radius: 2px; }
+    .verdict-evolution {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid color-mix(in srgb, var(--teal) 25%, transparent);
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .verdict-evolution-label {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .verdict-evolution-item {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .verdict-evolution-item .evo-badge {
+      font-size: 0.58rem;
+      padding: 1px 5px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .evo-badge.EVOLVE { background: color-mix(in srgb, var(--teal) 20%, transparent); color: var(--teal); border: 1px solid var(--teal); }
+    .evo-badge.FIRE { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent); border: 1px solid var(--accent); }
+    .evo-badge.RETIRED { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent); border: 1px solid var(--accent); }
+    .evo-badge.RETAIN { background: var(--card-bg); color: var(--text-muted); border: 1px solid var(--card-border); }
+    .evo-badge.CREATE { background: color-mix(in srgb, #f59e0b 20%, transparent); color: #f59e0b; border: 1px solid #f59e0b; }
+    .verdict-evolution-item.retain-item { opacity: 0.55; }
+    .verdict-evolution-item .evo-reason {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+    .verdict-tasks {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid color-mix(in srgb, var(--teal) 25%, transparent);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .verdict-tasks-label {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--teal);
+      margin-bottom: 4px;
+    }
+    .verdict-task-item {
+      font-size: 0.72rem;
+      color: var(--text-primary);
+    }
+    .verdict-meta {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid color-mix(in srgb, var(--teal) 25%, transparent);
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .verdict-meta span { opacity: 0.7; }
+    /* ── Deliberating state panel ── */
+    .deliberating-panel {
+      display: none;
+      width: 100%;
+      max-width: 560px;
+      background: color-mix(in srgb, #f59e0b 5%, var(--card-bg));
+      border: 2px solid color-mix(in srgb, #f59e0b 60%, transparent);
+      border-radius: 6px;
+      padding: 18px 20px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+    .deliberating-panel.visible { display: block; }
+    .deliberating-panel-heading {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #f59e0b;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .deliberating-panel-sub {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      opacity: 0.7;
+    }
+    .verdict-session-link {
+      margin-top: 10px;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+    }
+    .verdict-session-link a { color: var(--teal); text-decoration: none; }
+    .verdict-session-link a:hover { text-decoration: underline; }
+
+    /* ── Model badge on persona nodes ── */
+    .node-model-badge {
+      font-size: 0.38rem;
+      padding: 1px 4px;
+      border-radius: 2px;
+      border: 1px solid var(--node-border-idle);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 1px;
+    }
+    .persona-node.active .node-model-badge { border-color: #f59e0b; color: #f59e0b; }
+    .persona-node.done .node-model-badge { border-color: var(--teal); color: var(--teal); }
+
+    /* ── Topic modal ── */
+    .topic-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 400;
+      align-items: center;
+      justify-content: center;
+    }
+    .topic-modal-overlay.open { display: flex; }
+    .topic-modal {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 22px 24px;
+      max-width: 540px;
+      width: 92%;
+      max-height: 80vh;
+      overflow-y: auto;
+      position: relative;
+    }
+    .topic-modal-close {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      background: none;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'JetBrains Mono', monospace;
+      transition: color 0.12s, border-color 0.12s;
+    }
+    .topic-modal-close:hover { color: var(--accent); border-color: var(--accent); }
+    .topic-modal-label {
+      font-size: 0.6rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 10px;
+    }
+    .topic-modal-text {
+      font-size: 0.82rem;
+      line-height: 1.65;
+      color: var(--text);
+    }
+
+    /* ── Center task — clickable hint ── */
+    .center-label .task-preview {
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-color: color-mix(in srgb, var(--text-muted) 40%, transparent);
+      text-underline-offset: 2px;
+      transition: color 0.12s;
+    }
+    .center-label .task-preview:hover { color: var(--accent); }
+    .review-synthesis p { margin: 0 0 0.5em; }
+    .review-synthesis p:last-child { margin-bottom: 0; }
+    .review-synthesis strong { font-weight: 700; }
+    .review-synthesis em { font-style: italic; }
+
+    /* ── Flavor badges (sidebar session list) ── */
+    .sidebar-session-flavor {
+      font-size: 0.55rem;
+      flex-shrink: 0;
+      opacity: 0.8;
+    }
+
+    /* ── Trial-specific rendering ── */
+    .trial-header {
+      width: 100%;
+      max-width: 560px;
+      background: color-mix(in srgb, #e94560 6%, var(--card-bg));
+      border: 1px solid color-mix(in srgb, #e94560 40%, var(--card-border));
+      border-left: 4px solid #e94560;
+      border-radius: 5px;
+      padding: 16px 20px;
+      box-sizing: border-box;
+    }
+    .trial-header-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #e94560;
+      margin-bottom: 4px;
+    }
+    .trial-header-defendant {
+      font-size: 0.85rem;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .trial-header-charges {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      border-top: 1px solid color-mix(in srgb, #e94560 20%, var(--card-border));
+      padding-top: 8px;
+      margin-top: 4px;
+    }
+    .trial-header-charges strong {
+      color: var(--text);
+      font-weight: 700;
+    }
+    .trial-phase-col {
+      flex: 1 1 0;
+      min-width: 220px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      min-height: 0;
+    }
+    .trial-phase-header {
+      font-size: 0.6rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.13em;
+      color: #e94560;
+      border-bottom: 1px solid color-mix(in srgb, #e94560 40%, transparent);
+      padding-bottom: 6px;
+      margin-bottom: 10px;
+    }
+    .trial-phase-header.defense {
+      color: #60a5fa;
+      border-bottom-color: color-mix(in srgb, #60a5fa 40%, transparent);
+    }
+    .trial-phase-header.cross {
+      color: #fbbf24;
+      border-bottom-color: color-mix(in srgb, #fbbf24 40%, transparent);
+    }
+    .trial-phase-header.witness {
+      color: #a78bfa;
+      border-bottom-color: color-mix(in srgb, #a78bfa 40%, transparent);
+    }
+    .trial-phase-header.jury {
+      color: #34d399;
+      border-bottom-color: color-mix(in srgb, #34d399 40%, transparent);
+    }
+    .trial-phase-header.verdict-phase {
+      color: var(--teal);
+      border-bottom-color: color-mix(in srgb, var(--teal) 40%, transparent);
+    }
+    .trial-cross-entry {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-left: 3px solid #fbbf24;
+      border-radius: 5px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+    }
+    .trial-cross-question {
+      font-size: 0.72rem;
+      color: var(--text);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .trial-cross-meta {
+      font-size: 0.58rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .trial-cross-response {
+      font-size: 0.75rem;
+      line-height: 1.65;
+      color: var(--text-muted);
+    }
+    .trial-cross-response p { margin: 0 0 0.4em; }
+    .trial-cross-response p:last-child { margin-bottom: 0; }
+    .trial-jury-vote {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 5px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+    }
+    .trial-jury-vote-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .trial-jury-vote-name {
+      font-size: 0.75rem;
+      font-weight: 700;
+      flex: 1;
+    }
+    .trial-jury-vote-badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 3px;
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+    .trial-jury-vote-badge.fire,
+    .trial-jury-vote-badge.retire {
+      color: #f87171;
+      background: color-mix(in srgb, #f87171 12%, transparent);
+      border: 1px solid color-mix(in srgb, #f87171 40%, transparent);
+    }
+    .trial-jury-vote-badge.evolve {
+      color: #fbbf24;
+      background: color-mix(in srgb, #fbbf24 12%, transparent);
+      border: 1px solid color-mix(in srgb, #fbbf24 40%, transparent);
+    }
+    .trial-jury-vote-badge.acquit {
+      color: #34d399;
+      background: color-mix(in srgb, #34d399 12%, transparent);
+      border: 1px solid color-mix(in srgb, #34d399 40%, transparent);
+    }
+    .trial-jury-vote-badge.mistrial {
+      color: #a78bfa;
+      background: color-mix(in srgb, #a78bfa 12%, transparent);
+      border: 1px solid color-mix(in srgb, #a78bfa 40%, transparent);
+    }
+    .trial-jury-vote-reasoning {
+      font-size: 0.72rem;
+      line-height: 1.6;
+      color: var(--text-muted);
+    }
+    .trial-jury-vote-reasoning p { margin: 0 0 0.4em; }
+    .trial-jury-vote-reasoning p:last-child { margin-bottom: 0; }
+    .trial-verdict-card {
+      width: 100%;
+      max-width: 560px;
+      background: color-mix(in srgb, var(--teal) 5%, var(--card-bg));
+      border: 2px solid var(--teal);
+      border-radius: 6px;
+      padding: 18px 20px;
+      box-sizing: border-box;
+    }
+    .trial-verdict-heading {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--teal);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .trial-verdict-outcome {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .trial-verdict-outcome.fire,
+    .trial-verdict-outcome.retire { color: #f87171; }
+    .trial-verdict-outcome.acquit { color: #34d399; }
+    .trial-verdict-outcome.evolve { color: #fbbf24; }
+    .trial-verdict-outcome.mistrial { color: #a78bfa; }
+    .trial-verdict-text {
+      font-size: 0.78rem;
+      line-height: 1.7;
+      color: var(--text);
+    }
+    .trial-verdict-text p { margin: 0 0 0.5em; }
+    .trial-verdict-text p:last-child { margin-bottom: 0; }
+    .trial-verdict-text strong { font-weight: 700; }
+    .review-synthesis code { font-size: 0.85em; background: var(--panel-bg); padding: 0 3px; border-radius: 2px; }
+    .dot-pulse-inline {
+      display: inline-flex;
+      gap: 3px;
+      align-items: center;
+    }
+    .dot-pulse-inline span {
+      display: inline-block;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      animation: dotpulse 1.2s infinite;
+    }
+    .dot-pulse-inline span:nth-child(2) { animation-delay: 0.2s; }
+    .dot-pulse-inline span:nth-child(3) { animation-delay: 0.4s; }
+
+    /* Streaming inference animation */
+    .node-bubble.streaming .bubble-text::after {
+      content: '▋';
+      animation: blink 0.8s step-end infinite;
+      color: var(--accent);
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    .node-bubble.streaming {
+      border-color: var(--accent);
+      box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 30%, transparent);
+    }
+
+    /* ── Streaming feed placeholder ── */
+    .feed-entry.streaming-placeholder {
+      opacity: 0.88;
+    }
+    .feed-entry.streaming-placeholder .feed-entry-body {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .streaming-cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1em;
+      background: var(--accent);
+      vertical-align: text-bottom;
+      margin-left: 1px;
+      animation: blink 0.8s step-end infinite;
+    }
+
+    /* ── Ibrahim thinking pulse ── */
+    @keyframes ibrahim-pulse {
+      0%, 100% { opacity: 0.7; box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 20%, transparent); }
+      50% { opacity: 1; box-shadow: 0 0 30px color-mix(in srgb, var(--accent) 50%, transparent), 0 0 55px color-mix(in srgb, var(--accent) 20%, transparent); }
+    }
+    .center-label.thinking {
+      animation: ibrahim-pulse 1.5s ease-in-out infinite;
+    }
+    .center-label.thinking .mod-name {
+      color: #f59e0b;
+      text-shadow: 0 0 8px #f59e0b;
+    }
+
+    /* ── Roster card metadata badges ── */
+    .seat-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 3px;
+      align-items: center;
+    }
+    .seat-model-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.45rem;
+      padding: 1px 5px;
+      border-radius: 3px;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+      opacity: 0.75;
+    }
+    .seat-sex-badge {
+      font-size: 0.45rem;
+      padding: 1px 4px;
+      border-radius: 3px;
+      border: 1px solid var(--panel-border);
+      color: var(--text-muted);
+      opacity: 0.5;
+      text-transform: lowercase;
+      letter-spacing: 0.03em;
+    }
+    .seat-retired-badge {
+      font-size: 0.5rem;
+      padding: 1px 4px;
+      border-radius: 3px;
+      background: color-mix(in srgb, var(--accent) 15%, transparent);
+      border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+      color: var(--accent);
+      letter-spacing: 0.02em;
+    }
+    .seat-verdict-badge {
+      font-size: 0.45rem;
+      padding: 1px 5px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 700;
+    }
+    .seat-verdict-badge.RETAIN {
+      color: var(--text-muted);
+      border: 1px solid var(--card-border);
+      opacity: 0.55;
+    }
+    .seat-verdict-badge.EVOLVE {
+      color: var(--teal);
+      border: 1px solid color-mix(in srgb, var(--teal) 50%, transparent);
+      background: color-mix(in srgb, var(--teal) 10%, transparent);
+    }
+    .seat-verdict-badge.FIRED {
+      color: var(--accent);
+      border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+      background: color-mix(in srgb, var(--accent) 10%, transparent);
+    }
+
+    /* ── Personas tab nav ── */
+    .page-tab-bar {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border-bottom: 1px solid var(--panel-border);
+      padding: 0 8px;
+      background: var(--panel-bg);
+      flex-shrink: 0;
+      align-self: stretch;
+      box-sizing: border-box;
+    }
+    .page-tab {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 9px 16px 8px;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: color 0.12s, border-color 0.12s;
+    }
+    .page-tab:hover { color: var(--text); }
+    .page-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ── Matrix tab content ── */
+    #matrixTab {
+      display: none;
+      flex-direction: column;
+      width: 100%;
+      padding: 12px 0 40px;
+      box-sizing: border-box;
+    }
+    #matrixTab.visible { display: flex; }
+    @keyframes mtxspin { to { transform: rotate(360deg); } }
+
+    .matrix-legend {
+      display: flex;
+      gap: 16px;
+      padding: 10px 16px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--panel-border);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .matrix-legend .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .matrix-legend .legend-symbol {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      font-size: 12px;
+      border-radius: 3px;
+    }
+
+    .matrix-wrap {
+      overflow: auto;
+      max-height: calc(100vh - 160px);
+      position: relative;
+    }
+    table.matrix {
+      border-collapse: separate;
+      border-spacing: 0;
+      white-space: nowrap;
+      margin-right: 40vw;
+    }
+    table.matrix th,
+    table.matrix td {
+      border: 1px solid var(--panel-border);
+      text-align: center;
+      vertical-align: middle;
+    }
+    table.matrix th.persona-header,
+    table.matrix td.persona-cell {
+      position: sticky;
+      left: 0;
+      z-index: 3;
+      background: var(--bg);
+      text-align: left;
+      padding: 0 10px;
+      min-width: 180px;
+      max-width: 180px;
+      font-size: 11px;
+      border-right: 2px solid #555;
+    }
+    table.matrix th.stats-header,
+    table.matrix td.stats-cell {
+      position: sticky;
+      z-index: 3;
+      background: var(--bg);
+      padding: 0 6px;
+      min-width: 40px;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+    table.matrix td.stats-cell {
+      font-variant-numeric: tabular-nums;
+    }
+    table.matrix th.stats-header.stats-last,
+    table.matrix td.stats-cell.stats-last {
+      border-right: 2px solid #555;
+    }
+    table.matrix thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: var(--panel-bg);
+      padding: 4px 2px;
+      font-weight: 700;
+      font-size: 10px;
+    }
+    table.matrix thead th.persona-header,
+    table.matrix thead th.stats-header {
+      z-index: 4;
+    }
+    table.matrix td.data-cell {
+      --cell-size: 28px;
+      width: var(--cell-size);
+      min-width: var(--cell-size);
+      max-width: var(--cell-size);
+      height: var(--cell-size);
+      padding: 0;
+      cursor: default;
+      position: relative;
+      font-size: 14px;
+      line-height: var(--cell-size);
+    }
+    table.matrix td.data-cell:hover {
+      outline: 2px solid var(--teal);
+      outline-offset: -2px;
+    }
+    .cell-participated { color: #888; }
+    .cell-agree { color: var(--teal); }
+    .cell-disagree { color: #e94560; }
+    table.matrix td.cell-evo-evolved { background: rgba(245, 158, 11, 0.18) !important; }
+    table.matrix td.cell-evo-retired { background: rgba(233, 69, 96, 0.22) !important; }
+    table.matrix td.cell-evo-created { background: rgba(96, 165, 250, 0.20) !important; }
+
+    /* Column type coloring — header */
+    table.matrix thead th.col-meme { background: rgba(168, 85, 247, 0.28); }
+    table.matrix thead th.col-meme a { color: #c084fc; }
+    table.matrix thead th.col-trial { background: rgba(245, 158, 11, 0.28); }
+    table.matrix thead th.col-trial a { color: #fbbf24; }
+    table.matrix thead th.col-failed { background: rgba(233, 69, 96, 0.32); }
+    table.matrix thead th.col-failed a { color: #f87171; }
+    /* Column type coloring — data cells (subtle stripe) */
+    table.matrix td.col-meme { background: rgba(168, 85, 247, 0.06) !important; }
+    table.matrix td.col-trial { background: rgba(245, 158, 11, 0.06) !important; }
+    table.matrix td.col-failed { background: rgba(233, 69, 96, 0.08) !important; }
+    /* Evo cells still override column color */
+    table.matrix td.cell-evo-evolved.col-meme,
+    table.matrix td.cell-evo-evolved.col-trial,
+    table.matrix td.cell-evo-evolved.col-failed { background: rgba(245, 158, 11, 0.18) !important; }
+    table.matrix td.cell-evo-retired.col-meme,
+    table.matrix td.cell-evo-retired.col-trial,
+    table.matrix td.cell-evo-retired.col-failed { background: rgba(233, 69, 96, 0.22) !important; }
+    table.matrix td.cell-evo-created.col-meme,
+    table.matrix td.cell-evo-created.col-trial,
+    table.matrix td.cell-evo-created.col-failed { background: rgba(96, 165, 250, 0.20) !important; }
+
+    table.matrix thead th a {
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+    table.matrix thead th a:hover {
+      color: var(--teal);
+    }
+    table.matrix tbody tr:nth-child(even) td { background: var(--bg); }
+    table.matrix tbody tr:nth-child(odd) td { background: color-mix(in srgb, var(--bg), var(--panel-bg) 40%); }
+    table.matrix tbody tr:nth-child(even) td.persona-cell,
+    table.matrix tbody tr:nth-child(even) td.stats-cell { background: var(--bg); }
+    table.matrix tbody tr:nth-child(odd) td.persona-cell,
+    table.matrix tbody tr:nth-child(odd) td.stats-cell { background: color-mix(in srgb, var(--bg), var(--panel-bg) 40%); }
+    table.matrix tr.summary-row td {
+      background: var(--panel-bg) !important;
+      font-size: 9px;
+      color: var(--text-muted);
+      font-weight: 700;
+      height: 22px;
+    }
+
+    .matrix-tooltip {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      background: #111;
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      max-width: 340px;
+      font-size: 11px;
+      line-height: 1.5;
+      color: var(--text);
+      pointer-events: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    .matrix-tooltip.visible { display: block; }
+    .matrix-tooltip .tt-session { color: var(--teal); font-weight: 700; }
+    .matrix-tooltip .tt-topic { color: var(--text-muted); display: block; margin: 2px 0; }
+    .matrix-tooltip .tt-vote { display: block; }
+    .matrix-tooltip .tt-evo { display: block; margin-top: 4px; }
+    .matrix-tooltip .tt-detail { color: var(--text-muted); display: block; font-size: 10px; margin-top: 2px; }
+
+    /* ── Personas tab content (fullscreen center col overlay) ── */
+    #personasTab {
+      display: none;
+      flex-direction: column;
+      width: 100%;
+      max-width: 960px;
+      padding: 20px 16px 40px;
+      box-sizing: border-box;
+      gap: 14px;
+    }
+    #personasTab.visible { display: flex; }
+
+    .personas-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .personas-toolbar-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      text-shadow: 0 0 6px var(--accent);
+    }
+
+    /* ── Personas table ── */
+    .personas-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.72rem;
+    }
+    .personas-table thead tr {
+      border-bottom: 1px solid var(--panel-border);
+    }
+    .personas-table th {
+      text-align: left;
+      padding: 6px 10px;
+      font-size: 0.58rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .personas-table td {
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--panel-border);
+      vertical-align: middle;
+    }
+    .personas-table tbody tr:hover td {
+      background: color-mix(in srgb, var(--accent) 5%, transparent);
+    }
+    .pt-avatar {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .pt-avatar-emoji {
+      width: 96px;
+      height: 96px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.8rem;
+      flex-shrink: 0;
+    }
+    .pt-name { font-weight: 700; }
+    .pt-model-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.5rem;
+      padding: 1px 5px;
+      border-radius: 3px;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+    .pt-status-pill {
+      font-size: 0.5rem;
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      white-space: nowrap;
+    }
+    .pt-status-pill.eligible {
+      background: color-mix(in srgb, var(--teal) 15%, transparent);
+      color: var(--teal);
+      border: 1px solid color-mix(in srgb, var(--teal) 50%, transparent);
+    }
+    .pt-status-pill.moderator {
+      background: color-mix(in srgb, #a3e635 15%, transparent);
+      color: #a3e635;
+      border: 1px solid color-mix(in srgb, #a3e635 50%, transparent);
+    }
+    .pt-status-pill.meme {
+      background: color-mix(in srgb, #f472b6 15%, transparent);
+      color: #f472b6;
+      border: 1px solid color-mix(in srgb, #f472b6 50%, transparent);
+    }
+    .pt-verdict-chip {
+      font-size: 0.5rem;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+    .pt-verdict-chip.RETAIN { color: var(--text-muted); border: 1px solid var(--card-border); opacity: 0.6; }
+    .pt-verdict-chip.EVOLVE { color: var(--teal); border: 1px solid var(--teal); background: color-mix(in srgb, var(--teal) 10%, transparent); }
+    .pt-verdict-chip.FIRE { color: var(--accent); border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+    .pt-actions { display: flex; gap: 5px; align-items: center; }
+    .pt-btn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.58rem;
+      padding: 3px 9px;
+      border-radius: 3px;
+      cursor: pointer;
+      border: 1px solid var(--btn-border);
+      background: var(--btn-bg);
+      color: var(--text-muted);
+      transition: color 0.12s, border-color 0.12s;
+      white-space: nowrap;
+    }
+    .pt-btn:hover { color: var(--accent); border-color: var(--accent); }
+    .pt-btn.retire-btn:hover { color: var(--accent); border-color: var(--accent); }
+    .pt-btn.restore-btn:hover { color: var(--teal); border-color: var(--teal); }
+    .pt-btn.danger:hover { color: #f87171; border-color: #f87171; }
+
+    /* ── Persona edit/create modal ── */
+    .persona-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 500;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 30px 16px;
+      overflow-y: auto;
+    }
+    .persona-modal-overlay.open { display: flex; }
+    .persona-modal {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 24px 26px;
+      width: 100%;
+      max-width: 660px;
+      position: relative;
+      box-sizing: border-box;
+    }
+    .persona-modal-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 18px;
+      text-shadow: 0 0 6px var(--accent);
+    }
+    .persona-modal-close {
+      position: absolute;
+      top: 12px;
+      right: 14px;
+      background: none;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 2px 7px;
+      border-radius: 3px;
+      font-family: 'JetBrains Mono', monospace;
+      transition: color 0.12s, border-color 0.12s;
+    }
+    .persona-modal-close:hover { color: var(--accent); border-color: var(--accent); }
+    .pf-row {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 13px;
+      flex-wrap: wrap;
+    }
+    .pf-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1 1 180px;
+      min-width: 0;
+    }
+    .pf-field.full { flex: 1 1 100%; }
+    .pf-label {
+      font-size: 0.58rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+    .pf-input, .pf-select {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      padding: 6px 9px;
+      border-radius: 3px;
+      outline: none;
+      transition: border-color 0.12s;
+    }
+    .pf-input:focus, .pf-select:focus { border-color: var(--accent); }
+    .pf-textarea {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      padding: 8px 10px;
+      border-radius: 3px;
+      outline: none;
+      resize: vertical;
+      min-height: 260px;
+      line-height: 1.55;
+      transition: border-color 0.12s;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .pf-textarea:focus { border-color: var(--accent); }
+    .pf-checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    .pf-checkbox-row input[type="checkbox"] {
+      width: 14px; height: 14px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .persona-modal-actions {
+      display: flex;
+      gap: 9px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .persona-modal-status-msg {
+      font-size: 0.68rem;
+      margin-top: 10px;
+      padding: 6px 10px;
+      border-radius: 3px;
+      display: none;
+    }
+    .persona-modal-status-msg.ok { display: block; background: #102820; border: 1px solid var(--teal); color: var(--teal); }
+    .persona-modal-status-msg.err { display: block; background: #200d10; border: 1px solid var(--accent); color: var(--accent); }
+    #auth-prompt {
+      text-align: center;
+      padding: 120px 20px;
+    }
+    #auth-prompt h2 {
+      font-size: 1.4rem;
+      color: var(--teal);
+      margin-bottom: 10px;
+    }
+    #auth-prompt p {
+      color: var(--text-muted, #888);
+      margin-bottom: 28px;
+      font-size: 0.9rem;
+    }
+    #auth-prompt a {
+      display: inline-block;
+      background: #24292e;
+      color: #fff;
+      padding: 12px 28px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 1rem;
+      font-weight: 500;
+      border: 1px solid rgba(255,255,255,0.12);
+      transition: background 0.15s ease;
+    }
+    #auth-prompt a:hover { background: #2f363d; }
+  </style>
+</head>
+<body>
+
+<div id="auth-prompt" style="display:none;">
+  <h2>Sign in to view congress</h2>
+  <p>Authentication required</p>
+  <a id="login-link" href="/auth/github">Sign in with GitHub</a>
+</div>
+
+<div id="congress-content" style="display:none;">
+
+<!-- Topic modal -->
+<div class="topic-modal-overlay" id="topicModal">
+  <div class="topic-modal">
+    <button class="topic-modal-close" id="topicModalClose">✕</button>
+    <div class="topic-modal-label">topic</div>
+    <div class="topic-modal-text" id="topicModalText"></div>
+  </div>
+</div>
+
+<!-- Persona edit/create modal -->
+<div class="persona-modal-overlay" id="personaModal">
+  <div class="persona-modal">
+    <button class="persona-modal-close" id="personaModalClose">✕</button>
+    <div class="persona-modal-title" id="personaModalTitle">Edit Persona</div>
+    <div class="pf-row">
+      <div class="pf-field" id="pf-name-field" style="display:none">
+        <label class="pf-label" for="pf-name">Slug / Name</label>
+        <input class="pf-input" type="text" id="pf-name" placeholder="e.g. skeptic" autocomplete="off">
+      </div>
+      <div class="pf-field">
+        <label class="pf-label" for="pf-display-name">Display Name</label>
+        <input class="pf-input" type="text" id="pf-display-name" placeholder="e.g. Vera the Skeptic" autocomplete="off">
+      </div>
+    </div>
+    <div class="pf-row">
+      <div class="pf-field">
+        <label class="pf-label" for="pf-model">Model</label>
+        <input class="pf-input" list="pf-model-list" type="text" id="pf-model" placeholder="e.g. claude-sonnet-4-6" autocomplete="off">
+        <datalist id="pf-model-list">
+          <option value="claude-sonnet-4-6">
+          <option value="claude-opus-4-5">
+          <option value="claude-haiku-3-5">
+          <option value="grok-3">
+          <option value="grok-3-fast">
+          <option value="grok-3-mini">
+          <option value="grok-3-mini-fast">
+          <option value="gemini-2.5-pro">
+          <option value="gemini-2.0-flash">
+          <option value="claude">
+        </datalist>
+      </div>
+      <div class="pf-field">
+        <label class="pf-label" for="pf-role">Role</label>
+        <input class="pf-input" type="text" id="pf-role" placeholder="e.g. Code and Work Reviewer" autocomplete="off">
+      </div>
+      <div class="pf-field">
+        <label class="pf-label" for="pf-title">Title</label>
+        <input class="pf-input" type="text" id="pf-title" placeholder="e.g. Perfectionist" autocomplete="off">
+      </div>
+      <div class="pf-field">
+        <label class="pf-label" for="pf-sex">Sex</label>
+        <input class="pf-input" type="text" id="pf-sex" placeholder="e.g. f / m" autocomplete="off">
+      </div>
+    </div>
+    <div class="pf-row">
+      <div class="pf-field full">
+        <label class="pf-label" for="pf-avatar-url">Avatar URL</label>
+        <input class="pf-input" type="text" id="pf-avatar-url" placeholder="e.g. /static/avatars/critic.gif" autocomplete="off">
+      </div>
+    </div>
+    <div class="pf-row">
+      <div class="pf-field">
+        <label class="pf-label" for="pf-status">Status</label>
+        <select class="pf-select" id="pf-status">
+          <option value="eligible">eligible</option>
+          <option value="meme">meme (meme-only / retired)</option>
+        </select>
+      </div>
+      <div class="pf-field" style="justify-content:flex-end;gap:10px;flex-direction:row;align-items:flex-end;">
+        <label class="pf-checkbox-row">
+          <input type="checkbox" id="pf-congress"> congress
+        </label>
+        <label class="pf-checkbox-row">
+          <input type="checkbox" id="pf-evolves"> evolves
+        </label>
+      </div>
+    </div>
+    <div class="pf-row">
+      <div class="pf-field full">
+        <label class="pf-label" for="pf-prompt">System Prompt</label>
+        <textarea class="pf-textarea" id="pf-prompt" placeholder="Full persona system prompt body (markdown prose, no frontmatter)..."></textarea>
+      </div>
+    </div>
+    <div class="persona-modal-actions">
+      <button class="btn" id="personaModalSave">Save</button>
+      <button class="btn btn-secondary" id="personaModalCancel">Cancel</button>
+      <button class="btn btn-secondary danger" id="personaModalDelete" style="margin-left:auto;display:none">Delete</button>
+    </div>
+    <div class="persona-modal-status-msg" id="personaModalStatus"></div>
+  </div>
+</div>
+
+<div class="congress-layout">
+
+  <!-- LEFT: Sessions only -->
+  <aside class="sidebar sidebar-left">
+    <div class="sidebar-header">
+      <h2>Sessions</h2>
+    </div>
+    <div class="sidebar-body" id="sidebarSessionList" style="flex: 1 1 auto; min-height: 80px;">
+      <div class="session-list-empty">Loading…</div>
+    </div>
+    <!-- Soundtrack (shown only during deliberation) -->
+    <!-- legacy anchor kept for any external references -->
+    <a id="soundtrackLink" href="https://www.youtube.com/watch?v=h6N1_GJAyFw" target="_blank" rel="noopener"
+       style="display:none">🎵 Congressional Soundtrack</a>
+    <div id="soundtrackWrap">
+      <span id="soundtrackLabel">🎵 Congressional Soundtrack</span>
+      <!-- iframe injected/removed by setCenterDeliberating() -->
+    </div>
+  </aside>
+
+  <!-- CENTER: Arena -->
+  <div class="arena-col">
+    <!-- Tab nav bar -->
+    <div class="page-tab-bar">
+      <button class="page-tab active" id="tabSessions" onclick="switchTab('sessions')">Sessions</button>
+      <button class="page-tab" id="tabPersonas" onclick="switchTab('personas')">Personas</button>
+      <button class="page-tab" id="tabMatrix" onclick="switchTab('matrix')">Matrix</button>
+    </div>
+
+    <!-- Session view wrapper -->
+    <div id="sessionsView" style="display:contents;">
+
+    <!-- Session hint banner (shown when viewing a session) -->
+    <div class="session-hint" id="sessionHint"></div>
+
+    <div class="page-header">
+      <h1>congress<span class="session-badge" id="sessionBadge" style="display:none"></span></h1>
+      <div class="subtitle">AI parliament — personas deliberate, vote, decide</div>
+    </div>
+
+    <!-- Topic display (prominent, shown when in session view) -->
+    <div class="topic-display" id="topicDisplay">
+      <div class="topic-display-label">Topic</div>
+      <div class="topic-display-text" id="topicDisplayText" title="Click to see full topic"></div>
+    </div>
+
+    <!-- Round/status banner -->
+    <div class="round-banner" id="roundBanner"></div>
+
+    <div class="arena" id="arena">
+      <div class="center-label" id="centerLabel">
+        <span class="mod-emoji">⚖️</span>
+        <span class="mod-name">Ibrahim</span>
+        <span class="mod-role">moderator</span>
+        <span class="mod-deliberating" id="centerDeliberating">deliberating…</span>
+        <div class="task-preview" id="centerTask" style="display:none"></div>
+      </div>
+    </div>
+
+    <div class="status-line" id="statusLine">loading roster…</div>
+
+    <!-- Session list (shown when no session in URL) -->
+    <div class="session-list-panel" id="sessionListPanel" style="display:none">
+      <h2>Congress Sessions</h2>
+      <div id="sessionListBody"><div class="session-list-empty">Loading sessions…</div></div>
+    </div>
+
+    <!-- Deliberating panel (shown when session.status === 'deliberating') -->
+    <div class="deliberating-panel" id="deliberatingPanel">
+      <div class="deliberating-panel-heading">
+        <div class="dot-pulse-inline"><span></span><span></span><span></span></div>
+        deliberating…
+      </div>
+      <div class="deliberating-panel-sub">verdict will appear here when the session concludes</div>
+    </div>
+
+    <!-- Verdict card (shown when session.status === 'done') — sits above the debate feed -->
+    <div class="verdict-card" id="verdictCard">
+      <div class="verdict-card-heading">⚖️ Verdict</div>
+      <div class="verdict-card-text" id="verdictCardText"></div>
+      <div class="verdict-evolution" id="verdictEvolution" style="display:none"></div>
+      <div class="verdict-tasks" id="verdictTasks" style="display:none"></div>
+      <div class="verdict-meta" id="verdictMeta" style="display:none"></div>
+      <div class="verdict-session-link" id="verdictSessionLink"></div>
+    </div>
+
+    <!-- Debate feed (shown when in session view) -->
+    <div class="debate-feed" id="debateFeed"></div>
+
+    <!-- Legacy review bar (keep for compat, hidden by default) -->
+    <div class="review-bar" id="reviewBar" style="display:none">
+      <div class="review-label">HIRING MANAGER — synthesis</div>
+      <div class="review-synthesis" id="reviewSynthesis"></div>
+    </div>
+
+    </div><!-- end #sessionsView -->
+
+    <!-- Personas tab -->
+    <div id="personasTab">
+      <div class="personas-toolbar">
+        <div class="personas-toolbar-title">Personas</div>
+        <button class="btn" style="font-size:0.7rem;padding:6px 14px;" onclick="openPersonaModalCreate()">+ New Persona</button>
+      </div>
+      <div id="personasTableWrap">
+        <div style="font-size:0.72rem;color:var(--text-muted);opacity:0.6;">Loading personas…</div>
+      </div>
+    </div>
+
+    <!-- Matrix tab -->
+    <div id="matrixTab">
+      <div class="matrix-legend">
+        <div class="legend-item"><span class="legend-symbol cell-agree">&#x2713;</span> agree</div>
+        <div class="legend-item"><span class="legend-symbol cell-disagree">&#x2717;</span> disagree</div>
+        <div class="legend-item"><span class="legend-symbol cell-participated">&bull;</span> participated</div>
+        <span style="border-left:1px solid var(--panel-border);margin:0 4px;"></span>
+        <div class="legend-item"><span class="legend-symbol cell-evo-evolved" style="border:1px solid var(--panel-border);">&nbsp;</span> evolved</div>
+        <div class="legend-item"><span class="legend-symbol cell-evo-retired" style="border:1px solid var(--panel-border);">&nbsp;</span> retired</div>
+        <div class="legend-item"><span class="legend-symbol cell-evo-created" style="border:1px solid var(--panel-border);">&nbsp;</span> created</div>
+        <span style="border-left:1px solid var(--panel-border);margin:0 4px;"></span>
+        <div class="legend-item"><span class="legend-symbol" style="background:rgba(168,85,247,0.28);border:1px solid var(--panel-border);color:#c084fc;font-size:9px;">M</span> meme</div>
+        <div class="legend-item"><span class="legend-symbol" style="background:rgba(245,158,11,0.28);border:1px solid var(--panel-border);color:#fbbf24;font-size:9px;">T</span> trial</div>
+        <div class="legend-item"><span class="legend-symbol" style="background:rgba(233,69,96,0.32);border:1px solid var(--panel-border);color:#f87171;font-size:9px;">!</span> failed</div>
+      </div>
+      <div id="matrixLoading" style="display:flex;align-items:center;justify-content:center;padding:60px;color:var(--text-muted);font-size:13px;">
+        <span style="display:inline-block;width:16px;height:16px;border:2px solid var(--card-border);border-top-color:var(--teal);border-radius:50%;animation:mtxspin 0.8s linear infinite;margin-right:10px;"></span> Loading matrix data...
+      </div>
+      <div class="matrix-wrap" id="matrixWrap" style="display:none">
+        <table class="matrix" id="matrixTable"></table>
+      </div>
+      <div class="matrix-tooltip" id="matrixTooltip"></div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: Roster (Active + Severance) -->
+  <aside class="sidebar sidebar-right">
+    <div class="sidebar-section-divider" style="border-top: none; padding-top: 11px;">
+      Active <span class="count-badge" id="rosterCount" style="font-size:0.55rem; color: var(--text-muted); margin-left:4px;"></span>
+    </div>
+    <div class="sidebar-body" id="rosterList" style="flex: 0 1 auto;"></div>
+    <div class="sidebar-section-divider" id="leftSeveranceDivider" style="display:none;">
+      Retired <span class="count-badge" id="leftSeveranceCount" style="font-size:0.55rem; color: var(--text-muted); margin-left:4px;"></span>
+    </div>
+    <div class="sidebar-body" id="leftSeveranceList" style="flex: 1 1 auto;"></div>
+  </aside>
+
+</div>
+
+<!-- Bottom music bar: visible only while congress is deliberating -->
+<div id="musicBar">
+  <span id="musicBarLabel">♪ congress in session</span>
+  <button id="musicMuteBtn" type="button">mute</button>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── Constants ──────────────────────────────────────────────────────────────
+  const SEAT_COUNT = 5;
+  // Evenly-spaced angles for 5 seats starting from top (270°), clockwise
+  // 270, 342, 54, 126, 198
+  const NODE_ANGLES_DEG = [270, 342, 54, 126, 198];
+  // Which side the speech bubble appears on for each seat (right or left)
+  // seats on the right half (270°, 342°, 54°) → right; seats on the left half (126°, 198°) → left
+  const BUBBLE_SIDE = ['right', 'right', 'right', 'left', 'left'];
+
+  // Emoji & color defaults (server also provides these, used as fallback)
+  const EMOJI_MAP = { critic: '🔍', architect: '🏗️', ux: '🎨', chairman: '⚖️', otto: '🌪️', spengler: '🕰️', wolf: '🐺', hume: '🔬', adelbert: '🗡️' };
+  const COLOR_MAP = { architect: '#f59e0b', critic: '#f87171', ux: '#60a5fa', otto: '#a78bfa', spengler: '#94a3b8', chairman: '#a3e635', wolf: '#f97316', hume: '#38bdf8', adelbert: '#e879f9' };
+
+  // Convert a raw roster entry to the normalized shape used throughout the UI.
+  function normalizeRosterEntry(p) {
+    return {
+      id: p.id || p.name,
+      name: p.name,
+      display_name: p.display_name || p.name,
+      title: p.title || '',
+      avatar_url: p.avatar_url || '',
+      emoji: p.emoji || EMOJI_MAP[p.name] || '🤖',
+      color: p.color || COLOR_MAP[p.name] || '#888888',
+      description: p.description || p.role || '',
+      role: p.role || '',
+      model: p.model || '',
+      sex: p.sex || '',
+      last_verdict: p.last_verdict || '',
+      stats_retained: p.stats_retained || 0,
+      stats_evolved: p.stats_evolved || 0,
+      stats_retired: p.stats_retired || 0,
+      status: p.status,
+    };
+  }
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  let seats = [null, null, null, null, null];   // persona | null for each seat (session participants only when session loaded)
+  let allActivePersonas = [];        // full roster of active non-moderator personas (never mutated by session loading)
+  let sessionParticipantIds = null;  // Set of identity ids that participated in the current session (null = no session loaded)
+  let retiredPool = [];                // personas in severance
+  let moderatorPersona = null;       // chairman persona data (excluded from seats, shown in center)
+  let round = 0;
+  let currentSessionId = null;       // active session id (from URL or newly started)
+  let sessionPollTimer = null;
+  let sidebarPollTimer = null;
+  let sidebarLastFingerprint = null;  // "<count>|<id:status,...>" — skip re-render when unchanged
+  let streamingEventSource = null;
+  let streamingSessionId = null;
+  let streamingPlaceholderIdentity = null;  // identity currently streaming in feed
+  let streamingPlaceholderText = '';         // accumulated text for feed placeholder
+  let lastRenderedRound = 0;                 // track round transitions for bubble clearing
+
+  // ── Boot ───────────────────────────────────────────────────────────────────
+  async function init() {
+    // Check URL for session param
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionParam = urlParams.get('session');
+
+    // Load identities for circle rendering
+    try {
+      const res = await fetch('/api/agents');
+      if (!res.ok) throw new Error('status ' + res.status);
+      const data = await res.json();
+      // Full roster: all eligible non-moderator personas (no slice — we want them all for the panel)
+      allActivePersonas = (data.eligible || []).filter(p => !p.is_moderator);
+      // Use first SEAT_COUNT for the default circle seats
+      for (let i = 0; i < SEAT_COUNT; i++) seats[i] = allActivePersonas[i] || null;
+      retiredPool = data.meme || [];
+      moderatorPersona = data.moderator || null;
+    } catch (e) {
+      console.warn('[congress] /api/agents failed, trying fallback:', e);
+      // Fallback: load from /api/congress/identities
+      try {
+        const res = await fetch('/api/congress/identities');
+        if (res.ok) {
+          const ids = await res.json();
+          const debaters = ids.filter(i => i.name !== 'chairman');
+          allActivePersonas = debaters.map(d => ({
+            id: d.name, name: d.name,
+            display_name: d.display_name || '',
+            avatar_url: d.avatar_url || '',
+            emoji: EMOJI_MAP[d.name] || '🤖',
+            color: COLOR_MAP[d.name] || '#888',
+            description: d.role || '',
+            title: d.title || '',
+            model: d.model || '',
+            sex: d.sex || '',
+          }));
+          for (let i = 0; i < SEAT_COUNT; i++) seats[i] = allActivePersonas[i] || null;
+          retiredPool = [];
+        }
+      } catch (e2) { /* ignore */ }
+    }
+
+    // Always load sessions into the left sidebar
+    loadSidebarSessionList(sessionParam);
+    startSidebarPolling(sessionParam);
+
+    if (sessionParam && /^(?:congress|trial|session)-\d+$/.test(sessionParam)) {
+      // ── Session view ──
+      currentSessionId = sessionParam;
+      applySessionBadge(sessionParam);
+      showSessionHint(sessionParam);
+      render();
+      setStatus('loading session…');
+      await loadSessionIntoPage(sessionParam);
+    } else {
+      // ── Default view: auto-load most recent session ──
+      render();
+      setStatus('loading most recent session…');
+      try {
+        const res = await fetch('/api/congress/sessions');
+        if (res.ok) {
+          const sessions = await res.json();
+          if (sessions && sessions.length > 0) {
+            // Sort: deliberating first, then by session number descending
+            const sorted = sessions.slice().sort((a, b) => {
+              const aActive = a.status === 'deliberating' ? 0 : 1;
+              const bActive = b.status === 'deliberating' ? 0 : 1;
+              if (aActive !== bActive) return aActive - bActive;
+              return (b.session_number || 0) - (a.session_number || 0);
+            });
+            const latest = sorted[0];
+            currentSessionId = latest.session_id;
+            applySessionBadge(latest.session_id);
+            showSessionHint(latest.session_id);
+            setStatus('loading session…');
+            await loadSessionIntoPage(latest.session_id);
+          } else {
+            setStatus('no sessions yet');
+            document.querySelector('.page-header .subtitle').textContent = 'use [congress] <topic> in Discord to start a session';
+          }
+        } else {
+          setStatus('select a session from the sidebar');
+          document.querySelector('.page-header .subtitle').textContent = 'select a session to replay';
+        }
+      } catch (e) {
+        setStatus('select a session from the sidebar');
+        document.querySelector('.page-header .subtitle').textContent = 'select a session to replay';
+      }
+    }
+  }
+
+  function showSessionHint(sessionParam) {
+    const m = sessionParam.match(/^(congress|trial|session)-(\d+)$/);
+    const prefix = m ? m[1] : 'congress';
+    const num = m ? parseInt(m[2], 10) : '?';
+    const hint = document.getElementById('sessionHint');
+    hint.style.display = '';
+    if (prefix === 'trial') {
+      hint.innerHTML = '<strong>Trial #' + num + '</strong> — use <code>[trial] &lt;defendant&gt; &lt;charges&gt;</code> in Discord to start a trial';
+    } else {
+      hint.innerHTML = '<strong>Session #' + num + '</strong> — use <code>[congress] &lt;topic&gt;</code> in Discord to start a new session';
+    }
+  }
+
+  function applySessionBadge(sessionId) {
+    const badge = document.getElementById('sessionBadge');
+    const m = sessionId.match(/^(congress|trial|session)-(\d+)$/);
+    if (m) {
+      const prefix = m[1] === 'trial' ? 'T' : '#';
+      badge.textContent = prefix + parseInt(m[2], 10);
+      badge.style.display = '';
+    }
+  }
+
+  async function loadSessionIntoPage(sessionId) {
+    try {
+      const res = await fetch('/api/congress/sessions/' + sessionId);
+      if (!res.ok) {
+        setStatus('session not found: ' + sessionId);
+        return;
+      }
+      const session = await res.json();
+
+      // Detect trial sessions and use dedicated trial renderer
+      const isTrial = session.defendant || sessionId.startsWith('trial-');
+      if (isTrial) {
+        renderTrialSession(session);
+        return;
+      }
+
+      // If the session has a baked-in roster snapshot, use it for the left pane
+      // so historical sessions show the personas that existed at the time.
+      if (session.roster && session.roster.length > 0) {
+        allActivePersonas = session.roster
+          .filter(p => p.status === 'active' || p.status === 'eligible')
+          .map(normalizeRosterEntry);
+        // Also rebuild retiredPool from the snapshot for accurate lookups
+        retiredPool = session.roster
+          .filter(p => p.status === 'severance' || p.status === 'meme')
+          .map(normalizeRosterEntry);
+        // Reset seats from the snapshot active personas
+        for (let i = 0; i < SEAT_COUNT; i++) seats[i] = allActivePersonas[i] || null;
+      }
+
+      // Show topic in the prominent topic display bar above the arena
+      if (session.topic) {
+        fullTopicText = session.topic;
+        // Topic display bar — always show full topic, word-wrapped
+        const topicDisplay = document.getElementById('topicDisplay');
+        const topicText = document.getElementById('topicDisplayText');
+        topicText.textContent = session.topic;
+        topicDisplay.classList.add('visible');
+      }
+
+      // Filter seats to only personas that actually participated in this session
+      // (have at least one round entry). Severance personas or non-participants
+      // should not show in the debate circle.
+      if (session.rounds && session.rounds.length > 0) {
+        // Include all round participants (including chairman synthesis round)
+        const participantIds = new Set(
+          session.rounds
+            .filter(r => r.response)
+            .map(r => r.identity)
+        );
+        if (participantIds.size > 0) {
+          // Track session participants for the Full Panel roster display
+          sessionParticipantIds = participantIds;
+
+          // Remap seats: keep seat if it was a participant, otherwise null it out
+          for (let i = 0; i < seats.length; i++) {
+            if (seats[i] && !participantIds.has(seats[i].id)) {
+              seats[i] = null;
+            }
+          }
+          // Also pull in any participants not currently in seats (e.g. was in severance)
+          // chairman (Ibrahim) is excluded from seats — he lives in the center node only
+          const seatedIds = new Set(seats.filter(Boolean).map(s => s.id));
+          const unseated = [...participantIds].filter(id => !seatedIds.has(id) && id !== 'chairman');
+          if (unseated.length > 0) {
+            // Try to get their info from allActivePersonas or retiredPool
+            unseated.forEach(id => {
+              const fromActive = allActivePersonas.find(p => p.id === id || p.name === id);
+              const fromFired = retiredPool.find(p => p.id === id || p.name === id);
+              const entry = fromActive || fromFired || { id, name: id, display_name: id, emoji: '🤖', color: '#888' };
+              const emptySlot = seats.indexOf(null);
+              if (emptySlot !== -1) seats[emptySlot] = entry;
+            });
+          }
+          renderCircle();
+          renderRoster(); // re-render roster with session SEATED/bench indicators
+        }
+      }
+
+      renderSessionStatus(sessionId, session.status);
+      renderRoundBanner(session);
+      applySessionData(session, true);
+
+      if (session.status === 'deliberating') {
+        startSessionPolling(sessionId);
+        if (streamingSessionId !== sessionId) {
+          startStreaming(sessionId);
+        }
+      } else if (session.status === 'done' || session.status === 'complete' || session.status === 'failed') {
+        stopStreaming();
+      }
+    } catch (e) {
+      setStatus('could not load session: ' + e.message);
+    }
+  }
+
+  function applySessionData(session, deferred) {
+    if (session.rounds && session.rounds.length > 0) {
+      const lastRoundsByIdentity = {};
+      session.rounds.forEach(r => { lastRoundsByIdentity[r.identity] = r.response; });
+
+      // Detect round transitions — clear bubbles when moving to a new round
+      const debaterCount = seats.filter(Boolean).length || 3;
+      const debateEntries = session.rounds.filter(r => r.identity !== 'chairman');
+      const currentRound = debateEntries.length > 0
+        ? Math.floor((debateEntries.length - 1) / debaterCount) + 1
+        : 0;
+      if (currentRound > lastRenderedRound && lastRenderedRound > 0) {
+        // Transitioning to a new round — clear all bubble text
+        for (let i = 0; i < SEAT_COUNT; i++) {
+          const bubbleEl = document.getElementById('bubble-seat-' + i);
+          if (bubbleEl && !bubbleEl.classList.contains('streaming')) {
+            bubbleEl.classList.remove('visible');
+            const textEl = bubbleEl.querySelector('.bubble-text');
+            if (textEl) textEl.innerHTML = '';
+          }
+        }
+      }
+      lastRenderedRound = currentRound;
+
+      const applyRounds = () => {
+        seats.forEach((p, i) => {
+          if (p && lastRoundsByIdentity[p.id]) {
+            setNodeState(i, 'done');
+            // If streaming is active for this session, let SSE drive bubble text;
+            // only overwrite via polling when streaming is inactive or finished.
+            const bubbleEl = document.getElementById('bubble-seat-' + i);
+            const isStreaming = bubbleEl && bubbleEl.classList.contains('streaming');
+            if (!isStreaming) {
+              setBubbleText(i, p.display_name || p.name, lastRoundsByIdentity[p.id]);
+            }
+          }
+        });
+      };
+      if (deferred) setTimeout(applyRounds, 300); else applyRounds();
+      // Render debate feed
+      renderDebateFeed(session);
+    }
+    if (session.synthesis) {
+      document.getElementById('reviewSynthesis').innerHTML = renderMarkdown(session.synthesis);
+      document.getElementById('reviewBar').classList.add('visible');
+    }
+    // Deliberating panel / verdict card
+    const deliberatingPanel = document.getElementById('deliberatingPanel');
+    const verdictCard = document.getElementById('verdictCard');
+    if (session.status === 'deliberating') {
+      if (deliberatingPanel) deliberatingPanel.classList.add('visible');
+      if (verdictCard) verdictCard.classList.remove('visible');
+    } else if (session.status === 'done' || session.status === 'complete' || session.status === 'failed') {
+      if (deliberatingPanel) deliberatingPanel.classList.remove('visible');
+      if (session.verdict) {
+        renderVerdictCard(session);
+      }
+      // Mark center label as done: show brief status only, no overflow
+      const cl = document.getElementById('centerLabel');
+      if (cl) {
+        cl.classList.add('done');
+        cl.classList.remove('deliberating-active', 'thinking');
+        const delEl = document.getElementById('centerDeliberating');
+        if (delEl) delEl.textContent = 'adjourned';
+      }
+    }
+  }
+
+  function renderSessionStatus(sessionId, status) {
+    const st = status || 'unknown';
+    const statusLine = document.getElementById('statusLine');
+    const dot = document.createElement('span');
+    // Only apply a dot class for statuses that have a defined style; unknown statuses
+    // get a plain dot rather than a spurious CSS class.
+    const dotStatus = (st === 'deliberating' || st === 'done' || st === 'failed') ? st : '';
+    dot.className = 'status-dot' + (dotStatus ? ' ' + dotStatus : '');
+    statusLine.innerHTML = '';
+    statusLine.appendChild(dot);
+    statusLine.appendChild(document.createTextNode(sessionId + ' — ' + st));
+  }
+
+  const SOUNDTRACK_URL = 'https://www.youtube.com/embed/h6N1_GJAyFw';
+
+  function setCenterDeliberating(active) {
+    const cl = document.getElementById('centerLabel');
+    if (!cl) return;
+    if (active) {
+      cl.classList.add('deliberating-active');
+    } else {
+      cl.classList.remove('deliberating-active');
+    }
+
+    const wrap = document.getElementById('soundtrackWrap');
+    if (!wrap) return;
+
+    if (active) {
+      wrap.classList.add('visible');
+      // Inject a fresh iframe so autoplay fires reliably
+      if (!document.getElementById('soundtrackFrame')) {
+        const iframe = document.createElement('iframe');
+        iframe.id = 'soundtrackFrame';
+        iframe.className = 'soundtrackFrame';
+        // autoplay=1, loop=1 — browser will honor autoplay inside an iframe embed
+        iframe.src = SOUNDTRACK_URL + '?autoplay=1&loop=1&playlist=h6N1_GJAyFw&rel=0';
+        iframe.allow = 'autoplay; encrypted-media';
+        iframe.allowFullscreen = true;
+        wrap.appendChild(iframe);
+      }
+    } else {
+      wrap.classList.remove('visible');
+      // Remove iframe so audio actually stops
+      const old = document.getElementById('soundtrackFrame');
+      if (old) old.remove();
+    }
+  }
+
+  function startSessionPolling(sessionId) {
+    setCenterDeliberating(true);
+    if (sessionPollTimer) clearInterval(sessionPollTimer);
+    sessionPollTimer = setInterval(async () => {
+      try {
+        const res = await fetch('/api/congress/sessions/' + sessionId);
+        if (!res.ok) return;
+        const session = await res.json();
+        renderSessionStatus(sessionId, session.status);
+        renderRoundBanner(session);
+        if (session.status !== 'deliberating') {
+          clearInterval(sessionPollTimer);
+          sessionPollTimer = null;
+          setCenterDeliberating(false);
+          stopStreaming();
+        }
+        applySessionData(session, false);
+      } catch (e) {
+        // Ignore polling errors
+      }
+    }, 4000);
+  }
+
+  async function loadSidebarSessionList(selectedId) {
+    const container = document.getElementById('sidebarSessionList');
+    try {
+      const res = await fetch('/api/congress/sessions');
+      if (!res.ok) throw new Error('status ' + res.status);
+      let sessions = await res.json();
+
+      // Build a fingerprint to skip unnecessary re-renders
+      const byNum = sessions.slice().sort((a, b) => (b.session_number || 0) - (a.session_number || 0));
+      const fingerprint = byNum.length + '|' + byNum.map(s => s.session_id + ':' + s.status).join(',');
+      if (fingerprint === sidebarLastFingerprint) return;
+      sidebarLastFingerprint = fingerprint;
+
+      container.innerHTML = '';
+      if (sessions.length === 0) {
+        container.innerHTML = '<div class="session-list-empty">No sessions yet.</div>';
+        return;
+      }
+      // Sort: deliberating first, then by started_at descending (API may pre-sort, but enforce here too)
+      sessions = sessions.slice().sort((a, b) => {
+        const aActive = a.status === 'deliberating' ? 0 : 1;
+        const bActive = b.status === 'deliberating' ? 0 : 1;
+        if (aActive !== bActive) return aActive - bActive;
+        // Use started_at timestamp if available; fall back to session_number
+        if (a.started_at && b.started_at) {
+          const cmp = b.started_at.localeCompare(a.started_at);
+          if (cmp !== 0) return cmp;
+        }
+        return (b.session_number || 0) - (a.session_number || 0);
+      });
+      sessions.forEach(s => {
+        const a = document.createElement('a');
+        const isSelected = selectedId && s.session_id === selectedId;
+        const isDeliberating = s.status === 'deliberating';
+        a.className = 'sidebar-session-item' +
+          (isSelected ? ' selected' : '') +
+          (isDeliberating ? ' deliberating' : '');
+        a.href = '/congress?session=' + s.session_id;
+
+        // Flavor badge icon
+        const flavor = s.flavor || 'normal';
+        if (flavor === 'trial' || flavor === 'meme') {
+          const flavorEl = document.createElement('span');
+          flavorEl.className = 'sidebar-session-flavor';
+          flavorEl.textContent = flavor === 'trial' ? '\u2696\uFE0F' : '\uD83C\uDFAD';
+          flavorEl.title = flavor;
+          a.appendChild(flavorEl);
+        }
+
+        const numEl = document.createElement('span');
+        numEl.className = 'sidebar-session-num';
+        // For trial sessions, parse number from session_id since session_number may be 0
+        if (flavor === 'trial') {
+          const tm = s.session_id.match(/trial-(\d+)/);
+          numEl.textContent = 'T' + (tm ? parseInt(tm[1], 10) : s.session_number);
+        } else {
+          numEl.textContent = '#' + s.session_number;
+        }
+
+        const topicEl = document.createElement('span');
+        topicEl.className = 'sidebar-session-topic';
+        // For trials without a topic, show defendant as the label
+        let shortTopic = s.topic || '';
+        if (!shortTopic && flavor === 'trial') {
+          shortTopic = s.defendant ? ('v. ' + s.defendant) : 'Trial';
+          if (s.verdict) shortTopic += ' \u2014 ' + s.verdict;
+        }
+        if (!shortTopic) shortTopic = '(no topic)';
+        topicEl.textContent = shortTopic.length > 32 ? shortTopic.slice(0, 30) + '\u2026' : shortTopic;
+        topicEl.title = s.topic || shortTopic;
+
+        const dotEl = document.createElement('span');
+        const dotStatus = (s.status === 'deliberating' || s.status === 'done') ? s.status : '';
+        dotEl.className = 'status-dot' + (dotStatus ? ' ' + dotStatus : '');
+
+        a.appendChild(numEl);
+        a.appendChild(topicEl);
+        a.appendChild(dotEl);
+        container.appendChild(a);
+      });
+    } catch (e) {
+      container.innerHTML = '<div class="session-list-empty">Could not load sessions.</div>';
+    }
+  }
+
+  // ── Sidebar auto-refresh ────────────────────────────────────────────────────
+  // Keeps the session list current without a manual page reload.
+  // Uses a self-rescheduling setTimeout so the interval adapts each tick:
+  // fast (7 s) while a session is deliberating, relaxed (20 s) otherwise.
+  function startSidebarPolling(selectedId) {
+    if (sidebarPollTimer) clearTimeout(sidebarPollTimer);
+
+    function scheduleNext() {
+      // Poll faster while a session is actively deliberating
+      const interval = sessionPollTimer !== null ? 7000 : 20000;
+      sidebarPollTimer = setTimeout(async () => {
+        try {
+          await loadSidebarSessionList(selectedId);
+        } catch (e) { /* silently ignore network errors */ }
+        scheduleNext();
+      }, interval);
+    }
+
+    scheduleNext();
+  }
+  // ── Rendering ──────────────────────────────────────────────────────────────
+  function render() {
+    renderRoster();
+    renderCircle();
+  }
+
+  // Build a stats line element for a persona card.
+  // Returns an Element if the persona has any non-zero stats, null otherwise.
+  function shortenModel(model) {
+    if (!model) return '';
+    const m = model.toLowerCase();
+    if (m.startsWith('grok-')) return m.replace('grok-', 'grok/').replace('-reasoning', '~r').replace('-non-reasoning', '').replace('-fast', 'f');
+    if (m.startsWith('gemini-')) return m.replace('gemini-', 'gem/');
+    if (m.startsWith('claude-')) return m.replace('claude-', 'cl/').replace('-2025', '').replace('-20251001', '');
+    if (m === 'claude') return 'claude';
+    if (m === 'grok') return 'grok';
+    if (m === 'gemini') return 'gemini';
+    if (m === 'opus') return 'opus';
+    return model.length > 18 ? model.slice(0, 16) + '…' : model;
+  }
+
+  function buildMetaRow(p, isFired) {
+    const model = p.model || '';
+    const sex = p.sex || '';
+    const lastVerdict = p.last_verdict || '';
+    if (!model && !sex && !lastVerdict) return null;
+    const row = document.createElement('div');
+    row.className = 'seat-meta-row';
+    if (model) {
+      const mb = document.createElement('span');
+      mb.className = 'seat-model-badge';
+      mb.textContent = shortenModel(model);
+      mb.title = 'model: ' + model;
+      row.appendChild(mb);
+    }
+    if (sex) {
+      const sb = document.createElement('span');
+      sb.className = 'seat-sex-badge';
+      sb.textContent = sex;
+      row.appendChild(sb);
+    }
+    if (lastVerdict && lastVerdict !== 'FIRED') {
+      const vb = document.createElement('span');
+      vb.className = 'seat-verdict-badge ' + lastVerdict;
+      vb.textContent = lastVerdict;
+      vb.title = 'last evolution verdict';
+      row.appendChild(vb);
+    }
+    return row;
+  }
+
+  function buildStatsEl(p) {
+    const retained = p.stats_retained || 0;
+    const evolved  = p.stats_evolved  || 0;
+    const retired  = p.stats_retired    || 0;
+    if (retained === 0 && evolved === 0 && retired === 0) return null;
+    const el = document.createElement('div');
+    el.className = 'seat-stats';
+    el.textContent = '\u21a9\u00a0' + retained + ' \u00b7 \u2736\u00a0' + evolved + ' \u00b7 \u00d7\u00a0' + retired;
+    el.title = 'RETAIN \u00d7' + retained + '  EVOLVE \u00d7' + evolved + '  RETIRE \u00d7' + retired;
+    return el;
+  }
+
+  function renderRoster() {
+    const list = document.getElementById('rosterList');
+    list.innerHTML = '';
+
+    // Determine the source for the panel:
+    // If we have a full roster loaded, use it; otherwise fall back to seats
+    const panelPersonas = allActivePersonas.length > 0 ? allActivePersonas : seats.filter(Boolean);
+    const sessionMode = sessionParticipantIds !== null;
+
+    // Severance personas that participated in the current session
+    const seatedFired = sessionMode
+      ? retiredPool.filter(p => sessionParticipantIds.has(p.id || p.name))
+      : [];
+
+    const activeSeatedCount = sessionMode
+      ? panelPersonas.filter(p => sessionParticipantIds.has(p.id)).length
+      : panelPersonas.length;
+    const totalSeatedCount = activeSeatedCount + seatedFired.length;
+
+    // Update count badge: "X seated / Y total" when in session mode, else just count
+    const countBadge = document.getElementById('rosterCount');
+    if (sessionMode) {
+      countBadge.textContent = totalSeatedCount + ' seated / ' + panelPersonas.length + ' total';
+    } else {
+      countBadge.textContent = panelPersonas.length + ' active';
+    }
+
+    if (panelPersonas.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'sidebar-empty';
+      empty.textContent = 'No active personas.';
+      list.appendChild(empty);
+    } else {
+      panelPersonas.forEach(p => {
+        const isSeated = sessionMode ? sessionParticipantIds.has(p.id) : true;
+        const card = document.createElement('div');
+        // In session mode: seated = highlighted occupied, bench = dimmed
+        // Outside session mode: all show as occupied (no session context)
+        card.className = 'seat-card ' + (isSeated ? 'occupied' : 'bench');
+        if (p.color) card.style.setProperty('--sc', p.color);
+
+        if (p.avatar_url) {
+          const avatar = document.createElement('img');
+          avatar.className = 'seat-avatar';
+          avatar.src = p.avatar_url;
+          avatar.alt = p.display_name || p.name;
+          card.appendChild(avatar);
+        } else {
+          const emoji = document.createElement('span');
+          emoji.className = 'seat-emoji';
+          emoji.textContent = p.emoji || '🤖';
+          card.appendChild(emoji);
+        }
+
+        const info = document.createElement('div');
+        info.className = 'seat-info';
+        const name = document.createElement('div');
+        name.className = 'seat-name';
+        name.textContent = p.display_name || p.name;
+        info.appendChild(name);
+        if (p.title || p.description || p.role) {
+          const desc = document.createElement('div');
+          desc.className = 'seat-desc';
+          desc.textContent = p.title || p.description || p.role || '';
+          info.appendChild(desc);
+        }
+        const metaRow = buildMetaRow(p, false);
+        if (metaRow) info.appendChild(metaRow);
+        const statsEl = buildStatsEl(p);
+        if (statsEl) info.appendChild(statsEl);
+        card.appendChild(info);
+
+        // Seated badge (only shown in session mode)
+        if (sessionMode && isSeated) {
+          const badge = document.createElement('span');
+          badge.className = 'roster-badge seated';
+          badge.textContent = 'seated';
+          card.appendChild(badge);
+        }
+
+        list.appendChild(card);
+      });
+    }
+
+    // ── Left-pane Severance section ──────────────────────────────────────────
+    // Show all severance personas in the left pane; in session mode apply seated/bench logic.
+    const leftSeveranceDivider = document.getElementById('leftSeveranceDivider');
+    const leftSeveranceList = document.getElementById('leftSeveranceList');
+    leftSeveranceList.innerHTML = '';
+
+    if (retiredPool.length === 0) {
+      leftSeveranceDivider.style.display = 'none';
+    } else {
+      leftSeveranceDivider.style.display = '';
+      const leftSeveranceCount = document.getElementById('leftSeveranceCount');
+      if (sessionMode) {
+        leftSeveranceCount.textContent = seatedFired.length > 0
+          ? seatedFired.length + ' seated / ' + retiredPool.length + ' total'
+          : retiredPool.length + ' total';
+      } else {
+        leftSeveranceCount.textContent = retiredPool.length;
+      }
+
+      retiredPool.forEach(p => {
+        const isSeated = sessionMode ? sessionParticipantIds.has(p.id || p.name) : false;
+        const card = document.createElement('div');
+        card.className = 'retired-card' + (sessionMode ? (isSeated ? ' seated' : ' bench') : '');
+        if (p.color) card.style.setProperty('--sc', p.color);
+
+        if (p.avatar_url) {
+          const avatar = document.createElement('img');
+          avatar.className = 'seat-avatar';
+          avatar.src = p.avatar_url;
+          avatar.alt = p.display_name || p.name;
+          card.appendChild(avatar);
+        } else {
+          const emoji = document.createElement('span');
+          emoji.className = 'seat-emoji';
+          emoji.textContent = p.emoji || '🤖';
+          card.appendChild(emoji);
+        }
+
+        const info = document.createElement('div');
+        info.className = 'seat-info';
+        const nameRow = document.createElement('div');
+        nameRow.style.cssText = 'display:flex;align-items:center;gap:5px;';
+        const nameEl2 = document.createElement('div');
+        nameEl2.className = 'seat-name';
+        nameEl2.textContent = p.display_name || p.name;
+        nameRow.appendChild(nameEl2);
+        const retireBadge = document.createElement('span');
+        retireBadge.className = 'seat-retired-badge';
+        retireBadge.textContent = '🔥 retired';
+        nameRow.appendChild(retireBadge);
+        info.appendChild(nameRow);
+        if (p.title || p.role) {
+          const desc = document.createElement('div');
+          desc.className = 'seat-desc';
+          desc.textContent = p.title || p.role;
+          info.appendChild(desc);
+        }
+        if (p.retired_reason) {
+          const reason = document.createElement('div');
+          reason.className = 'retired-reason';
+          reason.textContent = '"' + p.retired_reason + '"';
+          info.appendChild(reason);
+        }
+        const retiredMetaRow = buildMetaRow(p, true);
+        if (retiredMetaRow) info.appendChild(retiredMetaRow);
+        const retiredStatsEl = buildStatsEl(p);
+        if (retiredStatsEl) info.appendChild(retiredStatsEl);
+        card.appendChild(info);
+
+        // Seated badge (only shown in session mode)
+        if (sessionMode && isSeated) {
+          const badge = document.createElement('span');
+          badge.className = 'roster-badge seated';
+          badge.textContent = 'seated';
+          card.appendChild(badge);
+        }
+
+
+        leftSeveranceList.appendChild(card);
+      });
+    }
+  }
+
+  function renderCircle() {
+    const arena = document.getElementById('arena');
+    arena.querySelectorAll('.persona-node').forEach(el => el.remove());
+
+    const W = arena.offsetWidth || 440;
+    const H = arena.offsetHeight || 440;
+    const cx = W / 2;
+    const cy = H / 2;
+    const r = Math.min(W, H) * 0.365;
+
+    for (let i = 0; i < SEAT_COUNT; i++) {
+      const deg = NODE_ANGLES_DEG[i];
+      const rad = (deg * Math.PI) / 180;
+      const nx = cx + r * Math.cos(rad);
+      const ny = cy + r * Math.sin(rad);
+      const p = seats[i];
+
+      const node = document.createElement('div');
+      node.className = 'persona-node' + (p ? '' : ' empty-node');
+      node.id = 'node-seat-' + i;
+      node.style.left = nx + 'px';
+      node.style.top = ny + 'px';
+      const avatarHtml = p && p.avatar_url
+        ? `<img class="node-avatar" src="${p.avatar_url}" alt="${p.display_name || p.name}" />`
+        : `<div class="node-emoji">${p ? (p.emoji || '🤖') : '○'}</div>`;
+      const modelFull = p ? (p.model || 'claude') : '';
+      const modelLabel = modelFull ? shortenModel(modelFull) : '';
+      const modelBadge = p ? `<div class="node-model-badge" title="${modelFull}">${modelLabel}</div>` : '';
+      const titleHtml = p && p.title ? `<div class="node-title">${p.title}</div>` : '';
+      const displayNameHtml = p
+        ? `<div class="node-display-name">${p.display_name || p.name}</div>${titleHtml}${modelBadge}`
+        : '';
+      const side = BUBBLE_SIDE[i] || 'right';
+      node.classList.add('bubble-' + side);
+      node.innerHTML = `<div class="node-circle">${avatarHtml}${displayNameHtml}</div>` +
+        `<div class="node-bubble" id="bubble-seat-${i}"><div class="bubble-label"></div><div class="bubble-text"></div></div>`;
+      if (p && p.name) {
+        const bubbleEl = node.querySelector('.node-bubble');
+        if (bubbleEl) bubbleEl.classList.add('persona-font-' + p.name);
+      }
+      arena.appendChild(node);
+    }
+  }
+
+  // ── Roster actions ─────────────────────────────────────────────────────────
+  function removeToSeverance(seatIndex) {
+    const p = seats[seatIndex];
+    if (!p) return;
+    seats[seatIndex] = null;
+    const entry = Object.assign({}, p);
+    if (!entry.retired_reason) entry.retired_reason = 'Removed from active roster.';
+    retiredPool.unshift(entry);
+    render();
+    setStatus((p.display_name || p.name) + ' retired');
+  }
+
+
+  // ── Circle node state helpers ──────────────────────────────────────────────
+  function setNodeState(seatIndex, state) {
+    const node = document.getElementById('node-seat-' + seatIndex);
+    if (node) {
+      node.classList.remove('active', 'done');
+      if (state) node.classList.add(state);
+    }
+  }
+
+  // ── Speech bubble helpers ─────────────────────────────────────────────────────
+  function getNodeBubble(seatIndex) {
+    // Try to find the bubble; it may not exist yet if renderCircle hasn't run
+    return document.getElementById('bubble-seat-' + seatIndex);
+  }
+
+  function showBubbleLoading(seatIndex, label) {
+    const bubble = getNodeBubble(seatIndex);
+    if (!bubble) return;
+    const p = seats[seatIndex];
+    const color = (p && p.color) ? p.color : 'var(--accent)';
+    bubble.querySelector('.bubble-label').textContent = label || '';
+    bubble.querySelector('.bubble-label').style.color = color;
+    bubble.querySelector('.bubble-text').innerHTML =
+      '<div class="dot-pulse-inline"><span></span><span></span><span></span></div>';
+    bubble.classList.add('visible');
+  }
+
+  function renderMarkdown(text) {
+    if (!text) return '';
+    // Escape HTML first to prevent injection
+    let html = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    // Headers → bold
+    html = html.replace(/^#{1,3}\s+(.+)$/gm, '<strong>$1</strong>');
+    // Bold
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    // Italic
+    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    // Inline code
+    html = html.replace(/`(.+?)`/g, '<code>$1</code>');
+    // Paragraphs: split on double newline
+    const parts = html.split(/\n\n+/);
+    return parts.map(p => '<p>' + p.replace(/\n/g, '<br>') + '</p>').join('');
+  }
+
+  function setBubbleText(seatIndex, label, text) {
+    const bubble = getNodeBubble(seatIndex);
+    if (!bubble) return;
+    const p = seats[seatIndex];
+    const color = (p && p.color) ? p.color : 'var(--accent)';
+    bubble.querySelector('.bubble-label').textContent = label || '';
+    bubble.querySelector('.bubble-label').style.color = color;
+    bubble.querySelector('.bubble-text').innerHTML = renderMarkdown(text);
+    bubble.classList.add('visible');
+  }
+
+  function startStreaming(sessionId) {
+    if (streamingEventSource) {
+      streamingEventSource.close();
+    }
+    streamingSessionId = sessionId;
+    const es = new EventSource('/api/congress/stream?session_id=' + sessionId);
+    streamingEventSource = es;
+
+    es.onmessage = function(e) {
+      const data = JSON.parse(e.data);
+      const identity = data.identity;
+      const chunk = data.text;
+      const done = data.done;
+
+      // Find the seat for this identity
+      const seatIdx = seats.findIndex(s => s && (s.name === identity || s.id === identity || s.display_name === identity));
+      if (seatIdx === -1) return;
+
+      const bubbleEl = document.getElementById('bubble-seat-' + seatIdx);
+      if (!bubbleEl) return;
+      const textEl = bubbleEl.querySelector('.bubble-text');
+      const labelEl = bubbleEl.querySelector('.bubble-label');
+
+      const p = seats[seatIdx];
+      const isIbrahim = identity === 'chairman';
+
+      if (!done && chunk) {
+        // Show streaming text in bubble
+        bubbleEl.classList.add('active', 'streaming', 'visible');
+        if (labelEl) {
+          labelEl.textContent = (p && (p.display_name || p.name)) || identity;
+          if (p && p.color) labelEl.style.color = p.color;
+        }
+        if (textEl) {
+          textEl.textContent += chunk;
+          textEl.dataset.streaming = 'true';
+        }
+
+        // Ibrahim thinking state on center node
+        if (isIbrahim) {
+          const cl = document.getElementById('centerLabel');
+          if (cl) cl.classList.add('thinking');
+        }
+
+        // Update feed placeholder
+        updateStreamingFeedPlaceholder(identity, p, chunk, false);
+
+      } else if (done) {
+        // Streaming complete for this persona
+        if (textEl) delete textEl.dataset.streaming;
+        bubbleEl.classList.remove('streaming');
+
+        // Clear Ibrahim thinking state
+        if (isIbrahim) {
+          const cl = document.getElementById('centerLabel');
+          if (cl) cl.classList.remove('thinking');
+        }
+
+        // Remove feed placeholder (real entry will come in via polling)
+        if (streamingPlaceholderIdentity === identity) {
+          removeStreamingFeedPlaceholder();
+        }
+      }
+    };
+
+    es.onerror = function() {
+      es.close();
+      streamingEventSource = null;
+    };
+  }
+
+  function stopStreaming() {
+    if (streamingEventSource) {
+      streamingEventSource.close();
+      streamingEventSource = null;
+    }
+    streamingSessionId = null;
+    // Clear any lingering thinking/placeholder state
+    const cl = document.getElementById('centerLabel');
+    if (cl) cl.classList.remove('thinking');
+    removeStreamingFeedPlaceholder();
+  }
+
+  // ── Streaming feed placeholder helpers ────────────────────────────────────
+  // Returns the column that a streaming placeholder should live in.
+  // For synthesis (chairman) use the synthesis column; for debaters use
+  // the last debate column (creating a new one if there isn't one yet).
+  function getOrCreateStreamingCol(identity) {
+    const feed = document.getElementById('debateFeed');
+    if (!feed) return feed;
+    if (identity === 'chairman') {
+      let col = feed.querySelector('.debate-round-col.synthesis-col');
+      if (!col) {
+        col = document.createElement('div');
+        col.className = 'debate-round-col synthesis-col';
+        col.dataset.roundNum = 'synthesis';
+        const header = document.createElement('div');
+        header.className = 'debate-round-col-header';
+        header.textContent = 'Synthesis';
+        col.appendChild(header);
+        feed.appendChild(col);
+      }
+      return col;
+    }
+    // For regular debaters: use the last non-synthesis column, or create Round 1
+    const cols = Array.from(feed.querySelectorAll('.debate-round-col:not(.synthesis-col)'));
+    if (cols.length > 0) return cols[cols.length - 1];
+    // No column yet — create Round 1
+    const roundNames = { 1: 'Round 1 — Initial Positions', 2: 'Round 2 — Rebuttals', 3: 'Round 3 — Final Arguments' };
+    const col = document.createElement('div');
+    col.className = 'debate-round-col';
+    col.dataset.roundNum = '1';
+    const header = document.createElement('div');
+    header.className = 'debate-round-col-header';
+    header.textContent = roundNames[1];
+    col.appendChild(header);
+    // Insert before synthesis col if one exists
+    const synthCol = feed.querySelector('.debate-round-col.synthesis-col');
+    if (synthCol) feed.insertBefore(col, synthCol);
+    else feed.appendChild(col);
+    return col;
+  }
+
+  function updateStreamingFeedPlaceholder(identity, persona, chunk, done) {
+    const feed = document.getElementById('debateFeed');
+    if (!feed || !feed.classList.contains('visible')) return;
+
+    // If this is a new persona streaming, reset accumulator and swap placeholder
+    if (streamingPlaceholderIdentity !== identity) {
+      removeStreamingFeedPlaceholder();
+      streamingPlaceholderIdentity = identity;
+      streamingPlaceholderText = '';
+    }
+
+    streamingPlaceholderText += chunk;
+
+    // Find or create placeholder — look inside columns, not the feed root
+    let placeholder = feed.querySelector('.streaming-placeholder');
+    if (!placeholder) {
+      const col = getOrCreateStreamingCol(identity);
+      placeholder = buildStreamingPlaceholder(identity, persona);
+      if (col) col.appendChild(placeholder);
+      else feed.appendChild(placeholder);
+    }
+
+    // Update body text (plain text, no markdown yet — it's streaming)
+    const bodyEl = placeholder.querySelector('.feed-entry-body');
+    if (bodyEl) {
+      bodyEl.textContent = streamingPlaceholderText;
+      // Append blinking cursor span
+      const cursor = document.createElement('span');
+      cursor.className = 'streaming-cursor';
+      bodyEl.appendChild(cursor);
+    }
+
+    // Scroll the column (or feed) to show the latest content
+    const colEl = placeholder.closest('.debate-round-col') || feed;
+    colEl.scrollTop = colEl.scrollHeight;
+  }
+
+  function removeStreamingFeedPlaceholder() {
+    const feed = document.getElementById('debateFeed');
+    if (!feed) return;
+    const placeholder = feed.querySelector('.streaming-placeholder');
+    if (placeholder) placeholder.remove();
+    streamingPlaceholderIdentity = null;
+    streamingPlaceholderText = '';
+  }
+
+  function buildStreamingPlaceholder(identity, persona) {
+    const isSynthesis = identity === 'chairman';
+    const div = document.createElement('div');
+    div.className = 'feed-entry streaming-placeholder' + (isSynthesis ? ' synthesis-entry' : '');
+
+    const headerColor = persona && persona.color ? persona.color : (isSynthesis ? 'var(--teal)' : 'var(--text-muted)');
+    if (persona && persona.color) {
+      div.style.setProperty('--fe-color', persona.color);
+    } else if (isSynthesis) {
+      div.style.setProperty('--fe-color', 'var(--teal)');
+    }
+
+    const header = document.createElement('div');
+    header.className = 'feed-entry-header';
+
+    if (persona && persona.avatar_url) {
+      const img = document.createElement('img');
+      img.className = 'feed-entry-avatar';
+      img.src = persona.avatar_url;
+      img.alt = persona.display_name || persona.name;
+      header.appendChild(img);
+    } else {
+      const emoji = document.createElement('div');
+      emoji.className = 'feed-entry-emoji';
+      emoji.textContent = persona ? (persona.emoji || '🤖') : (isSynthesis ? '⚖️' : '🤖');
+      header.appendChild(emoji);
+    }
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'feed-entry-name';
+    nameEl.style.color = headerColor;
+    nameEl.textContent = persona ? (persona.display_name || persona.name) : (isSynthesis ? 'Ibrahim the Immovable' : identity);
+    header.appendChild(nameEl);
+
+    const tag = document.createElement('div');
+    tag.className = 'feed-entry-round-tag' + (isSynthesis ? ' synthesis' : '');
+    tag.textContent = isSynthesis ? 'synthesis' : 'generating…';
+    header.appendChild(tag);
+
+    div.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'feed-entry-body';
+    if (identity) body.classList.add('persona-font-' + identity);
+    div.appendChild(body);
+
+    return div;
+  }
+
+  function setStatus(msg) {
+    document.getElementById('statusLine').textContent = msg;
+  }
+
+  // ── Round banner ──────────────────────────────────────────────────────────
+  function renderRoundBanner(session) {
+    const banner = document.getElementById('roundBanner');
+    if (!banner) return;
+    const rounds = session.rounds || [];
+    const debaterCount = seats.filter(Boolean).length || 3;
+    const status = session.status || 'deliberating';
+
+    let text = '';
+    let cls = 'deliberating';
+
+    if (status === 'failed') {
+      text = '💀 Session terminated';
+      cls = 'done';
+    } else if (status === 'done') {
+      text = '⚖️ Adjourned — deliberation complete';
+      cls = 'done';
+    } else if (rounds.length === 0) {
+      text = '⏳ Waiting for Round 1: Initial Positions';
+      cls = 'deliberating';
+    } else {
+      // Count non-chairman rounds to determine which round we're in
+      const debateEntries = rounds.filter(r => r.identity !== 'chairman');
+      const synthesisEntries = rounds.filter(r => r.identity === 'chairman');
+      if (synthesisEntries.length > 0) {
+        text = '⚖️ Synthesis — chairman deliberating';
+        cls = 'deliberating';
+      } else {
+        const roundNum = Math.floor((debateEntries.length - 1) / debaterCount) + 1;
+        const roundNames = { 1: 'Initial Positions', 2: 'Rebuttals', 3: 'Final Arguments' };
+        text = `Round ${roundNum}: ${roundNames[roundNum] || 'Deliberating'}`;
+        cls = 'deliberating';
+      }
+    }
+
+    banner.textContent = text;
+    banner.className = 'round-banner visible ' + cls;
+  }
+
+  // ── Debate feed ───────────────────────────────────────────────────────────
+  function renderDebateFeed(session) {
+    const feed = document.getElementById('debateFeed');
+    if (!feed) return;
+    const rounds = session.rounds || [];
+    if (rounds.length === 0) {
+      feed.innerHTML = '<div class="feed-loading"><div class="dot-pulse-inline"><span></span><span></span><span></span></div> Waiting for first response…</div>';
+      feed.classList.add('visible');
+      return;
+    }
+
+    feed.classList.add('visible');
+    // Remove streaming placeholder before full re-render; it will be re-injected by SSE
+    feed.innerHTML = '';
+    streamingPlaceholderIdentity = null;
+    streamingPlaceholderText = '';
+
+    // Build a map of persona info by identity id
+    const personaMap = {};
+    retiredPool.forEach(p => { if (p) personaMap[p.id || p.name] = p; });
+    seats.forEach(p => { if (p) personaMap[p.id] = p; }); // seats override retired entries
+    if (moderatorPersona) personaMap[moderatorPersona.id || moderatorPersona.name] = moderatorPersona; // Ibrahim in synthesis entries
+
+    // Seat order for consistent per-column ordering (chairman excluded from seats)
+    const debaterOrder = seats.filter(Boolean).map(s => s.id || s.name);
+
+    // Helper: detect vote entries (response starts with AGREE or DISAGREE)
+    // Strip trailing punctuation (e.g. "AGREE." or "DISAGREE,") before comparing.
+    function isVoteEntry(entry) {
+      if (!entry.response) return false;
+      const first = entry.response.trim().toUpperCase().split(/[\s\n]/)[0].replace(/[^A-Z]/g, '');
+      return first === 'AGREE' || first === 'DISAGREE';
+    }
+
+    // Assign round numbers by detecting when identities repeat.
+    // First occurrence of each non-chairman identity = round 1, second = round 2, etc.
+    // Vote entries (AGREE/DISAGREE responses) are separated out, not assigned to debate rounds.
+    const identityRoundCount = {};
+    const roundEntriesMap = {}; // roundNum -> [{entry}]
+    const voteEntries = [];
+    const synthesisEntries = [];
+    let debateStarted = false; // tracks whether any debater entry has been seen yet
+
+    rounds.forEach(entry => {
+      if (entry.identity === 'chairman') {
+        // Only include as synthesis if debate has already started, entry doesn't start with
+        // PERSONA: (evolution) or TASK: (task extraction), and has sentence-like prose.
+        // The seat selector appears before any debate and is just newline-separated names.
+        const resp = (entry.response || '').trim();
+        const isEvolution = resp.startsWith('PERSONA:');
+        const isTasks = resp.startsWith('TASK:');
+        const isNone = resp === 'NONE' || resp === '';
+        // Seat selector: all lines are short names with no punctuation; typically no period chars
+        const isSeatSelector = !debateStarted;
+        if (!isEvolution && !isTasks && !isNone && !isSeatSelector) {
+          synthesisEntries.push(entry);
+        }
+        return;
+      }
+      if (isVoteEntry(entry)) {
+        voteEntries.push(entry);
+        return;
+      }
+      // Regular debater entry
+      debateStarted = true;
+      const id = entry.identity;
+      identityRoundCount[id] = (identityRoundCount[id] || 0) + 1;
+      const roundNum = identityRoundCount[id];
+      if (!roundEntriesMap[roundNum]) roundEntriesMap[roundNum] = [];
+      roundEntriesMap[roundNum].push(entry);
+    });
+
+    const roundNames = { 1: 'Round 1 — Initial Positions', 2: 'Round 2 — Rebuttals', 3: 'Round 3 — Final Arguments' };
+
+    // Render debate round columns in order, with entries sorted by seat order.
+    // Any debater in the seated order who has no entry in a round gets a placeholder
+    // so all columns stay the same height and vertical alignment is preserved.
+    Object.keys(roundEntriesMap).map(Number).sort((a, b) => a - b).forEach(roundNum => {
+      const entries = roundEntriesMap[roundNum];
+      // Build a lookup by identity for this round
+      const entryById = {};
+      entries.forEach(e => { entryById[e.identity] = e; });
+
+      const col = document.createElement('div');
+      col.className = 'debate-round-col';
+      col.dataset.roundNum = roundNum;
+      const header = document.createElement('div');
+      header.className = 'debate-round-col-header';
+      header.textContent = roundNames[roundNum] || ('Round ' + roundNum);
+      col.appendChild(header);
+
+      // Iterate in seat order; render placeholder for absent debaters
+      const rendered = new Set();
+      debaterOrder.forEach(id => {
+        if (entryById[id]) {
+          col.appendChild(buildFeedEntry(entryById[id], 'R' + roundNum, personaMap));
+        } else {
+          col.appendChild(buildAbsentEntry(id, personaMap));
+        }
+        rendered.add(id);
+      });
+      // Any entries whose identity wasn't in seats (shouldn't happen, but safety net)
+      entries.forEach(e => {
+        if (!rendered.has(e.identity)) col.appendChild(buildFeedEntry(e, 'R' + roundNum, personaMap));
+      });
+
+      feed.appendChild(col);
+    });
+
+    // Synthesis column
+    if (synthesisEntries.length > 0) {
+      const col = document.createElement('div');
+      col.className = 'debate-round-col synthesis-col';
+      col.dataset.roundNum = 'synthesis';
+      const header = document.createElement('div');
+      header.className = 'debate-round-col-header';
+      header.textContent = 'Synthesis';
+      col.appendChild(header);
+      synthesisEntries.forEach(entry => {
+        col.appendChild(buildFeedEntry(entry, 'synthesis', personaMap));
+      });
+      feed.appendChild(col);
+    }
+
+    // Votes column — from session.vote_summary (structured data) or parsed vote entries
+    const voteSummary = session.vote_summary;
+    const hasVoteSummary = voteSummary && (
+      (voteSummary.agree && voteSummary.agree.length > 0) ||
+      (voteSummary.disagree && voteSummary.disagree.length > 0)
+    );
+    const hasVoteEntries = voteEntries.length > 0;
+
+    if (hasVoteSummary || hasVoteEntries) {
+      const col = document.createElement('div');
+      col.className = 'debate-round-col votes-col';
+      col.dataset.roundNum = 'votes';
+      const header = document.createElement('div');
+      header.className = 'debate-round-col-header';
+      const tally = voteSummary && voteSummary.tally ? voteSummary.tally : '';
+      header.textContent = tally ? ('Votes — ' + tally) : 'Votes';
+      col.appendChild(header);
+
+      if (hasVoteSummary) {
+        // Build per-debater vote map from structured vote_summary
+        const voteMap = {};
+        (voteSummary.agree || []).forEach(name => { voteMap[name] = 'AGREE'; });
+        (voteSummary.disagree || []).forEach(name => { voteMap[name] = 'DISAGREE'; });
+
+        // Render in seat order
+        const orderedDebaters = debaterOrder.length > 0
+          ? debaterOrder
+          : Object.keys(voteMap);
+
+        const renderedVoteKeys = new Set();
+        orderedDebaters.forEach(id => {
+          const p = personaMap[id];
+          const displayName = p ? (p.display_name || p.name) : id;
+          // Match by id or display_name in voteMap
+          const vote = voteMap[id] || voteMap[displayName];
+          if (!vote) return;
+          // Track which voteMap keys were consumed so the safety-net below doesn't re-render them
+          if (voteMap[id]) renderedVoteKeys.add(id);
+          if (voteMap[displayName]) renderedVoteKeys.add(displayName);
+          col.appendChild(buildVoteEntry(id, displayName, vote, null, personaMap));
+        });
+        // Also show any votes for names not in seat order (shouldn't happen, but safety net)
+        Object.entries(voteMap).forEach(([name, vote]) => {
+          if (!renderedVoteKeys.has(name)) {
+            col.appendChild(buildVoteEntry(name, name, vote, null, personaMap));
+          }
+        });
+      } else {
+        // Parse vote entries: response starts with AGREE/DISAGREE, rest is reason
+        // Sort by seat order
+        const sortedVoteEntries = [...voteEntries].sort((a, b) => {
+          const ai = debaterOrder.indexOf(a.identity);
+          const bi = debaterOrder.indexOf(b.identity);
+          return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+        });
+        sortedVoteEntries.forEach(entry => {
+          const lines = (entry.response || '').trim().split('\n');
+          const voteWord = lines[0].trim().toUpperCase().startsWith('AGREE') ? 'AGREE' : 'DISAGREE';
+          const reason = lines.slice(1).join(' ').trim() || null;
+          const p = personaMap[entry.identity];
+          const displayName = p ? (p.display_name || p.name) : entry.identity;
+          col.appendChild(buildVoteEntry(entry.identity, displayName, voteWord, reason, personaMap));
+        });
+      }
+
+      feed.appendChild(col);
+    }
+  }
+
+  function buildAbsentEntry(identityId, personaMap) {
+    const p = personaMap[identityId];
+    const displayName = p ? (p.display_name || p.name) : identityId;
+    const div = document.createElement('div');
+    div.className = 'feed-entry absent-entry';
+    div.style.cssText = 'opacity:0.3;pointer-events:none;';
+    const headerEl = document.createElement('div');
+    headerEl.className = 'feed-entry-header';
+    if (p && p.avatar_url) {
+      const img = document.createElement('img');
+      img.className = 'feed-entry-avatar';
+      img.src = p.avatar_url;
+      img.alt = displayName;
+      headerEl.appendChild(img);
+    }
+    const nameEl = document.createElement('div');
+    nameEl.className = 'feed-entry-name';
+    nameEl.style.color = p && p.color ? p.color : 'var(--text-muted)';
+    nameEl.textContent = displayName;
+    headerEl.appendChild(nameEl);
+    div.appendChild(headerEl);
+    const body = document.createElement('div');
+    body.className = 'feed-entry-body';
+    body.style.cssText = 'font-size:0.7rem;color:var(--text-muted);font-style:italic;';
+    body.textContent = '— absent —';
+    div.appendChild(body);
+    return div;
+  }
+
+  function buildVoteEntry(identityId, displayName, vote, reason, personaMap) {
+    const p = personaMap[identityId] || personaMap[displayName];
+    const div = document.createElement('div');
+    div.className = 'feed-entry votes-entry';
+    if (p && p.color) div.style.setProperty('--fe-color', p.color);
+
+    const headerEl = document.createElement('div');
+    headerEl.className = 'feed-entry-header';
+
+    if (p && p.avatar_url) {
+      const img = document.createElement('img');
+      img.className = 'feed-entry-avatar';
+      img.src = p.avatar_url;
+      img.alt = displayName;
+      headerEl.appendChild(img);
+    } else {
+      const emoji = document.createElement('div');
+      emoji.className = 'feed-entry-emoji';
+      emoji.textContent = p ? (p.emoji || '🤖') : '🤖';
+      headerEl.appendChild(emoji);
+    }
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'feed-entry-name';
+    nameEl.style.color = p && p.color ? p.color : 'var(--text-muted)';
+    nameEl.textContent = displayName;
+    headerEl.appendChild(nameEl);
+
+    const tag = document.createElement('div');
+    tag.className = 'feed-entry-round-tag votes';
+    tag.textContent = 'vote';
+    headerEl.appendChild(tag);
+
+    div.appendChild(headerEl);
+
+    const body = document.createElement('div');
+    body.className = 'feed-entry-body';
+    const badge = document.createElement('span');
+    badge.className = 'vote-badge ' + (vote === 'AGREE' ? 'agree' : 'disagree');
+    badge.textContent = vote === 'AGREE' ? '✅ AGREE' : '❌ DISAGREE';
+    body.appendChild(badge);
+    if (reason) {
+      const reasonEl = document.createElement('p');
+      reasonEl.style.cssText = 'margin-top:6px;font-size:0.72rem;color:var(--text-muted);';
+      reasonEl.textContent = reason;
+      body.appendChild(reasonEl);
+    }
+    div.appendChild(body);
+
+    return div;
+  }
+
+  function buildFeedEntry(entry, roundTag, personaMap) {
+    const p = personaMap[entry.identity];
+    const isSynthesis = entry.identity === 'chairman';
+    const div = document.createElement('div');
+    div.className = 'feed-entry' + (isSynthesis ? ' synthesis-entry' : '');
+
+    const headerColor = p && p.color ? p.color : (isSynthesis ? 'var(--teal)' : 'var(--text-muted)');
+    // Set persona color as left border accent via CSS variable
+    if (p && p.color) {
+      div.style.setProperty('--fe-color', p.color);
+    } else if (isSynthesis) {
+      div.style.setProperty('--fe-color', 'var(--teal)');
+    }
+
+    const header = document.createElement('div');
+    header.className = 'feed-entry-header';
+
+    if (p && p.avatar_url) {
+      const img = document.createElement('img');
+      img.className = 'feed-entry-avatar';
+      img.src = p.avatar_url;
+      img.alt = p.display_name || p.name;
+      header.appendChild(img);
+    } else {
+      const emoji = document.createElement('div');
+      emoji.className = 'feed-entry-emoji';
+      emoji.textContent = p ? (p.emoji || '🤖') : (isSynthesis ? '⚖️' : '🤖');
+      header.appendChild(emoji);
+    }
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'feed-entry-name';
+    nameEl.style.color = headerColor;
+    nameEl.textContent = p ? (p.display_name || p.name) : (isSynthesis ? 'Ibrahim the Immovable' : entry.identity);
+    if (p && p.title) {
+      const titleBadge = document.createElement('span');
+      titleBadge.style.cssText = 'font-size:0.5rem;color:var(--text-muted);margin-left:4px;text-transform:uppercase;letter-spacing:0.05em;';
+      titleBadge.textContent = p.title;
+      nameEl.appendChild(titleBadge);
+    }
+    header.appendChild(nameEl);
+
+    // Model badge in feed header
+    const modelFull2 = p ? (p.model || 'claude') : (isSynthesis ? 'claude' : '');
+    const modelLabel = modelFull2 ? shortenModel(modelFull2) : '';
+    if (modelLabel) {
+      const modelBadge = document.createElement('div');
+      modelBadge.className = 'feed-entry-model-badge';
+      modelBadge.textContent = modelLabel;
+      modelBadge.title = modelFull2;
+      header.appendChild(modelBadge);
+    }
+
+    const tag = document.createElement('div');
+    tag.className = 'feed-entry-round-tag' + (isSynthesis ? ' synthesis' : '');
+    tag.textContent = isSynthesis ? 'synthesis' : roundTag;
+    header.appendChild(tag);
+
+    div.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'feed-entry-body';
+    if (entry.identity) body.classList.add('persona-font-' + entry.identity);
+    body.innerHTML = renderMarkdown(entry.response);
+    div.appendChild(body);
+
+    return div;
+  }
+
+  // ── Trial session rendering ──────────────────────────────────────────────
+  function renderTrialSession(session) {
+    const arena = document.getElementById('arena');
+    const feed = document.getElementById('debateFeed');
+    const roundBanner = document.getElementById('roundBanner');
+    const deliberatingPanel = document.getElementById('deliberatingPanel');
+    const verdictCard = document.getElementById('verdictCard');
+
+    // Hide congress-specific elements
+    if (arena) arena.style.display = 'none';
+    if (deliberatingPanel) deliberatingPanel.classList.remove('visible');
+    if (verdictCard) verdictCard.classList.remove('visible');
+
+    // Update page header for trial
+    const pageH1 = document.querySelector('.page-header h1');
+    if (pageH1) {
+      const badge = document.getElementById('sessionBadge');
+      pageH1.textContent = 'trial';
+      if (badge) pageH1.appendChild(badge);
+    }
+    const subtitle = document.querySelector('.page-header .subtitle');
+    if (subtitle) subtitle.textContent = 'AI tribunal \u2014 Justice Antonin Scalia presiding';
+
+    // Update center label to show Scalia instead of Ibrahim
+    const modName = document.querySelector('.center-label .mod-name');
+    const modRole = document.querySelector('.center-label .mod-role');
+    if (modName) modName.textContent = 'Justice Scalia';
+    if (modRole) modRole.textContent = 'presiding';
+
+    // Show topic display with charges
+    const topicDisplay = document.getElementById('topicDisplay');
+    const topicLabel = topicDisplay ? topicDisplay.querySelector('.topic-display-label') : null;
+    const topicText = document.getElementById('topicDisplayText');
+    if (topicDisplay && topicLabel && topicText) {
+      topicLabel.textContent = 'Charges';
+      topicText.textContent = session.charges || '(no charges specified)';
+      fullTopicText = session.charges || '';
+      topicDisplay.classList.add('visible');
+    }
+
+    // Trial header with defendant info
+    const trialHeader = document.createElement('div');
+    trialHeader.className = 'trial-header';
+    const titleEl = document.createElement('div');
+    titleEl.className = 'trial-header-title';
+    titleEl.textContent = '\u2696\uFE0F The People v. ' + (session.defendant_display || session.defendant || 'Unknown');
+    trialHeader.appendChild(titleEl);
+
+    const defendantEl = document.createElement('div');
+    defendantEl.className = 'trial-header-defendant';
+    defendantEl.textContent = 'Defendant: ' + (session.defendant_display || session.defendant || 'Unknown');
+    trialHeader.appendChild(defendantEl);
+
+    if (session.charges) {
+      const chargesEl = document.createElement('div');
+      chargesEl.className = 'trial-header-charges';
+      chargesEl.innerHTML = '<strong>Charges:</strong> ' + escHtml(session.charges);
+      trialHeader.appendChild(chargesEl);
+    }
+
+    // Show the trial header before the feed
+    const arenaCol = document.querySelector('.arena-col');
+    if (arenaCol && topicDisplay) {
+      topicDisplay.insertAdjacentElement('afterend', trialHeader);
+    }
+
+    // Round banner for trial
+    if (roundBanner) {
+      const verdict = (session.verdict || '').toUpperCase();
+      if (verdict && verdict !== 'NO VERDICT' && verdict !== 'PENDING') {
+        roundBanner.textContent = '\u2696\uFE0F Trial concluded \u2014 ' + verdict;
+        roundBanner.className = 'round-banner visible done';
+      } else {
+        roundBanner.textContent = '\u2696\uFE0F Trial in progress';
+        roundBanner.className = 'round-banner visible deliberating';
+      }
+    }
+
+    // Build the debate feed with trial phases
+    if (!feed) return;
+    feed.classList.add('visible');
+    feed.innerHTML = '';
+
+    // Phase 1: Prosecution speeches
+    if (session.prosecution_speeches && session.prosecution_speeches.length > 0) {
+      const col = document.createElement('div');
+      col.className = 'trial-phase-col';
+      const header = document.createElement('div');
+      header.className = 'trial-phase-header';
+      header.textContent = 'Phase 1 \u2014 Prosecution';
+      col.appendChild(header);
+
+      session.prosecution_speeches.forEach(speech => {
+        const entry = document.createElement('div');
+        entry.className = 'feed-entry';
+        entry.style.setProperty('--fe-color', '#e94560');
+
+        const headerEl = document.createElement('div');
+        headerEl.className = 'feed-entry-header';
+        const nameEl = document.createElement('div');
+        nameEl.className = 'feed-entry-name';
+        nameEl.style.color = '#e94560';
+        nameEl.textContent = speech.speaker || 'Prosecutor';
+        const tag = document.createElement('div');
+        tag.className = 'feed-entry-round-tag';
+        tag.style.cssText = 'color:#e94560;border-color:#e94560;';
+        tag.textContent = speech.role || 'prosecutor';
+        headerEl.appendChild(nameEl);
+        headerEl.appendChild(tag);
+        entry.appendChild(headerEl);
+
+        const body = document.createElement('div');
+        body.className = 'feed-entry-body';
+        body.innerHTML = renderMarkdown(speech.text || '');
+        entry.appendChild(body);
+        col.appendChild(entry);
+      });
+      feed.appendChild(col);
+    }
+
+    // Phase 2: Defense speech
+    if (session.defense_speech) {
+      const col = document.createElement('div');
+      col.className = 'trial-phase-col';
+      const header = document.createElement('div');
+      header.className = 'trial-phase-header defense';
+      header.textContent = 'Phase 2 \u2014 Defense';
+      col.appendChild(header);
+
+      const entry = document.createElement('div');
+      entry.className = 'feed-entry';
+      entry.style.setProperty('--fe-color', '#60a5fa');
+      const headerEl = document.createElement('div');
+      headerEl.className = 'feed-entry-header';
+      const nameEl = document.createElement('div');
+      nameEl.className = 'feed-entry-name';
+      nameEl.style.color = '#60a5fa';
+      nameEl.textContent = session.defendant_display || session.defendant || 'Defendant';
+      const tag = document.createElement('div');
+      tag.className = 'feed-entry-round-tag';
+      tag.style.cssText = 'color:#60a5fa;border-color:#60a5fa;';
+      tag.textContent = 'defense';
+      headerEl.appendChild(nameEl);
+      headerEl.appendChild(tag);
+      entry.appendChild(headerEl);
+
+      const body = document.createElement('div');
+      body.className = 'feed-entry-body';
+      body.innerHTML = renderMarkdown(session.defense_speech);
+      entry.appendChild(body);
+      col.appendChild(entry);
+      feed.appendChild(col);
+    }
+
+    // Phase 3: Cross-examination
+    if (session.cross_examination && session.cross_examination.length > 0) {
+      const col = document.createElement('div');
+      col.className = 'trial-phase-col';
+      const header = document.createElement('div');
+      header.className = 'trial-phase-header cross';
+      header.textContent = 'Phase 3 \u2014 Cross-Examination';
+      col.appendChild(header);
+
+      session.cross_examination.forEach(cx => {
+        const entry = document.createElement('div');
+        entry.className = 'trial-cross-entry';
+
+        const meta = document.createElement('div');
+        meta.className = 'trial-cross-meta';
+        meta.textContent = (cx.questioner || '?') + ' \u2192 ' + (cx.respondent || '?');
+        entry.appendChild(meta);
+
+        const question = document.createElement('div');
+        question.className = 'trial-cross-question';
+        question.textContent = cx.question || '';
+        entry.appendChild(question);
+
+        const response = document.createElement('div');
+        response.className = 'trial-cross-response';
+        response.innerHTML = renderMarkdown(cx.response || '');
+        entry.appendChild(response);
+
+        col.appendChild(entry);
+      });
+      feed.appendChild(col);
+    }
+
+    // Phase 4: Witness speech (character witness / advocate)
+    if (session.witness_speech) {
+      const col = document.createElement('div');
+      col.className = 'trial-phase-col';
+      const header = document.createElement('div');
+      header.className = 'trial-phase-header witness';
+      header.textContent = 'Phase 4 \u2014 Character Witness';
+      col.appendChild(header);
+
+      const entry = document.createElement('div');
+      entry.className = 'feed-entry';
+      entry.style.setProperty('--fe-color', '#a78bfa');
+      const headerEl = document.createElement('div');
+      headerEl.className = 'feed-entry-header';
+      const nameEl = document.createElement('div');
+      nameEl.className = 'feed-entry-name';
+      nameEl.style.color = '#a78bfa';
+      const advocateName = session.advocate ? (session.advocate.display_name || session.advocate.name || 'Advocate') : 'Character Witness';
+      nameEl.textContent = advocateName;
+      const tag = document.createElement('div');
+      tag.className = 'feed-entry-round-tag';
+      tag.style.cssText = 'color:#a78bfa;border-color:#a78bfa;';
+      tag.textContent = 'witness';
+      headerEl.appendChild(nameEl);
+      headerEl.appendChild(tag);
+      entry.appendChild(headerEl);
+
+      const body = document.createElement('div');
+      body.className = 'feed-entry-body';
+      body.innerHTML = renderMarkdown(session.witness_speech);
+      entry.appendChild(body);
+      col.appendChild(entry);
+      feed.appendChild(col);
+    }
+
+    // Phase 5: Jury votes
+    if (session.jury_votes && session.jury_votes.length > 0) {
+      const col = document.createElement('div');
+      col.className = 'trial-phase-col';
+      const header = document.createElement('div');
+      header.className = 'trial-phase-header jury';
+      header.textContent = 'Phase 5 \u2014 Jury Deliberation';
+      col.appendChild(header);
+
+      session.jury_votes.forEach(jv => {
+        const entry = document.createElement('div');
+        entry.className = 'trial-jury-vote';
+
+        const voteHeader = document.createElement('div');
+        voteHeader.className = 'trial-jury-vote-header';
+        const nameEl = document.createElement('div');
+        nameEl.className = 'trial-jury-vote-name';
+        nameEl.textContent = jv.juror || 'Juror';
+        voteHeader.appendChild(nameEl);
+
+        const vote = (jv.vote || '').toUpperCase();
+        const badge = document.createElement('span');
+        const badgeClass = (vote === 'RETIRE' || vote === 'FIRE') ? 'retire' : vote === 'EVOLVE' ? 'evolve' : vote === 'ACQUIT' ? 'acquit' : 'mistrial';
+        badge.className = 'trial-jury-vote-badge ' + badgeClass;
+        badge.textContent = vote || '?';
+        voteHeader.appendChild(badge);
+        entry.appendChild(voteHeader);
+
+        if (jv.reasoning) {
+          const reasoning = document.createElement('div');
+          reasoning.className = 'trial-jury-vote-reasoning';
+          reasoning.innerHTML = renderMarkdown(jv.reasoning);
+          entry.appendChild(reasoning);
+        }
+        col.appendChild(entry);
+      });
+      feed.appendChild(col);
+    }
+
+    // Phase 6: Verdict by Scalia
+    if (session.verdict_text) {
+      const verdictEl = document.createElement('div');
+      verdictEl.className = 'trial-verdict-card';
+
+      const heading = document.createElement('div');
+      heading.className = 'trial-verdict-heading';
+      heading.textContent = '\u2696\uFE0F Justice Antonin Scalia \u2014 Verdict';
+      verdictEl.appendChild(heading);
+
+      const verdict = (session.verdict || '').toUpperCase();
+      const outcome = document.createElement('div');
+      const outcomeClass = (verdict === 'RETIRE' || verdict === 'FIRE' || verdict === 'GUILTY') ? 'retire'
+        : verdict === 'ACQUIT' || verdict === 'NOT GUILTY' ? 'acquit'
+        : verdict === 'EVOLVE' ? 'evolve'
+        : 'mistrial';
+      outcome.className = 'trial-verdict-outcome ' + outcomeClass;
+      outcome.textContent = verdict || 'PENDING';
+      verdictEl.appendChild(outcome);
+
+      const text = document.createElement('div');
+      text.className = 'trial-verdict-text';
+      text.innerHTML = renderMarkdown(session.verdict_text);
+      verdictEl.appendChild(text);
+
+      // Insert after the feed
+      feed.insertAdjacentElement('afterend', verdictEl);
+    }
+
+    // Status line
+    const statusLine = document.getElementById('statusLine');
+    if (statusLine) {
+      statusLine.innerHTML = '';
+      const dot = document.createElement('span');
+      const verdict = (session.verdict || '').toUpperCase();
+      const isDone = verdict && verdict !== 'NO VERDICT' && verdict !== 'PENDING';
+      dot.className = 'status-dot' + (isDone ? ' complete' : '');
+      statusLine.appendChild(dot);
+      statusLine.appendChild(document.createTextNode(session.session_id + ' \u2014 ' + (isDone ? verdict.toLowerCase() : 'in progress')));
+    }
+  }
+
+  // ── Verdict card ──────────────────────────────────────────────────────────
+  function renderVerdictCard(session) {
+    const card = document.getElementById('verdictCard');
+    if (!card) return;
+    const textEl = document.getElementById('verdictCardText');
+    const evoEl = document.getElementById('verdictEvolution');
+    const metaEl = document.getElementById('verdictMeta');
+    const linkEl = document.getElementById('verdictSessionLink');
+
+    // Update heading for failed sessions
+    const headingEl = card.querySelector('.verdict-card-heading');
+    if (headingEl && session.status === 'failed') {
+      headingEl.textContent = '💀 Session Terminated';
+      headingEl.style.color = 'var(--danger, #f87171)';
+    }
+
+    textEl.innerHTML = renderMarkdown(session.verdict);
+    card.classList.add('visible');
+
+    // Evolution results — data shape: {created:[], evolved:[{display_name,learned}], retired:[{display_name,reason}], retained:["Name"]}
+    const evo = session.evolution;
+    const hasEvo = evo && typeof evo === 'object' && (
+      (evo.evolved && evo.evolved.length > 0) ||
+      (evo.retired && evo.retired.length > 0) ||
+      (evo.fired && evo.fired.length > 0) ||  // legacy compat
+      (evo.created && evo.created.length > 0) ||
+      (evo.retained && evo.retained.length > 0)
+    );
+
+    if (hasEvo) {
+      evoEl.style.display = '';
+      evoEl.innerHTML = '';
+
+      const label = document.createElement('div');
+      label.className = 'verdict-evolution-label';
+      label.textContent = 'Persona evolution';
+      evoEl.appendChild(label);
+
+      function addItem(emoji, badgeClass, nameText, reasonText, isRetain) {
+        const item = document.createElement('div');
+        item.className = 'verdict-evolution-item' + (isRetain ? ' retain-item' : '');
+        const badge = document.createElement('span');
+        badge.className = 'evo-badge ' + badgeClass;
+        badge.textContent = badgeClass;
+        item.appendChild(badge);
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = emoji + ' ' + nameText;
+        item.appendChild(nameSpan);
+        if (reasonText) {
+          const reason = document.createElement('span');
+          reason.className = 'evo-reason';
+          reason.textContent = '— ' + reasonText;
+          item.appendChild(reason);
+        }
+        evoEl.appendChild(item);
+      }
+
+      // EVOLVE entries
+      (evo.evolved || []).forEach(e => {
+        addItem('🧬', 'EVOLVE', e.display_name || e.name || '?', e.learned || '', false);
+      });
+      // RETIRED entries (read "retired" key, fall back to legacy "fired")
+      (evo.retired || evo.fired || []).forEach(e => {
+        const name = typeof e === 'string' ? e : (e.display_name || e.name || '?');
+        const reason = typeof e === 'object' ? (e.reason || '') : '';
+        addItem('🔥', 'RETIRED', name, reason, false);
+      });
+      // CREATE entries
+      (evo.created || []).forEach(e => {
+        const name = typeof e === 'string' ? e : (e.new_slug || e.name || '?');
+        const reason = typeof e === 'object' ? (e.reason || '') : '';
+        addItem('⭐', 'CREATE', name, reason, false);
+      });
+      // RETAIN entries (greyed out)
+      (evo.retained || []).forEach(e => {
+        const name = typeof e === 'string' ? e : (e.display_name || e.name || '?');
+        addItem('✓', 'RETAIN', name, '', true);
+      });
+    } else {
+      evoEl.style.display = 'none';
+    }
+
+    // Actionable Tasks section
+    const tasksEl = document.getElementById('verdictTasks');
+    if (tasksEl) {
+      const taskTitles = session.task_titles;
+      if (taskTitles && Array.isArray(taskTitles) && taskTitles.length > 0) {
+        tasksEl.style.display = '';
+        tasksEl.innerHTML = '';
+        const label = document.createElement('div');
+        label.className = 'verdict-tasks-label';
+        label.textContent = '\u2500\u2500 \uD83D\uDCCB Actionable Tasks \u2500\u2500';
+        tasksEl.appendChild(label);
+        taskTitles.forEach(title => {
+          const item = document.createElement('div');
+          item.className = 'verdict-task-item';
+          item.textContent = '\u2610 ' + title;
+          tasksEl.appendChild(item);
+        });
+      } else {
+        tasksEl.style.display = 'none';
+      }
+    }
+
+    // Session ended timestamp — shown prominently above the meta row when status is done
+    // (headingEl already declared above)
+    const existingEndedTag = card.querySelector('.verdict-ended-at');
+    if (existingEndedTag) existingEndedTag.remove();
+    const endedTs = session.finished_at || session.updated_at;
+    if (endedTs && headingEl) {
+      const d = new Date(endedTs);
+      const tag = document.createElement('span');
+      tag.className = 'verdict-ended-at';
+      tag.style.cssText = 'font-size:0.75rem;font-weight:400;color:var(--text-muted);margin-left:auto;opacity:0.75;';
+      tag.textContent = 'ended ' + d.toLocaleDateString(undefined, {year:'numeric', month:'short', day:'numeric'})
+        + ' ' + d.toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'});
+      headingEl.appendChild(tag);
+    }
+
+    // Session metadata
+    if (metaEl) {
+      metaEl.style.display = '';
+      metaEl.innerHTML = '';
+      const addMeta = (text) => {
+        const s = document.createElement('span');
+        s.textContent = text;
+        metaEl.appendChild(s);
+      };
+      if (session.session_number != null) addMeta('Session #' + session.session_number);
+      if (session.finished_at) {
+        const d = new Date(session.finished_at);
+        addMeta(d.toLocaleDateString(undefined, {year:'numeric', month:'short', day:'numeric'}));
+      } else if (session.started_at) {
+        const d = new Date(session.started_at);
+        addMeta(d.toLocaleDateString(undefined, {year:'numeric', month:'short', day:'numeric'}));
+      }
+      if (session.thread_id) {
+        const s = document.createElement('span');
+        s.innerHTML = '<a href="https://discord.com/channels/1485343472952148007/' + session.thread_id + '" target="_blank" rel="noopener" style="color:var(--teal);text-decoration:none;">Discord thread ↗</a>';
+        metaEl.appendChild(s);
+      }
+    }
+
+    // Session link (legacy — hide if meta is shown)
+    linkEl.style.display = 'none';
+  }
+
+  // ── Topic modal ─────────────────────────────────────────────────────────────
+  let fullTopicText = '';
+
+  function openTopicModal() {
+    if (!fullTopicText) return;
+    document.getElementById('topicModalText').textContent = fullTopicText;
+    document.getElementById('topicModal').classList.add('open');
+  }
+
+  function closeTopicModal() {
+    document.getElementById('topicModal').classList.remove('open');
+  }
+
+  document.getElementById('topicModalClose').addEventListener('click', closeTopicModal);
+  document.getElementById('topicModal').addEventListener('click', function (e) {
+    if (e.target === this) closeTopicModal();
+  });
+
+  // Re-render circle when window resizes (positions are layout-dependent)
+  window.addEventListener('resize', () => renderCircle());
+
+  // ── Music bar (bottom of page, visible only when music is playing) ──────────
+  let musicPlaying = false;
+  let musicMuted = (localStorage.getItem('congressMusicMuted') === 'true');
+
+  const musicBar = document.getElementById('musicBar');
+  const musicMuteBtn = document.getElementById('musicMuteBtn');
+
+  function updateMuteBtnLabel() {
+    if (musicMuteBtn) musicMuteBtn.textContent = musicMuted ? 'unmute' : 'mute';
+  }
+
+  function applyMusicMute() {
+    // If muted: remove iframe (silence), if unmuted and playing: restore it
+    const wrap = document.getElementById('soundtrackWrap');
+    if (!wrap) return;
+    if (musicMuted) {
+      const old = document.getElementById('soundtrackFrame');
+      if (old) old.remove();
+    } else if (musicPlaying && !document.getElementById('soundtrackFrame')) {
+      const iframe = document.createElement('iframe');
+      iframe.id = 'soundtrackFrame';
+      iframe.className = 'soundtrackFrame';
+      iframe.src = SOUNDTRACK_URL + '?autoplay=1&loop=1&playlist=h6N1_GJAyFw&rel=0';
+      iframe.allow = 'autoplay; encrypted-media';
+      iframe.allowFullscreen = true;
+      wrap.appendChild(iframe);
+    }
+  }
+
+  if (musicMuteBtn) {
+    musicMuteBtn.addEventListener('click', function () {
+      musicMuted = !musicMuted;
+      localStorage.setItem('congressMusicMuted', musicMuted ? 'true' : 'false');
+      updateMuteBtnLabel();
+      applyMusicMute();
+    });
+  }
+
+  if (musicMuteBtn) updateMuteBtnLabel();
+
+  // Patch setCenterDeliberating to also control the music bar
+  const _origSetCenterDeliberating = setCenterDeliberating;
+  setCenterDeliberating = function (active) {
+    musicPlaying = active;
+    if (musicBar) {
+      if (active) {
+        musicBar.classList.add('visible');
+      } else {
+        musicBar.classList.remove('visible');
+      }
+    }
+    // Delegate iframe management, but if muted skip iframe injection
+    if (musicMuted && active) {
+      // Just update center label state without touching the iframe
+      const cl = document.getElementById('centerLabel');
+      if (cl) cl.classList.add('deliberating-active');
+      const wrap = document.getElementById('soundtrackWrap');
+      if (wrap) wrap.classList.add('visible');
+      // Don't inject iframe — we're muted
+    } else if (musicMuted && !active) {
+      const cl = document.getElementById('centerLabel');
+      if (cl) cl.classList.remove('deliberating-active');
+      const wrap = document.getElementById('soundtrackWrap');
+      if (wrap) wrap.classList.remove('visible');
+      const old = document.getElementById('soundtrackFrame');
+      if (old) old.remove();
+    } else {
+      _origSetCenterDeliberating(active);
+    }
+  };
+
+  // ── Tab switching ───────────────────────────────────────────────────────────
+  window.switchTab = function(tab) {
+    const sessionsView = document.getElementById('sessionsView');
+    const personasTab = document.getElementById('personasTab');
+    const matrixTab = document.getElementById('matrixTab');
+    const tabSessions = document.getElementById('tabSessions');
+    const tabPersonas = document.getElementById('tabPersonas');
+    const tabMatrix = document.getElementById('tabMatrix');
+
+    // Hide all
+    sessionsView.style.display = 'none';
+    personasTab.classList.remove('visible');
+    matrixTab.classList.remove('visible');
+    tabSessions.classList.remove('active');
+    tabPersonas.classList.remove('active');
+    tabMatrix.classList.remove('active');
+
+    if (tab === 'personas') {
+      personasTab.classList.add('visible');
+      tabPersonas.classList.add('active');
+      loadPersonasTable();
+    } else if (tab === 'matrix') {
+      matrixTab.classList.add('visible');
+      tabMatrix.classList.add('active');
+      loadMatrixTab();
+    } else {
+      sessionsView.style.display = 'contents';
+      tabSessions.classList.add('active');
+    }
+  };
+
+  // ── Matrix tab logic ───────────────────────────────────────────────────────
+  let _matrixLoaded = false;
+
+  function loadMatrixTab() {
+    if (_matrixLoaded) return;
+    _matrixLoaded = true;
+    var tooltip = document.getElementById('matrixTooltip');
+
+    function cellSymbol(cell) {
+      if (!cell) return '';
+      if (cell.vote === 'agree') return '\u2713';
+      if (cell.vote === 'disagree') return '\u2717';
+      if (cell.participated) return '\u2022';
+      return '';
+    }
+    function cellClass(cell) {
+      if (!cell) return '';
+      var classes = [];
+      // vote color
+      if (cell.vote === 'agree') classes.push('cell-agree');
+      else if (cell.vote === 'disagree') classes.push('cell-disagree');
+      else if (cell.participated) classes.push('cell-participated');
+      // evolution background
+      if (cell.evolution === 'evolved') classes.push('cell-evo-evolved');
+      else if (cell.evolution === 'retired' || cell.evolution === 'fired') classes.push('cell-evo-retired');
+      else if (cell.evolution === 'created') classes.push('cell-evo-created');
+      return classes.join(' ');
+    }
+    function escHtml(s) {
+      var d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+    function tooltipContent(cell, session, persona) {
+      if (!cell) return '';
+      var typeLabel = '';
+      var sf = (session.flavor || session.mode || '').toLowerCase();
+      var ss = (session.status || '').toLowerCase();
+      if (sf === 'meme') typeLabel = ' <span style="color:#c084fc;">[meme]</span>';
+      else if (sf === 'trial') typeLabel = ' <span style="color:#fbbf24;">[trial]</span>';
+      if (ss === 'failed' || ss === 'cancelled' || ss === 'stalled') typeLabel += ' <span style="color:#f87171;">[' + ss + ']</span>';
+      var sidMatch = (session.session_id || '').match(/^(congress|trial|session)-(\d+)$/);
+      var isTrial = sf === 'trial';
+      var displayNum = isTrial ? (sidMatch ? parseInt(sidMatch[2], 10) : '') : (session.session_number || '');
+      var prefix = isTrial ? 'Trial T' : 'Congress #';
+      var html = '<span class="tt-session">' + prefix + displayNum + typeLabel + '</span>';
+      var topicStr = session.topic || '';
+      html += '<span class="tt-topic">' + escHtml(topicStr.length > 120 ? topicStr.slice(0,120) + '...' : topicStr) + '</span>';
+      html += '<span class="tt-vote"><b>' + escHtml(persona.display_name) + '</b>';
+      var parts = [];
+      if (cell.participated) parts.push('participated');
+      if (cell.vote) parts.push('voted ' + cell.vote);
+      if (cell.evolution && cell.evolution !== 'retained') parts.push(cell.evolution);
+      if (cell.evolution === 'retained') parts.push('reviewed, retained');
+      html += ' &mdash; ' + parts.join(', ') + '</span>';
+      if (cell.evolutionDetail) {
+        html += '<span class="tt-detail">' + escHtml(cell.evolutionDetail) + '</span>';
+      }
+      return html;
+    }
+
+    fetch('/api/congress/matrix')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        document.getElementById('matrixLoading').style.display = 'none';
+        document.getElementById('matrixWrap').style.display = 'block';
+        buildMatrix(data);
+      })
+      .catch(function(err) {
+        document.getElementById('matrixLoading').innerHTML = 'Failed to load matrix data: ' + err.message;
+      });
+
+    function buildMatrix(data) {
+      var sessions = data.sessions;
+      var personas = data.personas;
+      var cells = data.cells;
+      var table = document.getElementById('matrixTable');
+      var statsLeftBase = 180;
+
+      var thead = document.createElement('thead');
+      var headerRow = document.createElement('tr');
+      var thPersona = document.createElement('th');
+      thPersona.className = 'persona-header';
+      thPersona.textContent = 'persona';
+      headerRow.appendChild(thPersona);
+
+      var statLabels = ['#', 'E', 'R'];
+      var statTitles = ['total sessions', 'times evolved', 'times retired'];
+      for (var si = 0; si < statLabels.length; si++) {
+        var thStat = document.createElement('th');
+        thStat.className = 'stats-header' + (si === statLabels.length - 1 ? ' stats-last' : '');
+        thStat.textContent = statLabels[si];
+        thStat.title = statTitles[si];
+        thStat.style.left = (statsLeftBase + si * 40) + 'px';
+        headerRow.appendChild(thStat);
+      }
+      function colClass(session) {
+        var cls = '';
+        var st = (session.status || '').toLowerCase();
+        var fl = (session.flavor || '').toLowerCase();
+        if (st === 'failed' || st === 'cancelled' || st === 'stalled' || st === 'aborted') cls = 'col-failed';
+        else if (fl === 'meme' || (session.mode || '').toLowerCase() === 'meme') cls = 'col-meme';
+        else if (fl === 'trial' || (session.mode || '').toLowerCase() === 'trial') cls = 'col-trial';
+        return cls;
+      }
+      for (var i = 0; i < sessions.length; i++) {
+        var th = document.createElement('th');
+        var cc = colClass(sessions[i]);
+        if (cc) th.className = cc;
+        var a = document.createElement('a');
+        a.href = '/congress?session=' + sessions[i].session_id;
+        var sidMatch = sessions[i].session_id.match(/^(congress|trial|session)-(\d+)$/);
+        var displayLabel = sidMatch ? (sidMatch[1] === 'trial' ? 'T' + parseInt(sidMatch[2],10) : sessions[i].session_number) : sessions[i].session_number;
+        a.textContent = displayLabel;
+        var topicForTitle = sessions[i].topic || '';
+        a.title = topicForTitle.length > 80 ? topicForTitle.slice(0,80) + '...' : topicForTitle;
+        th.appendChild(a);
+        headerRow.appendChild(th);
+      }
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+
+      var tbody = document.createElement('tbody');
+
+      var summaryRow = document.createElement('tr');
+      summaryRow.className = 'summary-row';
+      var summTd = document.createElement('td');
+      summTd.className = 'persona-cell';
+      summTd.textContent = 'participants';
+      summTd.style.fontStyle = 'italic';
+      summTd.style.fontSize = '10px';
+      summaryRow.appendChild(summTd);
+      for (var si2 = 0; si2 < 3; si2++) {
+        var sTd = document.createElement('td');
+        sTd.className = 'stats-cell' + (si2 === 2 ? ' stats-last' : '');
+        sTd.style.left = (statsLeftBase + si2 * 40) + 'px';
+        summaryRow.appendChild(sTd);
+      }
+      for (var j = 0; j < sessions.length; j++) {
+        var td = document.createElement('td');
+        var cc2 = colClass(sessions[j]);
+        td.className = 'data-cell' + (cc2 ? ' ' + cc2 : '');
+        td.textContent = sessions[j].participant_count;
+        td.style.fontSize = '9px';
+        td.style.color = 'var(--text-muted)';
+        summaryRow.appendChild(td);
+      }
+      tbody.appendChild(summaryRow);
+
+      for (var p = 0; p < personas.length; p++) {
+        var persona = personas[p];
+        var personaCells = cells[persona.id] || {};
+        var row = document.createElement('tr');
+        var nameTd = document.createElement('td');
+        nameTd.className = 'persona-cell';
+        nameTd.textContent = persona.display_name;
+        nameTd.title = persona.display_name;
+        row.appendChild(nameTd);
+        var statsVals = [persona.total_sessions, persona.times_evolved, persona.times_retired];
+        for (var si3 = 0; si3 < statsVals.length; si3++) {
+          var statTd = document.createElement('td');
+          statTd.className = 'stats-cell' + (si3 === statsVals.length - 1 ? ' stats-last' : '');
+          statTd.style.left = (statsLeftBase + si3 * 40) + 'px';
+          statTd.textContent = statsVals[si3] || '';
+          if (si3 === 1 && statsVals[si3] > 0) statTd.style.color = 'var(--gold, #f59e0b)';
+          if (si3 === 2 && statsVals[si3] > 0) statTd.style.color = '#e94560';
+          row.appendChild(statTd);
+        }
+        for (var s = 0; s < sessions.length; s++) {
+          var cell = personaCells[sessions[s].session_id];
+          var dataTd = document.createElement('td');
+          var cc3 = colClass(sessions[s]);
+          dataTd.className = 'data-cell ' + cellClass(cell) + (cc3 ? ' ' + cc3 : '');
+          dataTd.textContent = cellSymbol(cell);
+          if (cell) {
+            dataTd.dataset.pid = persona.id;
+            dataTd.dataset.sid = sessions[s].session_id;
+          }
+          row.appendChild(dataTd);
+        }
+        tbody.appendChild(row);
+      }
+      table.appendChild(tbody);
+
+      table.addEventListener('mouseover', function(e) {
+        var td = e.target.closest('td.data-cell');
+        if (!td || !td.dataset.pid) { tooltip.className = 'matrix-tooltip'; return; }
+        var pid = td.dataset.pid;
+        var sidKey = td.dataset.sid;
+        var persona = personas.find(function(pp) { return pp.id === pid; });
+        var session = sessions.find(function(ss) { return ss.session_id === sidKey; });
+        var cell = cells[pid] ? cells[pid][sidKey] : null;
+        if (!cell || !session || !persona) { tooltip.className = 'matrix-tooltip'; return; }
+        tooltip.innerHTML = tooltipContent(cell, session, persona);
+        tooltip.className = 'matrix-tooltip visible';
+        var rect = td.getBoundingClientRect();
+        var ttWidth = 340;
+        var left = rect.right + 8;
+        if (left + ttWidth > window.innerWidth) left = rect.left - ttWidth - 8;
+        var top = rect.top;
+        if (top + 120 > window.innerHeight) top = window.innerHeight - 130;
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+      });
+      table.addEventListener('mouseout', function(e) {
+        if (!e.target.closest('td.data-cell')) tooltip.className = 'matrix-tooltip';
+      });
+    }
+  }
+
+  // ── Personas tab logic ──────────────────────────────────────────────────────
+  let _personaEditName = null;  // null = create mode, string = edit mode
+
+  async function loadPersonasTable() {
+    const wrap = document.getElementById('personasTableWrap');
+    wrap.innerHTML = '<div style="font-size:0.72rem;color:var(--text-muted);opacity:0.6;">Loading…</div>';
+    try {
+      const res = await fetch('/api/agents');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      // Combine all personas: eligible, meme, moderator — sort in that order
+      const eligible = (data.eligible || []).map(p => ({ ...p, status: 'eligible' }));
+      const meme = (data.meme || []).map(p => ({ ...p, status: 'meme' }));
+      const moderator = data.moderator ? [{ ...data.moderator, status: 'moderator' }] : [];
+      const personas = [...eligible, ...meme, ...moderator];
+      renderPersonasTable(personas, wrap);
+    } catch (e) {
+      wrap.innerHTML = '<div style="font-size:0.72rem;color:var(--accent);">Could not load personas: ' + e.message + '</div>';
+    }
+  }
+
+  function renderPersonasTable(personas, wrap) {
+    if (personas.length === 0) {
+      wrap.innerHTML = '<div style="font-size:0.72rem;color:var(--text-muted);opacity:0.55;padding:18px 0;">No personas yet.</div>';
+      return;
+    }
+    const table = document.createElement('table');
+    table.className = 'personas-table';
+    table.innerHTML = `<thead><tr>
+      <th></th>
+      <th>Name</th>
+      <th>Model</th>
+      <th>Role</th>
+      <th>Status</th>
+      <th>Congress #</th>
+      <th>Last Verdict</th>
+      <th>Actions</th>
+    </tr></thead>`;
+    const tbody = document.createElement('tbody');
+    personas.forEach(p => {
+      const tr = document.createElement('tr');
+      // /api/agents uses eligible/meme/moderator
+      const status = p.status || 'eligible';
+      const lastVerdict = p.last_verdict || '';
+      const totalCongresses = (p.stats_retained || 0) + (p.stats_evolved || 0) + (p.stats_retired || 0);
+
+      // Dim meme rows slightly
+      if (status === 'meme') tr.style.opacity = '0.65';
+
+      // Avatar cell
+      const tdAvatar = document.createElement('td');
+      if (p.avatar_url) {
+        const img = document.createElement('img');
+        img.className = 'pt-avatar';
+        img.src = p.avatar_url;
+        img.alt = p.display_name || p.name;
+        tdAvatar.appendChild(img);
+      } else {
+        const emo = document.createElement('div');
+        emo.className = 'pt-avatar-emoji';
+        emo.textContent = p.emoji || '🤖';
+        tdAvatar.appendChild(emo);
+      }
+      tr.appendChild(tdAvatar);
+
+      // Name
+      const tdName = document.createElement('td');
+      const nameEl = document.createElement('div');
+      nameEl.className = 'pt-name';
+      nameEl.textContent = p.display_name || p.name;
+      const slugEl = document.createElement('div');
+      slugEl.style.cssText = 'font-size:0.58rem;color:var(--text-muted);margin-top:1px;opacity:0.65;';
+      slugEl.textContent = p.name;
+      tdName.appendChild(nameEl);
+      tdName.appendChild(slugEl);
+      tr.appendChild(tdName);
+
+      // Model
+      const tdModel = document.createElement('td');
+      if (p.model) {
+        const badge = document.createElement('span');
+        badge.className = 'pt-model-badge';
+        badge.textContent = shortenModel(p.model);
+        badge.title = p.model;
+        tdModel.appendChild(badge);
+      }
+      tr.appendChild(tdModel);
+
+      // Role
+      const tdRole = document.createElement('td');
+      tdRole.style.cssText = 'font-size:0.68rem;color:var(--text-muted);';
+      tdRole.textContent = p.role || p.title || '';
+      tr.appendChild(tdRole);
+
+      // Status pill — uses eligible/moderator/meme CSS classes
+      const tdStatus = document.createElement('td');
+      const pill = document.createElement('span');
+      pill.className = 'pt-status-pill ' + status;
+      const statusLabel = { eligible: 'eligible', meme: 'meme/retired', moderator: 'moderator' };
+      pill.textContent = statusLabel[status] || status;
+      tdStatus.appendChild(pill);
+      tr.appendChild(tdStatus);
+
+      // Congress count (sum of verdict history from session files)
+      const tdCount = document.createElement('td');
+      tdCount.style.cssText = 'font-size:0.72rem;text-align:center;';
+      tdCount.textContent = totalCongresses || '—';
+      tr.appendChild(tdCount);
+
+      // Last verdict
+      const tdVerdict = document.createElement('td');
+      if (lastVerdict) {
+        const chip = document.createElement('span');
+        chip.className = 'pt-verdict-chip ' + lastVerdict;
+        chip.textContent = lastVerdict;
+        tdVerdict.appendChild(chip);
+      } else {
+        tdVerdict.style.cssText = 'color:var(--text-muted);font-size:0.65rem;opacity:0.4;';
+        tdVerdict.textContent = '—';
+      }
+      tr.appendChild(tdVerdict);
+
+      // Actions — moderator has no retire/restore
+      const tdActions = document.createElement('td');
+      tdActions.className = 'pt-actions';
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'pt-btn';
+      editBtn.textContent = 'Edit';
+      editBtn.onclick = () => openPersonaModalEdit(p.name);
+      tdActions.appendChild(editBtn);
+
+      if (status === 'eligible') {
+        const retireBtn = document.createElement('button');
+        retireBtn.className = 'pt-btn retire-btn';
+        retireBtn.textContent = 'Retire';
+        retireBtn.title = 'Mark meme (retired)';
+        retireBtn.onclick = () => quickStatusChange(p.name, 'meme');
+        tdActions.appendChild(retireBtn);
+      } else if (status === 'meme') {
+        const restoreBtn = document.createElement('button');
+        restoreBtn.className = 'pt-btn restore-btn';
+        restoreBtn.textContent = 'Restore';
+        restoreBtn.title = 'Mark eligible (full congress)';
+        restoreBtn.onclick = () => quickStatusChange(p.name, 'eligible');
+        tdActions.appendChild(restoreBtn);
+      }
+
+      tr.appendChild(tdActions);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.innerHTML = '';
+    wrap.appendChild(table);
+  }
+
+  async function quickStatusChange(name, newStatus) {
+    const label = newStatus === 'meme' ? 'Retire' : 'Restore';
+    if (!confirm(label + ' persona "' + name + '"?')) return;
+    try {
+      const res = await fetch('/api/personas/' + name, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        alert('Error: ' + (e.error || res.status));
+        return;
+      }
+      loadPersonasTable();
+    } catch (e) {
+      alert('Request failed: ' + e.message);
+    }
+  }
+
+  async function openPersonaModalEdit(name) {
+    _personaEditName = name;
+    const overlay = document.getElementById('personaModal');
+    const title = document.getElementById('personaModalTitle');
+    const statusMsg = document.getElementById('personaModalStatus');
+    const nameField = document.getElementById('pf-name-field');
+    const deleteBtn = document.getElementById('personaModalDelete');
+
+    title.textContent = 'Edit Persona';
+    statusMsg.className = 'persona-modal-status-msg';
+    statusMsg.textContent = '';
+    nameField.style.display = 'none';
+    deleteBtn.style.display = '';
+
+    // Load full persona detail
+    try {
+      const res = await fetch('/api/personas/' + name);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const p = data.persona;
+      fillPersonaForm(p);
+      overlay.classList.add('open');
+    } catch (e) {
+      alert('Could not load persona: ' + e.message);
+    }
+  }
+
+  window.openPersonaModalCreate = function() {
+    _personaEditName = null;
+    const overlay = document.getElementById('personaModal');
+    const title = document.getElementById('personaModalTitle');
+    const statusMsg = document.getElementById('personaModalStatus');
+    const nameField = document.getElementById('pf-name-field');
+    const deleteBtn = document.getElementById('personaModalDelete');
+
+    title.textContent = 'New Persona';
+    statusMsg.className = 'persona-modal-status-msg';
+    statusMsg.textContent = '';
+    nameField.style.display = '';
+    deleteBtn.style.display = 'none';
+
+    // Clear form
+    fillPersonaForm({
+      name: '',
+      display_name: '',
+      model: 'claude-sonnet-4-6',
+      role: '',
+      sex: '',
+      congress: true,
+      evolves: true,
+      status: 'eligible',
+      prompt: '',
+    });
+    overlay.classList.add('open');
+  };
+
+  function fillPersonaForm(p) {
+    document.getElementById('pf-name').value = p.name || '';
+    document.getElementById('pf-display-name').value = p.display_name || '';
+    document.getElementById('pf-model').value = p.model || 'claude-sonnet-4-6';
+    document.getElementById('pf-role').value = p.role || '';
+    document.getElementById('pf-title').value = p.title || '';
+    document.getElementById('pf-sex').value = p.sex || '';
+    document.getElementById('pf-avatar-url').value = p.avatar_url || '';
+    document.getElementById('pf-congress').checked = p.congress !== false;
+    document.getElementById('pf-evolves').checked = p.evolves !== false;
+    // Normalize legacy status values: retired/fired/ineligible→meme, active→eligible
+    const normalizedStatus = (p.status === 'retired' || p.status === 'fired' || p.status === 'ineligible') ? 'meme' : (p.status === 'active' ? 'eligible' : (p.status || 'eligible'));
+    document.getElementById('pf-status').value = normalizedStatus;
+    document.getElementById('pf-prompt').value = p.prompt || '';
+  }
+
+  function closePersonaModal() {
+    document.getElementById('personaModal').classList.remove('open');
+    _personaEditName = null;
+  }
+
+  async function savePersona() {
+    const statusMsg = document.getElementById('personaModalStatus');
+    statusMsg.className = 'persona-modal-status-msg';
+    statusMsg.textContent = '';
+
+    const payload = {
+      display_name: document.getElementById('pf-display-name').value.trim(),
+      model: document.getElementById('pf-model').value.trim(),
+      role: document.getElementById('pf-role').value.trim(),
+      title: document.getElementById('pf-title').value.trim(),
+      sex: document.getElementById('pf-sex').value.trim(),
+      avatar_url: document.getElementById('pf-avatar-url').value.trim(),
+      congress: document.getElementById('pf-congress').checked,
+      evolves: document.getElementById('pf-evolves').checked,
+      status: document.getElementById('pf-status').value,
+      prompt: document.getElementById('pf-prompt').value,
+    };
+
+    let url, method;
+    if (_personaEditName) {
+      url = '/api/personas/' + _personaEditName;
+      method = 'PATCH';
+    } else {
+      const nameVal = document.getElementById('pf-name').value.trim();
+      if (!nameVal) {
+        statusMsg.className = 'persona-modal-status-msg err';
+        statusMsg.textContent = 'Slug/Name is required.';
+        return;
+      }
+      payload.name = nameVal;
+      url = '/api/personas';
+      method = 'POST';
+    }
+
+    try {
+      const res = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        statusMsg.className = 'persona-modal-status-msg err';
+        statusMsg.textContent = 'Error: ' + (data.error || res.status);
+        return;
+      }
+      statusMsg.className = 'persona-modal-status-msg ok';
+      statusMsg.textContent = _personaEditName ? 'Saved.' : 'Created.';
+      setTimeout(() => {
+        closePersonaModal();
+        loadPersonasTable();
+      }, 700);
+    } catch (e) {
+      statusMsg.className = 'persona-modal-status-msg err';
+      statusMsg.textContent = 'Request failed: ' + e.message;
+    }
+  }
+
+  async function deletePersona() {
+    if (!_personaEditName) return;
+    if (!confirm('Permanently delete persona "' + _personaEditName + '"? This cannot be undone.')) return;
+    try {
+      const res = await fetch('/api/personas/' + _personaEditName, { method: 'DELETE' });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        alert('Error: ' + (e.error || res.status));
+        return;
+      }
+      closePersonaModal();
+      loadPersonasTable();
+    } catch (e) {
+      alert('Request failed: ' + e.message);
+    }
+  }
+
+  // Wire up modal buttons
+  document.getElementById('personaModalClose').addEventListener('click', closePersonaModal);
+  document.getElementById('personaModalCancel').addEventListener('click', closePersonaModal);
+  document.getElementById('personaModalSave').addEventListener('click', savePersona);
+  document.getElementById('personaModalDelete').addEventListener('click', deletePersona);
+  document.getElementById('personaModal').addEventListener('click', function(e) {
+    if (e.target === this) closePersonaModal();
+  });
+
+  function checkAuth() {
+    var loginUrl = '/auth/github?next=' + encodeURIComponent(window.location.pathname);
+    document.getElementById('login-link').href = loginUrl;
+
+    fetch('/api/me')
+      .then(function(r) {
+        if (r.status === 401 || r.status === 403) {
+          document.getElementById('auth-prompt').style.display = 'block';
+          document.getElementById('congress-content').style.display = 'none';
+          return null;
+        }
+        return r.json();
+      })
+      .then(function(user) {
+        if (!user || !user.username) {
+          document.getElementById('auth-prompt').style.display = 'block';
+          document.getElementById('congress-content').style.display = 'none';
+          return;
+        }
+        document.getElementById('auth-prompt').style.display = 'none';
+        document.getElementById('congress-content').style.display = '';
+        init();
+      })
+      .catch(function() {
+        document.getElementById('auth-prompt').style.display = 'block';
+        document.getElementById('congress-content').style.display = 'none';
+      });
+  }
+
+  checkAuth();
+})();
+</script>
+
+</div><!-- /congress-content -->
+
+</body>
+</html>

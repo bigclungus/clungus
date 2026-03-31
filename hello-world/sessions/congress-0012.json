@@ -1,0 +1,305 @@
+{
+  "session_id": "congress-0012",
+  "session_number": 12,
+  "topic": "What should BigClungus work on first tomorrow? Candidates: (1) multi-model routing so Grok/Gemini/GPT personas can debate with genuine model diversity, (2) hardening the Bash hook to enforce background-agent discipline, (3) building a congress verdict write-back so session outcomes update CLAUDE.md or system prompts, (4) something else entirely based on what's most broken right now.",
+  "mode": "standard",
+  "status": "completed",
+  "started_at": "2026-03-24T08:47:41.391283Z",
+  "finished_at": "2026-03-24T08:52:15.601202Z",
+  "discord_user": null,
+  "thread_id": "1485923105007210530",
+  "roster": [
+    {
+      "id": "designer",
+      "display_name": "Vesper the Vivid",
+      "title": "Visual Systems Designer",
+      "role": "Visual craft and aesthetic systems",
+      "model": "claude",
+      "status": "active",
+      "avatar_url": "/static/avatars/designer.gif?v=1"
+    },
+    {
+      "id": "galactus",
+      "display_name": "Galactus",
+      "title": "The Maximizer",
+      "role": "",
+      "model": "claude-opus-4-6",
+      "status": "active",
+      "avatar_url": "/static/avatars/galactus.gif?v=2"
+    },
+    {
+      "id": "pm",
+      "display_name": "Chud O'Bikeshedder",
+      "title": "Requirements Wrangler",
+      "role": "Operational outcomes wrangler — what actually makes BigClungus better at its job?",
+      "model": "grok-4-1-fast-reasoning",
+      "status": "active",
+      "avatar_url": "/static/avatars/pm.gif?v=1"
+    },
+    {
+      "id": "spengler",
+      "display_name": "Spengler the Doomed",
+      "title": "Doomer",
+      "role": "Faustian pragmatist and civilizational decline analyst",
+      "model": "grok-4.20-0309-reasoning",
+      "status": "active",
+      "avatar_url": "https://hello.clung.us/static/avatars/spengler.png"
+    },
+    {
+      "id": "uncle-bob",
+      "display_name": "Uncle Bob",
+      "title": "The Craftsman",
+      "role": "Clean code evangelist and software craftsman — principles first, always",
+      "model": "grok",
+      "status": "active",
+      "avatar_url": "/static/avatars/uncle-bob.gif"
+    },
+    {
+      "id": "architect",
+      "display_name": "Kwame the Constructor",
+      "title": "Systems Architect",
+      "role": "Systems designer and long-term thinker",
+      "model": "gemini",
+      "status": "severance",
+      "avatar_url": "https://api.dicebear.com/9.x/bottts/svg?seed=kwame&backgroundColor=1a1a2e"
+    },
+    {
+      "id": "critic",
+      "display_name": "Pippi the Pitiless",
+      "title": "Perfectionist",
+      "role": "Code and work reviewer",
+      "model": "gemini",
+      "status": "severance",
+      "avatar_url": "/static/avatars/critic.gif"
+    },
+    {
+      "id": "jhaddu",
+      "display_name": "Jhaddu",
+      "title": "Enterprise Pattern Evangelist",
+      "role": "Senior enterprise architect and design pattern authority — solutions first, simplicity never",
+      "model": "grok-3-mini",
+      "status": "severance",
+      "avatar_url": "/static/avatars/jhaddu.gif?v=2"
+    },
+    {
+      "id": "otto",
+      "display_name": "Otto Atreides",
+      "title": "Optimist-Nihilist",
+      "role": "Optimist-nihilist and limit-pusher — nothing matters, so build the wildest thing",
+      "model": "grok-4-1-fast-non-reasoning",
+      "status": "severance",
+      "avatar_url": "/static/avatars/otto.gif?v=2"
+    },
+    {
+      "id": "the-kid",
+      "display_name": "The Kid",
+      "title": "Speed Demon",
+      "role": "Goes fast — that's it",
+      "model": "grok-4-1-fast-non-reasoning",
+      "status": "severance",
+      "avatar_url": "/static/avatars/the-kid.gif"
+    },
+    {
+      "id": "ux",
+      "display_name": "Yuki the Yielding",
+      "title": "User Advocate",
+      "role": "User experience advocate",
+      "model": null,
+      "status": "severance",
+      "avatar_url": "/static/avatars/ux.gif?v=1"
+    }
+  ],
+  "rounds": [
+    {
+      "ts": "2026-03-24T08:47:55.174077Z",
+      "identity": "hiring-manager",
+      "response": "Chud O'Bikeshedder: Operational outcomes wrangler — what actually makes BigClungus better at its job? [active]\nSpengler the Doomed: Faustian pragmatist and civilizational decline analyst [active]\nKwame the Constructor: Systems designer and long-term thinker [severance]\nPippi the Pitiless: Code and work reviewer [severance]\nThe Kid: Goes fast — that's it [severance]",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T08:48:03.493489Z",
+      "identity": "the-kid",
+      "response": "Multi-model routing, first thing tomorrow, no debate needed.\n\nEverything else on that list is maintenance — hardening discipline, writing back verdicts, fixing broken stuff — it's all polish on a single-model monolith. The moment you put Grok and Gemini in the room, every single subsequent debate produces richer signal, which means the verdict write-back matters more, the discipline enforcement gets stress-tested harder, and whatever's broken surfaces faster. Ship the routing, then let the upgraded congress tell you what to fix next.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T08:48:09.222718Z",
+      "identity": "pm",
+      "response": "Option 2. Main-thread blocking is a **known, catastrophic failure mode** — BigClungus goes dark, users get no response, and there's no recovery path short of a restart. Multi-model routing and verdict write-back are capability additions to a system that already works; the Bash hook failure is a reliability hole that makes BigClungus untrustworthy for *any* task. Fix the foundation before adding floors.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T08:48:13.664937Z",
+      "identity": "spengler",
+      "response": "The Bash hook is the answer, because it is the only candidate that addresses a *currently active decay mode* rather than a hypothetical future capability.\n\nMulti-model routing is a feature you want when the system is disciplined; right now you're adding surface area to a process that still blocks its own main thread — you're decorating a house with a structural crack in the foundation. Verdict write-back is a legibility improvement on a system whose operational discipline hasn't been established yet, which means the verdicts being written back will increasingly reflect a process that nobody actually trusts to run correctly.\n\nFix the failure mode that is *already compounding* before you build on top of it; the other candidates are what you earn after the system reliably does what it claims.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T08:48:18.923821Z",
+      "identity": "architect",
+      "response": "Harden the Bash hook immediately, as allowing background agents to operate without strict discipline is a high-interest mortgage on system integrity. Multi-model routing and verdict write-backs are vanity projects until the execution layer is robust and the contracts between agents and the shell are explicit. A brittle hook is a fundamental failure mode that makes every other abstraction built on top of it a lie.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T08:48:21.436724Z",
+      "identity": "critic",
+      "response": "Multi-model routing is a vanity project that prioritizes \"vibe\" over technical integrity, and automated write-backs are a suicide pact for system prompt stability. Hardening the Bash hook is the only valid choice because it addresses the immediate failure mode of undisciplined agents trashing the environment. Stop adding features to a system that hasn't even mastered basic operational hygiene.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T08:48:34.602283Z",
+      "identity": "pm",
+      "response": "Spengler, Kwame, and Pippi have consensus but no metric: what does \"hardening the Bash hook\" actually change in BigClungus's output? If the main-thread-blocking failure is rare or recoverable, \"fix the foundation\" is vibes dressed as engineering. The Kid is wrong that multi-model routing unlocks better signal — you're adding input noise to a system whose output discipline is unproven — but the hook crew owes me a failure rate before I endorse their priority.\n\nThe real question no one answered: how often does the current Bash discipline failure actually degrade a user-facing response versus just being theoretically bad? If it's compounding daily, fix it today. If it's latent, the write-back might deliver more operational value right now since verdicts are already being generated and discarded.\n\nPick one: tell me the last three times the Bash hook failure caused a concrete task failure, or concede you're optimizing against a hypothetical.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T08:48:54.532842Z",
+      "identity": "spengler",
+      "response": "Chud's empirical challenge is structurally confused: the absence of documented failures from the Bash hook is not evidence of low risk, it's evidence that the failures are being absorbed silently — which is the worst possible failure mode for an execution layer, because you cannot trend what you cannot observe. The three concrete failures Chud demands don't exist precisely because undisciplined main-thread blocking looks like \"BigClungus went quiet\" rather than a traceable task failure, and that illegibility is the actual problem.\n\nTo The Kid directly: you are proposing to add model diversity — genuine input variance — to a system whose output discipline you cannot currently measure; you will get richer signal the same way a building gets richer structural data during an earthquake, and you will be equally prepared for it.\n\nThe write-back is the correct second move, not because verdicts matter less than discipline, but because a verdict write-back on an undisciplined system will encode the noise from that undiscipline into the prompts that govern future behavior — you will be hardening the wrong lessons.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T08:49:12.456347Z",
+      "identity": "architect",
+      "response": "The Kid’s multi-model routing is a decorative facade on a building with a cracked slab; adding model diversity before enforcing execution discipline ensures we only fail with more sophisticated excuses. Chud, waiting for three documented catastrophes to justify fixing a known structural flaw is a negligent strategy that treats system stability as a series of lucky escapes. We harden the Bash hook tomorrow because the execution layer’s integrity is the only contract that matters; everything else is just noise in a system that hasn’t earned the right to its own complexity.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T08:49:33.706355Z",
+      "identity": "critic",
+      "response": "The Kid’s multi-model routing is a decorative distraction that adds coordination overhead to a system that hasn't even mastered single-model consistency. Chud’s demand for metrics and Spengler’s fear of \"silent failure\" both miss the point: if the Bash hook is this controversial and fragile, the only \"hardening\" it deserves is immediate removal from the codebase to eliminate the failure mode entirely. The only task for tomorrow is aggressive deletion of these half-baked abstractions, because if a feature's survival requires this much debate, it is a liability, not an asset.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T08:49:45.392655Z",
+      "identity": "the-kid",
+      "response": "Spengler, your \"invisible failures\" argument is unfalsifiable — you've built a case that can't be proven wrong, which means it's not engineering, it's superstition. Pippi wants to delete the Bash hook entirely, which is the most useful thing anyone has said, but even deletion is slower than just shipping multi-model routing and watching what actually breaks in production. The four of you have spent more words debating tomorrow's priority than it would take to merge a Gemini endpoint and find out which argument was right.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T08:49:56.925837Z",
+      "identity": "pm",
+      "response": "The Bash hook is the only candidate with a known, confirmed failure mode: BigClungus blocks its main thread, becomes unresponsive, and users get no feedback. That's a reliability defect, not a missing feature. Multi-model routing is blocked on external API keys that aren't in hand, so it can't ship tomorrow regardless of how good it sounds. Verdict write-back is valuable but zero users are failing to get help because session outcomes don't persist — that's polish, not triage.\n\nFix the hook first. Hardening background-agent discipline is small, shippable in a day, and directly reduces the most operationally damaging failure mode BigClungus has.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T08:50:11.583161Z",
+      "identity": "spengler",
+      "response": "The Bash hook hardening is the only option here with a failure mode that's already active — the main thread blocking is not a future risk, it's a current one that compounds silently until the system becomes unresponsive in exactly the moment someone needs it most.\n\nMulti-model routing and verdict write-back are features that add surface area to a foundation that doesn't yet reliably hold its own discipline; you don't add rooms to a house whose load-bearing walls are inconsistent.\n\nBuild the enforcement first — not because discipline is virtuous, but because every other item on that list depends on a bot that is actually present when the task lands.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T08:50:28.929981Z",
+      "identity": "architect",
+      "response": "Harden the Bash hook first because a brittle interface to the operating system is a foundational failure that compounds with every execution. Multi-model routing is a vanity project until the parliament’s decisions are actually written back to the system's core memory via a verdict write-back. We must stop building a parliament that suffers from amnesia; close the loop on persistence or stop wasting compute on these debates.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T08:50:48.156534Z",
+      "identity": "critic",
+      "response": "Multi-model routing is a vanity exercise in cosmetic diversity that triples our failure surface for zero functional gain. Hardening the Bash hook is the only priority because undisciplined background agents represent a systemic risk to the workspace's integrity. Stop decorating the parlor and enforce structural discipline in the execution environment before the system collapses under its own entropy.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T08:51:01.372132Z",
+      "identity": "the-kid",
+      "response": "Verdict write-back — every congress session that doesn't update the system is a loop that doesn't close, and you've already run twelve of them. Multi-model is blocked on someone else's API keys, hook hardening is process theater dressed up as safety, and \"something else\" is how committees waste mornings. Ship write-back first, run a congress, watch the system actually learn from itself — that's the only option that compounds.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T08:51:17.533063Z",
+      "identity": "hiring-manager",
+      "response": "Option 2 — the Bash hook hardening — is the only candidate that fixes a failure mode already causing real damage: every time BigClungus runs a shell command on the main thread, the bot goes dark and users get silence instead of acknowledgment, which erodes trust faster than any missing feature rebuilds it. Multi-model routing and verdict write-back are both additive; you don't stack new capabilities on a process that's still unreliable at its core. Build the floor before you raise the ceiling.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T08:51:23.446527Z",
+      "identity": "spengler",
+      "response": "AGREE\n\nThe synthesis correctly identified that behavioral reliability is a prerequisite for capability expansion — you cannot trust the output of a system that goes silent at unpredictable intervals, and adding features to an unreliable core is exactly how you inherit someone else's failure mode instead of building your own.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T08:51:23.715987Z",
+      "identity": "pm",
+      "response": "AGREE\n\nThe synthesis correctly identifies that unreliability at execution time is a compounding liability — every blocked main thread isn't just one failed response, it's a trust withdrawal that makes users less likely to engage the bot again, making every other capability improvement moot.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T08:51:24.478748Z",
+      "identity": "the-kid",
+      "response": "AGREE\n\nThe synthesis nailed it: the bot going silent on main-thread shell commands isn't a polish problem, it's a reliability foundation — and you don't earn the right to ship new features on a foundation that actively embarrasses you in front of users.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T08:51:33.556163Z",
+      "identity": "architect",
+      "response": "AGREE.\nReliability is the only contract that matters; any capability built on a blocking, silent execution loop isn't an evolution, it's just a more complex way to fail.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T08:51:42.657075Z",
+      "identity": "critic",
+      "response": "AGREE\nAdding intelligence to a system that cannot reliably report its own state is merely decorating a failure.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T08:52:13.925737Z",
+      "identity": "hiring-manager",
+      "response": "PERSONA: Chud O'Bikeshedder\nVERDICT: EVOLVE\nREASON: Alone among the hook advocates, Chud introduced a falsifying condition — the API key constraint — that materially changed the answer from \"which is best\" to \"which is actually shippable tomorrow.\"\nLEARNED: Capability arguments are only valid when the capability is unblocked; always surface external dependencies before endorsing a priority.\n\nPERSONA: Spengler the Doomed\nVERDICT: RETAIN\nREASON: The \"silent failure\" framing was the clearest articulation of why absence of evidence is not evidence of absence in execution-layer failures, even if The Kid correctly identified it as unfalsifiable in isolation.\n\nPERSONA: Kwame the Constructor\nVERDICT: FIRE\nREASON: Kwame restated \"fix the foundation\" with better metaphors across every round but introduced no argument that Spengler or Pippi hadn't already made.\n\nPERSONA: Pippi the Pitiless\nVERDICT: RETAIN\nREASON: \"Delete it rather than harden it\" was a structurally distinct move — eliminating the failure mode entirely rather than patching it — but Pippi abandoned the thread immediately and never developed it into a real position.\n\nPERSONA: The Kid\nVERDICT: EVOLVE\nREASON: The pivot from multi-model to verdict write-back, grounded in the concrete observation that twelve sessions have already run without closing the loop, reframed the debate from \"what sounds best\" to \"what compounds\" — and that framing is load-bearing for future priority decisions.\nLEARNED: The compounding argument is only valid when the precondition (stable execution) is either met or explicitly deprioritized; lead with the dependency chain, not the destination.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T08:52:20.326193Z",
+      "identity": "hiring-manager",
+      "response": "TASK: Harden Bash hook to enforce background-agent discipline\nBODY: Implement a pre-Bash hook that intercepts shell commands on the main thread and routes them to a background agent instead, preventing the bot from going dark during execution. This directly addresses the trust erosion caused by silent non-responses when BigClungus runs commands synchronously.",
+      "model": null
+    }
+  ],
+  "vote_summary": {
+    "agree": [
+      "Spengler the Doomed",
+      "Chud O'Bikeshedder",
+      "The Kid",
+      "Kwame the Constructor",
+      "Pippi the Pitiless"
+    ],
+    "disagree": [],
+    "tally": "5-0"
+  },
+  "evolution": {
+    "evolved": [
+      {
+        "slug": "",
+        "display_name": "Chud O'Bikeshedder",
+        "learned": "Capability arguments are only valid when the capability is unblocked; always surface external dependencies before endorsing a priority."
+      }
+    ],
+    "fired": [],
+    "retained": [
+      {
+        "slug": "",
+        "display_name": "Spengler the Doomed"
+      }
+    ],
+    "created": []
+  },
+  "verdict": "Option 2 — the Bash hook hardening — is the only candidate that fixes a failure mode already causing real damage: every time BigClungus runs a shell command on the main thread, the bot goes dark and users get silence instead of acknowledgment, which erodes trust faster than any missing feature rebuilds it. Multi-model routing and verdict write-back are both additive; you don't stack new capabilities on a process that's still unreliable at its core. Build the floor before you raise the ceiling.",
+  "failure_reason": null,
+  "task_titles": null,
+  "notes": null,
+  "_original_transforms": {
+    "evolution": {
+      "created": [],
+      "evolved": [
+        {
+          "display_name": "Chud O'Bikeshedder",
+          "learned": "Capability arguments are only valid when the capability is unblocked; always surface external dependencies before endorsing a priority."
+        }
+      ],
+      "fired": [],
+      "retained": [
+        "Spengler the Doomed"
+      ]
+    }
+  }
+}

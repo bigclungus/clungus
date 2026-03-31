@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-014637-acdf74cd",
+  "title": "Fix congress UI roster/avatar status filter",
+  "agent_id": "acdf74cdb4514292f",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T01:46:36Z",
+      "event": "started",
+      "context": "Fix congress UI roster/avatar status filter"
+    },
+    {
+      "ts": "2026-03-26T01:47:05Z",
+      "event": "done",
+      "context": "Both fixes applied, committed, and deployed. Here's a summary:\n\n**Changes made to `/mnt/data/hello-world/congress.html`:**\n\n- **Line 1989 (Fix 1):** Active roster filter now accepts both `'active'` and `'eligible'` statuses\n- **Line 2010 (Fix 2):** Fired pool filter now accepts both `'severance'` and `'ineligible'` statuses\n\n**Git:** Committed as `cd013f8` and pushed to `bigclungus/clung.us` main.\n\n**Service:** `clunger.service` restarted and confirmed active. (Note: the running web server is `c...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-031238-af741e23",
+  "title": "Switch to plugin-dir mode",
+  "agent_id": "af741e232477201c2",
+  "agent_type": "general-purpose",
+  "session_id": "43e9d2af-7d2b-4765-a796-49da1a9b6141",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T03:12:38Z",
+      "event": "started",
+      "context": "Switch to plugin-dir mode"
+    },
+    {
+      "ts": "2026-03-28T03:14:18Z",
+      "event": "done",
+      "context": "Here is what was done:\n\n**`/home/clungus/work/start-claude-bot.sh`:**\n- Removed the `DISCORD_CHANNEL` variable\n- Removed the entire `sync_discord_fork()` function definition (the rsync overlay hack)\n- Removed the pre-sync call, the background polling loop (12 iterations x 5s), and the `kill`/`wait` cleanup for the sync PID\n- Changed the claude invocation from `--channels plugin:discord@claude-plugins-official` to `--plugin-dir /mnt/data/discord-plugin --dangerously-load-development-channels \"dis...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

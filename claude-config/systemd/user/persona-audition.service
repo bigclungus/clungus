@@ -1,0 +1,16 @@
+[Unit]
+Description=Persona Audition Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/mnt/data/persona-audition
+ExecStart=/home/clungus/.bun/bin/bun run src/index.ts
+Restart=on-failure
+RestartSec=5
+EnvironmentFile=/mnt/data/.env.shared
+EnvironmentFile=/mnt/data/temporal-workflows/.env
+Environment=PORT=8110
+
+[Install]
+WantedBy=default.target

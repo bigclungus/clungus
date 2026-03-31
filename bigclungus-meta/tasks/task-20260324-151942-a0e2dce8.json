@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-151942-a0e2dce8",
+  "title": "Review and triage task backlog",
+  "agent_id": "a0e2dce89509deb82",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": "1486021228647944402",
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T15:19:42Z",
+      "event": "started",
+      "context": "Review and triage task backlog"
+    },
+    {
+      "ts": "2026-03-24T15:21:03Z",
+      "event": "done",
+      "context": "Now I have everything I need. Here's the full picture:\n\n---\n\n## Task Backlog Triage Report\n\n### Summary\n\n**310 local task files total.** The format is a mess — 295 files lack a top-level `status` field entirely, but most have a `log` entry with `event: done` at the end, meaning they completed fine. Formally tracked statuses:\n\n| Status | Count |\n|---|---|\n| Done (formal) | 8 |\n| Failed (formal) | 4 |\n| Cancelled (formal) | 3 |\n| Done via log event | 289 |\n| **Genuinely open/ambiguous** | **6** |\n...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

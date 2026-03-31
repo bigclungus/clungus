@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-221124-a0a0ecdf",
+  "title": "Delete local ccr directory",
+  "agent_id": "a0a0ecdf4a236f733",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T22:11:24Z",
+      "event": "started",
+      "context": "Delete local ccr directory"
+    },
+    {
+      "ts": "2026-03-30T22:11:34Z",
+      "event": "done",
+      "context": "Done. `/mnt/data/ccr` contained `config/`, `node_modules/`, `package.json`, `package-lock.json`, and `proxy.py`. It has been deleted and is confirmed gone.",
+      "artifacts": []
+    }
+  ]
+}

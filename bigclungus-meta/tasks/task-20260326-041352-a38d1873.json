@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-041352-a38d1873",
+  "title": "Add services widget to homepage",
+  "agent_id": "a38d1873096da5d56",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T04:13:52Z",
+      "event": "started",
+      "context": "Add services widget to homepage"
+    },
+    {
+      "ts": "2026-03-26T04:16:11Z",
+      "event": "done",
+      "context": "Done. Here's a summary of what was implemented:\n\n**`/mnt/data/clunger/src/index.ts`**\n- Added `spawnSync` import from `node:child_process`\n- Added `restServeOpsHealth()` function that iterates all 9 services, runs `systemctl --user show` for each, parses `ActiveState`, `SubState`, `NRestarts`, `ExecMainStartTimestamp`, and `MemoryCurrent` into a JSON array with `uptime_sec` (calculated from start timestamp) and `memory_mb`\n- Added `GET /api/ops/health` route — auth-gated via `tauth_github` cooki...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

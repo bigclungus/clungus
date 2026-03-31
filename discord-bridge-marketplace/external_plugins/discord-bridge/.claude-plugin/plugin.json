@@ -1,0 +1,12 @@
+{
+  "name": "discord-bridge",
+  "description": "Decoupled Discord channel for Claude Code — thin MCP bridge that talks to a persistent bot process over HTTP. The bot stays connected to Discord even when Claude restarts.",
+  "version": "0.0.1",
+  "keywords": [
+    "discord",
+    "messaging",
+    "channel",
+    "mcp",
+    "bridge"
+  ]
+}

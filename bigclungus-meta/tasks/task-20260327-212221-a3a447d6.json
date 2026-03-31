@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-212221-a3a447d6",
+  "title": "Congress unification phase 1",
+  "agent_id": "a3a447d668573d955",
+  "agent_type": "general-purpose",
+  "session_id": "083baee4-2f6f-4f81-8ced-0e9b97f43956",
+  "discord_message_id": "1487199999572836383",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T21:22:21Z",
+      "event": "started",
+      "context": "Congress unification phase 1"
+    },
+    {
+      "ts": "2026-03-27T21:24:56Z",
+      "event": "done",
+      "context": "Done. Here's what was changed:\n\n**`/mnt/data/clunger/src/services/congress.ts`:**\n1. `nextSessionNumber()` -- regex widened from `congress-` to `(?:congress|trial|session)-` so all session types contribute to the sequence\n2. `startSession()` -- now accepts optional `flavor` field (defaults to `\"normal\"`), generates `session-NNNN` IDs instead of `congress-NNNN`, writes `flavor` into session JSON\n3. `listSessions()` -- file filter widened to match all three prefixes; derives `flavor` from JSON fie...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-174913-aa9f3f9b",
+  "title": "Fix roundwatch with real data source",
+  "agent_id": "aa9f3f9bb451b27b8",
+  "agent_type": "general-purpose",
+  "session_id": "b8a58c15-c6f1-48c2-b033-87763f636706",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T17:49:13Z",
+      "event": "started",
+      "context": "Fix roundwatch with real data source"
+    },
+    {
+      "ts": "2026-03-27T17:56:39Z",
+      "event": "done",
+      "context": "Here is a summary of what was done:\n\n**Problem:** Roundwatch at `/mnt/data/labs/roundwatch/` was running in `demo_mode: true`, generating fake round data with hardcoded player names, maps, and death events via a seeded pseudo-random generator.\n\n**Investigation of replays.iterator.systems:**\n- The site indexes 140,000+ SS14 replays across servers including Wizard's Den (lizard/leviathan), Goobstation, Delta-V, Harmony, Starlight, Funky Station, Gaby Station, Carpmosia, and RMC14.\n- The API endpoi...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

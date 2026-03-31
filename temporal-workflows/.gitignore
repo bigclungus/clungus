@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+seen_listings.db
+package.json
+uv.lock

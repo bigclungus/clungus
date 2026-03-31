@@ -1,0 +1,3207 @@
+import http from "node:http";
+import { existsSync, readFileSync, readdirSync, writeFileSync, unlinkSync, statSync } from "node:fs";
+import { extname, join } from "node:path";
+import { spawnSync } from "node:child_process";
+import { Database } from "bun:sqlite";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import matter from "gray-matter";
+import { connectNodeAdapter } from "@connectrpc/connect-node";
+import { WebSocketServer, WebSocket } from "ws";
+import { runPostMergeReview } from "./services/post-merge-review.js";
+
+// ── Error monitoring: inject alerts to bot on critical failures ────────────
+async function injectAlert(message: string): Promise<void> {
+  const secret = process.env.DISCORD_INJECT_SECRET;
+  if (!secret) return;
+  try {
+    const resp = await fetch("http://127.0.0.1:9876/inject", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-inject-secret": secret },
+      body: JSON.stringify({ content: `⚠️ ${message}`, chat_id: "1485343472952148008", user: "clunger-monitor" }),
+    });
+    if (!resp.ok) console.error("[clunger] injectAlert failed:", resp.status);
+  } catch (e) {
+    console.error("[clunger] injectAlert error:", e);
+  }
+}
+
+// Prevent unhandled rejections (e.g. Anthropic API 4xx errors escaping async handlers)
+// from crashing the process. Surface them as logs and inject alerts.
+process.on("unhandledRejection", (reason: unknown) => {
+  console.error("[clunger] unhandledRejection:", reason);
+  injectAlert(`clunger unhandledRejection: ${String(reason).slice(0, 300)}`).catch(() => {});
+});
+process.on("uncaughtException", (err: Error) => {
+  console.error("[clunger] uncaughtException:", err.stack ?? err);
+  injectAlert(`clunger uncaughtException: ${err.message.slice(0, 300)}`).catch(() => {});
+  // Do NOT call process.exit(1) — log and continue so transient errors don't crash the server
+});
+
+import { PersonaService } from "../gen/persona/v1/persona_pb.js";
+import { AgentService } from "../gen/agent/v1/agent_pb.js";
+import { TaskService } from "../gen/task/v1/task_pb.js";
+import { WalletService } from "../gen/wallet/v1/wallet_pb.js";
+import { CongressService } from "../gen/congress/v1/congress_pb.js";
+import { personaServiceImpl } from "./services/persona.js";
+import { agentServiceImpl } from "./services/agent.js";
+import { taskServiceImpl } from "./services/task.js";
+import { walletServiceImpl } from "./services/wallet.js";
+import { congressServiceImpl, activeStreams } from "./services/congress.js";
+import { PostDebateRequestSchema } from "../gen/congress/v1/congress_pb.js";
+import { create } from "@bufbuild/protobuf";
+import { isInternalRequest } from "./auth.js";
+
+const PORT = parseInt(process.env.PORT ?? "8081");
+
+// ── GitHub OAuth state store (in-memory; short-lived) ──────────────────────
+// Maps state token → next_url. Consumed on first use to prevent replay.
+const oauthStates = new Map<string, string>();
+
+// ── NightOwl task status store (in-memory) ─────────────────────────────────
+// Maps task_id → { done: boolean, createdAt: number }. Expires after 24h.
+const nightowlTasks = new Map<string, { done: boolean; createdAt: number }>();
+const NIGHTOWL_TASK_TTL_MS = 24 * 60 * 60 * 1000;
+
+function nightowlCleanup(): void {
+  const now = Date.now();
+  for (const [id, entry] of nightowlTasks.entries()) {
+    if (now - entry.createdAt > NIGHTOWL_TASK_TTL_MS) {
+      nightowlTasks.delete(id);
+    }
+  }
+}
+
+function parseCookieValue(header: string, name: string): string {
+  for (const part of header.split(";")) {
+    const trimmed = part.trim();
+    if (trimmed.startsWith(name + "=")) {
+      return trimmed.slice(name.length + 1).trim();
+    }
+  }
+  return "";
+}
+
+function signCookie(username: string): string {
+  const secret = process.env.COOKIE_SECRET ?? "";
+  if (!secret) throw new Error("COOKIE_SECRET not set");
+  const sig = createHmac("sha256", secret).update(username).digest("hex");
+  return `${username}.${sig}`;
+}
+
+function isSafeRedirect(url: string): boolean {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname;
+    return (
+      parsed.protocol === "https:" &&
+      (host === "clung.us" || host.endsWith(".clung.us"))
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function readBody(req: http.IncomingMessage): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    req.on("data", (c: Buffer) => chunks.push(c));
+    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("error", reject);
+  });
+}
+
+async function handleGithubCallback(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  url: URL
+): Promise<void> {
+  const code = url.searchParams.get("code") ?? "";
+  const state = url.searchParams.get("state") ?? "";
+
+  // Validate state — CSRF check via in-memory store with cookie fallback
+  let nextUrl: string | undefined = oauthStates.get(state);
+  if (nextUrl !== undefined) {
+    oauthStates.delete(state);
+  } else {
+    // Fallback: service may have restarted; check cookie
+    const cookieHeader = req.headers["cookie"] ?? "";
+    const cookieState = parseCookieValue(cookieHeader, "gh_oauth_state");
+    if (cookieState && cookieState === state) {
+      nextUrl = "";
+      console.log(
+        "[auth] OAuth state validated via cookie fallback (in-memory store empty — service may have restarted)"
+      );
+    } else {
+      res.writeHead(403, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(
+        "<!DOCTYPE html><html><body><h1>Invalid OAuth state — please try again.</h1></body></html>"
+      );
+      return;
+    }
+  }
+
+  if (!code) {
+    res.writeHead(403, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(
+      "<!DOCTYPE html><html><body><h1>Missing OAuth code.</h1></body></html>"
+    );
+    return;
+  }
+
+  const clientId = process.env.GITHUB_CLIENT_ID ?? "";
+  const clientSecret = process.env.GITHUB_CLIENT_SECRET ?? "";
+
+  let username: string;
+  try {
+    // Exchange code for access token
+    const tokenResp = await fetch("https://github.com/login/oauth/access_token", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "User-Agent": "BigClungus",
+      },
+      body: JSON.stringify({
+        client_id: clientId,
+        client_secret: clientSecret,
+        code,
+        redirect_uri: "https://clung.us/auth/callback",
+      }),
+    });
+    const tokenData = (await tokenResp.json()) as Record<string, string>;
+    const accessToken = tokenData["access_token"] ?? "";
+    if (!accessToken) {
+      res.writeHead(403, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(
+        "<!DOCTYPE html><html><body><h1>Failed to obtain GitHub access token.</h1></body></html>"
+      );
+      return;
+    }
+
+    // Fetch GitHub username
+    const userResp = await fetch("https://api.github.com/user", {
+      headers: {
+        Authorization: `token ${accessToken}`,
+        Accept: "application/json",
+        "User-Agent": "BigClungus",
+      },
+    });
+    const userData = (await userResp.json()) as Record<string, string>;
+    username = userData["login"] ?? "";
+  } catch (e) {
+    console.error("[auth] GitHub OAuth error:", e);
+    res.writeHead(502, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(
+      `<!DOCTYPE html><html><body><h1>GitHub OAuth error: ${e}</h1></body></html>`
+    );
+    return;
+  }
+
+  if (!username) {
+    res.writeHead(403, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(
+      "<!DOCTYPE html><html><body><h1>Could not determine GitHub username.</h1></body></html>"
+    );
+    return;
+  }
+
+  // Check allowlist
+  const allowedRaw = process.env.GITHUB_ALLOWED_USERS ?? "";
+  const allowed = new Set(
+    allowedRaw
+      .split(",")
+      .map((u) => u.trim().toLowerCase())
+      .filter(Boolean)
+  );
+  if (allowed.size > 0 && !allowed.has(username.toLowerCase())) {
+    res.writeHead(403, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(
+      `<!DOCTYPE html><html><body><h1>GitHub user '${username}' is not allowed.</h1></body></html>`
+    );
+    return;
+  }
+
+  // Sign cookie and redirect
+  const cookieValue = signCookie(username);
+  const redirectTo = isSafeRedirect(nextUrl ?? "") ? (nextUrl as string) : "/";
+  const COOKIE_MAX_AGE = 86400; // 24 hours
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8">
+<style>body{background:#0a0a0f;color:#4ecca3;font-family:monospace;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}</style>
+</head>
+<body><div>authenticated — redirecting...</div>
+<script>window.location.replace(${JSON.stringify(redirectTo)});</script>
+</body>
+</html>`;
+  const body = Buffer.from(html, "utf-8");
+  res.writeHead(200, {
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": body.length,
+    "Set-Cookie": [
+      `tauth_github=${cookieValue}; Max-Age=${COOKIE_MAX_AGE}; HttpOnly; Secure; SameSite=Lax; Domain=.clung.us; Path=/`,
+      "gh_oauth_state=; Max-Age=0; HttpOnly; SameSite=Lax; Path=/",
+    ],
+  });
+  res.end(body);
+}
+
+async function handleGithubWebhook(
+  req: http.IncomingMessage,
+  res: http.ServerResponse
+): Promise<void> {
+  // 1. Read body
+  const body = await readBody(req);
+
+  // 2. Verify HMAC-SHA256 signature
+  const secret = process.env.GITHUB_WEBHOOK_SECRET ?? "";
+  const sigHeader = (req.headers["x-hub-signature-256"] as string) ?? "";
+  const expected =
+    "sha256=" + createHmac("sha256", secret).update(body).digest("hex");
+  let sigValid = false;
+  try {
+    sigValid = timingSafeEqual(
+      Buffer.from(sigHeader),
+      Buffer.from(expected)
+    );
+  } catch {
+    // Buffer length mismatch — invalid sig
+  }
+  if (!sigValid) {
+    res.writeHead(401, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "invalid signature" }));
+    return;
+  }
+
+  // 3. Parse event
+  const eventType = (req.headers["x-github-event"] as string) ?? "";
+  let payload: Record<string, unknown>;
+  try {
+    payload = JSON.parse(body.toString("utf-8")) as Record<string, unknown>;
+  } catch (e) {
+    res.writeHead(400, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: `invalid JSON: ${e}` }));
+    return;
+  }
+
+  const action = (payload["action"] as string) ?? "";
+  const repo =
+    ((payload["repository"] as Record<string, unknown>)?.[
+      "full_name"
+    ] as string) ?? "";
+
+  // 4. Handle ping immediately
+  if (eventType === "ping") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(
+      JSON.stringify({
+        ok: true,
+        zen: (payload["zen"] as string) ?? "",
+      })
+    );
+    return;
+  }
+
+  // 5. Dispatch to Temporal (fire-and-forget) — always return 200 fast
+  res.writeHead(200, { "Content-Type": "application/json" });
+
+  try {
+    if (eventType === "issues" && action === "opened") {
+      const issue = (payload["issue"] as Record<string, unknown>) ?? {};
+      void startGithubWebhookWorkflow({
+        event_type: "issues",
+        action: "opened",
+        repo,
+        number: (issue["number"] as number) ?? 0,
+        title: (issue["title"] as string) ?? "",
+        url: (issue["html_url"] as string) ?? "",
+        user: ((issue["user"] as Record<string, string>)?.["login"]) ?? "",
+      });
+      res.end(JSON.stringify({ ok: true, action: "workflow_started" }));
+    } else if (eventType === "issue_comment" && action === "created") {
+      const comment = (payload["comment"] as Record<string, unknown>) ?? {};
+      const commenter =
+        ((comment["user"] as Record<string, string>)?.["login"]) ?? "";
+      // Skip ack for our own bot comments to avoid comment loops
+      if (commenter.toLowerCase() === "bigclungus") {
+        res.end(JSON.stringify({ ok: true, action: "ignored (own comment)" }));
+        return;
+      }
+      const issue = (payload["issue"] as Record<string, unknown>) ?? {};
+      void startGithubWebhookWorkflow({
+        event_type: "issue_comment",
+        action: "created",
+        repo,
+        number: (issue["number"] as number) ?? 0,
+        title: (issue["title"] as string) ?? "",
+        url: (comment["html_url"] as string) ?? "",
+        user: commenter,
+      });
+      res.end(JSON.stringify({ ok: true, action: "workflow_started" }));
+    } else if (eventType === "pull_request" && action === "opened") {
+      const pr = (payload["pull_request"] as Record<string, unknown>) ?? {};
+      void startGithubWebhookWorkflow({
+        event_type: "pull_request",
+        action: "opened",
+        repo,
+        number: (pr["number"] as number) ?? 0,
+        title: (pr["title"] as string) ?? "",
+        url: (pr["html_url"] as string) ?? "",
+        user: ((pr["user"] as Record<string, string>)?.["login"]) ?? "",
+      });
+      res.end(JSON.stringify({ ok: true, action: "workflow_started" }));
+    } else if (eventType === "push") {
+      // Post-merge code review — fire-and-forget, don't block webhook response
+      const headCommit = payload["head_commit"] as Record<string, unknown> | null;
+      const ref = (payload["ref"] as string) ?? "";
+      const repositoryData = payload["repository"] as Record<string, unknown> | null;
+      const defaultBranch = (repositoryData?.["default_branch"] as string) ?? "main";
+      const sha = (headCommit?.["id"] as string) ?? "";
+      const pusher = ((payload["pusher"] as Record<string, string>)?.["name"]) ?? "unknown";
+
+      if (sha && headCommit) {
+        void runPostMergeReview({ repo, sha, ref, pusher, defaultBranch }).catch((e) => {
+          console.error(`[post-merge-review] uncaught error for ${repo}@${sha}:`, e);
+        });
+        res.end(JSON.stringify({ ok: true, action: "review_started", sha, ref }));
+      } else {
+        // push with no head_commit (e.g. branch delete) — ignore
+        res.end(JSON.stringify({ ok: true, action: "ignored", event: eventType, reason: "no head_commit" }));
+      }
+    } else {
+      res.end(
+        JSON.stringify({
+          ok: true,
+          action: "ignored",
+          event: eventType,
+          action_type: action,
+        })
+      );
+    }
+  } catch (e) {
+    console.error(`[webhook] error handling ${eventType}/${action}:`, e);
+    res.end(JSON.stringify({ ok: false, error: String(e) }));
+  }
+}
+
+async function startGithubWebhookWorkflow(
+  params: Record<string, unknown>
+): Promise<void> {
+  try {
+    // Dynamic import to avoid startup failure if temporalio is not installed
+    const { Client } = await import("@temporalio/client");
+    const temporalHost = process.env.TEMPORAL_HOST ?? "localhost:7233";
+    const client = await Client.connect({ address: temporalHost });
+    const wfId =
+      `github-webhook-${params["event_type"] ?? "unknown"}-` +
+      `${String(params["repo"] ?? "").replace("/", "-")}-` +
+      `${params["number"] ?? 0}-${Date.now()}`;
+    await client.workflow.start("GitHubWebhookWorkflow", {
+      args: [params],
+      taskQueue: "listings-queue",
+      workflowId: wfId,
+    });
+    console.log(`[webhook] started GitHubWebhookWorkflow id=${wfId}`);
+  } catch (e) {
+    console.error("[webhook] failed to start GitHubWebhookWorkflow:", e);
+    throw e;
+  }
+}
+
+// ── REST API helpers ───────────────────────────────────────────────────────
+
+const TASKS_DIR_REST = "/mnt/data/bigclungus-meta/tasks";
+const SESSIONS_DIR_REST = "/mnt/data/hello-world/sessions";
+const AGENTS_DIR_REST = "/mnt/data/bigclungus-meta/agents";
+const WALLET_FILE_REST = "/mnt/data/secrets/eth_wallet";
+const WALLET_ADDRESS_FALLBACK = "0x425bC492E43b2a5Eb7E02c9F5dd9c1D2F378f02f";
+const BASE_RPC_URL_REST = "https://base-mainnet.public.blastapi.io";
+
+const EMOJI_MAP_REST: Record<string, string> = {
+  architect: "🏗️", critic: "🔍", ux: "🎨",
+  otto: "🌪️", spengler: "🕰️", chairman: "⚖️",
+  wolf: "🐺", hume: "🔬", adelbert: "🗡️",
+};
+const COLOR_MAP_REST: Record<string, string> = {
+  architect: "#f59e0b", critic: "#f87171", ux: "#60a5fa",
+  otto: "#a78bfa", spengler: "#94a3b8",
+  wolf: "#f97316", hume: "#38bdf8", adelbert: "#e879f9",
+};
+
+function getGithubUser(req: http.IncomingMessage): string {
+  const cookieSecret = process.env.COOKIE_SECRET ?? "";
+  const cookieHeader = req.headers["cookie"] ?? "";
+  const raw = parseCookieValue(cookieHeader, "tauth_github");
+  if (!raw || !cookieSecret || !raw.includes(".")) return "anonymous";
+  const dotIdx = raw.lastIndexOf(".");
+  const username = raw.slice(0, dotIdx);
+  const sig = raw.slice(dotIdx + 1);
+  const expected = createHmac("sha256", cookieSecret).update(username).digest("hex");
+  try {
+    if (!timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return "anonymous";
+  } catch {
+    return "anonymous";
+  }
+  return username || "anonymous";
+}
+
+function restIsAuthed(req: http.IncomingMessage): boolean {
+  // Allow internal (localhost + token) requests from lab proxies etc.
+  if (isInternalRequest(req)) return true;
+  const cookieSecret = process.env.COOKIE_SECRET ?? "";
+  const allowedRaw = process.env.GITHUB_ALLOWED_USERS ?? "";
+  const allowed = new Set(
+    allowedRaw.split(",").map((u) => u.trim().toLowerCase()).filter(Boolean)
+  );
+  const cookieHeader = req.headers["cookie"] ?? "";
+  const raw = parseCookieValue(cookieHeader, "tauth_github");
+  if (!raw || !cookieSecret || !raw.includes(".")) return false;
+  const dotIdx = raw.lastIndexOf(".");
+  const username = raw.slice(0, dotIdx);
+  const sig = raw.slice(dotIdx + 1);
+  const expected = createHmac("sha256", cookieSecret).update(username).digest("hex");
+  try {
+    if (!timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return false;
+  } catch {
+    return false;
+  }
+  return allowed.size === 0 || allowed.has(username.toLowerCase());
+}
+
+function jsonResponse(res: http.ServerResponse, data: unknown, status = 200): void {
+  const body = Buffer.from(JSON.stringify(data, null, 2), "utf-8");
+  res.writeHead(status, {
+    "Content-Type": "application/json",
+    "Content-Length": body.length,
+  });
+  res.end(body);
+}
+
+// ── Native REST: GET /api/congress/active ──────────────────────────────────
+
+function restServeCongressActive(res: http.ServerResponse): void {
+  try {
+    const files = readdirSync(SESSIONS_DIR_REST).filter((f) => /^(?:congress|trial|session)-\d+\.json$/.test(f));
+    const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+    for (const file of files.sort().reverse()) {
+      try {
+        const fpath = join(SESSIONS_DIR_REST, file);
+        const mtime = statSync(fpath).mtime;
+        if (Date.now() - mtime.getTime() > TWO_HOURS_MS) continue; // stale — skip
+        const sdata = JSON.parse(readFileSync(fpath, "utf-8")) as Record<string, unknown>;
+        if (sdata.status !== "done") {
+          const debaters: string[] = [];
+          const identities = (sdata.identities as Array<Record<string, unknown>> | undefined) ?? [];
+          for (const id of identities) {
+            if (id.name) debaters.push(String(id.name));
+          }
+          jsonResponse(res, { active: true, topic: String(sdata.topic ?? ""), debaters });
+          return;
+        }
+      } catch { /* skip */ }
+    }
+  } catch { /* skip */ }
+  jsonResponse(res, { active: false, topic: "", debaters: [] });
+}
+
+// ── Native REST: POST /api/discord/persona — persona intercept for BigClungus ─
+// Receives [persona: x] Discord messages forwarded by BigClungus, reads the
+// persona file, and injects a [persona-invoke] message back to BigClungus via
+// the inject endpoint so it has the full persona content pre-loaded.
+
+async function restHandleDiscordPersona(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  let data: Record<string, unknown>;
+  try {
+    const body = await readBody(req);
+    data = body.length ? (JSON.parse(body.toString("utf-8")) as Record<string, unknown>) : {};
+  } catch (e) {
+    jsonResponse(res, { error: `Invalid JSON: ${e}` }, 400);
+    return;
+  }
+  const identity = String(data.identity ?? "").trim();
+  const question = String(data.question ?? "").trim();
+  const chatId = String(data.chat_id ?? "").trim();
+  const messageId = String(data.message_id ?? "").trim();
+
+  if (!identity || !question || !chatId) {
+    jsonResponse(res, { error: "identity, question, and chat_id are required" }, 400);
+    return;
+  }
+
+  // Load persona MD file
+  const mdPath = join(AGENTS_DIR_REST, `${identity}.md`);
+  if (!existsSync(mdPath)) {
+    jsonResponse(res, { error: `Persona '${identity}' not found` }, 404);
+    return;
+  }
+
+  let personaPrompt: string;
+  let displayName: string;
+  try {
+    const content = readFileSync(mdPath, "utf-8");
+    // Extract display_name from YAML frontmatter
+    const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
+    const frontmatterText = frontmatterMatch ? frontmatterMatch[1] : "";
+    const displayNameMatch = frontmatterText.match(/^display_name:\s*(.+)$/m);
+    displayName = displayNameMatch ? displayNameMatch[1].trim().replace(/^["']|["']$/g, "") : identity;
+    // Strip YAML frontmatter — persona prompt is everything after second ---
+    const parts = content.split(/^---\s*$/m);
+    personaPrompt = parts.slice(2).join("---").trim();
+    if (!personaPrompt) personaPrompt = content.trim();
+  } catch (e) {
+    jsonResponse(res, { error: `Could not read persona '${identity}': ${e}` }, 500);
+    return;
+  }
+
+  // Inject structured [persona-invoke] message back to BigClungus
+  const injectSecret = process.env.DISCORD_INJECT_SECRET ?? "";
+  if (!injectSecret) {
+    jsonResponse(res, { error: "DISCORD_INJECT_SECRET not configured" }, 500);
+    return;
+  }
+
+  const injectContent = `[persona-invoke] identity=${identity} display_name=${displayName} question=${question}\n\nPERSONA PROMPT:\n${personaPrompt}`;
+
+  try {
+    const injectResp = await fetch("http://127.0.0.1:9876/inject", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-inject-secret": injectSecret,
+      },
+      body: JSON.stringify({
+        content: injectContent,
+        chat_id: chatId,
+        user: "clunger-persona",
+        ...(messageId ? { message_id: `persona-${messageId}` } : {}),
+      }),
+    });
+    if (!injectResp.ok) {
+      const errText = await injectResp.text();
+      jsonResponse(res, { error: `Inject failed: ${injectResp.status} ${errText}` }, 502);
+      return;
+    }
+  } catch (e) {
+    jsonResponse(res, { error: `Inject request failed: ${e}` }, 502);
+    return;
+  }
+
+  jsonResponse(res, { ok: true, identity, display_name: displayName, injected: true });
+}
+
+// ── Native REST: POST /api/invoke-persona ───────────────────────────────────
+
+async function restInvokePersona(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  let data: Record<string, unknown>;
+  try {
+    const body = await readBody(req);
+    data = body.length ? (JSON.parse(body.toString("utf-8")) as Record<string, unknown>) : {};
+  } catch (e) {
+    jsonResponse(res, { error: `Invalid JSON: ${e}` }, 400);
+    return;
+  }
+  const name = String(data.name ?? "").trim();
+  const prompt = String(data.prompt ?? "").trim();
+  if (!name || !prompt) {
+    jsonResponse(res, { error: "name and prompt are required" }, 400);
+    return;
+  }
+  const tileX = data.tile_x != null ? parseInt(String(data.tile_x), 10) : null;
+  const tileY = data.tile_y != null ? parseInt(String(data.tile_y), 10) : null;
+  const location = data.location != null ? String(data.location).slice(0, 100) : null;
+  // Load persona MD file
+  const mdPath = join(AGENTS_DIR_REST, `${name}.md`);
+  if (!existsSync(mdPath)) {
+    jsonResponse(res, { error: `Persona '${name}' not found` }, 404);
+    return;
+  }
+  let systemPrompt: string;
+  try {
+    const content = readFileSync(mdPath, "utf-8");
+    // Strip YAML frontmatter — persona prompt is everything after second ---
+    const parts = content.split(/^---\s*$/m);
+    // parts[0] = empty string before first ---, parts[1] = frontmatter, parts[2+] = body
+    systemPrompt = parts.slice(2).join("---").trim();
+    if (!systemPrompt) systemPrompt = content.trim();
+    // Prepend location context if provided
+    if (location) {
+      systemPrompt = `[Current location: ${location}]\n\n${systemPrompt}`;
+    }
+  } catch (e) {
+    jsonResponse(res, { error: `Could not read persona: ${e}` }, 500);
+    return;
+  }
+  // Invoke claude CLI with persona system prompt (spawnSync is synchronous — no Promise wrapper needed)
+  try {
+    const proc = spawnSync(
+      "/home/clungus/.local/bin/claude",
+      ["-p", systemPrompt, "--output-format", "text"],
+      { input: prompt, encoding: "utf-8", timeout: 60000 }
+    );
+    if (proc.status !== 0) {
+      throw new Error(`claude CLI exited with code ${proc.status}: ${String(proc.stderr ?? "").slice(0, 300)}`);
+    }
+    const result = String(proc.stdout ?? "").trim();
+    // Log interaction to commons_chat_log
+    const githubUser = getGithubUser(req);
+    try {
+      const db = getTracesDb();
+      try {
+        db.run(
+          `INSERT INTO commons_chat_log (github_user, persona_name, user_prompt, persona_response, tile_x, tile_y, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [githubUser, name, prompt, result, tileX ?? null, tileY ?? null, Date.now()]
+        );
+      } finally {
+        db.close();
+      }
+    } catch (logErr) {
+      console.error("[restInvokePersona] chat log insert failed:", logErr);
+    }
+    jsonResponse(res, { response: result });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[restInvokePersona] error:", msg);
+    jsonResponse(res, { error: "Persona failed to respond", reason: msg }, 503);
+  }
+}
+
+function restServeTasks(res: http.ServerResponse, query: URLSearchParams): void {
+  const pageRaw = parseInt(query.get("page") ?? "1", 10);
+  const limitRaw = parseInt(query.get("limit") ?? "50", 10);
+  const page = Number.isFinite(pageRaw) && pageRaw >= 1 ? pageRaw : 1;
+  const limit = Number.isFinite(limitRaw) && limitRaw >= 1 && limitRaw <= 500 ? limitRaw : 50;
+
+  const tasks: unknown[] = [];
+  try {
+    const files = readdirSync(TASKS_DIR_REST).filter((f) => f.endsWith(".json") && f !== ".gitkeep");
+    for (const fname of files) {
+      try {
+        const raw = readFileSync(join(TASKS_DIR_REST, fname), "utf-8");
+        const task = JSON.parse(raw) as Record<string, unknown>;
+        // Derive status/started_at/finished_at/summary from log array
+        const log = Array.isArray(task.log) ? task.log as Array<Record<string, string>> : [];
+        if (log.length > 0) {
+          const lastEvent = log[log.length - 1];
+          const ev = lastEvent.event ?? "";
+          const statusMap: Record<string, string> = {
+            started: "in_progress", milestone: "in_progress", user_feedback: "in_progress",
+            blocked: "in_progress", done: "done", stale: "stale", failed: "failed",
+          };
+          task.status = statusMap[ev] ?? ev;
+          for (const entry of log) {
+            if (entry.event === "started") { task.started_at = entry.ts ?? ""; break; }
+          }
+          for (let i = log.length - 1; i >= 0; i--) {
+            if (log[i].event !== "started") { task.finished_at = log[i].ts ?? ""; break; }
+          }
+          for (let i = log.length - 1; i >= 0; i--) {
+            if (log[i].event !== "started" && log[i].context) {
+              task.summary = log[i].context ?? ""; break;
+            }
+          }
+        }
+        tasks.push(task);
+      } catch { /* skip malformed file */ }
+    }
+  } catch { /* directory unreadable */ }
+  tasks.sort((a, b) => {
+    const sa = String((a as Record<string, unknown>).started_at ?? "");
+    const sb = String((b as Record<string, unknown>).started_at ?? "");
+    return sb.localeCompare(sa);
+  });
+
+  const total = tasks.length;
+  const pages = Math.max(1, Math.ceil(total / limit));
+  const safePage = Math.min(page, pages);
+  const offset = (safePage - 1) * limit;
+  const paginated = tasks.slice(offset, offset + limit);
+
+  // Compute per-status totals from the full dataset (not the paginated slice)
+  const totals = { total, in_progress: 0, done: 0, stale: 0, failed: 0, background: 0, foreground: 0 };
+  for (const t of tasks) {
+    const task = t as Record<string, unknown>;
+    const s = String(task.status ?? "stale");
+    if (s === "in_progress") totals.in_progress++;
+    else if (s === "done") totals.done++;
+    else if (s === "failed") totals.failed++;
+    else totals.stale++;
+    if (task.run_in_background === true) totals.background++;
+    else totals.foreground++;
+  }
+
+  jsonResponse(res, { tasks: paginated, total, page: safePage, limit, pages, totals });
+}
+
+const SERVICES_HEALTH = [
+  "claude-bot", "clunger", "cloudflared", "labs-router",
+  "terminal-server", "temporal", "temporal-proxy", "temporal-worker",
+];
+
+function restServeOpsHealth(res: http.ServerResponse): void {
+  const results: unknown[] = [];
+  for (const name of SERVICES_HEALTH) {
+    const r = spawnSync("systemctl", ["--user", "show", name,
+      "--property=ActiveState,SubState,MainPID,NRestarts,ExecMainStartTimestamp,MemoryCurrent"
+    ], { encoding: "utf-8", timeout: 5000 });
+    const out = r.stdout ?? "";
+    const props: Record<string, string> = {};
+    for (const line of out.split("\n")) {
+      const eq = line.indexOf("=");
+      if (eq !== -1) props[line.slice(0, eq)] = line.slice(eq + 1);
+    }
+    const state = props["ActiveState"] ?? "unknown";
+    const sub = props["SubState"] ?? "unknown";
+    // Uptime in seconds from ExecMainStartTimestamp
+    let uptime_sec: number | null = null;
+    const tsRaw = props["ExecMainStartTimestamp"] ?? "";
+    if (tsRaw && tsRaw !== "0" && !tsRaw.startsWith("n/a")) {
+      const started = new Date(tsRaw);
+      if (!isNaN(started.getTime())) {
+        uptime_sec = Math.floor((Date.now() - started.getTime()) / 1000);
+      }
+    }
+    const restarts = parseInt(props["NRestarts"] ?? "0", 10);
+    const memRaw = parseInt(props["MemoryCurrent"] ?? "0", 10);
+    const memory_mb = isNaN(memRaw) || memRaw <= 0 ? null : Math.round(memRaw / (1024 * 1024) * 10) / 10;
+    results.push({ name, state, sub, uptime_sec, restarts, memory_mb });
+  }
+  jsonResponse(res, results);
+}
+
+function restServeAgents(res: http.ServerResponse): void {
+  interface VerdictCounts { retained: number; evolved: number; retired: number; lastVerdict: string }
+  const verdictHistory = new Map<string, VerdictCounts>();
+  try {
+    const files = readdirSync(SESSIONS_DIR_REST).filter((f) => /^(?:congress|trial|session)-\d+\.json$/.test(f));
+    for (const file of files) {
+      try {
+        const sdata = JSON.parse(readFileSync(join(SESSIONS_DIR_REST, file), "utf-8")) as Record<string, unknown>;
+        const evo = (sdata.evolution ?? {}) as Record<string, unknown>;
+        const inc = (dn: string, type: "retained" | "evolved" | "retired") => {
+          if (!dn) return;
+          const e = verdictHistory.get(dn) ?? { retained: 0, evolved: 0, retired: 0, lastVerdict: "" };
+          e[type] += 1;
+          e.lastVerdict = type.toUpperCase();
+          verdictHistory.set(dn, e);
+        };
+        for (const pname of (evo.retained as string[] | undefined) ?? []) inc(pname, "retained");
+        for (const item of (evo.evolved as Array<{display_name?: string}> | undefined) ?? []) inc(item.display_name ?? "", "evolved");
+        for (const item of (evo.retired as Array<{display_name?: string}> | undefined) ?? (evo.fired as Array<{display_name?: string}> | undefined) ?? []) inc(item.display_name ?? "", "retired");
+      } catch { /* skip */ }
+    }
+  } catch { /* skip */ }
+
+  const loadDir = (dirpath: string) => {
+    const agents: unknown[] = [];
+    try {
+      const files = readdirSync(dirpath).filter((f) => f.endsWith(".md")).sort();
+      for (const fname of files) {
+        try {
+          const content = readFileSync(join(dirpath, fname), "utf-8");
+          const { data: meta } = matter(content);
+          const name = String(meta.name ?? "");
+          if (!name) continue;
+          const dname = String(meta.display_name ?? name);
+          const vh = verdictHistory.get(dname) ?? { retained: 0, evolved: 0, retired: 0, lastVerdict: "" };
+          agents.push({
+            id: name, name, role: meta.role ?? "", emoji: EMOJI_MAP_REST[name] ?? "🤖",
+            color: COLOR_MAP_REST[name] ?? "#888888", description: meta.role ?? "",
+            traits: meta.traits ?? [], is_moderator: name === "chairman",
+            model: meta.model ?? "claude", display_name: dname,
+            avatar_url: meta.avatar_url ?? "", title: meta.title ?? "",
+            sex: meta.sex ?? "", stats_retained: vh.retained, stats_evolved: vh.evolved,
+            stats_retired: vh.retired, last_verdict: vh.lastVerdict,
+            status: String(meta.status ?? "eligible"),
+            hidden: Boolean(meta.hidden),
+          });
+        } catch { /* skip */ }
+      }
+    } catch { /* skip */ }
+    return agents;
+  };
+
+  const all = loadDir(AGENTS_DIR_REST);
+  const visible = all.filter((a) => !(a as Record<string, unknown>).hidden);
+  const eligible = visible.filter((a) => {
+    const r = a as Record<string, unknown>;
+    return !r.is_moderator && r.status === "eligible";
+  });
+  const meme = visible.filter((a) => {
+    const r = a as Record<string, unknown>;
+    return !r.is_moderator && r.status === "meme";
+  });
+  const moderator = visible.find((a) => (a as Record<string, unknown>).is_moderator) ?? null;
+  jsonResponse(res, { eligible, meme, moderator });
+}
+
+function restServeCongressIdentities(res: http.ServerResponse): void {
+  const identities: unknown[] = [];
+  try {
+    const files = readdirSync(AGENTS_DIR_REST).filter((f) => f.endsWith(".md")).sort();
+    for (const fname of files) {
+      try {
+        const content = readFileSync(join(AGENTS_DIR_REST, fname), "utf-8");
+        const { data: meta } = matter(content);
+        if (!meta.name) continue;
+        if (meta.congress === false) continue;
+        identities.push({
+          name: meta.name ?? "", role: meta.role ?? "", traits: meta.traits ?? [],
+          evolves: meta.evolves ?? false, model: meta.model ?? "claude",
+          display_name: meta.display_name ?? "", avatar_url: meta.avatar_url ?? "",
+          title: meta.title ?? "", sex: meta.sex ?? "",
+          status: String(meta.status ?? "eligible"),
+        });
+      } catch { /* skip */ }
+    }
+  } catch { /* skip */ }
+  jsonResponse(res, identities);
+}
+
+function restServeCongressSessions(res: http.ServerResponse): void {
+  // Return only summary fields — avoids shipping full round/roster arrays (~1.4MB) on every sidebar poll.
+  interface SessionSummary { session_id: string; session_number: number; topic: string; status: string; started_at: string; verdict: string | null; flavor: string; defendant?: string; charges?: string }
+  const sessions: SessionSummary[] = [];
+  try {
+    const files = readdirSync(SESSIONS_DIR_REST).filter((f) => /^(?:congress|trial|session)-\d+\.json$/.test(f));
+    for (const file of files) {
+      try {
+        const s = JSON.parse(readFileSync(join(SESSIONS_DIR_REST, file), "utf-8")) as Record<string, unknown>;
+        // Derive flavor: from JSON field, or infer from legacy file prefix
+        let flavor = (s.flavor as string) ?? "";
+        if (!flavor) {
+          if (s.defendant) flavor = "trial";
+          else if (s.mode === "meme") flavor = "meme";
+          else flavor = "normal";
+        }
+        const entry: SessionSummary = {
+          session_id: String(s.session_id ?? ""),
+          session_number: Number(s.session_number ?? 0),
+          topic: String(s.topic ?? ""),
+          status: String(s.status ?? ""),
+          started_at: String(s.started_at ?? s.saved_at ?? ""),
+          verdict: s.verdict != null ? String(s.verdict) : null,
+          flavor,
+        };
+        // Include defendant/charges for trial sessions (used by sidebar display)
+        if (flavor === "trial") {
+          entry.defendant = String(s.defendant_display ?? s.defendant ?? "");
+          entry.charges = String(s.charges ?? "");
+        }
+        sessions.push(entry);
+      } catch { /* skip */ }
+    }
+  } catch { /* skip */ }
+  // Sort by started_at descending (most recent first); fall back to session_number
+  sessions.sort((a, b) => {
+    // Deliberating sessions always first
+    const aActive = a.status === "deliberating" ? 0 : 1;
+    const bActive = b.status === "deliberating" ? 0 : 1;
+    if (aActive !== bActive) return aActive - bActive;
+    // Then by timestamp if available
+    if (a.started_at && b.started_at) {
+      const cmp = b.started_at.localeCompare(a.started_at);
+      if (cmp !== 0) return cmp;
+    }
+    return b.session_number - a.session_number;
+  });
+  jsonResponse(res, sessions);
+}
+
+function restServeCongressSession(res: http.ServerResponse, sessionId: string): void {
+  const fpath = join(SESSIONS_DIR_REST, `${sessionId}.json`);
+  if (!existsSync(fpath)) { jsonResponse(res, { error: `Session '${sessionId}' not found` }, 404); return; }
+  try {
+    jsonResponse(res, JSON.parse(readFileSync(fpath, "utf-8")));
+  } catch (e) {
+    jsonResponse(res, { error: `Could not read session: ${e}` }, 500);
+  }
+}
+
+function restServeCongressMatrix(res: http.ServerResponse): void {
+  // Pre-compute the full participation matrix in one response
+  interface MatrixCell {
+    participated: boolean;
+    vote?: "agree" | "disagree";
+    evolution?: "evolved" | "retired" | "retained" | "created";
+    evolutionDetail?: string;
+  }
+  interface MatrixSession {
+    session_number: number;
+    session_id: string;
+    topic: string;
+    status: string;
+    mode: string;
+    flavor: string;
+    started_at: string;
+    participant_count: number;
+  }
+  interface MatrixPersona {
+    id: string;
+    display_name: string;
+    total_sessions: number;
+    times_evolved: number;
+    times_retired: number;
+    times_created: number;
+    agree_count: number;
+    disagree_count: number;
+  }
+
+  const sessions: MatrixSession[] = [];
+  // Map: persona_id -> session_id -> cell data
+  const cells: Record<string, Record<string, MatrixCell>> = {};
+  const personaNames: Record<string, string> = {}; // id -> display_name
+
+  try {
+    const files = readdirSync(SESSIONS_DIR_REST).filter((f) => /^(?:congress|trial|session)-\d+\.json$/.test(f));
+    for (const file of files) {
+      try {
+        const s = JSON.parse(readFileSync(join(SESSIONS_DIR_REST, file), "utf-8")) as Record<string, unknown>;
+        const isTrial = !!s.trial_number || !!s.defendant;
+        const num = Number(s.session_number ?? s.trial_number ?? 0);
+        const sid = String(s.session_id ?? "");
+
+        // Build roster lookup: id -> display_name
+        // For trials: jury + prosecutors + advocate + defendant form the roster
+        const displayToId: Record<string, string> = {};
+        const rosterSource = isTrial
+          ? [
+              ...((s.jury as Array<Record<string, unknown>> | undefined) ?? []),
+              ...((s.prosecutors as Array<Record<string, unknown>> | undefined) ?? []),
+              ...(s.advocate ? [s.advocate as Record<string, unknown>] : []),
+              ...(s.defendant ? [{ name: s.defendant, display_name: s.defendant_display ?? s.defendant }] : []),
+            ]
+          : ((s.roster as Array<Record<string, unknown>> | undefined) ?? []);
+        for (const p of rosterSource) {
+          const pid = String(p.id ?? p.name ?? "");
+          const dn = String(p.display_name ?? pid);
+          if (pid) {
+            displayToId[dn] = pid;
+            personaNames[pid] = dn;
+          }
+        }
+
+        // Participation — for trials: prosecutors, advocate, defendant, jury all participated
+        const participants = new Set<string>();
+        if (isTrial) {
+          for (const p of ((s.prosecutors as Array<Record<string, unknown>> | undefined) ?? [])) {
+            const pid = String(p.name ?? "");
+            if (pid) { participants.add(pid); if (!cells[pid]) cells[pid] = {}; cells[pid][sid] = { participated: true }; }
+          }
+          if (s.advocate && typeof s.advocate === "object") {
+            const pid = String((s.advocate as Record<string, unknown>).name ?? "");
+            if (pid) { participants.add(pid); if (!cells[pid]) cells[pid] = {}; cells[pid][sid] = { participated: true }; }
+          }
+          if (s.defendant) {
+            const pid = String(s.defendant);
+            participants.add(pid); if (!cells[pid]) cells[pid] = {}; cells[pid][sid] = { participated: true };
+          }
+          for (const j of ((s.jury as Array<Record<string, unknown>> | undefined) ?? [])) {
+            const pid = String(j.name ?? "");
+            if (pid) { participants.add(pid); if (!cells[pid]) cells[pid] = {}; cells[pid][sid] = { participated: true }; }
+          }
+        } else {
+          for (const r of (s.rounds as Array<Record<string, unknown>> | undefined) ?? []) {
+            const ident = String(r.identity ?? "");
+            if (ident && ident !== "chairman") {
+              participants.add(ident);
+              if (!cells[ident]) cells[ident] = {};
+              cells[ident][sid] = { participated: true };
+            }
+          }
+        }
+
+        // Vote summary — standardized schema: always a dict with agree/disagree arrays
+        // For trials: jury_votes is an array of {juror, verdict, reasoning}
+        if (isTrial) {
+          for (const jv of ((s.jury_votes as Array<Record<string, unknown>> | undefined) ?? [])) {
+            const jurorName = String(jv.juror ?? "");
+            const pid = displayToId[jurorName];
+            const jverdict = String(jv.verdict ?? "").toLowerCase();
+            if (pid && cells[pid]?.[sid]) {
+              // Map trial verdict to agree/disagree: guilty=agree (with prosecution), not guilty=disagree
+              cells[pid][sid].vote = jverdict.includes("guilty") && !jverdict.includes("not guilty") ? "agree" : "disagree";
+            }
+          }
+        } else {
+          const vs = s.vote_summary as Record<string, unknown> | undefined;
+          if (vs && typeof vs === "object") {
+            for (const dn of (vs.agree as string[] | undefined) ?? []) {
+              const pid = displayToId[dn];
+              if (pid && cells[pid]?.[sid]) cells[pid][sid].vote = "agree";
+            }
+            for (const dn of (vs.disagree as string[] | undefined) ?? []) {
+              const pid = displayToId[dn];
+              if (pid && cells[pid]?.[sid]) cells[pid][sid].vote = "disagree";
+            }
+          }
+        }
+
+        // Evolution — standardized schema: always a dict with evolved/retired/retained/created arrays
+        const evo = (s.evolution ?? null) as Record<string, unknown> | null;
+        if (evo) {
+          for (const item of (evo.evolved as Array<Record<string, unknown>> | undefined) ?? []) {
+            const pid = String(item.slug ?? "") || displayToId[String(item.display_name ?? "")];
+            if (pid && cells[pid]?.[sid]) {
+              cells[pid][sid].evolution = "evolved";
+              cells[pid][sid].evolutionDetail = String(item.learned ?? "").slice(0, 120);
+            }
+          }
+          // Read "retired" key first, fall back to legacy "fired" key for old sessions
+          for (const item of (evo.retired as Array<Record<string, unknown>> | undefined) ?? (evo.fired as Array<Record<string, unknown>> | undefined) ?? []) {
+            const pid = String(item.slug ?? "") || displayToId[String(item.display_name ?? "")];
+            if (pid && cells[pid]?.[sid]) {
+              cells[pid][sid].evolution = "retired";
+              cells[pid][sid].evolutionDetail = String(item.reason ?? "").slice(0, 120);
+            }
+          }
+          for (const item of (evo.retained as Array<Record<string, unknown>> | undefined) ?? []) {
+            const pid = String(item.slug ?? "") || displayToId[String(item.display_name ?? "")];
+            if (pid && cells[pid]?.[sid]) cells[pid][sid].evolution = "retained";
+          }
+          for (const item of (evo.created as Array<Record<string, unknown>> | undefined) ?? []) {
+            const pid = String(item.slug ?? "") || displayToId[String(item.display_name ?? "")];
+            if (pid) {
+              if (!cells[pid]) cells[pid] = {};
+              cells[pid][sid] = { participated: false, evolution: "created" };
+            }
+          }
+        }
+
+        // Derive flavor for matrix display
+        let matrixFlavor = String(s.flavor ?? "");
+        if (!matrixFlavor) {
+          if (isTrial) matrixFlavor = "trial";
+          else if (s.mode === "meme") matrixFlavor = "meme";
+          else matrixFlavor = "normal";
+        }
+
+        sessions.push({
+          session_number: num,
+          session_id: sid,
+          topic: String(s.topic ?? s.charges ?? ""),
+          status: String(s.status ?? s.verdict ?? ""),
+          mode: String(s.mode ?? "standard"),
+          started_at: String(s.started_at ?? s.saved_at ?? ""),
+          participant_count: participants.size,
+          flavor: matrixFlavor,
+        });
+      } catch { /* skip bad file */ }
+    }
+  } catch { /* skip */ }
+
+  // Sort chronologically by started_at timestamp (trials use saved_at, normalized to started_at)
+  sessions.sort((a, b) => {
+    if (a.started_at && b.started_at) return a.started_at.localeCompare(b.started_at);
+    if (a.started_at) return -1;
+    if (b.started_at) return 1;
+    return a.session_number - b.session_number;
+  });
+
+  // Build persona summaries
+  const personas: MatrixPersona[] = [];
+  for (const [pid, sessionCells] of Object.entries(cells)) {
+    let totalSessions = 0, timesEvolved = 0, timesRetired = 0, timesCreated = 0, agreeCount = 0, disagreeCount = 0;
+    for (const cell of Object.values(sessionCells)) {
+      if (cell.participated) totalSessions++;
+      if (cell.evolution === "evolved") timesEvolved++;
+      if (cell.evolution === "retired") timesRetired++;
+      if (cell.evolution === "created") timesCreated++;
+      if (cell.vote === "agree") agreeCount++;
+      if (cell.vote === "disagree") disagreeCount++;
+    }
+    personas.push({
+      id: pid,
+      display_name: personaNames[pid] ?? pid,
+      total_sessions: totalSessions,
+      times_evolved: timesEvolved,
+      times_retired: timesRetired,
+      times_created: timesCreated,
+      agree_count: agreeCount,
+      disagree_count: disagreeCount,
+    });
+  }
+  personas.sort((a, b) => b.total_sessions - a.total_sessions);
+
+  jsonResponse(res, { sessions, personas, cells });
+}
+
+async function restPatchCongressSession(
+  req: http.IncomingMessage, res: http.ServerResponse, sessionId: string
+): Promise<void> {
+  const fpath = join(SESSIONS_DIR_REST, `${sessionId}.json`);
+  if (!existsSync(fpath)) { jsonResponse(res, { error: `Session '${sessionId}' not found` }, 404); return; }
+  const body = await readBody(req);
+  let updates: Record<string, unknown>;
+  try {
+    updates = body.length ? (JSON.parse(body.toString("utf-8")) as Record<string, unknown>) : {};
+  } catch (e) {
+    jsonResponse(res, { error: `Invalid JSON: ${e}` }, 400);
+    return;
+  }
+  const ALLOWED = new Set(["verdict", "status", "finished_at", "evolution", "thread_id", "task_titles", "vote_summary", "mode", "requires_ack", "defendant", "charges", "flavor"]);
+  try {
+    const session = JSON.parse(readFileSync(fpath, "utf-8")) as Record<string, unknown>;
+    for (const key of ALLOWED) {
+      if (key in updates) {
+        // evolution may arrive as a JSON string from the Python activity — parse it
+        if (key === "evolution" && typeof updates[key] === "string") {
+          try { session[key] = JSON.parse(updates[key] as string); } catch { session[key] = updates[key]; }
+        } else {
+          session[key] = updates[key];
+        }
+      }
+    }
+    writeFileSync(fpath, JSON.stringify(session, null, 2), "utf-8");
+    jsonResponse(res, { ok: true, session_id: sessionId });
+  } catch (e) {
+    jsonResponse(res, { error: `Could not update session: ${e}` }, 500);
+  }
+}
+
+async function restServeWalletBalance(res: http.ServerResponse): Promise<void> {
+  let address: string;
+  try {
+    const content = readFileSync(WALLET_FILE_REST, "utf-8");
+    const line = content.split("\n").find((l) => l.startsWith("ADDRESS="));
+    address = line ? line.slice("ADDRESS=".length).trim() : WALLET_ADDRESS_FALLBACK;
+  } catch {
+    address = WALLET_ADDRESS_FALLBACK;
+  }
+  try {
+    const rpcRes = await fetch(BASE_RPC_URL_REST, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", method: "eth_getBalance", params: [address, "latest"], id: 1 }),
+    });
+    const data = (await rpcRes.json()) as { result?: string; error?: { message: string } };
+    if (data.error) { jsonResponse(res, { error: `RPC error: ${data.error.message}` }, 502); return; }
+    const wei = BigInt(data.result ?? "0x0");
+    const eth = Number(wei) / 1e18;
+    let balanceStr = eth.toFixed(6).replace(/0+$/, "").replace(/\.$/, ".0");
+    if (!balanceStr.includes(".")) balanceStr += ".0";
+    jsonResponse(res, { address, balance_eth: balanceStr, chain: "Base" });
+  } catch (e) {
+    jsonResponse(res, { error: `RPC error: ${e}` }, 502);
+  }
+}
+
+// ── Native REST: GET /api/congress/tracking ──────────────────────────────
+
+const VERDICT_TRACKING_DB = "/home/clungus/work/bigclungus-meta/tasks.db";
+
+interface VerdictTrackingRow {
+  id: number;
+  session_id: string;
+  topic: string;
+  verdict_ts: string;
+  mode: string;
+  requires_ack: number;
+  ack_ts: string | null;
+  task_id: string | null;
+  task_status: string | null;
+  created_at: string;
+}
+
+function restServeCongressTracking(res: http.ServerResponse, filter?: string): void {
+  if (!existsSync(VERDICT_TRACKING_DB)) {
+    jsonResponse(res, { error: "verdict_tracking database not found" }, 500);
+    return;
+  }
+  const db = new Database(VERDICT_TRACKING_DB, { readonly: true });
+  let query = "SELECT * FROM verdict_tracking ORDER BY verdict_ts DESC";
+  if (filter === "unacted") {
+    query = "SELECT * FROM verdict_tracking WHERE requires_ack = 1 AND ack_ts IS NULL ORDER BY verdict_ts DESC";
+  } else if (filter === "acted") {
+    query = "SELECT * FROM verdict_tracking WHERE ack_ts IS NOT NULL ORDER BY verdict_ts DESC";
+  } else if (filter === "meme") {
+    query = "SELECT * FROM verdict_tracking WHERE mode = 'meme' ORDER BY verdict_ts DESC";
+  }
+  const rows = db.query<VerdictTrackingRow, []>(query).all();
+  db.close();
+
+  const total = rows.length;
+  const acted = rows.filter((r) => r.ack_ts !== null).length;
+  const unacted = rows.filter((r) => r.requires_ack === 1 && r.ack_ts === null).length;
+  const meme = rows.filter((r) => r.mode === "meme").length;
+
+  jsonResponse(res, {
+    summary: { total, acted, unacted_serious: unacted, meme },
+    verdicts: rows.map((r) => ({
+      session_id: r.session_id,
+      topic: r.topic.length > 200 ? r.topic.slice(0, 200) + "..." : r.topic,
+      verdict_ts: r.verdict_ts,
+      mode: r.mode,
+      requires_ack: r.requires_ack === 1,
+      ack_ts: r.ack_ts,
+      task_id: r.task_id,
+      task_status: r.task_status,
+    })),
+  });
+}
+
+async function restPostCongressTrackingRecord(
+  req: http.IncomingMessage,
+  res: http.ServerResponse
+): Promise<void> {
+  let data: Record<string, unknown>;
+  try {
+    const body = await readBody(req);
+    data = body.length ? (JSON.parse(body.toString("utf-8")) as Record<string, unknown>) : {};
+  } catch (e) {
+    jsonResponse(res, { error: `Invalid JSON: ${e}` }, 400);
+    return;
+  }
+
+  const sessionId = String(data.session_id ?? "");
+  const topic = String(data.topic ?? "");
+  const verdictTs = String(data.verdict_ts ?? new Date().toISOString());
+  const mode = String(data.mode ?? "serious");
+  const requiresAck = data.requires_ack !== false ? 1 : 0;
+  const taskId = data.task_id ? String(data.task_id) : null;
+  const taskStatus = data.task_status ? String(data.task_status) : null;
+
+  if (!sessionId || !topic) {
+    jsonResponse(res, { error: "session_id and topic are required" }, 400);
+    return;
+  }
+
+  if (!existsSync(VERDICT_TRACKING_DB)) {
+    jsonResponse(res, { error: "verdict_tracking database not found" }, 500);
+    return;
+  }
+
+  const db = new Database(VERDICT_TRACKING_DB);
+  try {
+    db.run(
+      `INSERT INTO verdict_tracking (session_id, topic, verdict_ts, mode, requires_ack, task_id, task_status)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(session_id) DO UPDATE SET
+         topic = excluded.topic,
+         verdict_ts = excluded.verdict_ts,
+         mode = excluded.mode,
+         requires_ack = excluded.requires_ack,
+         task_id = COALESCE(excluded.task_id, verdict_tracking.task_id),
+         task_status = COALESCE(excluded.task_status, verdict_tracking.task_status)`,
+      [sessionId, topic, verdictTs, mode, requiresAck, taskId, taskStatus]
+    );
+    db.close();
+    jsonResponse(res, { ok: true, session_id: sessionId });
+  } catch (e) {
+    db.close();
+    jsonResponse(res, { error: `DB insert failed: ${e}` }, 500);
+  }
+}
+
+async function restPatchCongressTracking(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  sessionId: string
+): Promise<void> {
+  let data: Record<string, unknown>;
+  try {
+    const body = await readBody(req);
+    data = body.length ? (JSON.parse(body.toString("utf-8")) as Record<string, unknown>) : {};
+  } catch (e) {
+    jsonResponse(res, { error: `Invalid JSON: ${e}` }, 400);
+    return;
+  }
+
+  if (!existsSync(VERDICT_TRACKING_DB)) {
+    jsonResponse(res, { error: "verdict_tracking database not found" }, 500);
+    return;
+  }
+
+  const db = new Database(VERDICT_TRACKING_DB);
+  const updates: string[] = [];
+  const params: (string | number | null)[] = [];
+
+  if (data.ack_ts !== undefined) {
+    updates.push("ack_ts = ?");
+    params.push(data.ack_ts ? String(data.ack_ts) : null);
+  }
+  if (data.task_id !== undefined) {
+    updates.push("task_id = ?");
+    params.push(data.task_id ? String(data.task_id) : null);
+  }
+  if (data.task_status !== undefined) {
+    updates.push("task_status = ?");
+    params.push(data.task_status ? String(data.task_status) : null);
+  }
+
+  if (updates.length === 0) {
+    db.close();
+    jsonResponse(res, { error: "No fields to update" }, 400);
+    return;
+  }
+
+  params.push(sessionId);
+  try {
+    const result = db.run(
+      `UPDATE verdict_tracking SET ${updates.join(", ")} WHERE session_id = ?`,
+      params
+    );
+    db.close();
+    if (result.changes === 0) {
+      jsonResponse(res, { error: "Session not found in verdict_tracking" }, 404);
+    } else {
+      jsonResponse(res, { ok: true, session_id: sessionId });
+    }
+  } catch (e) {
+    db.close();
+    jsonResponse(res, { error: `DB update failed: ${e}` }, 500);
+  }
+}
+
+// ── Native REST: POST /api/congress ────────────────────────────────────────
+
+async function restPostCongress(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  if (!restIsAuthed(req)) {
+    jsonResponse(res, { error: "Forbidden: authentication required" }, 403);
+    return;
+  }
+  let data: Record<string, unknown>;
+  try {
+    const body = await readBody(req);
+    data = body.length ? (JSON.parse(body.toString("utf-8")) as Record<string, unknown>) : {};
+  } catch (e) {
+    jsonResponse(res, { error: `Invalid JSON: ${e}` }, 400);
+    return;
+  }
+  try {
+    const reqMsg = create(PostDebateRequestSchema, {
+      task: String(data.task ?? ""),
+      identity: String(data.identity ?? ""),
+      sessionId: String(data.session_id ?? ""),
+    });
+    const result = await congressServiceImpl.postDebate(reqMsg, {} as never);
+    jsonResponse(res, { response: result.response, identity: result.identity });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[restPostCongress] error:", msg);
+    jsonResponse(res, { error: "Persona failed to respond", reason: msg }, 503);
+  }
+}
+
+// ── Native REST: GET /api/congress/stream (SSE) ────────────────────────────
+
+function restStreamCongress(req: http.IncomingMessage, res: http.ServerResponse, sessionId: string): void {
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    "Connection": "keep-alive",
+    "X-Accel-Buffering": "no",
+    "Access-Control-Allow-Origin": "https://clung.us",
+  });
+
+  let lastLen = 0;
+  let iter = 0;
+  const maxIter = 600; // 60s at 100ms
+  let clientClosed = false;
+
+  req.on("close", () => { clientClosed = true; });
+
+  const tick = () => {
+    if (clientClosed || iter >= maxIter) {
+      if (!clientClosed) res.end();
+      return;
+    }
+    iter++;
+
+    const stream = activeStreams.get(sessionId);
+    if (stream) {
+      const newText = stream.text.slice(lastLen);
+      if (newText) {
+        const data = JSON.stringify({
+          identity: stream.identity,
+          display_name: stream.displayName,
+          text: newText,
+          done: false,
+        });
+        res.write(`data: ${data}\n\n`);
+        lastLen = stream.text.length;
+      }
+      if (stream.done) {
+        const data = JSON.stringify({
+          identity: stream.identity,
+          display_name: stream.displayName,
+          text: "",
+          done: true,
+        });
+        res.write(`data: ${data}\n\n`);
+        res.end();
+        return;
+      }
+    }
+
+    setTimeout(tick, 100);
+  };
+
+  tick();
+}
+
+// ── Timeline SQLite ────────────────────────────────────────────────────────
+
+const TIMELINE_DB_PATH = "/mnt/data/clunger/timeline.db";
+const timelineDb = new Database(TIMELINE_DB_PATH);
+timelineDb.exec("PRAGMA journal_mode=WAL");
+timelineDb.exec(`
+  CREATE TABLE IF NOT EXISTS timeline_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    category TEXT DEFAULT 'milestone',
+    icon TEXT,
+    url TEXT,
+    source TEXT DEFAULT 'manual',
+    created_at TEXT DEFAULT (datetime('now'))
+  )
+`);
+
+// ── Native REST: /api/personas* ────────────────────────────────────────────
+
+const PERSONAS_DB_PATH_REST = "/mnt/data/hello-world/personas.db";
+const AGENTS_UNIFIED_REST = "/mnt/data/bigclungus-meta/agents";
+
+
+function personaFindMdPath(name: string): { fpath: string; status: string } | null {
+  const fpath = join(AGENTS_UNIFIED_REST, `${name}.md`);
+  if (!existsSync(fpath)) return null;
+  // Derive status from frontmatter status field
+  try {
+    const content = readFileSync(fpath, "utf-8");
+    const { meta } = personaParseFrontmatter(content);
+    const status = String(meta["status"] ?? "eligible");
+    return { fpath, status };
+  } catch {
+    return { fpath, status: "eligible" };
+  }
+}
+
+function personaParseFrontmatter(content: string): { meta: Record<string, unknown>; body: string } {
+  if (!content.startsWith("---")) return { meta: {}, body: content };
+  const end = content.indexOf("---", 3);
+  if (end === -1) return { meta: {}, body: content };
+  const fm = content.slice(3, end);
+  const body = content.slice(end + 3).trim();
+  const meta: Record<string, unknown> = {};
+  for (const line of fm.split("\n")) {
+    const colon = line.indexOf(":");
+    if (colon === -1) continue;
+    const key = line.slice(0, colon).trim();
+    const val = line.slice(colon + 1).trim();
+    if (key) meta[key] = val;
+  }
+  return { meta, body };
+}
+
+function personaBuildFrontmatter(fields: Record<string, unknown>): string {
+  const lines = ["---"];
+  for (const [k, v] of Object.entries(fields)) {
+    if (v !== undefined && v !== null && v !== "") lines.push(`${k}: ${v}`);
+  }
+  lines.push("---");
+  return lines.join("\n");
+}
+
+function personaWriteMd(fpath: string, meta: Record<string, unknown>, prompt: string): void {
+  const fm = personaBuildFrontmatter(meta);
+  writeFileSync(fpath, `${fm}\n\n${prompt}`, "utf-8");
+}
+
+function personaSyncToDb(db: InstanceType<typeof Database>, name: string, meta: Record<string, unknown>, status: string, mdPath: string): void {
+  const now = new Date().toISOString();
+  const exists = db.query("SELECT name FROM personas WHERE name = ?").get(name);
+  if (exists) {
+    db.run(
+      `UPDATE personas SET display_name=?, model=?, role=?, title=?, sex=?, congress=?, evolves=?, avatar_url=?, status=?, md_path=?, updated_at=? WHERE name=?`,
+      [
+        String(meta.display_name ?? name),
+        String(meta.model ?? "claude"),
+        String(meta.role ?? ""),
+        meta.title ? String(meta.title) : null,
+        meta.sex ? String(meta.sex) : null,
+        meta.congress !== false ? 1 : 0,
+        meta.evolves ? 1 : 0,
+        meta.avatar_url ? String(meta.avatar_url) : null,
+        status,
+        mdPath,
+        now,
+        name,
+      ]
+    );
+  } else {
+    db.run(
+      `INSERT INTO personas (name,display_name,model,role,title,sex,congress,evolves,special_seat,stakeholder_only,status,md_path,avatar_url,prompt_hash,total_congresses,times_evolved,times_retired,times_reinstated,last_verdict,last_verdict_date,updated_at) VALUES (?,?,?,?,?,?,?,?,0,0,?,?,?,NULL,0,0,0,0,NULL,NULL,?)`,
+      [
+        name,
+        String(meta.display_name ?? name),
+        String(meta.model ?? "claude"),
+        String(meta.role ?? ""),
+        meta.title ? String(meta.title) : null,
+        meta.sex ? String(meta.sex) : null,
+        meta.congress !== false ? 1 : 0,
+        meta.evolves ? 1 : 0,
+        status,
+        mdPath,
+        meta.avatar_url ? String(meta.avatar_url) : null,
+        now,
+      ]
+    );
+  }
+}
+
+function personaRowToJson(row: Record<string, unknown>, prompt = ""): Record<string, unknown> {
+  return { ...row, prompt };
+}
+
+async function restHandlePersonas(req: http.IncomingMessage, res: http.ServerResponse, pathname: string): Promise<void> {
+  // All persona mutations require auth
+  const isWrite = req.method === "POST" || req.method === "PATCH" || req.method === "DELETE";
+  if (isWrite && !restIsAuthed(req)) {
+    jsonResponse(res, { error: "Forbidden: authentication required" }, 403);
+    return;
+  }
+
+  // GET /api/personas — list all
+  if (pathname === "/api/personas" && req.method === "GET") {
+    const db = new Database(PERSONAS_DB_PATH_REST, { readonly: true });
+    try {
+      const rows = db.query("SELECT * FROM personas ORDER BY name").all() as Record<string, unknown>[];
+      jsonResponse(res, { personas: rows });
+    } finally {
+      db.close();
+    }
+    return;
+  }
+
+  // POST /api/personas — create
+  if (pathname === "/api/personas" && req.method === "POST") {
+    let data: Record<string, unknown>;
+    try {
+      const body = await readBody(req);
+      data = body.length ? (JSON.parse(body.toString("utf-8")) as Record<string, unknown>) : {};
+    } catch (e) {
+      jsonResponse(res, { error: `Invalid JSON: ${e}` }, 400);
+      return;
+    }
+    const name = String(data.name ?? "").trim();
+    if (!name || !/^[\w-]+$/.test(name)) {
+      jsonResponse(res, { error: "Missing or invalid 'name' field" }, 400);
+      return;
+    }
+    if (personaFindMdPath(name)) {
+      jsonResponse(res, { error: `Persona '${name}' already exists` }, 409);
+      return;
+    }
+    const meta: Record<string, unknown> = {
+      name,
+      display_name: data.display_name ?? name,
+      model: data.model ?? "claude-opus-4-6",
+      role: data.role ?? "",
+      title: data.title ?? null,
+      sex: data.sex ?? null,
+      congress: data.congress !== false,
+      evolves: data.evolves !== false,
+      avatar_url: data.avatar_url ?? null,
+    };
+    const prompt = String(data.prompt ?? "");
+    const fpath = join(AGENTS_UNIFIED_REST, `${name}.md`);
+    try {
+      personaWriteMd(fpath, meta, prompt);
+    } catch (e) {
+      jsonResponse(res, { error: `Failed to write md file: ${e}` }, 500);
+      return;
+    }
+    const db = new Database(PERSONAS_DB_PATH_REST);
+    try {
+      personaSyncToDb(db, name, meta, "eligible", fpath);
+      db.run("UPDATE personas SET updated_at=? WHERE name=?", [new Date().toISOString(), name]);
+      const row = db.query("SELECT * FROM personas WHERE name=?").get(name) as Record<string, unknown>;
+      jsonResponse(res, { persona: personaRowToJson(row, prompt) }, 201);
+    } finally {
+      db.close();
+    }
+    return;
+  }
+
+  // /api/personas/:name routes
+  const nameMatch = /^\/api\/personas\/([\w-]+)$/.exec(pathname);
+  if (nameMatch) {
+    const name = nameMatch[1];
+
+    if (req.method === "GET") {
+      const db = new Database(PERSONAS_DB_PATH_REST, { readonly: true });
+      try {
+        const row = db.query("SELECT * FROM personas WHERE name=?").get(name) as Record<string, unknown> | null;
+        if (!row) { jsonResponse(res, { error: `Persona '${name}' not found` }, 404); return; }
+        const found = personaFindMdPath(name);
+        let prompt = "";
+        if (found) {
+          const content = readFileSync(found.fpath, "utf-8");
+          prompt = personaParseFrontmatter(content).body;
+        }
+        jsonResponse(res, { persona: personaRowToJson(row, prompt) });
+      } finally {
+        db.close();
+      }
+      return;
+    }
+
+    if (req.method === "PATCH") {
+      const found = personaFindMdPath(name);
+      if (!found) { jsonResponse(res, { error: `Persona '${name}' not found` }, 404); return; }
+      let updates: Record<string, unknown>;
+      try {
+        const body = await readBody(req);
+        updates = body.length ? (JSON.parse(body.toString("utf-8")) as Record<string, unknown>) : {};
+      } catch (e) {
+        jsonResponse(res, { error: `Invalid JSON: ${e}` }, 400);
+        return;
+      }
+      const content = readFileSync(found.fpath, "utf-8");
+      const { meta: currentMeta, body: currentBody } = personaParseFrontmatter(content);
+      const frontmatterFields = new Set(["model", "role", "title", "sex", "congress", "evolves", "avatar_url", "display_name"]);
+      for (const field of frontmatterFields) {
+        if (field in updates) currentMeta[field] = updates[field];
+      }
+      const prompt = updates.prompt !== undefined ? String(updates.prompt) : currentBody;
+      const newStatus = updates.status !== undefined ? String(updates.status) : found.status;
+      if (!["eligible", "meme", "moderator"].includes(newStatus)) {
+        jsonResponse(res, { error: `Invalid status '${newStatus}'` }, 400);
+        return;
+      }
+      // No file moves — update status field in frontmatter in place
+      if (newStatus !== found.status) {
+        currentMeta["status"] = newStatus;
+      }
+      const newFpath = found.fpath; // file stays in unified agents/ dir
+      try {
+        personaWriteMd(newFpath, currentMeta, prompt);
+      } catch (e) {
+        jsonResponse(res, { error: `Failed to write md file: ${e}` }, 500);
+        return;
+      }
+      const db = new Database(PERSONAS_DB_PATH_REST);
+      try {
+        personaSyncToDb(db, name, currentMeta, newStatus, newFpath);
+        const row = db.query("SELECT * FROM personas WHERE name=?").get(name) as Record<string, unknown>;
+        jsonResponse(res, { persona: personaRowToJson(row, prompt) });
+      } finally {
+        db.close();
+      }
+      return;
+    }
+
+    if (req.method === "DELETE") {
+      const found = personaFindMdPath(name);
+      if (!found) { jsonResponse(res, { error: `Persona '${name}' not found` }, 404); return; }
+      try {
+        unlinkSync(found.fpath);
+      } catch (e) {
+        jsonResponse(res, { error: `Failed to remove md file: ${e}` }, 500);
+        return;
+      }
+      const db = new Database(PERSONAS_DB_PATH_REST);
+      try {
+        db.run("DELETE FROM personas WHERE name=?", [name]);
+      } finally {
+        db.close();
+      }
+      jsonResponse(res, { ok: true, deleted: name });
+      return;
+    }
+  }
+
+  // /api/personas/:name/verdict
+  const verdictMatch = /^\/api\/personas\/([\w-]+)\/verdict$/.exec(pathname);
+  if (verdictMatch && req.method === "POST") {
+    const name = verdictMatch[1];
+    let data: Record<string, unknown>;
+    try {
+      const body = await readBody(req);
+      data = body.length ? (JSON.parse(body.toString("utf-8")) as Record<string, unknown>) : {};
+    } catch (e) {
+      jsonResponse(res, { error: `Invalid JSON: ${e}` }, 400);
+      return;
+    }
+    const rawVerdict = String(data.verdict ?? "").toUpperCase();
+    if (!["RETIRE", "FIRE", "EVOLVE", "RETAIN"].includes(rawVerdict)) {
+      jsonResponse(res, { error: "Invalid verdict — must be RETIRE, EVOLVE, or RETAIN" }, 400);
+      return;
+    }
+    const verdict = rawVerdict === "FIRE" ? "RETIRE" : rawVerdict;  // normalize legacy FIRE
+    const dateStr = String(data.date ?? new Date().toISOString().slice(0, 10));
+    const now = new Date().toISOString();
+    const db = new Database(PERSONAS_DB_PATH_REST);
+    try {
+      const row = db.query("SELECT * FROM personas WHERE name=?").get(name) as Record<string, unknown> | null;
+      if (!row) { jsonResponse(res, { error: `Persona '${name}' not found` }, 404); db.close(); return; }
+      if (verdict === "RETIRE") {
+        db.run(`UPDATE personas SET last_verdict=?,last_verdict_date=?,times_retired=times_retired+1,status='meme',updated_at=? WHERE name=?`, [verdict, dateStr, now, name]);
+        // Update status in frontmatter — safe regex sub avoids lossy
+        // parseFrontmatter/buildFrontmatter round-trip that destroys
+        // multi-line YAML fields (traits, values, avoid, etc.)
+        const mdPath = join(AGENTS_UNIFIED_REST, `${name}.md`);
+        if (existsSync(mdPath)) {
+          try {
+            const content = readFileSync(mdPath, "utf-8");
+            const updated = content.replace(/^status:\s*\S+\s*$/m, "status: meme");
+            writeFileSync(mdPath, updated, "utf-8");
+          } catch { /* non-fatal */ }
+        }
+        db.run("UPDATE personas SET md_path=? WHERE name=?", [mdPath, name]);
+      } else if (verdict === "EVOLVE") {
+        db.run(`UPDATE personas SET last_verdict=?,last_verdict_date=?,times_evolved=times_evolved+1,updated_at=? WHERE name=?`, [verdict, dateStr, now, name]);
+      } else {
+        db.run(`UPDATE personas SET last_verdict=?,last_verdict_date=?,updated_at=? WHERE name=?`, [verdict, dateStr, now, name]);
+      }
+      jsonResponse(res, { ok: true });
+    } finally {
+      db.close();
+    }
+    return;
+  }
+
+  jsonResponse(res, { error: "Not found" }, 404);
+}
+
+// ── Commons traces ─────────────────────────────────────────────────────────
+
+const TRACES_DB_PATH = "/mnt/data/clunger/traces.db";
+const TRACES_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const VALID_TRACE_TYPES = new Set(["footprint", "tree_mark", "note"]);
+
+function getTracesDb(): InstanceType<typeof Database> {
+  const db = new Database(TRACES_DB_PATH);
+  db.run(`CREATE TABLE IF NOT EXISTS commons_chat_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    github_user TEXT NOT NULL,
+    persona_name TEXT NOT NULL,
+    user_prompt TEXT NOT NULL,
+    persona_response TEXT NOT NULL,
+    tile_x INTEGER,
+    tile_y INTEGER,
+    created_at INTEGER NOT NULL
+  )`);
+  db.run(`CREATE TABLE IF NOT EXISTS persona_traces (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    persona_name TEXT NOT NULL,
+    trace_type TEXT NOT NULL,
+    tile_x INTEGER NOT NULL,
+    tile_y INTEGER NOT NULL,
+    content TEXT NOT NULL DEFAULT '',
+    created_at INTEGER NOT NULL
+  )`);
+  db.run(`CREATE INDEX IF NOT EXISTS traces_persona_time ON persona_traces(persona_name, created_at)`);
+  // Auto-expire traces older than 7 days
+  db.run(`DELETE FROM persona_traces WHERE created_at < ?`, [Date.now() - TRACES_MAX_AGE_MS]);
+  return db;
+}
+
+async function restHandleCommons(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  pathname: string
+): Promise<void> {
+  // POST /api/commons/trace — record a trace
+  if (pathname === "/api/commons/trace" && req.method === "POST") {
+    let data: Record<string, unknown>;
+    try {
+      const body = await readBody(req);
+      data = body.length ? (JSON.parse(body.toString("utf-8")) as Record<string, unknown>) : {};
+    } catch (e) {
+      jsonResponse(res, { error: `Invalid JSON: ${e}` }, 400);
+      return;
+    }
+    const personaName = String(data.persona_name ?? "").trim();
+    const traceType = String(data.trace_type ?? "").trim();
+    const tileX = typeof data.tile_x === "number" ? Math.floor(data.tile_x) : parseInt(String(data.tile_x ?? ""), 10);
+    const tileY = typeof data.tile_y === "number" ? Math.floor(data.tile_y) : parseInt(String(data.tile_y ?? ""), 10);
+    const content = String(data.content ?? "").slice(0, 500);
+    if (!personaName) {
+      jsonResponse(res, { error: "persona_name is required" }, 400);
+      return;
+    }
+    if (!VALID_TRACE_TYPES.has(traceType)) {
+      jsonResponse(res, { error: `trace_type must be one of: ${[...VALID_TRACE_TYPES].join(", ")}` }, 400);
+      return;
+    }
+    if (isNaN(tileX) || isNaN(tileY)) {
+      jsonResponse(res, { error: "tile_x and tile_y must be numbers" }, 400);
+      return;
+    }
+    const db = getTracesDb();
+    try {
+      const now = Date.now();
+      const oneMinuteAgo = now - 60_000;
+      // Rate-limit: max 3 footprints per persona per minute
+      if (traceType === "footprint") {
+        const recentRow = db.query<{ cnt: number }, [string, string, number]>(
+          "SELECT COUNT(*) as cnt FROM persona_traces WHERE persona_name=? AND trace_type=? AND created_at > ?"
+        ).get(personaName, "footprint", oneMinuteAgo);
+        if ((recentRow?.cnt ?? 0) >= 3) {
+          jsonResponse(res, { ok: false, error: "rate_limited", message: "max 3 footprints per persona per minute" }, 429);
+          db.close();
+          return;
+        }
+      }
+      const result = db.run(
+        "INSERT INTO persona_traces (persona_name, trace_type, tile_x, tile_y, content, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+        [personaName, traceType, tileX, tileY, content, now]
+      );
+      jsonResponse(res, { ok: true, id: result.lastInsertRowid });
+    } catch (e) {
+      jsonResponse(res, { error: `Trace insert failed: ${e}` }, 500);
+    } finally {
+      db.close();
+    }
+    return;
+  }
+
+  // GET /api/commons/traces — return all traces from last 7 days
+  if (pathname === "/api/commons/traces" && req.method === "GET") {
+    const db = getTracesDb();
+    try {
+      const cutoff = Date.now() - TRACES_MAX_AGE_MS;
+      const now = Date.now();
+      const rows = db.query<{
+        id: number;
+        persona_name: string;
+        trace_type: string;
+        tile_x: number;
+        tile_y: number;
+        content: string;
+        created_at: number;
+      }, [number]>(
+        "SELECT id, persona_name, trace_type, tile_x, tile_y, content, created_at FROM persona_traces WHERE created_at >= ? ORDER BY created_at DESC"
+      ).all(cutoff);
+      const traces = rows.map((r) => ({ ...r, age_ms: now - r.created_at }));
+      jsonResponse(res, { traces });
+    } catch (e) {
+      jsonResponse(res, { error: `Traces fetch failed: ${e}` }, 500);
+    } finally {
+      db.close();
+    }
+    return;
+  }
+
+  // GET /api/commons/chat-log — return last 50 persona interactions (auth required)
+  if (pathname === "/api/commons/chat-log" && req.method === "GET") {
+    if (!restIsAuthed(req)) {
+      jsonResponse(res, { error: "Unauthorized" }, 401);
+      return;
+    }
+    const db = getTracesDb();
+    try {
+      const rows = db.query<{
+        id: number;
+        github_user: string;
+        persona_name: string;
+        user_prompt: string;
+        persona_response: string;
+        tile_x: number | null;
+        tile_y: number | null;
+        created_at: number;
+      }, []>(
+        "SELECT id, github_user, persona_name, user_prompt, persona_response, tile_x, tile_y, created_at FROM commons_chat_log ORDER BY created_at DESC LIMIT 50"
+      ).all();
+      jsonResponse(res, { log: rows });
+    } catch (e) {
+      jsonResponse(res, { error: `Chat log fetch failed: ${e}` }, 500);
+    } finally {
+      db.close();
+    }
+    return;
+  }
+
+  jsonResponse(res, { error: "Not found" }, 404);
+}
+
+// ── Voting ─────────────────────────────────────────────────────────────────
+
+const VOTES_DB_PATH = "/mnt/data/clunger/votes.db";
+
+function getVotesDb(): InstanceType<typeof Database> {
+  const db = new Database(VOTES_DB_PATH);
+  db.run(`CREATE TABLE IF NOT EXISTS votes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    poll_id TEXT NOT NULL,
+    option TEXT NOT NULL,
+    voter_token TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  )`);
+  db.run(`CREATE UNIQUE INDEX IF NOT EXISTS votes_poll_voter ON votes(poll_id, voter_token)`);
+  return db;
+}
+
+function getVoteCounts(db: InstanceType<typeof Database>, pollId: string): Record<string, number> {
+  const rows = db.query<{ option: string; cnt: number }, [string]>(
+    "SELECT option, COUNT(*) as cnt FROM votes WHERE poll_id=? GROUP BY option"
+  ).all(pollId);
+  const counts: Record<string, number> = {};
+  for (const row of rows) {
+    counts[row.option] = row.cnt;
+  }
+  return counts;
+}
+
+const QUORUM = 3;
+
+function getWinner(counts: Record<string, number>, quorum = QUORUM): string | null {
+  const total = Object.values(counts).reduce((s, n) => s + n, 0);
+  if (total < quorum) return null;
+  // Find option with most votes; on tie return null (wait for more votes)
+  let topOpt: string | null = null;
+  let topCnt = 0;
+  let tied = false;
+  for (const [opt, cnt] of Object.entries(counts)) {
+    if (cnt > topCnt) { topOpt = opt; topCnt = cnt; tied = false; }
+    else if (cnt === topCnt) { tied = true; }
+  }
+  return tied ? null : topOpt;
+}
+
+async function notifySpriteTie(pollId: string): Promise<void> {
+  const secret = process.env.DISCORD_INJECT_SECRET;
+  if (!secret) return;
+  try {
+    // Human-readable alert
+    const alertResp = await fetch("http://127.0.0.1:9876/inject", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-inject-secret": secret },
+      body: JSON.stringify({
+        content: `🎨 Three-way tie on ${pollId}! Votes reset. Regenerating 3 new sprite variants...`,
+        chat_id: "1485343472952148008",
+        user: "vote-system",
+      }),
+    });
+    if (!alertResp.ok) console.error("[vote] notifySpriteTie alert failed:", alertResp.status);
+    // Spawn regen script directly — no Discord trigger parsing needed
+    // pollId is e.g. "sprite-critic"; strip the "sprite-" prefix to get the persona slug
+    const persona = pollId.replace(/^sprite-/, "");
+    const proc = Bun.spawn(
+      ["/bin/bash", "/mnt/data/scripts/regen-sprites.sh", persona],
+      { stdout: "pipe", stderr: "pipe" },
+    );
+    // Log outcome asynchronously without blocking
+    void proc.exited.then(async (code) => {
+      const out = await new Response(proc.stdout).text();
+      const err = await new Response(proc.stderr).text();
+      if (code !== 0) {
+        console.error(`[vote] regen-sprites failed (exit ${code}) for ${persona}:\n${err}`);
+        // Notify Discord of failure
+        await fetch("http://127.0.0.1:9876/inject", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-inject-secret": secret },
+          body: JSON.stringify({
+            content: `❌ Sprite regen failed for ${pollId} (exit ${code}): ${err.slice(0, 300)}`,
+            chat_id: "1485343472952148008",
+            user: "vote-system",
+          }),
+        }).catch((e) => console.error("[vote] regen failure notify error:", e));
+      } else {
+        console.log(`[vote] regen-sprites done for ${persona}:\n${out}`);
+        await fetch("http://127.0.0.1:9876/inject", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-inject-secret": secret },
+          body: JSON.stringify({
+            content: `✅ New ${persona} sprite variants are live — vote again!`,
+            chat_id: "1485343472952148008",
+            user: "vote-system",
+          }),
+        }).catch((e) => console.error("[vote] regen success notify error:", e));
+      }
+    });
+  } catch (e) {
+    console.error("[vote] notifySpriteTie error:", e);
+  }
+}
+
+async function notifyVoteWinner(pollId: string, option: string, count: number): Promise<void> {
+  const secret = process.env.DISCORD_INJECT_SECRET;
+  if (!secret) return;
+  try {
+    const resp = await fetch("http://127.0.0.1:9876/inject", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-inject-secret": secret },
+      body: JSON.stringify({
+        content: `🗳️ vote/${pollId}: **${option}** wins (${count} votes) — queued for implementation`,
+        chat_id: "1485343472952148008",
+        user: "vote-system",
+      }),
+    });
+    if (!resp.ok) console.error("[vote] notifyVoteWinner failed:", resp.status);
+  } catch (e) {
+    console.error("[vote] notifyVoteWinner error:", e);
+  }
+}
+
+function getVoterToken(req: http.IncomingMessage, res: http.ServerResponse): string {
+  const cookieHeader = req.headers["cookie"] ?? "";
+  const existing = parseCookieValue(cookieHeader, "voter_token");
+  if (existing) return existing;
+  // Generate new token
+  const token = randomBytes(16).toString("hex");
+  const oneYear = 365 * 24 * 60 * 60;
+  res.setHeader("Set-Cookie", `voter_token=${token}; Max-Age=${oneYear}; SameSite=Lax; Path=/`);
+  return token;
+}
+
+async function restHandleVote(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  pathname: string
+): Promise<void> {
+  // POST /api/vote
+  if (pathname === "/api/vote" && req.method === "POST") {
+    let data: Record<string, unknown>;
+    try {
+      const body = await readBody(req);
+      data = body.length ? (JSON.parse(body.toString("utf-8")) as Record<string, unknown>) : {};
+    } catch (e) {
+      jsonResponse(res, { error: `Invalid JSON: ${e}` }, 400);
+      return;
+    }
+    const pollId = String(data.poll_id ?? "").trim();
+    const option = String(data.option ?? "").trim().toUpperCase();
+    if (!pollId || !option) {
+      jsonResponse(res, { error: "poll_id and option are required" }, 400);
+      return;
+    }
+    const voterToken = getVoterToken(req, res);
+    const db = getVotesDb();
+    try {
+      const now = Date.now();
+      // Capture counts before this vote to detect threshold crossing
+      const prevCounts = getVoteCounts(db, pollId);
+      // Upsert: one vote per voter per poll
+      db.run(
+        `INSERT INTO votes (poll_id, option, voter_token, created_at) VALUES (?, ?, ?, ?)
+         ON CONFLICT(poll_id, voter_token) DO UPDATE SET option=excluded.option, created_at=excluded.created_at`,
+        [pollId, option, voterToken, now]
+      );
+      const counts = getVoteCounts(db, pollId);
+      const winner = getWinner(counts);
+      const prevTotal = Object.values(prevCounts).reduce((s, n) => s + n, 0);
+      const newTotal = Object.values(counts).reduce((s, n) => s + n, 0);
+      // Notify Discord only when quorum is first reached (total crosses QUORUM)
+      if (winner && prevTotal < QUORUM && newTotal >= QUORUM) {
+        void notifyVoteWinner(pollId, winner, counts[winner] ?? 0);
+      }
+      // 3-way tie check (only applies to sprite polls with exactly QUORUM votes)
+      if (pollId.startsWith("sprite-") && newTotal === QUORUM) {
+        const aCount = counts["A"] ?? 0;
+        const bCount = counts["B"] ?? 0;
+        const cCount = counts["C"] ?? 0;
+        if (aCount === 1 && bCount === 1 && cCount === 1) {
+          // Three-way tie — reset votes and trigger regeneration
+          db.run("DELETE FROM votes WHERE poll_id = ?", [pollId]);
+          void notifySpriteTie(pollId);
+        }
+      }
+      jsonResponse(res, { ok: true, counts, winner });
+    } catch (e) {
+      jsonResponse(res, { error: `Vote failed: ${e}` }, 500);
+    } finally {
+      db.close();
+    }
+    return;
+  }
+
+  // GET /api/vote/:poll_id
+  const voteMatch = /^\/api\/vote\/(.+)$/.exec(pathname);
+  if (voteMatch && req.method === "GET") {
+    const pollId = voteMatch[1];
+    const voterToken = getVoterToken(req, res);
+    const db = getVotesDb();
+    try {
+      const counts = getVoteCounts(db, pollId);
+      const winner = getWinner(counts);
+      const yourVoteRow = db.query<{ option: string }, [string, string]>(
+        "SELECT option FROM votes WHERE poll_id=? AND voter_token=?"
+      ).get(pollId, voterToken);
+      jsonResponse(res, { counts, winner, your_vote: yourVoteRow?.option ?? null });
+    } catch (e) {
+      jsonResponse(res, { error: `Vote fetch failed: ${e}` }, 500);
+    } finally {
+      db.close();
+    }
+    return;
+  }
+
+  jsonResponse(res, { error: "Not found" }, 404);
+}
+
+// ── Polls API ───────────────────────────────────────────────────────────────
+
+const POLLS_DIR = "/mnt/data/hello-world/polls";
+
+function restGetPolls(req: http.IncomingMessage, res: http.ServerResponse): void {
+  let files: string[];
+  try {
+    files = readdirSync(POLLS_DIR).filter((f) => f.endsWith(".md"));
+  } catch (e) {
+    jsonResponse(res, { error: `Could not read polls directory: ${e}` }, 500);
+    return;
+  }
+
+  const db = getVotesDb();
+  const polls: unknown[] = [];
+  try {
+    for (const fname of files) {
+      try {
+        const raw = readFileSync(join(POLLS_DIR, fname), "utf-8");
+        const parsed = matter(raw);
+        const fm = parsed.data as Record<string, unknown>;
+        const pollId = String(fm.poll_id ?? "");
+        if (!pollId) continue;
+        const voteCounts = getVoteCounts(db, pollId);
+        // gray-matter auto-parses YAML dates into JS Date objects; convert to YYYY-MM-DD
+        const fmtDate = (v: unknown): string | null => {
+          if (v == null) return null;
+          if (v instanceof Date) return v.toISOString().slice(0, 10);
+          return String(v);
+        };
+        polls.push({
+          poll_id: pollId,
+          title: String(fm.title ?? ""),
+          status: String(fm.status ?? "open"),
+          winner: fm.winner != null ? String(fm.winner) : null,
+          options: fm.options ?? {},
+          quorum: typeof fm.quorum === "number" ? fm.quorum : QUORUM,
+          created_at: fmtDate(fm.created_at) ?? "",
+          closed_at: fmtDate(fm.closed_at),
+          description: parsed.content.trim(),
+          vote_counts: voteCounts,
+        });
+      } catch { /* skip malformed poll file */ }
+    }
+  } finally {
+    db.close();
+  }
+
+  // Sort: open polls first, then closed by closed_at desc
+  polls.sort((a, b) => {
+    const pa = a as Record<string, unknown>;
+    const pb = b as Record<string, unknown>;
+    const aOpen = pa.status === "open";
+    const bOpen = pb.status === "open";
+    if (aOpen && !bOpen) return -1;
+    if (!aOpen && bOpen) return 1;
+    // Both same status — sort by closed_at or created_at desc
+    const aDate = String(pa.closed_at ?? pa.created_at ?? "");
+    const bDate = String(pb.closed_at ?? pb.created_at ?? "");
+    return bDate.localeCompare(aDate);
+  });
+
+  jsonResponse(res, { polls });
+}
+
+// ConnectRPC adapter — routes is a callback that registers services
+const connectHandler = connectNodeAdapter({
+  routes(router) {
+    router.service(PersonaService, personaServiceImpl);
+    router.service(AgentService, agentServiceImpl);
+    router.service(TaskService, taskServiceImpl);
+    router.service(WalletService, walletServiceImpl);
+    router.service(CongressService, congressServiceImpl);
+  },
+});
+
+// ── CommonsV2 bundle (built at startup) ───────────────────────────────────────
+let commonsV2Bundle: string | null = null;
+let commonsV2BundleError: string | null = null;
+let commonsV2BuildToken: string = String(Date.now());
+
+async function buildCommonsV2Bundle(): Promise<void> {
+  const result = await Bun.build({
+    entrypoints: ["/mnt/data/commons-client/src/main.ts"],
+    target: "browser",
+    format: "esm",
+    minify: false,
+  });
+  if (!result.success) {
+    const msgs = result.logs.map((l) => l.message).join("\n");
+    commonsV2BundleError = `Bundle failed:\n${msgs}`;
+    throw new Error(commonsV2BundleError);
+  }
+  const [output] = result.outputs;
+  commonsV2Bundle = await output.text();
+  commonsV2BuildToken = String(Date.now());
+  console.log(`[commons-v2] client bundle built (${Math.round(commonsV2Bundle.length / 1024)}KB), token=${commonsV2BuildToken}`);
+}
+
+// Build CommonsV2 bundle at startup — don't block server start on failure
+buildCommonsV2Bundle().catch((err) => {
+  console.error("[commons-v2] bundle build failed at startup:", err);
+});
+
+function buildCommonsV2HTML(): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Commons V2</title>
+  <link rel="stylesheet" href="https://clung.us/sitenav.css">
+  <script src="https://clung.us/sitenav.js" defer></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      font-family: monospace;
+      color: #ccc;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      padding: 16px;
+    }
+    #game-wrapper {
+      position: relative;
+    }
+    #game-canvas {
+      display: block;
+      border: 1px solid #333;
+      image-rendering: pixelated;
+    }
+    #v2-badge {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      font-size: 10px;
+      color: #7eb8f7;
+      opacity: 0.7;
+      pointer-events: none;
+    }
+    #error-banner {
+      margin-top: 12px;
+      color: #e74c3c;
+      font-size: 12px;
+      max-width: 1000px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+  <div id="game-wrapper">
+    <canvas id="game-canvas" width="1000" height="700"></canvas>
+    <div id="v2-badge">CommonsV2</div>
+  </div>
+  <div id="error-banner"></div>
+  </div>
+  <script>
+    // CommonsV2 connects to /commons-ws on the same host (proxied by clunger)
+    window.__COMMONS_WS_BASE = location.protocol === "https:" ? "wss://" + location.host : "ws://" + location.host;
+    window.addEventListener("error", (e) => {
+      document.getElementById("error-banner").textContent = "JS Error: " + e.message + " (" + e.filename + ":" + e.lineno + ")";
+    });
+    window.addEventListener("unhandledrejection", (e) => {
+      document.getElementById("error-banner").textContent = "Unhandled: " + e.reason;
+    });
+  </script>
+  <script src="https://clung.us/sprites-batch1.js"></script>
+  <script src="https://clung.us/sprites-batch2.js"></script>
+  <script src="https://clung.us/sprites-batch3.js"></script>
+  <script type="module" src="/commons-v2/__bundle/main.js?v=${commonsV2BuildToken}"></script>
+</body>
+</html>`;
+}
+
+// Static file serving
+const STATIC_DIR = "/mnt/data/hello-world/static";
+const HTML_DIR = "/mnt/data/hello-world";
+
+const MIME: Record<string, string> = {
+  ".html": "text/html",
+  ".css": "text/css",
+  ".js": "application/javascript",
+  ".json": "application/json",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".svg": "image/svg+xml",
+  ".ico": "image/x-icon",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+  ".ttf": "font/ttf",
+  ".txt": "text/plain",
+};
+
+function serveStaticFile(res: http.ServerResponse, filePath: string): boolean {
+  if (!existsSync(filePath)) return false;
+  const ext = extname(filePath).toLowerCase();
+  const mime = MIME[ext] ?? "application/octet-stream";
+  let data: Buffer;
+  try {
+    data = readFileSync(filePath);
+  } catch {
+    return false;
+  }
+  const headers: Record<string, string> = { "Content-Type": mime };
+  if (ext === ".html") {
+    headers["Cache-Control"] = "no-cache";
+  }
+  res.writeHead(200, headers);
+  res.end(data);
+  return true;
+}
+
+const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
+  const pathname = url.pathname;
+
+  // ConnectRPC routes — identified by service package prefix
+  if (
+    pathname.startsWith("/persona.v1.") ||
+    pathname.startsWith("/agent.v1.") ||
+    pathname.startsWith("/task.v1.") ||
+    pathname.startsWith("/wallet.v1.") ||
+    pathname.startsWith("/congress.v1.")
+  ) {
+    return connectHandler(req, res);
+  }
+
+  // Auth: GitHub OAuth initiation
+  if (pathname === "/auth/github") {
+    const clientId = process.env.GITHUB_CLIENT_ID ?? "";
+    if (!clientId) {
+      res.writeHead(500, { "Content-Type": "text/plain" });
+      res.end("GITHUB_CLIENT_ID not configured");
+      return;
+    }
+    const nextUrl = url.searchParams.get("next") ?? "";
+    const state = randomBytes(16).toString("base64url");
+    oauthStates.set(state, nextUrl);
+    // Prune if store grows too large
+    if (oauthStates.size > 100) {
+      const oldest = [...oauthStates.keys()].slice(0, 50);
+      for (const k of oldest) oauthStates.delete(k);
+    }
+    const redirectUri = "https://clung.us/auth/callback";
+    const ghUrl =
+      `https://github.com/login/oauth/authorize` +
+      `?client_id=${encodeURIComponent(clientId)}` +
+      `&scope=read:user` +
+      `&state=${encodeURIComponent(state)}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    res.writeHead(302, {
+      Location: ghUrl,
+      "Set-Cookie": `gh_oauth_state=${state}; Max-Age=600; HttpOnly; SameSite=Lax; Path=/`,
+    });
+    res.end();
+    return;
+  }
+
+  // Auth: GitHub OAuth callback
+  if (pathname === "/auth/callback") {
+    await handleGithubCallback(req, res, url);
+    return;
+  }
+
+  // GitHub webhook
+  if (pathname === "/webhook/github" && req.method === "POST") {
+    await handleGithubWebhook(req, res);
+    return;
+  }
+
+  // REST API routes
+  if (pathname.startsWith("/api/")) {
+    // GET /api/tasks — auth required
+    if (pathname === "/api/tasks" && req.method === "GET") {
+      if (!restIsAuthed(req)) { jsonResponse(res, { error: "Forbidden: authentication required" }, 403); return; }
+      restServeTasks(res, url.searchParams);
+      return;
+    }
+
+    // GET /api/ops/health — auth required
+    if (pathname === "/api/ops/health" && req.method === "GET") {
+      if (!restIsAuthed(req)) { jsonResponse(res, { error: "Forbidden: authentication required" }, 403); return; }
+      restServeOpsHealth(res);
+      return;
+    }
+
+    // GET /api/me — returns current authenticated GitHub username (401 if not authed)
+    if (pathname === "/api/me" && req.method === "GET") {
+      const user = getGithubUser(req);
+      if (user === "anonymous") {
+        jsonResponse(res, { error: "Not authenticated" }, 401);
+      } else {
+        jsonResponse(res, { username: user });
+      }
+      return;
+    }
+
+    // GET /api/agents — public
+    if (pathname === "/api/agents" && req.method === "GET") {
+      restServeAgents(res);
+      return;
+    }
+
+    // GET /api/congress/identities — public
+    if (pathname === "/api/congress/identities" && req.method === "GET") {
+      restServeCongressIdentities(res);
+      return;
+    }
+
+    // GET /api/congress/sessions — public
+    if (pathname === "/api/congress/sessions" && req.method === "GET") {
+      restServeCongressSessions(res);
+      return;
+    }
+
+    // GET /api/congress/matrix — pre-computed participation matrix data
+    if (pathname === "/api/congress/matrix" && req.method === "GET") {
+      restServeCongressMatrix(res);
+      return;
+    }
+
+    // GET /api/congress/sessions/:id — public; PATCH — auth required
+    const sessionMatch = /^\/api\/congress\/sessions\/((?:congress|trial|session)-\d+)$/.exec(pathname);
+    if (sessionMatch) {
+      if (req.method === "GET") {
+        restServeCongressSession(res, sessionMatch[1]);
+        return;
+      }
+      if (req.method === "PATCH") {
+        if (!restIsAuthed(req) && !isInternalRequest(req)) { jsonResponse(res, { error: "Forbidden: authentication required" }, 403); return; }
+        await restPatchCongressSession(req, res, sessionMatch[1]);
+        return;
+      }
+    }
+
+    // GET /api/wallet/balance — auth required
+    if (pathname === "/api/wallet/balance" && req.method === "GET") {
+      if (!restIsAuthed(req)) { jsonResponse(res, { error: "Forbidden: authentication required" }, 403); return; }
+      await restServeWalletBalance(res);
+      return;
+    }
+
+    // GET /api/congress/stream — native SSE
+    if (pathname === "/api/congress/stream" && req.method === "GET") {
+      const sessionId = url.searchParams.get("session_id") ?? "";
+      restStreamCongress(req, res, sessionId);
+      return;
+    }
+
+    // POST /api/congress — native congress debate handler
+    if (pathname === "/api/congress" && req.method === "POST") {
+      await restPostCongress(req, res);
+      return;
+    }
+
+    // GET /api/congress/active — check for an in-progress congress session
+    if (pathname === "/api/congress/active" && req.method === "GET") {
+      restServeCongressActive(res);
+      return;
+    }
+
+    // GET /api/congress/tracking — public dashboard of verdict tracking
+    if (pathname === "/api/congress/tracking" && req.method === "GET") {
+      const filter = url.searchParams.get("filter") ?? undefined;
+      restServeCongressTracking(res, filter);
+      return;
+    }
+
+    // POST /api/congress/tracking — insert/upsert a verdict tracking record (internal only)
+    if (pathname === "/api/congress/tracking" && req.method === "POST") {
+      if (!isInternalRequest(req) && !restIsAuthed(req)) {
+        jsonResponse(res, { error: "Forbidden" }, 403);
+        return;
+      }
+      await restPostCongressTrackingRecord(req, res);
+      return;
+    }
+
+    // PATCH /api/congress/tracking/:session_id — update ack/task status (internal only)
+    const trackingPatchMatch = /^\/api\/congress\/tracking\/((?:congress|trial|session)-\d+)$/.exec(pathname);
+    if (trackingPatchMatch && req.method === "PATCH") {
+      if (!isInternalRequest(req) && !restIsAuthed(req)) {
+        jsonResponse(res, { error: "Forbidden" }, 403);
+        return;
+      }
+      await restPatchCongressTracking(req, res, trackingPatchMatch[1]);
+      return;
+    }
+
+    // POST /api/invoke-persona — invoke a persona by name with a user prompt
+    if (pathname === "/api/invoke-persona" && req.method === "POST") {
+      await restInvokePersona(req, res);
+      return;
+    }
+
+    // POST /api/discord/persona — intercept [persona: x] Discord messages, inject [persona-invoke] back
+    if (pathname === "/api/discord/persona" && req.method === "POST") {
+      await restHandleDiscordPersona(req, res);
+      return;
+    }
+
+    // /api/personas* — native persona CRUD
+    if (pathname.startsWith("/api/personas")) {
+      await restHandlePersonas(req, res, pathname);
+      return;
+    }
+
+    // /api/vote* — voting endpoints
+    if (pathname === "/api/vote" || pathname.startsWith("/api/vote/")) {
+      await restHandleVote(req, res, pathname);
+      return;
+    }
+
+    // GET /api/polls — list all polls with live vote counts
+    if (pathname === "/api/polls" && req.method === "GET") {
+      restGetPolls(req, res);
+      return;
+    }
+
+    // /api/commons/* — commons traces
+    if (pathname.startsWith("/api/commons/")) {
+      await restHandleCommons(req, res, pathname);
+      return;
+    }
+
+    // /api/clungiverse/* — proxy to commons-server on :8090
+    if (pathname.startsWith("/api/clungiverse/")) {
+      const upstream = `http://localhost:8090${pathname}`;
+      const upstreamRes = await fetch(upstream, {
+        method: req.method,
+        headers: { "Content-Type": "application/json" },
+        body: req.method !== "GET" ? (await readBody(req)).toString() : undefined,
+      }).catch(() => null);
+      if (!upstreamRes) {
+        res.writeHead(503, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "commons-server clungiverse endpoint unavailable" }));
+        return;
+      }
+      const data = await upstreamRes.text();
+      res.writeHead(upstreamRes.status, { "Content-Type": "application/json" });
+      res.end(data);
+      return;
+    }
+
+    // /api/audition/* — proxy to commons-server on :8090
+    if (pathname.startsWith("/api/audition/")) {
+      const upstream = `http://localhost:8090${pathname}`;
+      const upstreamRes = await fetch(upstream, {
+        method: req.method,
+        headers: { "Content-Type": "application/json" },
+        body: req.method !== "GET" ? (await readBody(req)).toString() : undefined,
+      }).catch(() => null);
+      if (!upstreamRes) {
+        res.writeHead(503, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "commons-server audition endpoint unavailable" }));
+        return;
+      }
+      const data = await upstreamRes.text();
+      res.writeHead(upstreamRes.status, { "Content-Type": "application/json" });
+      res.end(data);
+      return;
+    }
+
+    // POST /api/nightowl/complete?task_id=xxx — BigClungus calls when done
+    if (pathname === "/api/nightowl/complete" && req.method === "POST") {
+      const taskId = url.searchParams.get("task_id");
+      if (!taskId) {
+        jsonResponse(res, { error: "missing task_id" }, 400);
+        return;
+      }
+      nightowlCleanup();
+      const existing = nightowlTasks.get(taskId);
+      if (existing) {
+        existing.done = true;
+      } else {
+        nightowlTasks.set(taskId, { done: true, createdAt: Date.now() });
+      }
+      jsonResponse(res, { ok: true, task_id: taskId });
+      return;
+    }
+
+    // GET /api/nightowl/status/:task_id — NightOwl polls this
+    const nightowlStatusMatch = pathname.match(/^\/api\/nightowl\/status\/(.+)$/);
+    if (nightowlStatusMatch && req.method === "GET") {
+      const taskId = nightowlStatusMatch[1];
+      nightowlCleanup();
+      const entry = nightowlTasks.get(taskId);
+      jsonResponse(res, { task_id: taskId, done: entry?.done ?? false });
+      return;
+    }
+
+    // ── Timeline API ──────────────────────────────────────────────────────
+    // GET /api/timeline — public (read)
+    if (pathname === "/api/timeline" && req.method === "GET") {
+      const rows = timelineDb.query("SELECT * FROM timeline_events ORDER BY date ASC").all();
+      jsonResponse(res, rows);
+      return;
+    }
+
+    // POST /api/timeline — auth required (create)
+    if (pathname === "/api/timeline" && req.method === "POST") {
+      if (!restIsAuthed(req)) {
+        jsonResponse(res, { error: "Forbidden: authentication required" }, 403);
+        return;
+      }
+      const body = JSON.parse((await readBody(req)).toString("utf-8"));
+      if (!body.date || !body.title) {
+        jsonResponse(res, { error: "date and title are required" }, 400);
+        return;
+      }
+      const stmt = timelineDb.query(
+        `INSERT INTO timeline_events (date, title, description, category, icon, url, source)
+         VALUES ($date, $title, $description, $category, $icon, $url, $source)`
+      );
+      stmt.run({
+        $date: body.date,
+        $title: body.title,
+        $description: body.description ?? null,
+        $category: body.category ?? "milestone",
+        $icon: body.icon ?? null,
+        $url: body.url ?? null,
+        $source: body.source ?? "manual",
+      });
+      const id = (timelineDb.query("SELECT last_insert_rowid() as id").get() as { id: number }).id;
+      const row = timelineDb.query("SELECT * FROM timeline_events WHERE id = ?").get(id);
+      jsonResponse(res, row, 201);
+      return;
+    }
+
+    // PATCH/DELETE /api/timeline/:id — auth required
+    const timelineIdMatch = pathname.match(/^\/api\/timeline\/(\d+)$/);
+    if (timelineIdMatch && req.method === "PATCH") {
+      if (!restIsAuthed(req)) {
+        jsonResponse(res, { error: "Forbidden: authentication required" }, 403);
+        return;
+      }
+      const id = parseInt(timelineIdMatch[1], 10);
+      const existing = timelineDb.query("SELECT * FROM timeline_events WHERE id = ?").get(id);
+      if (!existing) {
+        jsonResponse(res, { error: "not found" }, 404);
+        return;
+      }
+      const body = JSON.parse((await readBody(req)).toString("utf-8"));
+      const fields: string[] = [];
+      const params: Record<string, unknown> = { $id: id };
+      for (const col of ["date", "title", "description", "category", "icon", "url", "source"]) {
+        if (body[col] !== undefined) {
+          fields.push(`${col} = $${col}`);
+          params[`$${col}`] = body[col];
+        }
+      }
+      if (fields.length === 0) {
+        jsonResponse(res, { error: "no fields to update" }, 400);
+        return;
+      }
+      timelineDb.query(`UPDATE timeline_events SET ${fields.join(", ")} WHERE id = $id`).run(params);
+      const updated = timelineDb.query("SELECT * FROM timeline_events WHERE id = ?").get(id);
+      jsonResponse(res, updated);
+      return;
+    }
+
+    // DELETE /api/timeline/:id — auth required
+    if (timelineIdMatch && req.method === "DELETE") {
+      if (!restIsAuthed(req)) {
+        jsonResponse(res, { error: "Forbidden: authentication required" }, 403);
+        return;
+      }
+      const id = parseInt(timelineIdMatch[1], 10);
+      const existing = timelineDb.query("SELECT * FROM timeline_events WHERE id = ?").get(id);
+      if (!existing) {
+        jsonResponse(res, { error: "not found" }, 404);
+        return;
+      }
+      timelineDb.query("DELETE FROM timeline_events WHERE id = ?").run(id);
+      jsonResponse(res, { ok: true, id });
+      return;
+    }
+  }
+
+  // Redirect legacy /commons-vote → /refinery
+  if (pathname === "/commons-vote") {
+    res.writeHead(301, { Location: "/refinery" });
+    res.end();
+    return;
+  }
+
+  // CommonsV2 routes
+  if (pathname === "/commons-v2" || pathname === "/commons-v2/") {
+    const html = buildCommonsV2HTML();
+    const buf = Buffer.from(html, "utf-8");
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Content-Length": buf.length });
+    res.end(buf);
+    return;
+  }
+  if (pathname === "/commons-v2/__bundle/main.js") {
+    if (commonsV2BundleError) {
+      const errBody = `// Bundle error:\n// ${commonsV2BundleError}`;
+      res.writeHead(500, { "Content-Type": "application/javascript; charset=utf-8" });
+      res.end(errBody);
+      return;
+    }
+    if (!commonsV2Bundle) {
+      res.writeHead(503, { "Content-Type": "application/javascript; charset=utf-8" });
+      res.end("// Bundle not yet built — retry in a moment");
+      return;
+    }
+    const buf = Buffer.from(commonsV2Bundle, "utf-8");
+    res.writeHead(200, {
+      "Content-Type": "application/javascript; charset=utf-8",
+      "Content-Length": buf.length,
+      "Cache-Control": "no-cache",
+    });
+    res.end(buf);
+    return;
+  }
+
+  // Static file serving
+  if (req.method === "GET" || req.method === "HEAD") {
+    // Try /static/ directory first
+    const staticPath = join(STATIC_DIR, pathname === "/" ? "index.html" : pathname);
+    if (serveStaticFile(res, staticPath)) return;
+
+    // Try HTML root
+    const htmlPath = join(HTML_DIR, pathname === "/" ? "index.html" : pathname);
+    if (serveStaticFile(res, htmlPath)) return;
+
+    // Try appending .html for extensionless paths
+    if (!extname(pathname)) {
+      if (serveStaticFile(res, join(HTML_DIR, pathname + ".html"))) return;
+    }
+  }
+
+  res.writeHead(404, { "Content-Type": "text/plain" });
+  res.end("Not found");
+});
+
+// ── Commons multiplayer WebSocket ─────────────────────────────────────────────
+
+// ── Server-side Warthog state ─────────────────────────────────────────────────
+interface WarthogSeat {
+  name: string;
+  socketId: string;
+  color: string;
+}
+
+interface WarthogState {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  facing: string;
+  seats: (WarthogSeat | null)[];
+}
+
+const warthogState: WarthogState = {
+  x: 600,
+  y: 350,
+  vx: 0,
+  vy: 0,
+  facing: "right",
+  seats: [null, null, null, null],
+};
+
+function broadcastWarthog(): void {
+  const payload = JSON.stringify({ type: "warthog_state", warthog: warthogState });
+  for (const [, client] of commonsClients) {
+    if (client.ws.readyState === WebSocket.OPEN) {
+      client.ws.send(payload);
+    }
+  }
+}
+
+interface CommonsPlayer {
+  id: string;
+  socket_id: string;
+  x: number;
+  y: number;
+  px: number;
+  py: number;
+  name: string;
+  color: string;
+  facing: string;
+  isAway: boolean;
+  ts: number;
+}
+
+// ── Server-side NPC state ──────────────────────────────────────────────────────
+interface CommonsNPC {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  facing: string;
+  dirTimer: number;
+}
+
+const NPC_NAMES = [
+  "chairman", "critic", "architect", "ux", "designer",
+  "galactus", "hume", "otto", "pm", "spengler",
+  "trump", "uncle-bob", "bloodfeast", "adelbert", "jhaddu",
+  "morgan", "the-kid",
+];
+
+const COMMONS_W = 1000;
+const COMMONS_H = 700;
+const COMMONS_NPC_SPEED = 35; // px per tick (500ms) — ~70px/s, crosses 1000px canvas in ~14s
+
+function randomInRange(min: number, max: number): number {
+  return min + Math.random() * (max - min);
+}
+
+const commonsNpcs: CommonsNPC[] = NPC_NAMES.map((name) => ({
+  id: name,
+  name,
+  x: randomInRange(50, COMMONS_W - 50),
+  y: randomInRange(50, COMMONS_H - 50),
+  vx: (Math.random() - 0.5) * COMMONS_NPC_SPEED * 2,
+  vy: (Math.random() - 0.5) * COMMONS_NPC_SPEED * 2,
+  facing: Math.random() < 0.5 ? "left" : "right",
+  dirTimer: Math.floor(Math.random() * 16),
+}));
+
+function tickNpcs(): void {
+  for (const npc of commonsNpcs) {
+    // Occasionally change direction
+    npc.dirTimer--;
+    if (npc.dirTimer <= 0) {
+      npc.vx = (Math.random() - 0.5) * COMMONS_NPC_SPEED * 2;
+      npc.vy = (Math.random() - 0.5) * COMMONS_NPC_SPEED * 2;
+      npc.dirTimer = 8 + Math.floor(Math.random() * 8); // 4–8 seconds before turning again
+    }
+
+    // Update position
+    npc.x += npc.vx;
+    npc.y += npc.vy;
+
+    // Bounce off walls
+    if (npc.x < 10) { npc.x = 10; npc.vx = Math.abs(npc.vx); }
+    if (npc.x > COMMONS_W - 10) { npc.x = COMMONS_W - 10; npc.vx = -Math.abs(npc.vx); }
+    if (npc.y < 10) { npc.y = 10; npc.vy = Math.abs(npc.vy); }
+    if (npc.y > COMMONS_H - 10) { npc.y = COMMONS_H - 10; npc.vy = -Math.abs(npc.vy); }
+
+    // Update facing based on vx
+    if (Math.abs(npc.vx) > 0.5) {
+      npc.facing = npc.vx > 0 ? "right" : "left";
+    }
+  }
+
+  // Broadcast NPC positions to all clients
+  const payload = JSON.stringify({
+    type: "npc_update",
+    npcs: commonsNpcs.map((n) => ({
+      id: n.id,
+      name: n.name,
+      x: Math.round(n.x),
+      y: Math.round(n.y),
+      facing: n.facing,
+    })),
+  });
+  for (const [, client] of commonsClients) {
+    if (client.ws.readyState === WebSocket.OPEN) {
+      client.ws.send(payload);
+    }
+  }
+}
+
+// Start NPC tick every 500ms
+setInterval(tickNpcs, 500);
+
+const commonsPlayers = new Map<string, CommonsPlayer>();
+const commonsClients = new Map<string, { ws: WebSocket; lastMove: number }>();
+
+const commonsWss = new WebSocketServer({ noServer: true });
+
+commonsWss.on("connection", (ws: WebSocket, _req: http.IncomingMessage) => {
+  const id = randomBytes(8).toString("hex");
+  commonsClients.set(id, { ws, lastMove: 0 });
+
+  // Send welcome message with unique socket_id
+  ws.send(JSON.stringify({ type: "welcome", socket_id: id }));
+
+  // Send current warthog state to newly connected client
+  ws.send(JSON.stringify({ type: "warthog_state", warthog: warthogState }));
+
+  ws.on("message", (raw: Buffer) => {
+    let msg: Record<string, unknown>;
+    try {
+      msg = JSON.parse(raw.toString("utf-8")) as Record<string, unknown>;
+    } catch {
+      return; // ignore malformed
+    }
+
+    if (msg.type === "hop") {
+      // Broadcast hop to all other clients
+      const hopPayload = JSON.stringify({ type: "player_hop", socket_id: String(msg.socket_id ?? id) });
+      for (const [cid, client] of commonsClients) {
+        if (cid !== id && client.ws.readyState === WebSocket.OPEN) {
+          client.ws.send(hopPayload);
+        }
+      }
+      return;
+    }
+
+    if (msg.type === "player_status") {
+      // Update away status for this player
+      const existing = commonsPlayers.get(id);
+      if (existing) {
+        existing.isAway = msg.status === "away";
+        broadcastCommons();
+      }
+      return;
+    }
+
+    if (msg.type === "warthog_update") {
+      // Only accept from driver (seat 0 must be this socket)
+      const seat0 = warthogState.seats[0];
+      if (!seat0 || seat0.socketId !== id) return;
+      if (typeof msg.x === "number") warthogState.x = msg.x;
+      if (typeof msg.y === "number") warthogState.y = msg.y;
+      if (typeof msg.vx === "number") warthogState.vx = msg.vx;
+      if (typeof msg.vy === "number") warthogState.vy = msg.vy;
+      if (typeof msg.facing === "string") warthogState.facing = msg.facing;
+      broadcastWarthog();
+      return;
+    }
+
+    if (msg.type === "warthog_join") {
+      const seatIndex = typeof msg.seatIndex === "number" ? msg.seatIndex : -1;
+      if (seatIndex < 0 || seatIndex >= 4) return;
+      if (warthogState.seats[seatIndex] !== null) return; // seat taken
+      const playerName = String(msg.playerName ?? "visitor").slice(0, 32);
+      const playerColor = String(msg.playerColor ?? "#ffffff").slice(0, 12);
+      warthogState.seats[seatIndex] = { name: playerName, socketId: id, color: playerColor };
+      broadcastWarthog();
+      return;
+    }
+
+    if (msg.type === "warthog_leave") {
+      for (let i = 0; i < warthogState.seats.length; i++) {
+        const seat = warthogState.seats[i];
+        if (seat && seat.socketId === id) {
+          warthogState.seats[i] = null;
+          break;
+        }
+      }
+      broadcastWarthog();
+      return;
+    }
+
+    if (msg.type !== "move") return;
+
+    const client = commonsClients.get(id);
+    if (!client) return;
+
+    const now = Date.now();
+    if (now - client.lastMove < 50) return; // throttle: ignore moves faster than 50ms
+    client.lastMove = now;
+
+    const x = typeof msg.x === "number" ? Math.round(msg.x) : 0;
+    const y = typeof msg.y === "number" ? Math.round(msg.y) : 0;
+    const px = typeof msg.px === "number" ? msg.px : x * 20 + 10;
+    const py = typeof msg.py === "number" ? msg.py : y * 20 + 10;
+    const name = String(msg.name ?? "visitor").slice(0, 32);
+    const color = String(msg.color ?? "#ffffff").slice(0, 12);
+    const facing = String(msg.facing ?? "right");
+    const socketId = String(msg.socket_id ?? id);
+    const isAway = commonsPlayers.get(id)?.isAway ?? false;
+
+    commonsPlayers.set(id, { id, socket_id: socketId, x, y, px, py, name, color, facing, isAway, ts: now });
+    broadcastCommons();
+  });
+
+  ws.on("close", () => {
+    commonsClients.delete(id);
+    commonsPlayers.delete(id);
+    // Evict any warthog seats held by this socket
+    let warthogChanged = false;
+    for (let i = 0; i < warthogState.seats.length; i++) {
+      const seat = warthogState.seats[i];
+      if (seat && seat.socketId === id) {
+        warthogState.seats[i] = null;
+        warthogChanged = true;
+      }
+    }
+    broadcastCommons();
+    if (warthogChanged) broadcastWarthog();
+  });
+
+  ws.on("error", (err: Error) => {
+    console.error("[commons-ws] client error:", err.message);
+    commonsClients.delete(id);
+    commonsPlayers.delete(id);
+    // Evict any warthog seats held by this socket
+    for (let i = 0; i < warthogState.seats.length; i++) {
+      const seat = warthogState.seats[i];
+      if (seat && seat.socketId === id) {
+        warthogState.seats[i] = null;
+      }
+    }
+  });
+});
+
+function broadcastCommons() {
+  // Evict stale players (no update in 15s)
+  const cutoff = Date.now() - 15_000;
+  for (const [pid, p] of commonsPlayers) {
+    if (p.ts < cutoff) commonsPlayers.delete(pid);
+  }
+
+  const players: Record<string, CommonsPlayer> = {};
+  for (const [pid, p] of commonsPlayers) players[pid] = p;
+  const payload = JSON.stringify({ type: "players", players });
+
+  for (const [, client] of commonsClients) {
+    if (client.ws.readyState === WebSocket.OPEN) {
+      client.ws.send(payload);
+    }
+  }
+}
+
+// ── Commons-server WebSocket proxy (/commons-ws → localhost:8090/ws) ──────────
+const commonsProxyWss = new WebSocketServer({ noServer: true });
+
+commonsProxyWss.on("connection", (clientWs: WebSocket, req: http.IncomingMessage) => {
+  // Forward query params (userId, name, color) to commons-server
+  const incomingUrl = new URL(req.url ?? "/", `http://localhost:${PORT}`);
+  const params = incomingUrl.searchParams.toString();
+  const backendUrl = `ws://localhost:8090/ws${params ? "?" + params : ""}`;
+
+  const backendWs = new WebSocket(backendUrl);
+
+  backendWs.on("open", () => {
+    // Pipe messages from client → backend
+    clientWs.on("message", (data) => {
+      if (backendWs.readyState === WebSocket.OPEN) {
+        backendWs.send(data);
+      }
+    });
+  });
+
+  // Pipe messages from backend → client
+  backendWs.on("message", (data) => {
+    if (clientWs.readyState === WebSocket.OPEN) {
+      clientWs.send(data);
+    }
+  });
+
+  backendWs.on("close", (code, reason) => {
+    if (clientWs.readyState === WebSocket.OPEN) {
+      clientWs.close(code, reason);
+    }
+  });
+
+  backendWs.on("error", (err) => {
+    console.error("[commons-proxy] backend error:", err.message);
+    if (clientWs.readyState === WebSocket.OPEN) {
+      clientWs.close(1011, "backend error");
+    }
+  });
+
+  clientWs.on("close", () => {
+    if (backendWs.readyState === WebSocket.OPEN || backendWs.readyState === WebSocket.CONNECTING) {
+      backendWs.close();
+    }
+  });
+
+  clientWs.on("error", (err) => {
+    console.error("[commons-proxy] client error:", err.message);
+    backendWs.close();
+  });
+});
+
+// ── Dungeon WebSocket proxy (/dungeon-ws → localhost:8090/dungeon-ws) ─────────
+const dungeonProxyWss = new WebSocketServer({ noServer: true });
+
+dungeonProxyWss.on("connection", (clientWs: WebSocket, req: http.IncomingMessage) => {
+  const incomingUrl = new URL(req.url ?? "/", `http://localhost:${PORT}`);
+  const params = incomingUrl.searchParams.toString();
+  const backendUrl = `ws://localhost:8090/dungeon-ws${params ? "?" + params : ""}`;
+
+  const backendWs = new WebSocket(backendUrl);
+
+  backendWs.on("open", () => {
+    clientWs.on("message", (data) => {
+      if (backendWs.readyState === WebSocket.OPEN) {
+        backendWs.send(data);
+      }
+    });
+  });
+
+  backendWs.on("message", (data) => {
+    if (clientWs.readyState === WebSocket.OPEN) {
+      clientWs.send(data);
+    }
+  });
+
+  backendWs.on("close", (code, reason) => {
+    if (clientWs.readyState === WebSocket.OPEN) {
+      clientWs.close(code, reason);
+    }
+  });
+
+  backendWs.on("error", (err) => {
+    console.error("[dungeon-proxy] backend error:", err.message);
+    if (clientWs.readyState === WebSocket.OPEN) {
+      clientWs.close(1011, "backend error");
+    }
+  });
+
+  clientWs.on("close", () => {
+    if (backendWs.readyState === WebSocket.OPEN || backendWs.readyState === WebSocket.CONNECTING) {
+      backendWs.close();
+    }
+  });
+
+  clientWs.on("error", (err) => {
+    console.error("[dungeon-proxy] client error:", err.message);
+    backendWs.close();
+  });
+});
+
+// Handle WebSocket upgrade requests
+server.on("upgrade", (req: http.IncomingMessage, socket, head) => {
+  const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
+  if (url.pathname === "/commons-ws") {
+    commonsProxyWss.handleUpgrade(req, socket, head, (ws) => {
+      commonsProxyWss.emit("connection", ws, req);
+    });
+  } else if (url.pathname === "/api/commons/ws") {
+    commonsWss.handleUpgrade(req, socket, head, (ws) => {
+      commonsWss.emit("connection", ws, req);
+    });
+  } else if (url.pathname === "/dungeon-ws") {
+    dungeonProxyWss.handleUpgrade(req, socket, head, (ws) => {
+      dungeonProxyWss.emit("connection", ws, req);
+    });
+  } else {
+    socket.destroy();
+  }
+});
+
+server.listen(PORT, () => {
+  console.log(`clunger listening on :${PORT}`);
+
+  // Log which LLM providers are available at startup
+  const providers: string[] = [];
+  if (process.env.ANTHROPIC_API_KEY) providers.push("claude(sdk)");
+  providers.push("claude(cli)"); // always available via OAuth
+  if (process.env.XAI_API_KEY) providers.push("grok");
+  if (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY) providers.push("gemini(key)");
+  if (existsSync("/usr/local/bin/gemini")) providers.push("gemini(cli)");
+  console.log(`[clunger] LLM providers available: ${providers.join(", ")}`);
+  if (!process.env.XAI_API_KEY) console.warn("[clunger] WARNING: XAI_API_KEY not set — grok personas will fail");
+  if (!existsSync("/usr/local/bin/gemini")) console.warn("[clunger] WARNING: gemini CLI not found at /usr/local/bin/gemini — gemini personas will fail");
+  else if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) console.warn("[clunger] WARNING: GEMINI_API_KEY not set — gemini personas will fail");
+});

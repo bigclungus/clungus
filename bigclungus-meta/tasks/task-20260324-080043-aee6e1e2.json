@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-080043-aee6e1e2",
+  "title": "Debug duplicate house listing workflow runs",
+  "agent_id": "aee6e1e293500a934",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": "1485910995288326267",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T08:00:43Z",
+      "event": "started",
+      "context": "Debug duplicate house listing workflow runs"
+    },
+    {
+      "ts": "2026-03-24T08:01:59Z",
+      "event": "done",
+      "context": "Here's the full diagnosis and what was done:\n\n**Root cause:** The `post_listings_summary` activity in `/mnt/data/temporal-workflows/activities/discord_act.py` had a non-atomic design: it posted the Discord message successfully, then tried to add 👍/👎 reactions. Discord returned a 429 rate limit on the second reaction, which caused a `RuntimeError` to be raised. Temporal treated this as an activity failure and retried it — but retrying re-posted the entire message from the top, creating a duplicat...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

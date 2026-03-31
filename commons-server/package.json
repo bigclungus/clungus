@@ -1,0 +1,15 @@
+{
+  "name": "commons-server",
+  "version": "1.0.0",
+  "description": "Commons Game Server — tile-aware NPC AI, SQLite persistence, Bun WS",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun --watch run src/index.ts"
+  },
+  "dependencies": {
+    "@temporalio/client": "^1.15.0"
+  },
+  "devDependencies": {},
+  "type": "module"
+}

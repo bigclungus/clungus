@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-070936-a9692bd2",
+  "title": "Diagnose multi-model congress routing end-to-end",
+  "agent_id": "a9692bd2cd3b74814",
+  "agent_type": "general-purpose",
+  "session_id": "a73508af-b739-48f4-b9cb-a7829a4a15c0",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T07:09:36Z",
+      "event": "started",
+      "context": "Diagnose multi-model congress routing end-to-end"
+    },
+    {
+      "ts": "2026-03-25T07:14:14Z",
+      "event": "done",
+      "context": "Now I have the complete picture. Here's the full diagnostic report:\n\n---\n\n## Findings\n\n### Root Cause: Expired XAI API Key + Silent Fallback (Now Fixed)\n\n**What was happening:**\n\n1. **401 Unauthorized on Grok API** — The `XAI_API_KEY` in `/mnt/data/.env.shared` was stale/expired. Logs show continuous 401 errors from processes 1159504, 1275873, and 1778372 spanning Mar 24 17:20 through Mar 25 02:15:\n\n   ```\n   Mar 25 02:15:35 Grok error for otto: HTTPError: HTTP Error 401: Unauthorized\n   Mar 25 ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

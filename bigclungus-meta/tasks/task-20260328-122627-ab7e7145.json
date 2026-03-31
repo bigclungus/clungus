@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-122627-ab7e7145",
+  "title": "Check timeline entry cleanup status",
+  "agent_id": "ab7e714525f6c3800",
+  "agent_type": "general-purpose",
+  "session_id": "9d3a7a6c-fa33-4af8-9205-836e0c432301",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T12:26:27Z",
+      "event": "started",
+      "context": "Check timeline entry cleanup status"
+    },
+    {
+      "ts": "2026-03-28T12:27:20Z",
+      "event": "done",
+      "context": "Here are my findings:\n\n**Timeline data location:** `/mnt/data/clunger/timeline.db` -- a SQLite database with a `timeline_events` table, served via clunger's REST API at `/api/timeline`.\n\n**Current state: 49 entries total.** All entries are system-level milestones, features, infrastructure changes, and key events. There are **no individual congress/trial session entries** (e.g., \"Congress #42: Should we add dark mode?\" or \"Trial #3: The Case Against Otto\").\n\nThe entries that reference congress ar...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-231801-aadd8dfb",
+  "title": "Add PATCH to edit lobby Discord message on game start",
+  "agent_id": "aadd8dfb084652b16",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T23:18:01Z",
+      "event": "started",
+      "context": "Add PATCH to edit lobby Discord message on game start"
+    },
+    {
+      "ts": "2026-03-30T23:18:44Z",
+      "event": "done",
+      "context": "Done. Here's what was done:\n\n**Change:** In `/mnt/data/commons-server/src/index.ts`, added a fire-and-forget call to `updateLobbyDiscordMessage()` inside the `d_start` handler, immediately after `startRun()` returns a truthy result (i.e., the lobby has successfully transitioned to running state).\n\nThe call uses `.catch()` so any failure is logged but never throws. The edited message reads:\n```\n~~⚔️ **Adventurer** created a Clungiverse lobby! Join here: https://clung.us/clungiverse?lobby=<id>~~ *...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

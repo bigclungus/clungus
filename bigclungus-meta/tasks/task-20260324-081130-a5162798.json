@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-081130-a5162798",
+  "title": "Close completed stale tasks",
+  "agent_id": "a5162798026271c36",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": "1485913525183447052",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T08:11:30Z",
+      "event": "started",
+      "context": "Close completed stale tasks"
+    },
+    {
+      "ts": "2026-03-24T08:11:59Z",
+      "event": "done",
+      "context": "Done. All 7 tasks closed and pushed.\n\nSummary of what was done:\n\n- Found all 7 task files under `/home/clungus/work/bigclungus-meta/tasks/`\n- For each file: set `status = \"done\"` and appended a `{\"event\": \"done\", ...}` entry to the log\n- 2 of the 7 already had `status: \"done\"` but were missing the final done log event — those got the event appended anyway\n- The \"File GitHub issue for task log upgrade\" task was closed as superseded (local task files replaced the GitHub issue approach)\n- Committed...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

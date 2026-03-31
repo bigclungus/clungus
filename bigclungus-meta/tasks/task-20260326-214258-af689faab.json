@@ -1,0 +1,36 @@
+{
+  "id": "task-20260326-214258-af689faab",
+  "title": "Diagnose commons-server.service crash root cause from journal logs",
+  "agent_id": "congress-70",
+  "agent_type": "congress",
+  "session_id": "congress-0070",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "requires_approval": false,
+  "log": [
+    {
+      "event": "started",
+      "ts": "2026-03-26T21:42:58Z",
+      "message": "Created from Congress #70 verdict on: [idea]: service commons-server.service restarted 4x in last 24h \u2014 possible flakiness (GitHub issue: "
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-26T21:42:58Z",
+      "message": "Source verdict: Four restarts in 24 hours is not flakiness \u2014 it's a failing service with no root cause identified. Before anyone proposes monitoring improvements or architectural changes, the immediate action is to p..."
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-26T21:45:32.630447Z",
+      "message": "All 4 restarts in 24h were clean SIGTERM (intentional deployments, not crashes). Latent crash bug found: /admin/congress POST handler uses req.json().then() with no .catch() \u2014 if body is empty or malformed JSON, Bun gets an unhandled promise rejection and crashes the process. Secondary issue: handleWalkerInteraction writes to relative candidates/ path but is currently unused."
+    },
+    {
+      "event": "done",
+      "ts": "2026-03-26T21:46:10.116115Z",
+      "message": "Root cause: 4 restarts were all clean SIGTERM (intentional deployments). Latent crash bug identified: /admin/congress POST handler had no rejection handler on req.json().then() \u2014 malformed/empty body would cause unhandled promise rejection, crashing Bun. Fixed in commit fde61fd."
+    }
+  ],
+  "status": "done"
+}

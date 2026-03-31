@@ -1,0 +1,30 @@
+{
+  "id": "task-20260325-041457-ac5e159fc",
+  "title": "Remove Galactus from active congress roster",
+  "agent_id": "congress-30",
+  "agent_type": "congress",
+  "session_id": "congress-0030",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "event": "started",
+      "ts": "2026-03-25T04:14:57Z",
+      "message": "Created from Congress #30 verdict on: Galactus has been on this roster for a while but has never been selected for a congress. Should Gala"
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-25T04:14:57Z",
+      "message": "Source verdict: Galactus has failed silently when selected and has never successfully contributed to a single congress despite being rostered. The memory record is damning: \"selected for debate, but his activity fail..."
+    },
+    {
+      "event": "failed",
+      "ts": "2026-03-25T06:05:35.137752Z",
+      "message": "interrupted by bot restart 2026-03-25"
+    }
+  ],
+  "status": "failed"
+}

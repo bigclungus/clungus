@@ -1,0 +1,13 @@
+[Unit]
+Description=BigClungus custom Prometheus metrics exporter
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /mnt/data/monitoring/custom_exporter.py
+Restart=always
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+Environment=PATH=/home/clungus/.local/bin:/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=default.target

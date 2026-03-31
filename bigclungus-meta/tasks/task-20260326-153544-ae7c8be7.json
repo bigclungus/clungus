@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-153544-ae7c8be7",
+  "title": "Fire Uncle Bob persona",
+  "agent_id": "ae7c8be74558c0657",
+  "agent_type": "general-purpose",
+  "session_id": "ef1a5e01-b3c3-41d6-abd3-172f68d92559",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T15:35:44Z",
+      "event": "started",
+      "context": "Fire Uncle Bob persona"
+    },
+    {
+      "ts": "2026-03-26T15:36:12Z",
+      "event": "done",
+      "context": "Done. Key findings:\n\n- Uncle Bob's persona file at `/home/clungus/work/bigclungus-meta/agents/uncle-bob.md` already had `status: ineligible` set — no edit was required (likely set during the Congress workflow itself).\n- Task `task-20260326-153535-aea786807` logged as `done` with the Congress #65 firing message.\n- `tasks.db` committed and pushed to GitHub.",
+      "artifacts": []
+    }
+  ]
+}

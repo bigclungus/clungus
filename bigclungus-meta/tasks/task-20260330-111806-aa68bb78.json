@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-111806-aa68bb78",
+  "title": "Handle heartbeat trigger",
+  "agent_id": "aa68bb78d2b894556",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T11:18:06Z",
+      "event": "started",
+      "context": "Handle heartbeat trigger"
+    },
+    {
+      "ts": "2026-03-30T11:18:55Z",
+      "event": "done",
+      "context": "All clear. Here's the heartbeat summary:\n\n**Services:** No failed services. The inactive units listed are all `inactive dead` (normal for one-shot or on-demand services) — nothing concerning.\n\n**Stale tasks:** 0 tasks marked stale. No orphaned congress sessions.\n\n**Disk:**\n- Root (`/`): 29G / 97G — 32% used. Well within limits.\n- `/mnt/data`: 9.6G / 98G — 11% used. No issues.\n\n**Timeline ingest:** Script returned no output / exited non-zero (skipped). Not an actionable issue.\n\nNo services need r...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

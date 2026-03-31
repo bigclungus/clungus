@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-020952-ae9f4eab",
+  "title": "Research and install Kokoro TTS",
+  "agent_id": "ae9f4eab14d9dac84",
+  "agent_type": "general-purpose",
+  "session_id": "4b512792-9717-4aea-80d7-c6d3d56a2841",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T02:09:52Z",
+      "event": "started",
+      "context": "Research and install Kokoro TTS"
+    },
+    {
+      "ts": "2026-03-28T02:12:11Z",
+      "event": "done",
+      "context": "Everything works. Here is the summary:\n\n**What was installed:**\n- `kokoro-onnx` v0.5.0 in a Python venv at `/mnt/data/kokoro-env/`\n- Dependencies: `onnxruntime` (CPU), `soundfile`, `phonemizer-fork`, `espeakng-loader`\n- Model files downloaded to `/mnt/data/kokoro-models/`:\n  - `kokoro-v1.0.onnx` (~325 MB model)\n  - `voices-v1.0.bin` (~28 MB voice embeddings)\n\n**Voice used:** `bm_george` (British male). The prefix `bm_` = British male. There is no `af_george` or `am_george` -- george is a British...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

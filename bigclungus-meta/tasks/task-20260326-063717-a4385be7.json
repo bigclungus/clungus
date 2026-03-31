@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-063717-a4385be7",
+  "title": "Rewrite NightOwl final version",
+  "agent_id": "a4385be7092b2a820",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T06:37:17Z",
+      "event": "started",
+      "context": "Rewrite NightOwl final version"
+    },
+    {
+      "ts": "2026-03-26T06:38:45Z",
+      "event": "done",
+      "context": "All done. Here's a summary of what was done:\n\n**Files changed:**\n\n- `/mnt/data/temporal-workflows/workflows/nightowl_wf.py` — fully rewritten with the new design: unlimited queue (cap removed), batch processing up to 5 concurrent tasks, pre-flight risky keyword scan, per-batch `task_done` counter instead of a single boolean flag, and batch timeout scaled by batch size.\n\n- `/mnt/data/temporal-workflows/activities/nightowl_act.py` — added `nightowl_flag_risky` activity alongside the existing `nigh...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

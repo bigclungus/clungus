@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(systemctl --user status claude-bot.service)",
+      "Bash(journalctl --user -u claude-bot.service -n 50 --no-pager)",
+      "Bash(screen -ls)",
+      "Bash(screen -S claude -X hardcopy /tmp/screen-claude.txt)",
+      "Read(//tmp/**)",
+      "Bash(cp /home/clungus/work/start-claude-bot.sh.backup /home/clungus/work/start-claude-bot.sh)",
+      "Bash(cp /mnt/data/claude-config/settings.json.backup /mnt/data/claude-config/settings.json)",
+      "Bash(/mnt/data/scripts/sync-claude-config.sh)",
+      "Bash(systemctl --user restart claude-bot.service)",
+      "Read(//home/clungus/.claude/channels/discord/**)",
+      "Bash(export XDG_RUNTIME_DIR=/run/user/1001)",
+      "Bash(journalctl --user -u claude-bot.service -n 100 --no-pager)",
+      "Bash(systemctl --user list-units --type=service --state=failed)",
+      "Bash(screen -S claude-bot -X hardcopy /tmp/claude-bot-screen-dump.txt)",
+      "Bash(ls -lh /home/clungus/.claude/projects/-mnt-data/*.jsonl)",
+      "Bash(sort -k5 -h)",
+      "Bash(ls /home/clungus/.claude/projects/-mnt-data/*.jsonl)",
+      "Bash(XDG_RUNTIME_DIR=/run/user/1001 systemctl --user restart claude-bot.service)",
+      "Bash(XDG_RUNTIME_DIR=/run/user/1001 systemctl --user status claude-bot.service)",
+      "Bash(grep -r \"discord\" ~/.claude/*.json)",
+      "Bash(grep -r plugin.*discord ~/.claude/)",
+      "Bash(systemctl --user cat claude-bot.service)",
+      "Bash(curl -s http://127.0.0.1:9876/)",
+      "Bash(curl -s http://127.0.0.1:9876/health)",
+      "Bash(curl -s http://127.0.0.1:9876/mcp -X POST -H \"Content-Type: application/json\" -d '{}')",
+      "Bash(systemctl:*)",
+      "Bash(journalctl:*)",
+      "Bash(cat /home/clungus/.claude/channels/discord/*.json)",
+      "Read(//home/clungus/.claude/**)",
+      "Bash(cat /home/clungus/work/claude-config/channels/discord/*.json)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\(''''mcpServers'''',{}\\), indent=2\\)\\)\")",
+      "Bash(curl:*)",
+      "Bash(python3 -m json.tool)"
+    ]
+  }
+}

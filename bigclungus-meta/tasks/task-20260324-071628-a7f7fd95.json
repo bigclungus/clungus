@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-071628-a7f7fd95",
+  "title": "Verify congress_check_continue registered in worker",
+  "agent_id": "a7f7fd95d3889c32e",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": "1485899556163162172",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T07:16:28Z",
+      "event": "started",
+      "context": "Verify congress_check_continue registered in worker"
+    },
+    {
+      "ts": "2026-03-24T07:16:51Z",
+      "event": "done",
+      "context": "Done. Here's a summary of what was found and changed:\n\n**Finding:** `congress_check_continue` was present in `congress_act.py` (line 466) and imported by `congress_wf.py` (line 34), but was missing from both the import block and the activities list in `worker.py`.\n\n**Changes to `/mnt/data/temporal-workflows/worker.py`:**\n1. Added `congress_check_continue` to the `from activities.congress_act import (...)` block.\n2. Added `congress_check_continue` to the `activities=[...]` list in the `Worker(......(truncated)",
+      "artifacts": []
+    }
+  ]
+}

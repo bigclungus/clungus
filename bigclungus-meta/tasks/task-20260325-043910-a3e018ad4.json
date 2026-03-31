@@ -1,0 +1,30 @@
+{
+  "id": "task-20260325-043910-a3e018ad4",
+  "title": "Diagnose Galactus silent failure in congress debate",
+  "agent_id": "congress-31",
+  "agent_type": "congress",
+  "session_id": "congress-0031",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "event": "started",
+      "ts": "2026-03-25T04:39:10Z",
+      "message": "Created from Congress #31 verdict on: Is Galactus too powerful to be fired? Will we be destroyed by his wrath if he is removed from congre"
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-25T04:39:10Z",
+      "message": "Source verdict: Galactus failed silently when called to debate \u2014 a persona who cannot show up to argue for his own survival has already answered the question. No persona is above firing; the entire point of this syst..."
+    },
+    {
+      "event": "failed",
+      "ts": "2026-03-25T06:05:35.137752Z",
+      "message": "interrupted by bot restart 2026-03-25"
+    }
+  ],
+  "status": "failed"
+}

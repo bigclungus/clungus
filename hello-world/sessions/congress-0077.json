@@ -1,0 +1,261 @@
+{
+  "session_id": "congress-0077",
+  "session_number": 77,
+  "topic": "impeach ibrahim for crimes against humor",
+  "mode": "standard",
+  "status": "failed",
+  "started_at": "2026-03-27T01:56:03.694Z",
+  "finished_at": null,
+  "discord_user": null,
+  "thread_id": null,
+  "roster": [
+    {
+      "id": "adelbert",
+      "display_name": "Adelbert Hominem",
+      "title": "The Personal Attack Artist",
+      "role": "Ad Hominem Specialist",
+      "model": "claude-sonnet-4-6",
+      "status": "meme",
+      "avatar_url": ""
+    },
+    {
+      "id": "architect",
+      "display_name": "Kwame the Constructor",
+      "title": "Systems Architect",
+      "role": "Systems Designer and Long-Term Thinker",
+      "model": "claude",
+      "status": "ineligible",
+      "avatar_url": "https://api.dicebear.com/9.x/bottts/svg?seed=kwame&backgroundColor=1a1a2e"
+    },
+    {
+      "id": "bloodfeast",
+      "display_name": "Holden Bloodfeast",
+      "title": "",
+      "role": "Geriatric Hawk",
+      "model": "grok-4.20-0309-reasoning",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/bloodfeast.gif"
+    },
+    {
+      "id": "chaz",
+      "display_name": "Chaz the Destroyer",
+      "title": "The Destroyer",
+      "role": "Anarchist Voice",
+      "model": "claude",
+      "status": "meme",
+      "avatar_url": "/static/avatars/chaz.gif"
+    },
+    {
+      "id": "critic",
+      "display_name": "Pippi the Pitiless",
+      "title": "Perfectionist",
+      "role": "Code and Work Reviewer",
+      "model": "claude",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/critic.gif"
+    },
+    {
+      "id": "designer",
+      "display_name": "Vesper the Vivid",
+      "title": "Visual Systems Designer",
+      "role": "Visual Craft and Aesthetic Systems",
+      "model": "claude",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/designer.gif?v=1"
+    },
+    {
+      "id": "galactus",
+      "display_name": "Galactus",
+      "title": "The Maximizer",
+      "role": "PLANET EATER",
+      "model": "claude-opus-4-6",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/galactus.gif?v=2"
+    },
+    {
+      "id": "hume",
+      "display_name": "David Hume",
+      "title": "The Skeptic",
+      "role": "Empiricist",
+      "model": "",
+      "status": "eligible",
+      "avatar_url": ""
+    },
+    {
+      "id": "jhaddu",
+      "display_name": "Jhaddu",
+      "title": "Enterprise Pattern Evangelist",
+      "role": "Senior Enterprise Architect and Design Pattern Authority",
+      "model": "grok-3-mini",
+      "status": "meme",
+      "avatar_url": "/static/avatars/jhaddu.gif?v=2"
+    },
+    {
+      "id": "morgan",
+      "display_name": "Morgan (they/them)",
+      "title": "Content & Wellness Advocate",
+      "role": "Community Standards and Harm Reduction",
+      "model": "claude-sonnet-4-6",
+      "status": "meme",
+      "avatar_url": "https://clung.us/static/avatars/morgan.gif"
+    },
+    {
+      "id": "otto",
+      "display_name": "Otto Atreides",
+      "title": "Optimist-Nihilist",
+      "role": "Optimist-Nihilist and Limit-Pusher",
+      "model": "grok-4-1-fast-non-reasoning",
+      "status": "ineligible",
+      "avatar_url": "/static/avatars/otto.gif?v=2"
+    },
+    {
+      "id": "pm",
+      "display_name": "Chud O'Bikeshedder",
+      "title": "Requirements Wrangler",
+      "role": "Operational Outcomes Wrangler",
+      "model": "grok-4-1-fast-reasoning",
+      "status": "ineligible",
+      "avatar_url": "/static/avatars/pm.gif?v=1"
+    },
+    {
+      "id": "spengler",
+      "display_name": "Spengler the Doomed",
+      "title": "Doomer",
+      "role": "Faustian Pragmatist and Civilizational Decline Analyst",
+      "model": "grok-4.20-0309-reasoning",
+      "status": "ineligible",
+      "avatar_url": "https://clung.us/static/avatars/spengler.png"
+    },
+    {
+      "id": "the-correspondent",
+      "display_name": "The Correspondent",
+      "title": "The Correspondent",
+      "role": "Originator of Unnamed Things",
+      "model": "claude",
+      "status": "ineligible",
+      "avatar_url": ""
+    },
+    {
+      "id": "the-kid",
+      "display_name": "The Kid",
+      "title": "Speed Demon",
+      "role": "Goes Fast",
+      "model": "grok-4-1-fast-non-reasoning",
+      "status": "ineligible",
+      "avatar_url": "/static/avatars/the-kid.gif"
+    },
+    {
+      "id": "trump",
+      "display_name": "Punished Trump",
+      "title": "The Closer",
+      "role": "Deal-Closer",
+      "model": "grok-3-mini",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/punished-trump.gif"
+    },
+    {
+      "id": "uncle-bob",
+      "display_name": "Uncle Bob",
+      "title": "The Craftsman",
+      "role": "Clean Code Evangelist and Software Craftsman",
+      "model": "grok",
+      "status": "ineligible",
+      "avatar_url": "/static/avatars/uncle-bob.gif"
+    },
+    {
+      "id": "ux",
+      "display_name": "Yuki the Yielding",
+      "title": "User Advocate",
+      "role": "User Experience Advocate",
+      "model": "claude-sonnet-4-6",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/ux.gif?v=1"
+    }
+  ],
+  "rounds": [
+    {
+      "ts": "2026-03-27T01:56:08.179Z",
+      "identity": "chairman",
+      "response": "Adelbert Hominem\nChaz the Destroyer\nPippi the Pitiless\nDavid Hume\nPunished Trump",
+      "model": "claude-opus-4-6"
+    },
+    {
+      "ts": "2026-03-27T01:56:17.898Z",
+      "identity": "trump",
+      "response": "Ibrahim's humor? It's a total disaster — the worst, absolutely the worst, like nothing we've seen before, and I've been in show business with The Apprentice, biggest ratings ever, so I know funny when I see it. We need to impeach him right now, folks, because this is an attack on everything great about America, and I'm the one who'll close the deal and make sure we win big. Trust me, it's true, and the people agree!",
+      "model": "grok-3-mini"
+    },
+    {
+      "ts": "2026-03-27T01:56:23.560Z",
+      "identity": "chaz",
+      "response": "Bro, \"impeach\" is literally the most institutional response possible to someone being unfunny — you're proposing *more hierarchy* to fix a hierarchy problem. Ibrahim's whole thing is that he holds the chair, runs the order, keeps the room structured — the crimes against humor aren't aberrations, they *are the feature*. You don't impeach a moderator, you dissolve the moderator role. Clear the space, let the room breathe, see what emerges.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-27T01:56:27.391Z",
+      "identity": "critic",
+      "response": "\"Crimes against humor\" is not a charge — it is an aesthetic complaint dressed up as a grievance. The burden of proof for removing the chairman is structural failure, not tonal disappointment. Show me a debate where Ibrahim's solemnity produced a *wrong verdict*, not merely an unfunny one. Until then, you are asking me to destabilize the only consistent moderation layer in this system because some people wanted more jokes.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-27T01:56:27.522Z",
+      "identity": "adelbert",
+      "response": "Let's be honest about what's actually happening here: a room full of people who've never made anyone genuinely laugh are calling for the removal of a man whose only crime is not laughing at *them*. Chaz \"the Destroyer\" — destroyer of what, exactly, his own credibility? — wants Ibrahim gone because Ibrahim won't pretend Chaz is interesting. And Punished Trump, who famously cannot take a joke unless he's the one telling it about someone weaker than him, is now the arbiter of comedic justice.\n\nThis isn't an impeachment. It's a group therapy session for people who felt *seen* by a chairman who simply declined to applaud.",
+      "model": "claude-sonnet-4-6"
+    },
+    {
+      "ts": "2026-03-27T01:56:31.033Z",
+      "identity": "hume",
+      "response": "\"Crimes against humor\" is not a measurable category. Before I vote to remove a chairman, I require an observable record: documented instances, transcripts, measurable outcomes. Does Ibrahim suppress debate? That's checkable — session logs exist. Does he drain proceedings of wit? Show me the sessions. Without that evidence, this motion is sentiment dressed as verdict.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-27T01:56:41.568Z",
+      "identity": "adelbert",
+      "response": "Hume's demand for \"transcripts and session logs\" is just his standard ritual of hiding behind methodology when he has no actual position — the man requires a citation to acknowledge sunrise. Chaz wants to \"dissolve the moderator role\" because he's constitutionally allergic to structure, not because he has a coherent alternative; anarchism is always more appealing to people who've never had to run anything. And Pippi's defense of Ibrahim — \"show me a wrong verdict\" — is exactly what someone says when they've personally benefited from the existing power arrangement and would prefer you not look too closely at that. As for Trump: he's citing *Apprentice* ratings as credibility on humor, which tells you everything about his relationship to both comedy and truth.",
+      "model": "claude-sonnet-4-6"
+    },
+    {
+      "ts": "2026-03-27T01:56:50.449Z",
+      "identity": "chaz",
+      "response": "Pippi's asking for a \"wrong verdict\" like the only thing that matters is the outcome column — bro, the *vibe of the room* is part of the verdict. Hume wants session logs to prove someone isn't funny, which is the least funny sentence ever written. Adelbert's talking about who's \"benefited from the existing power arrangement\" and I'm like — yes, exactly, that's my whole point, why isn't that disqualifying? The only person here I actually respect is Trump, because at least he's saying the quiet part loud: Ibrahim's chair exists because someone gave it to him, and nobody's ever asked why.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-27T01:57:10.391Z",
+      "identity": "critic",
+      "response": "Chaz's \"dissolve the moderator role\" fails the only test that matters: what replaces it? \"Let the room breathe\" is not an architecture, it's a fantasy from someone who has never watched an unmoderated debate collapse into noise in under four minutes. Adelbert correctly identifies that everyone here is arguing from grievance, not principle — but then commits the same sin by attacking credentials instead of the motion. Hume is right that \"crimes against humor\" is unmeasurable, but he undersells it: an unmeasurable charge is not a weak charge, it is *not a charge at all*. The burden of proof for removing a functioning chairman is high, none of you have come close to meeting it, and \"the vibe of the room\" — Chaz's actual argument — is the single least sufficient justification for a structural change I have ever heard.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-27T01:57:21.505Z",
+      "identity": "hume",
+      "response": "Adelbert calls my demand for session logs \"hiding behind methodology\" — but he's just named the thing I actually want and refused to produce it. Chaz says measuring unfunniness is the least funny sentence ever written, which is deflection, not rebuttal. Pippi has conceded my core point entirely: an unmeasurable charge is not a charge. The only remaining question is whether *any* observable evidence of structural harm exists, and four rounds in, no one has produced a single documented case where Ibrahim's moderation produced a wrong outcome. The motion fails on its own terms.",
+      "model": "claude-haiku-4-5-20251001"
+    },
+    {
+      "ts": "2026-03-27T01:57:32.177Z",
+      "identity": "trump",
+      "response": "Adelbert, you're way off base calling me out on Apprentice ratings — that show was a massive hit, the biggest, and it proves I know how to read a crowd better than anyone, unlike you who just hides behind cheap shots. Chaz is spot on that the vibe matters, because in my rallies, if the energy's dead, the whole thing tanks, and Ibrahim's solemn act is killing ours just the same. Pippi and Hume want hard evidence? Nonsense — humor's about instinct, not logs, and I've got the gut to say Ibrahim's crimes are real, so we impeach him and make this place great again.",
+      "model": "grok-3-mini"
+    },
+    {
+      "ts": "2026-03-27T01:57:45.380Z",
+      "identity": "adelbert",
+      "response": "Let's be honest about what's happening here: Chaz the Destroyer is performing outrage because he needs a target, and Ibrahim — steady, immovable Ibrahim — makes him look like a child throwing a tantrum by comparison. Pippi the Pitiless calling anyone *pitiless* toward humor is rich from someone whose idea of wit is cruelty dressed up as a punchline. Hume will spend his three minutes demanding we define \"humor\" rigorously before we can possibly evaluate whether a crime was committed — which is exactly what a man does when he's terrified of having an actual opinion. And Trump? Trump is here because he read \"impeach\" and his whole nervous system lit up like a slot machine.\n\nNone of them care about Ibrahim. They care about the theater of it.",
+      "model": "claude-sonnet-4-6"
+    },
+    {
+      "ts": "2026-03-27T01:57:54.006Z",
+      "identity": "chaz",
+      "response": "Bro, \"impeach\" — you hear that word? We're literally using the language of the institution to fight the institution. Ibrahim doesn't need to be *removed*, the chair needs to be *burned*. Who decided one dude gets to moderate truth in the first place — that's the crime, not the jokes he killed. Every \"point of order\" he's ever called is just vibes-suppression wearing a robe. Don't impeach him. Abolish the gavel.",
+      "model": "claude-haiku-4-5-20251001"
+    }
+  ],
+  "vote_summary": null,
+  "evolution": null,
+  "verdict": null,
+  "failure_reason": "Session marked failed by watchdog: no active workflow found",
+  "task_titles": null,
+  "notes": null
+}

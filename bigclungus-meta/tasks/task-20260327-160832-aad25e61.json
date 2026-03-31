@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-160832-aad25e61",
+  "title": "Fire Congress on monorepo proposal",
+  "agent_id": "aad25e6109535d35a",
+  "agent_type": "general-purpose",
+  "session_id": "b8a58c15-c6f1-48c2-b033-87763f636706",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T16:08:32Z",
+      "event": "started",
+      "context": "Fire Congress on monorepo proposal"
+    },
+    {
+      "ts": "2026-03-27T16:08:52Z",
+      "event": "done",
+      "context": "Done. Here is what happened:\n\n1. Verified Congress is **not suspended**.\n2. Fired `CongressWorkflow` in Temporal with workflow ID `congress-1774627722` on the `listings-queue` task queue. The topic covers the full monorepo consolidation proposal (repos to merge, benefits, tradeoffs), with `bigclungus-meta` kept separate.\n3. Posted the announcement to Discord channel `1485343472952148008` confirming Congress is in session.\n\nThe workflow is now running. The verdict will be posted to Discord automa...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

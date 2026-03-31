@@ -1,0 +1,127 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+
+/* ── CSS variables ── */
+:root {
+  --bg: #1a1a2e;
+  --accent: #e94560;
+  --text: #ccc;
+  --text-muted: #888;
+  --text-dim: #aaa;
+  --nav-bg: #1a1a2e;
+  --nav-border: #e94560;
+  --hover-fg: #fff;
+}
+
+[data-theme="light"] {
+  --bg: #fdf6e3;
+  --accent: #2aa198;
+  --text: #586e75;
+  --text-muted: #839496;
+  --text-dim: #93a1a1;
+  --nav-bg: #f5efe0;
+  --nav-border: #2aa198;
+  --hover-fg: #073642;
+}
+
+/* ── Main nav ── */
+.sitenav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  box-sizing: border-box;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--nav-bg);
+  border-bottom: 1px solid var(--nav-border);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  gap: 24px;
+}
+
+.sitenav-brand {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.sitenav-links {
+  display: flex;
+  flex: 1;
+  gap: 20px;
+  align-items: center;
+}
+
+.sitenav-links a {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.sitenav-links a:hover,
+.sitenav-links a.active {
+  color: var(--accent);
+}
+
+/* ── Theme toggle ── */
+.theme-toggle {
+  background: none;
+  border: 1px solid var(--nav-border);
+  color: var(--text-muted);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+  line-height: 1.4;
+}
+
+.theme-toggle:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ── Nav separator and tool links ── */
+.sitenav-sep {
+  color: var(--text-muted);
+  opacity: 0.4;
+  padding: 0 4px;
+  user-select: none;
+}
+
+.sitenav-tool-link {
+  opacity: 0.6;
+}
+
+.sitenav-tool-link:hover {
+  opacity: 1;
+}
+
+/* ── Mobile responsive ── */
+@media (max-width: 768px) {
+  .sitenav {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 12px;
+  }
+
+  .sitenav-brand {
+    flex: 0 0 auto;
+  }
+
+  .sitenav-links {
+    flex: 0 0 100%;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    order: 3;
+  }
+
+  .theme-toggle {
+    margin-left: auto;
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-020055-aeb1266c",
+  "title": "Build sprite PNG rendering pipeline + fix parallel gen",
+  "agent_id": "aeb1266cf0c94040f",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T02:00:55Z",
+      "event": "started",
+      "context": "Build sprite PNG rendering pipeline + fix parallel gen"
+    },
+    {
+      "ts": "2026-03-30T02:10:05Z",
+      "event": "done",
+      "context": "All four repos pushed. Here's a summary of everything changed:\n\n---\n\n## Summary\n\n### Change 1: Parallel stat+sprite gen in Temporal workflow\n\n**`/mnt/data/temporal-workflows/workflows/mob_gen_wf.py`**\n- Extracted a `_safe_generate_sprite(entity)` helper (defined before `process_mob` for clarity)\n- `process_mob` now uses `asyncio.gather(generate_mob_stats(...), _safe_generate_sprite(...))` to fire both activities concurrently\n- Sprite gen receives `entity[\"name\"]`, `entity[\"name\"]`, `entity.get(\"...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

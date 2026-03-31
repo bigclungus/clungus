@@ -1,0 +1,36 @@
+{
+  "id": "task-20260327-080835-aecc0ba21",
+  "title": "Build post-merge code review webhook handler",
+  "agent_id": "congress-87",
+  "agent_type": "congress",
+  "session_id": "congress-0087",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "requires_approval": false,
+  "log": [
+    {
+      "event": "started",
+      "ts": "2026-03-27T08:08:35Z",
+      "message": "Created from Congress #87 verdict on: Auto code review for newly-merged features: Should BigClungus implement an automated review step tha"
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-27T08:08:35Z",
+      "message": "Source verdict: Implement it, triggered by GitHub webhook post-merge \u2014 not periodic, not manual. Periodic misses the window where context is fresh; manual defeats the purpose. It should check for correctness regressi..."
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-27T08:15:53.303054Z",
+      "message": "webhook handler built and integrated into clunger (push event -> runPostMergeReview)"
+    },
+    {
+      "event": "done",
+      "ts": "2026-03-27T08:16:35.959508Z",
+      "message": "post-merge review webhook shipped \u2014 clunger f5d128f"
+    }
+  ],
+  "status": "done"
+}

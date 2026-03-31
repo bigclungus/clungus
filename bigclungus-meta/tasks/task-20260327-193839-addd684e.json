@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-193839-addd684e",
+  "title": "Fix British spelling in refinery",
+  "agent_id": "addd684eba97b6ef4",
+  "agent_type": "general-purpose",
+  "session_id": "b8a58c15-c6f1-48c2-b033-87763f636706",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T19:38:39Z",
+      "event": "started",
+      "context": "Fix British spelling in refinery"
+    },
+    {
+      "ts": "2026-03-27T19:39:14Z",
+      "event": "done",
+      "context": "Done. Here's what was changed across 3 files (5 instances total):\n\n**`/mnt/data/hello-world/refinery.html`** (2 fixes):\n- Line 1503: `favourite` -> `favorite` (sprite variant subtitle)\n- Line 1522: `favourite` -> `favorite` (congress avatar subtitle)\n\n**`/mnt/data/hello-world/grazing.html`** (2 fixes):\n- Line 2368: `centre` -> `center` (rim dot comment)\n- Line 3235: `centre` -> `center` (scale icon comment)\n\n**`/mnt/data/hello-world/congress.html`** (1 fix):\n- Line 2412: `honour` -> `honor` (aut...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

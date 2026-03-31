@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-173823-a574b958",
+  "title": "Heartbeat watchdog check",
+  "agent_id": "a574b9581886153b6",
+  "agent_type": "general-purpose",
+  "session_id": "ef1a5e01-b3c3-41d6-abd3-172f68d92559",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T17:38:23Z",
+      "event": "started",
+      "context": "Heartbeat watchdog check"
+    },
+    {
+      "ts": "2026-03-26T17:39:23Z",
+      "event": "done",
+      "context": "Congress is in session. Summary of what was found and actioned:\n\n- **Stale tasks**: 0 stale, 0 congress orphans\n- **GitHub issues**: Only #56 open (skipped per instructions)\n- **Failed services**: None\n- **Ideation finding**: `tvtropes-explorer.service` restarted 14x in the last 24h — possible flakiness\n  - Dedup check: no existing issue\n  - Opened GitHub issue #59: https://github.com/bigclungus/bigclungus-meta/issues/59\n  - Fired `CongressWorkflow` (id: `congress-1774546757`) on `listings-queue...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-102420-a95eb038",
+  "title": "On-restart checklist",
+  "agent_id": "a95eb0381801ce46a",
+  "agent_type": "general-purpose",
+  "session_id": "14ea2ebc-e5bb-427c-8502-7829da80ffb5",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T10:24:20Z",
+      "event": "started",
+      "context": "On-restart checklist"
+    },
+    {
+      "ts": "2026-03-27T10:25:40Z",
+      "event": "done",
+      "context": "`website.service` doesn't exist as a unit at all. The static site appears to be served by `clunger.service` (which replaced serve.py / the old website service) and is active. This is expected — the CLAUDE.md still references `website.service` but from context, `clunger.service` on port 8081 is the current web server.\n\n---\n\nHere is the full on-restart checklist summary:\n\n**1. Redis/FalkorDB fixes**\nBoth applied successfully: `stop-writes-on-bgsave-error no` and `GRAPH.CONFIG SET timeout 30000` re...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

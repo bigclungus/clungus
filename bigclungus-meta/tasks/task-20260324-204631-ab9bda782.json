@@ -1,0 +1,30 @@
+{
+  "id": "task-20260324-204631-ab9bda782",
+  "title": "Implement proactive context surfacing from conversation mentions",
+  "agent_id": "congress-21",
+  "agent_type": "congress",
+  "session_id": "congress-0021",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "event": "started",
+      "ts": "2026-03-24T20:46:31Z",
+      "message": "Created from Congress #21 verdict on: What should BigClungus's newest headline feature be? Balance cost/time to implement versus usefulnes"
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-24T20:46:31Z",
+      "message": "Source verdict: The feature that matters is **proactive context** \u2014 BigClungus should surface relevant information *before* being asked, triggered by conversation patterns it already observes (someone mentions a stoc..."
+    },
+    {
+      "event": "failed",
+      "ts": "2026-03-25T06:05:35.137752Z",
+      "message": "interrupted by bot restart 2026-03-25"
+    }
+  ],
+  "status": "failed"
+}

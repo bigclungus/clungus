@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-073453-a5e04f3b",
+  "title": "Fix Ferrus ID mismatch and refire Rust congress",
+  "agent_id": "a5e04f3b2c9e33b5b",
+  "agent_type": "general-purpose",
+  "session_id": "a73508af-b739-48f4-b9cb-a7829a4a15c0",
+  "discord_message_id": "1486266824638201856",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T07:34:53Z",
+      "event": "started",
+      "context": "Fix Ferrus ID mismatch and refire Rust congress"
+    },
+    {
+      "ts": "2026-03-25T07:36:31Z",
+      "event": "done",
+      "context": "Already in sync with remote (no output means nothing ahead, nothing dirty). The commit was already pushed. Everything is done.\n\nHere's a summary of what was done:\n\n**Bug fix — `/mnt/data/temporal-workflows/workflows/congress_wf.py` lines 112–146:**\n\nThe custom persona lookup only did an exact `name` match. `wolf.md` has `name: wolf` but the caller passed `\"The Wolf\"`, so it silently fell through.\n\nThe fix adds two fallback tiers:\n1. Case-insensitive match on `name` — catches `Wolf` matching `wol...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

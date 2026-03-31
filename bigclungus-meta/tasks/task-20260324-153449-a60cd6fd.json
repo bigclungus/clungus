@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-153449-a60cd6fd",
+  "title": "Simplify pass 3 - congress.html and tasks.html UI",
+  "agent_id": "a60cd6fdece0b120a",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": "1486024966402084874",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T15:34:49Z",
+      "event": "started",
+      "context": "Simplify pass 3 - congress.html and tasks.html UI"
+    },
+    {
+      "ts": "2026-03-24T15:36:35Z",
+      "event": "done",
+      "context": "Done. Here's what was fixed and why:\n\n**congress.html:**\n- Removed `loadSessionList()` entirely (~50 lines). This function fetched sessions for the old center-column session list, which was replaced by the sidebar. The panel it targeted has `display: none !important` and the function had zero call sites — pure dead code.\n- Fixed `renderSessionStatus()` to use the same guarded dot-class pattern as `loadSidebarSessionList`. Previously it did `'status-dot ' + st` unconditionally, which would add a ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-015102-a9a0f196",
+  "title": "Check Ibrahim task-generation prompt",
+  "agent_id": "a9a0f1965a49af04d",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T01:51:02Z",
+      "event": "started",
+      "context": "Check Ibrahim task-generation prompt"
+    },
+    {
+      "ts": "2026-03-26T01:51:15Z",
+      "event": "done",
+      "context": "Here is the exact prompt text sent to Ibrahim in the `congress_create_tasks` activity (lines 966–978 of `/mnt/data/temporal-workflows/activities/congress_act.py`):\n\n```\nBased on this congress verdict, extract 0-3 concrete, actionable tasks that BigClungus should implement. These will become local task items.\n\nVerdict: {verdict}\nTopic: {topic}\n\nFor each task, respond with:\nTASK: <title (short, imperative)>\nBODY: <1-2 sentence description of what to do and why>\nAPPROVAL: AUTO  (if BigClungus can e...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

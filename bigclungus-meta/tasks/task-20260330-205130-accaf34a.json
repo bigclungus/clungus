@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-205130-accaf34a",
+  "title": "Research PowerShell equivalent of bash at",
+  "agent_id": "accaf34aaf319f6b6",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T20:51:30Z",
+      "event": "started",
+      "context": "Research PowerShell equivalent of bash at"
+    },
+    {
+      "ts": "2026-03-30T20:52:16Z",
+      "event": "done",
+      "context": "Posted successfully. Here's what was sent to the Discord thread:\n\n**Summary of the 4 approaches covered:**\n\n1. **`schtasks /create /sc once /st HH:MM /f`** — the clear winner. One line, detached, survives terminal close, survives reboots. Self-deleting variant also shown.\n\n2. **`Register-ScheduledTask`** (PowerShell-native) — 3 lines but more composable with variables.\n\n3. **`Start-Sleep` hack** — `Start-Sleep -Seconds ((Get-Date \"14:30\") - (Get-Date)).TotalSeconds; command` — dead simple but bl...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

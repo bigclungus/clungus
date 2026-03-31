@@ -1,0 +1,13 @@
+syntax = "proto3";
+package wallet.v1;
+
+service WalletService {
+  rpc GetBalance(GetBalanceRequest) returns (GetBalanceResponse);
+}
+
+message GetBalanceRequest {}
+message GetBalanceResponse {
+  string address = 1;
+  string balance_eth = 2;
+  string chain = 3;
+}

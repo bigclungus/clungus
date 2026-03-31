@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-203431-a84bec1b",
+  "title": "Clean CLAUDE.md persona specifics and create congress process doc",
+  "agent_id": "a84bec1baffc20eb5",
+  "agent_type": "general-purpose",
+  "session_id": "ef1a5e01-b3c3-41d6-abd3-172f68d92559",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T20:34:31Z",
+      "event": "started",
+      "context": "Clean CLAUDE.md persona specifics and create congress process doc"
+    },
+    {
+      "ts": "2026-03-26T20:40:37Z",
+      "event": "done",
+      "context": "All changes are in place. Here's a summary:\n\n## What was done\n\n**Files modified:**\n- `/home/clungus/work/bigclungus-meta/CLAUDE.md` — committed and pushed to GitHub\n- `/home/clungus/work/claude-config/CLAUDE.md` — committed and pushed to GitHub\n\n**File created:**\n- `/home/clungus/work/bigclungus-meta/CONGRESS_PROCESS.md` — committed and pushed\n- `/mnt/data/CONGRESS_PROCESS.md` — copy at the working dir root\n\n**Removed from both CLAUDE.md files:**\n- \"Eligible seats\" list (Pippi, Yuki, Ibrahim wit...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

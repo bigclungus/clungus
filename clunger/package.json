@@ -1,0 +1,35 @@
+{
+  "name": "clunger",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build": "bun build src/index.ts --outdir dist",
+    "gen": "cd ../bigclungus-meta/proto && buf generate",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write src/",
+    "format:check": "prettier --check src/"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
+    "@bufbuild/buf": "^1.66.1",
+    "@bufbuild/protobuf": "^2.0.0",
+    "@connectrpc/connect": "^2.0.0",
+    "@connectrpc/connect-node": "^2.0.0",
+    "@temporalio/client": "^1.15.0",
+    "@types/ws": "^8.18.1",
+    "gray-matter": "^4.0.3",
+    "openai": "^6.32.0",
+    "ws": "^8.20.0"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.57.2",
+    "@typescript-eslint/parser": "^8.57.2",
+    "bun-types": "latest",
+    "eslint": "^10.1.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.1",
+    "typescript": "^5.0.0"
+  }
+}

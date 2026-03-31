@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-172845-a43fd1fc",
+  "title": "Switch Temporal to clunger and fire test congress",
+  "agent_id": "a43fd1fc5617c1e6e",
+  "agent_type": "general-purpose",
+  "session_id": "4a58e62d-fa69-4ca2-a0a8-edcc21bb73c1",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T17:28:45Z",
+      "event": "started",
+      "context": "Switch Temporal to clunger and fire test congress"
+    },
+    {
+      "ts": "2026-03-25T17:30:55Z",
+      "event": "done",
+      "context": "Worker is back to healthy on `:8080`. Here's a full summary of what happened and what's blocking the migration:\n\n---\n\n**What was done:**\n\n1. Found `BASE_URL` in `/mnt/data/temporal-workflows/activities/congress_act.py` (line 34) — it reads from `$BASE_URL` env var, defaulting to `http://localhost:8080`.\n2. Changed the default to `:8081`, committed, pushed, restarted the worker.\n3. Fired the test congress workflow `congress-clunger-test-1774459761`.\n4. Workflow started, `congress_start` activity ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

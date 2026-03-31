@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-162013-ab49fb9a",
+  "title": "Fire meme Congress - Carmen San Diego",
+  "agent_id": "ab49fb9abfec44e1b",
+  "agent_type": "general-purpose",
+  "session_id": "ef1a5e01-b3c3-41d6-abd3-172f68d92559",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T16:20:13Z",
+      "event": "started",
+      "context": "Fire meme Congress - Carmen San Diego"
+    },
+    {
+      "ts": "2026-03-26T16:20:43Z",
+      "event": "done",
+      "context": "Done. The meme CongressWorkflow was started successfully:\n\n- Workflow ID: `congress-1774542032`\n- Topic: \"Where in the world is Carmen San Diego?\"\n- Mode: `meme`\n- Discord notification injected to channel `1485343472952148008`",
+      "artifacts": []
+    }
+  ]
+}

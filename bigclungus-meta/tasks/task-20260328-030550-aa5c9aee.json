@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-030550-aa5c9aee",
+  "title": "Research local plugin dev mode",
+  "agent_id": "aa5c9aee13d877e1b",
+  "agent_type": "general-purpose",
+  "session_id": "43e9d2af-7d2b-4765-a796-49da1a9b6141",
+  "discord_message_id": "1487286201449971863",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T03:05:50Z",
+      "event": "started",
+      "context": "Research local plugin dev mode"
+    },
+    {
+      "ts": "2026-03-28T03:10:22Z",
+      "event": "done",
+      "context": "I have all the information needed. Here's the report:\n\n---\n\n## Report: Local Dev Plugin Mechanism for Claude Code\n\n### Yes, there is a proper mechanism: `--plugin-dir`\n\nClaude Code has a built-in `--plugin-dir <path>` flag specifically for this purpose. It:\n\n1. **Loads plugins from a local directory** for the session only (no marketplace sync)\n2. **Overrides the marketplace version** if the plugin has the same `name`. The binary contains the logic: *\"Plugin X from --plugin-dir overrides installe...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

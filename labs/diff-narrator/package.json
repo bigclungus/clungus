@@ -1,0 +1,10 @@
+{
+  "name": "diff-narrator",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "bun run src/index.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0"
+  }
+}

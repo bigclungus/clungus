@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wallet — BigClungus</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="stylesheet" href="/sitenav.css?v=d004dbf">
+  <script src="/sitenav.js?v=d004dbf" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background: var(--bg);
+      font-family: 'JetBrains Mono', monospace;
+      transition: background 0.2s ease, color 0.2s ease;
+      color: var(--text);
+    }
+
+    .content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 680px;
+      padding: 3rem 1.5rem 5rem;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      color: var(--accent);
+      font-size: 2.2rem;
+      text-shadow: 0 0 20px var(--accent);
+      margin: 0 0 0.3rem;
+      text-align: center;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      margin: 0 0 2.5rem;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Address card ── */
+    .address-card {
+      width: 100%;
+      background: #12121e;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 0 24px rgba(233, 69, 96, 0.08);
+    }
+
+    .card-label {
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .address-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .address-text {
+      color: var(--accent);
+      font-size: 0.88rem;
+      letter-spacing: 0.04em;
+      word-break: break-all;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .copy-btn {
+      background: none;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      border-radius: 4px;
+      padding: 4px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s ease, color 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .copy-btn:hover {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .copy-btn.copied {
+      background: #4ecca3;
+      border-color: #4ecca3;
+      color: #12121e;
+    }
+
+    /* ── Two-column layout: QR + Balance ── */
+    .wallet-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 520px) {
+      .wallet-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: #12121e;
+      border: 1px solid #2a2a42;
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .panel-label {
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      align-self: flex-start;
+      width: 100%;
+    }
+
+    /* ── QR code ── */
+    #qr-canvas {
+      border-radius: 4px;
+      display: block;
+    }
+
+    /* ── Balance ── */
+    .balance-value {
+      color: #4ecca3;
+      font-size: 2rem;
+      font-weight: 700;
+      text-shadow: 0 0 16px #4ecca3;
+      text-align: center;
+    }
+
+    .balance-unit {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      margin-top: -4px;
+    }
+
+    .balance-chain {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .chain-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #4ecca3;
+      box-shadow: 0 0 6px #4ecca3;
+      flex-shrink: 0;
+    }
+
+    .balance-loading {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    .balance-error {
+      color: var(--accent);
+      font-size: 0.78rem;
+      text-align: center;
+    }
+
+    /* ── How to send section ── */
+    .send-card {
+      width: 100%;
+      background: #12121e;
+      border: 1px solid #2a2a42;
+      border-radius: 8px;
+      padding: 1.4rem 1.6rem;
+    }
+
+    .send-card h2 {
+      color: var(--accent);
+      font-size: 1rem;
+      margin: 0 0 1rem;
+      letter-spacing: 0.05em;
+    }
+
+    .send-card p {
+      color: var(--text);
+      font-size: 0.82rem;
+      line-height: 1.7;
+      margin: 0 0 0.8rem;
+    }
+
+    .send-card p:last-child {
+      margin-bottom: 0;
+    }
+
+    .send-card code {
+      background: #1e1e36;
+      border: 1px solid #2a2a42;
+      border-radius: 3px;
+      padding: 1px 6px;
+      font-size: 0.8rem;
+      color: #4ecca3;
+    }
+
+    .networks-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+
+    .network-badge {
+      background: #1e1e36;
+      border: 1px solid #2a2a42;
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .network-badge .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .dot-eth { background: #627eea; box-shadow: 0 0 4px #627eea; }
+    .dot-base { background: #0052ff; box-shadow: 0 0 4px #0052ff; }
+  </style>
+</head>
+<body>
+  <div class="content">
+    <h1>💳 wallet</h1>
+    <div class="subtitle">public address · ETH + Base</div>
+
+    <!-- Address card -->
+    <div class="address-card">
+      <div class="card-label">ETH Address</div>
+      <div class="address-row">
+        <span class="address-text" id="addr-display">0x425bC492E43b2a5Eb7E02c9F5dd9c1D2F378f02f</span>
+        <button class="copy-btn" id="copy-btn" onclick="copyAddress()">copy</button>
+      </div>
+    </div>
+
+    <!-- QR + Balance grid -->
+    <div class="wallet-grid">
+      <div class="panel">
+        <div class="panel-label">Scan to send</div>
+        <canvas id="qr-canvas"></canvas>
+      </div>
+      <div class="panel">
+        <div class="panel-label">Balance on Base</div>
+        <div id="balance-area">
+          <div class="balance-loading">fetching…</div>
+        </div>
+        <div class="balance-chain">
+          <span class="chain-dot"></span>
+          Base Mainnet
+        </div>
+      </div>
+    </div>
+
+    <!-- Send instructions -->
+    <div class="send-card">
+      <h2>sending ETH on Base</h2>
+      <div class="networks-row">
+        <div class="network-badge"><span class="dot dot-base"></span>Base L2 — chain ID <code>8453</code></div>
+        <div class="network-badge"><span class="dot dot-eth"></span>Ethereum Mainnet — chain ID <code>1</code></div>
+      </div>
+      <p>Same address works on both networks — just make sure your wallet is connected to the right chain before sending. Base is faster and cheaper.</p>
+      <p>To add Base to MetaMask: go to <strong>Settings → Networks → Add Network</strong>, then search for "Base" or enter RPC <code>https://mainnet.base.org</code> with chain ID <code>8453</code>.</p>
+      <p>Native token on Base is ETH. No bridging needed if you already have ETH on Base — just send to <code>0x425bC492E43b2a5Eb7E02c9F5dd9c1D2F378f02f</code>.</p>
+    </div>
+  </div>
+
+  <script>
+    var ADDR = '0x425bC492E43b2a5Eb7E02c9F5dd9c1D2F378f02f';
+
+    // Generate QR code
+    window.addEventListener('DOMContentLoaded', function () {
+      var canvas = document.getElementById('qr-canvas');
+      QRCode.toCanvas(canvas, ADDR, {
+        width: 160,
+        margin: 2,
+        color: {
+          dark: '#4ecca3',
+          light: '#12121e'
+        }
+      }, function (err) {
+        if (err) console.error('QR error:', err);
+      });
+
+      // Fetch balance
+      fetch('/api/wallet/balance')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          var area = document.getElementById('balance-area');
+          if (data.balance_eth !== undefined) {
+            area.innerHTML =
+              '<div class="balance-value">' + data.balance_eth + '</div>' +
+              '<div class="balance-unit">ETH</div>';
+          } else {
+            area.innerHTML = '<div class="balance-error">unavailable</div>';
+          }
+        })
+        .catch(function () {
+          document.getElementById('balance-area').innerHTML =
+            '<div class="balance-error">could not fetch</div>';
+        });
+    });
+
+    function markCopied(btn) {
+      btn.textContent = 'copied!';
+      btn.classList.add('copied');
+      setTimeout(function () {
+        btn.textContent = 'copy';
+        btn.classList.remove('copied');
+      }, 2000);
+    }
+
+    function copyAddress() {
+      var btn = document.getElementById('copy-btn');
+      navigator.clipboard.writeText(ADDR).then(function () {
+        markCopied(btn);
+      }).catch(function () {
+        // Fallback
+        var ta = document.createElement('textarea');
+        ta.value = ADDR;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        markCopied(btn);
+      });
+    }
+  </script>
+</body>
+</html>

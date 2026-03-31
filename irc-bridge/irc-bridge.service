@@ -1,0 +1,17 @@
+[Unit]
+Description=IRC Bridge — BigClungus ↔ georgelarson.me
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/mnt/data/irc-bridge
+EnvironmentFile=/home/clungus/.claude/channels/discord/.env
+ExecStart=/usr/bin/python3 /mnt/data/irc-bridge/irc_bridge.py
+Restart=on-failure
+RestartSec=15
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

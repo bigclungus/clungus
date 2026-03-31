@@ -1,0 +1,18 @@
+[Unit]
+Description=clunger TypeScript web server (serve.py replacement)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/mnt/data/clunger
+ExecStart=/home/clungus/.bun/bin/bun run src/index.ts
+Restart=on-failure
+RestartSec=5
+ExecStopPost=/mnt/data/scripts/service-crash-alert.sh %n
+MemoryMax=2G
+EnvironmentFile=/mnt/data/.env.shared
+EnvironmentFile=/mnt/data/clunger/.env
+Environment=PORT=8081
+
+[Install]
+WantedBy=default.target

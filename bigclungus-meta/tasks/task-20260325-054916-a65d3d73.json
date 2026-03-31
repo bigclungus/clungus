@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-054916-a65d3d73",
+  "title": "Fix broken JSONL session file",
+  "agent_id": "a65d3d73a964ea1ba",
+  "agent_type": "general-purpose",
+  "session_id": "c0f8461e-cfb9-4c16-8c8a-a50e140e9e30",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T05:49:16Z",
+      "event": "started",
+      "context": "Fix broken JSONL session file"
+    },
+    {
+      "event": "failed",
+      "ts": "2026-03-25T06:05:35.137752Z",
+      "message": "interrupted by bot restart 2026-03-25"
+    }
+  ],
+  "status": "failed"
+}

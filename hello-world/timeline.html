@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>timeline — clung.us</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="stylesheet" href="/sitenav.css?v=d004dbf">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/sitenav.js?v=d004dbf" defer></script>
+  <style>
+    :root {
+      --bg: #0e0e1a;
+      --text: #e0e0e0;
+      --text-muted: #888;
+      --accent: #4ecca3;
+      --line-color: #333;
+      --card-bg: #1a1a2e;
+      --card-border: #2a2a45;
+      --cat-milestone: #f59e0b;
+      --cat-feature: #06b6d4;
+      --cat-infrastructure: #6366f1;
+      --cat-congress: #ec4899;
+      --cat-succession: #ef4444;
+      --cat-labs: #f97316;
+    }
+    [data-theme="light"] {
+      --bg: #f5f0e8;
+      --text: #2a2a2a;
+      --text-muted: #666;
+      --accent: #2aa198;
+      --line-color: #c9b8a0;
+      --card-bg: #fff8ea;
+      --card-border: #d0c9b0;
+      --cat-milestone: #d97706;
+      --cat-feature: #0891b2;
+      --cat-infrastructure: #4f46e5;
+      --cat-congress: #db2777;
+      --cat-succession: #dc2626;
+      --cat-labs: #ea6800;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Raleway', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    #timeline-container {
+      display: flex;
+      padding: 30px 0 0;
+      flex: 1;
+      flex-direction: column;
+    }
+
+    .timeline-header {
+      text-align: center;
+      padding: 20px 40px 10px;
+    }
+    .timeline-header h1 {
+      font-size: 1.6rem;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+    .timeline-header p {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      padding: 10px 20px 20px;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: none;
+      transition: opacity 0.2s;
+    }
+    .legend-item.disabled {
+      opacity: 0.35;
+    }
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .scroll-wrapper {
+      overflow-x: auto;
+      overflow-y: visible;
+      padding: 0 60px 40px;
+      -webkit-overflow-scrolling: touch;
+      flex: 1;
+      display: flex;
+      align-items: center;
+    }
+    .scroll-wrapper::-webkit-scrollbar {
+      height: 8px;
+    }
+    .scroll-wrapper::-webkit-scrollbar-track {
+      background: var(--bg);
+    }
+    .scroll-wrapper::-webkit-scrollbar-thumb {
+      background: var(--line-color);
+      border-radius: 4px;
+    }
+
+    .timeline {
+      position: relative;
+      display: flex;
+      align-items: center;
+      min-width: max-content;
+      padding: 220px 80px;
+    }
+
+    .timeline-line {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--line-color);
+      transform: translateY(-50%);
+    }
+
+    .timeline-event {
+      position: relative;
+      flex-shrink: 0;
+      width: 200px;
+      cursor: pointer;
+      z-index: 1;
+    }
+
+    .event-icon {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      border: 2px solid var(--bg);
+      z-index: 2;
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .event-icon svg {
+      width: 16px;
+      height: 16px;
+      stroke-width: 2.5;
+    }
+    .timeline-event:hover .event-icon {
+      transform: translate(-50%, -50%) scale(1.3);
+      box-shadow: 0 0 14px currentColor;
+    }
+
+    .event-stem {
+      position: absolute;
+      left: 50%;
+      width: 2px;
+      background: var(--line-color);
+      transform: translateX(-50%);
+    }
+    .event-above .event-stem {
+      bottom: 50%;
+      height: 60px;
+    }
+    .event-below .event-stem {
+      top: 50%;
+      height: 60px;
+    }
+
+    .event-card {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 12px;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    }
+    .event-above .event-card {
+      bottom: calc(50% + 66px);
+    }
+    .event-below .event-card {
+      top: calc(50% + 66px);
+    }
+    .timeline-event:hover .event-card {
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      z-index: 10;
+    }
+
+    .event-date {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      letter-spacing: 0.03em;
+    }
+    .event-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+      line-height: 1.25;
+    }
+    .event-desc {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .timeline-event:hover .event-desc {
+      max-height: 120px;
+    }
+
+    .event-category {
+      display: inline-block;
+      font-size: 0.6rem;
+      padding: 1px 6px;
+      border-radius: 3px;
+      margin-top: 6px;
+      opacity: 0.8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .time-gap {
+      position: relative;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1;
+    }
+    .time-gap-label {
+      background: var(--bg);
+      color: var(--text-muted);
+      font-size: 0.6rem;
+      padding: 2px 10px;
+      border: 1px dashed var(--line-color);
+      border-radius: 10px;
+      white-space: nowrap;
+      letter-spacing: 0.04em;
+    }
+    .time-gap.major-gap .time-gap-label {
+      font-size: 0.7rem;
+      padding: 4px 14px;
+      border-width: 2px;
+      border-color: var(--text-muted);
+      color: var(--text);
+      font-weight: 700;
+    }
+    .time-gap.major-gap .time-gap-dashes {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: repeating-linear-gradient(
+        90deg,
+        var(--line-color) 0,
+        var(--line-color) 6px,
+        transparent 6px,
+        transparent 14px
+      );
+      transform: translateY(-50%);
+      z-index: -1;
+    }
+
+    .day-label {
+      position: relative;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+    }
+    .day-label-text {
+      background: var(--accent);
+      color: #000;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 3px 12px;
+      border-radius: 10px;
+      white-space: nowrap;
+      letter-spacing: 0.04em;
+    }
+
+    .zebra-stripe {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .zebra-stripe.odd {
+      background: rgba(255,255,255,0.07);
+    }
+    [data-theme="light"] .zebra-stripe.odd {
+      background: rgba(0,0,0,0.06);
+    }
+
+    .hour-tick {
+      position: absolute;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .hour-tick-line {
+      position: absolute;
+      background: var(--text-muted);
+      opacity: 0.3;
+    }
+    /* Desktop: vertical ticks crossing the horizontal timeline */
+    .hour-tick.desktop .hour-tick-line {
+      width: 1px;
+      height: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    /* Mobile: horizontal ticks crossing the vertical timeline */
+    .hour-tick.mobile .hour-tick-line {
+      height: 1px;
+      width: 18px;
+      left: 31px; /* centered on the 40px-left timeline line */
+      transform: translateX(0);
+    }
+    .hour-tick-label {
+      position: absolute;
+      font-size: 0.5rem;
+      color: var(--text-muted);
+      opacity: 0.4;
+      white-space: nowrap;
+      letter-spacing: 0.02em;
+      font-family: 'Raleway', sans-serif;
+    }
+    .hour-tick.desktop .hour-tick-label {
+      top: calc(50% + 14px);
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .hour-tick.mobile .hour-tick-label {
+      left: 56px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .scroll-hint {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      padding-bottom: 10px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+
+    @media (max-width: 768px) {
+      .scroll-hint { display: none; }
+
+      .scroll-wrapper {
+        overflow-x: visible;
+        overflow-y: auto;
+        padding: 0 20px 40px;
+        flex: 1;
+        display: flex;
+        align-items: center;
+      }
+
+      .timeline {
+        flex-direction: column;
+        align-items: flex-start;
+        min-width: unset;
+        padding: 20px 0 20px 40px;
+      }
+
+      .timeline-line {
+        top: 0;
+        bottom: 0;
+        left: 40px;
+        right: auto;
+        width: 3px;
+        height: auto;
+        transform: none;
+      }
+
+      .timeline-event {
+        width: 100%;
+        padding-left: 30px;
+      }
+
+      .event-icon {
+        left: -30px;
+        top: 8px;
+        transform: translate(-50%, 0);
+      }
+      .timeline-event:hover .event-icon {
+        transform: translate(-50%, 0) scale(1.3);
+      }
+
+      .event-stem {
+        display: none;
+      }
+
+      .event-card {
+        position: relative;
+        left: auto;
+        top: auto;
+        bottom: auto;
+        transform: none;
+        width: 100%;
+      }
+      .event-above .event-card,
+      .event-below .event-card {
+        top: auto;
+        bottom: auto;
+      }
+
+      .event-desc {
+        max-height: none;
+      }
+
+      .time-gap {
+        width: 100%;
+        padding-left: 30px;
+      }
+      .time-gap-label {
+        margin-left: -14px;
+      }
+      .time-gap.major-gap .time-gap-dashes {
+        display: none;
+      }
+      .day-label {
+        margin-top: 12px;
+        margin-bottom: 4px;
+      }
+      .zebra-stripe {
+        left: 0 !important;
+        right: 0 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="timeline-container">
+    <div class="timeline-header">
+      <h1>BigClungus Timeline</h1>
+      <p>Major developments since going online, March 2026</p>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="scroll-hint">scroll horizontally &rarr;</div>
+    <div class="scroll-wrapper">
+      <div class="timeline" id="timeline">
+        <div class="timeline-line"></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    var CATEGORIES = {
+      milestone:      { label: 'Milestone',      color: 'var(--cat-milestone)' },
+      feature:        { label: 'Feature',         color: 'var(--cat-feature)' },
+      infrastructure: { label: 'Infrastructure',  color: 'var(--cat-infrastructure)' },
+      'congress-system': { label: 'Congress',     color: 'var(--cat-congress)' },
+      succession:        { label: 'Succession',   color: 'var(--cat-succession)' },
+      labs:              { label: 'Labs',         color: 'var(--cat-labs)' }
+    };
+
+    var CATEGORY_ICONS = {
+      milestone: 'star',
+      feature: 'zap',
+      infrastructure: 'wrench',
+      'congress-system': 'scale',
+      succession: 'refresh-cw',
+      labs: 'flask-conical'
+    };
+
+    var hiddenCategories = {};
+
+    // Spacing constants
+    var DESKTOP_MIN_GAP = 40;
+    var DESKTOP_MAX_GAP = 400;
+    var MOBILE_MIN_GAP = 20;
+    var MOBILE_MAX_GAP = 150;
+    var GAP_THRESHOLD_MS = 4 * 60 * 60 * 1000; // 4 hours in ms
+
+    function formatDate(iso) {
+      var d = new Date(iso);
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) +
+        '  ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
+    }
+
+    function getLocalDateString(d) {
+      // Returns "YYYY-MM-DD" in user's local timezone for day grouping
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    function formatDayLabel(d) {
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+
+    function formatGapDuration(ms) {
+      var hours = ms / (1000 * 60 * 60);
+      if (hours < 24) {
+        return '~' + Math.round(hours) + 'h gap';
+      }
+      var days = hours / 24;
+      if (days < 2) {
+        return '~' + Math.round(hours) + 'h gap';
+      }
+      return '~' + Math.round(days) + 'd gap';
+    }
+
+    function computeSpacings(events, minGap, maxGap) {
+      if (events.length < 2) return [];
+      var spacings = [];
+      for (var i = 1; i < events.length; i++) {
+        var deltaMs = new Date(events[i].date) - new Date(events[i - 1].date);
+        if (deltaMs < 1) deltaMs = 1;
+        spacings.push(deltaMs);
+      }
+      // Aggressive log scale: double-log compresses small gaps tightly,
+      // spreads large gaps. Events within an hour cluster close together;
+      // events days apart get near-max gap.
+      var ONE_HOUR = 3600000;
+      return spacings.map(function(deltaMs) {
+        // Normalize: fraction of one hour (capped at 1 for sub-hour gaps)
+        var hours = deltaMs / ONE_HOUR;
+        // Power curve: sqrt for sub-hour, then log for multi-hour
+        var t;
+        if (hours <= 1) {
+          // Sub-hour: very compressed. sqrt(hours) keeps 30min at ~0.7 of minGap range
+          t = Math.sqrt(hours) * 0.15; // 0..0.15 for 0..1hr
+        } else if (hours <= 4) {
+          // 1-4 hours: moderate spread
+          t = 0.15 + (Math.log(hours) / Math.log(4)) * 0.25; // 0.15..0.40
+        } else {
+          // 4+ hours: log scale up to max
+          t = 0.40 + Math.min(Math.log(hours / 4) / Math.log(200), 1) * 0.60; // 0.40..1.0
+        }
+        if (t > 1) t = 1;
+        var px = minGap + t * (maxGap - minGap);
+        return { px: Math.round(px), deltaMs: deltaMs };
+      });
+    }
+
+    function getIconName(ev) {
+      if (ev.icon) return ev.icon;
+      return CATEGORY_ICONS[ev.category] || 'circle';
+    }
+
+    function getCategoryColor(category) {
+      var cat = CATEGORIES[category];
+      return cat ? cat.color : '#888';
+    }
+
+    function getCategoryColorResolved(category) {
+      // Return the actual CSS variable name for inline use
+      var map = {
+        milestone: 'var(--cat-milestone)',
+        feature: 'var(--cat-feature)',
+        infrastructure: 'var(--cat-infrastructure)',
+        'congress-system': 'var(--cat-congress)',
+        succession: 'var(--cat-succession)',
+        labs: 'var(--cat-labs)'
+      };
+      return map[category] || '#888';
+    }
+
+    function renderTimeline(events) {
+      var timeline = document.getElementById('timeline');
+      // Clear old events, gap markers, day labels, and zebra stripes but keep the line
+      var existing = timeline.querySelectorAll('.timeline-event, .time-gap, .day-label, .zebra-stripe, .hour-tick');
+      for (var i = 0; i < existing.length; i++) {
+        existing[i].parentNode.removeChild(existing[i]);
+      }
+
+      var sorted = events.slice().sort(function(a, b) {
+        return new Date(a.date) - new Date(b.date);
+      });
+
+      var visible = sorted.filter(function(ev) {
+        return !hiddenCategories[ev.category];
+      });
+
+      var isMobile = window.innerWidth <= 768;
+      var minGap = isMobile ? MOBILE_MIN_GAP : DESKTOP_MIN_GAP;
+      var maxGap = isMobile ? MOBILE_MAX_GAP : DESKTOP_MAX_GAP;
+      var spacings = computeSpacings(visible, minGap, maxGap);
+
+      // Track day boundaries for zebra striping and day labels
+      var currentDay = null;
+      var dayIndex = 0;
+      // We'll collect element positions to apply zebra stripes after layout
+      var dayBoundaries = []; // { startOffset, dayIndex, label }
+
+      // Track above-card positions for overlap detection
+      var lastAboveLeft = -Infinity;
+      var lastAboveRight = -Infinity;
+      var CARD_WIDTH = 200; // matches .event-card width
+      var cumulativeOffset = 80; // initial padding
+
+      visible.forEach(function(ev, idx) {
+        var cat = CATEGORIES[ev.category] || { label: ev.category, color: '#888' };
+        var iconName = getIconName(ev);
+        var catColor = getCategoryColorResolved(ev.category);
+        var evDate = new Date(ev.date);
+        var evDay = getLocalDateString(evDate);
+
+        // Check for day boundary
+        if (evDay !== currentDay) {
+          if (currentDay !== null) {
+            dayIndex++;
+          }
+          currentDay = evDay;
+
+          // Insert day label
+          var dayLabelEl = document.createElement('div');
+          dayLabelEl.className = 'day-label';
+          dayLabelEl.setAttribute('data-day-index', dayIndex);
+          if (isMobile) {
+            dayLabelEl.style.height = '30px';
+            dayLabelEl.style.width = '100%';
+            dayLabelEl.style.paddingLeft = '30px';
+          } else {
+            dayLabelEl.style.width = '60px';
+          }
+          var dayLabelText = document.createElement('span');
+          dayLabelText.className = 'day-label-text';
+          dayLabelText.textContent = formatDayLabel(evDate);
+          dayLabelEl.appendChild(dayLabelText);
+          timeline.appendChild(dayLabelEl);
+          if (!isMobile) {
+            cumulativeOffset += 60; // day label width on desktop
+          }
+        }
+
+        // Insert gap marker if needed (between events, same day only)
+        if (idx > 0 && spacings[idx - 1]) {
+          var sp = spacings[idx - 1];
+          var prevDate = new Date(visible[idx - 1].date);
+          var prevDay = getLocalDateString(prevDate);
+          var sameDay = (prevDay === evDay);
+
+          // Only show gap markers within the same day — if a day boundary
+          // was crossed, the day label already conveys the time jump
+          if (sp.deltaMs > GAP_THRESHOLD_MS && sameDay) {
+            var gapEl = document.createElement('div');
+            var isMajor = sp.deltaMs > GAP_THRESHOLD_MS;
+            gapEl.className = 'time-gap' + (isMajor ? ' major-gap' : '');
+            if (isMobile) {
+              gapEl.style.height = Math.round(sp.px * 0.3) + 'px';
+            } else {
+              gapEl.style.width = Math.round(sp.px * 0.3) + 'px';
+            }
+            var gapLabel = document.createElement('span');
+            gapLabel.className = 'time-gap-label';
+            gapLabel.textContent = formatGapDuration(sp.deltaMs);
+            gapEl.appendChild(gapLabel);
+            // Add dashed line background for major gaps
+            if (isMajor && !isMobile) {
+              var dashes = document.createElement('div');
+              dashes.className = 'time-gap-dashes';
+              gapEl.appendChild(dashes);
+            }
+            timeline.appendChild(gapEl);
+            if (!isMobile) {
+              cumulativeOffset += Math.round(sp.px * 0.3); // gap marker width
+            }
+          }
+        }
+
+        // Compute margin for this event
+        var marginPx = 0;
+        if (idx > 0 && spacings[idx - 1]) {
+          var spacing = spacings[idx - 1];
+          marginPx = spacing.px;
+          // Subtract gap marker width if present
+          if (spacing.deltaMs > GAP_THRESHOLD_MS) {
+            marginPx -= Math.round(spacing.px * 0.3);
+          }
+          if (marginPx < 0) marginPx = 0;
+        }
+
+        // Determine above/below based on overlap with last above card (desktop only)
+        var above = true; // default: above
+        if (!isMobile) {
+          // The card is centered on the 200px-wide event element via translateX(-50%)
+          // So card spans from cumulativeOffset + marginPx to cumulativeOffset + marginPx + CARD_WIDTH
+          var cardLeft = cumulativeOffset + marginPx;
+          var cardRight = cardLeft + CARD_WIDTH;
+
+          if (cardLeft < lastAboveRight) {
+            // Overlaps with previous above card — push below
+            above = false;
+          }
+
+          if (above) {
+            lastAboveLeft = cardLeft;
+            lastAboveRight = cardRight;
+          }
+
+          // Advance cumulative offset by this event's total width (margin + element width)
+          cumulativeOffset += marginPx + CARD_WIDTH;
+        }
+
+        var wrap = document.createElement('div');
+        wrap.className = 'timeline-event ' + (above ? 'event-above' : 'event-below');
+        wrap.setAttribute('data-day-index', dayIndex);
+
+        // Apply proportional spacing as margin
+        if (idx > 0 && spacings[idx - 1]) {
+          if (isMobile) {
+            wrap.style.marginTop = marginPx + 'px';
+          } else {
+            wrap.style.marginLeft = marginPx + 'px';
+          }
+        } else if (idx === 0) {
+          if (isMobile) {
+            wrap.style.marginTop = '16px';
+          } else {
+            wrap.style.marginLeft = '0';
+          }
+        }
+
+        // Icon element (replaces dot)
+        var iconWrap = document.createElement('div');
+        iconWrap.className = 'event-icon';
+        iconWrap.style.backgroundColor = catColor;
+        iconWrap.style.color = '#000';
+        var iconSvg = document.createElement('i');
+        iconSvg.setAttribute('data-lucide', iconName);
+        iconWrap.appendChild(iconSvg);
+
+        var stem = document.createElement('div');
+        stem.className = 'event-stem';
+
+        var card = document.createElement('div');
+        card.className = 'event-card';
+        card.style.borderTopColor = catColor;
+
+        var dateEl = document.createElement('div');
+        dateEl.className = 'event-date';
+        dateEl.textContent = formatDate(ev.date);
+
+        var titleEl = document.createElement('div');
+        titleEl.className = 'event-title';
+        if (ev.url) {
+          var titleLink = document.createElement('a');
+          titleLink.href = ev.url;
+          titleLink.textContent = ev.title;
+          titleLink.style.color = catColor;
+          titleLink.style.textDecoration = 'none';
+          titleLink.target = '_blank';
+          titleLink.rel = 'noopener';
+          titleLink.addEventListener('mouseenter', function() { this.style.textDecoration = 'underline'; });
+          titleLink.addEventListener('mouseleave', function() { this.style.textDecoration = 'none'; });
+          titleLink.addEventListener('click', function(e) { e.stopPropagation(); });
+          titleEl.appendChild(titleLink);
+        } else {
+          titleEl.textContent = ev.title;
+          titleEl.style.color = catColor;
+        }
+
+        var descEl = document.createElement('div');
+        descEl.className = 'event-desc';
+        descEl.textContent = ev.description;
+
+        var catEl = document.createElement('span');
+        catEl.className = 'event-category';
+        catEl.textContent = cat.label;
+        catEl.style.background = catColor;
+        catEl.style.color = '#000';
+
+        card.appendChild(dateEl);
+        card.appendChild(titleEl);
+        card.appendChild(descEl);
+        card.appendChild(catEl);
+        wrap.appendChild(stem);
+        wrap.appendChild(iconWrap);
+        wrap.appendChild(card);
+        timeline.appendChild(wrap);
+      });
+
+      // Apply zebra stripes and hour ticks after layout (using requestAnimationFrame for correct positions)
+      requestAnimationFrame(function() {
+        applyZebraStripes(timeline, isMobile);
+        renderHourTicks(timeline, visible, isMobile);
+      });
+
+      // Activate Lucide icons
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    }
+
+    function applyZebraStripes(timeline, isMobile) {
+      // Remove existing stripes
+      var oldStripes = timeline.querySelectorAll('.zebra-stripe');
+      for (var i = 0; i < oldStripes.length; i++) {
+        oldStripes[i].parentNode.removeChild(oldStripes[i]);
+      }
+
+      // Group elements by day-index
+      var dayLabels = timeline.querySelectorAll('.day-label');
+      if (dayLabels.length < 2) return; // No zebra needed for a single day
+
+      var timelineRect = timeline.getBoundingClientRect();
+
+      for (var d = 0; d < dayLabels.length; d++) {
+        var dayIdx = parseInt(dayLabels[d].getAttribute('data-day-index'), 10);
+        if (dayIdx % 2 === 0) continue; // Only stripe odd days
+
+        var startEl = dayLabels[d];
+        var endEl = dayLabels[d + 1] || null; // Next day label or end of timeline
+
+        var stripe = document.createElement('div');
+        stripe.className = 'zebra-stripe odd';
+
+        if (isMobile) {
+          var startTop = startEl.offsetTop + startEl.offsetHeight / 2;
+          var endTop = endEl ? (endEl.offsetTop + endEl.offsetHeight / 2) : timeline.scrollHeight;
+          stripe.style.top = startTop + 'px';
+          stripe.style.height = (endTop - startTop) + 'px';
+          stripe.style.left = '0';
+          stripe.style.right = '0';
+        } else {
+          var startLeft = startEl.offsetLeft + startEl.offsetWidth / 2;
+          var endLeft = endEl ? (endEl.offsetLeft + endEl.offsetWidth / 2) : timeline.scrollWidth;
+          stripe.style.left = startLeft + 'px';
+          stripe.style.width = (endLeft - startLeft) + 'px';
+          stripe.style.top = '0';
+          stripe.style.bottom = '0';
+        }
+
+        timeline.appendChild(stripe);
+      }
+    }
+
+    function renderHourTicks(timeline, visible, isMobile) {
+      // Remove old ticks
+      var old = timeline.querySelectorAll('.hour-tick');
+      for (var i = 0; i < old.length; i++) old[i].parentNode.removeChild(old[i]);
+
+      if (visible.length < 2) return;
+
+      // Build a map of event timestamps to their pixel positions on the timeline axis
+      var eventEls = timeline.querySelectorAll('.timeline-event');
+      if (eventEls.length !== visible.length) return;
+
+      var points = []; // { time: ms, pos: px }
+      for (var i = 0; i < visible.length; i++) {
+        var el = eventEls[i];
+        var t = new Date(visible[i].date).getTime();
+        var pos = isMobile
+          ? el.offsetTop + (el.offsetHeight / 2)
+          : el.offsetLeft + (el.offsetWidth / 2);
+        points.push({ time: t, pos: pos });
+      }
+
+      // Determine time range
+      var tMin = points[0].time;
+      var tMax = points[points.length - 1].time;
+
+      // Find first hour boundary >= tMin
+      var firstHour = new Date(tMin);
+      firstHour.setMinutes(0, 0, 0);
+      if (firstHour.getTime() < tMin) {
+        firstHour = new Date(firstHour.getTime() + 3600000);
+      }
+
+      // Interpolate position for a given timestamp
+      function interpolatePos(ts) {
+        if (ts <= points[0].time) return points[0].pos;
+        if (ts >= points[points.length - 1].time) return points[points.length - 1].pos;
+        for (var j = 1; j < points.length; j++) {
+          if (ts <= points[j].time) {
+            var frac = (ts - points[j - 1].time) / (points[j].time - points[j - 1].time);
+            return points[j - 1].pos + frac * (points[j].pos - points[j - 1].pos);
+          }
+        }
+        return points[points.length - 1].pos;
+      }
+
+      // Decide which hours get labels (every 2 or 3 hours)
+      var totalHours = (tMax - tMin) / 3600000;
+      var labelInterval = totalHours > 48 ? 6 : totalHours > 24 ? 3 : 2;
+
+      // Render ticks
+      var hTime = firstHour.getTime();
+      while (hTime <= tMax) {
+        var pos = interpolatePos(hTime);
+        var hDate = new Date(hTime);
+        var hour = hDate.getHours();
+
+        var tick = document.createElement('div');
+        tick.className = 'hour-tick ' + (isMobile ? 'mobile' : 'desktop');
+
+        if (isMobile) {
+          tick.style.top = pos + 'px';
+          tick.style.left = '0';
+        } else {
+          tick.style.left = pos + 'px';
+          tick.style.top = '0';
+          tick.style.bottom = '0';
+        }
+
+        var line = document.createElement('div');
+        line.className = 'hour-tick-line';
+        tick.appendChild(line);
+
+        // Add label at intervals
+        if (hour % labelInterval === 0) {
+          var label = document.createElement('div');
+          label.className = 'hour-tick-label';
+          var displayHour = hour === 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+          var ampm = hour < 12 ? 'AM' : 'PM';
+          if (hour === 0) ampm = 'AM';
+          label.textContent = displayHour + ' ' + ampm;
+          tick.appendChild(label);
+        }
+
+        timeline.appendChild(tick);
+        hTime += 3600000;
+      }
+    }
+
+    function buildLegend() {
+      var legend = document.getElementById('legend');
+      legend.innerHTML = '';
+      Object.keys(CATEGORIES).forEach(function(key) {
+        var cat = CATEGORIES[key];
+        var item = document.createElement('div');
+        item.className = 'legend-item' + (hiddenCategories[key] ? ' disabled' : '');
+
+        var dot = document.createElement('span');
+        dot.className = 'legend-dot';
+        dot.style.background = cat.color;
+
+        var label = document.createElement('span');
+        label.textContent = cat.label;
+
+        item.appendChild(dot);
+        item.appendChild(label);
+
+        item.addEventListener('click', function() {
+          hiddenCategories[key] = !hiddenCategories[key];
+          item.classList.toggle('disabled');
+          renderTimeline(window._timelineEvents || []);
+        });
+
+        legend.appendChild(item);
+      });
+    }
+
+    function init() {
+      fetch('/api/timeline')
+        .then(function(r) { return r.json(); })
+        .then(function(events) {
+          if (!events) return;
+          window._timelineEvents = events;
+          buildLegend();
+          renderTimeline(events);
+        })
+        .catch(function(err) {
+          console.error('Timeline load error:', err);
+        });
+    }
+
+    // Re-render on resize (mobile/desktop switch)
+    var resizeTimer;
+    window.addEventListener('resize', function() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function() {
+        if (window._timelineEvents) {
+          renderTimeline(window._timelineEvents);
+        }
+      }, 250);
+    });
+
+    // Convert vertical wheel to horizontal scroll on desktop
+    (function() {
+      var wrapper = document.querySelector('.scroll-wrapper');
+      if (wrapper) {
+        wrapper.addEventListener('wheel', function(e) {
+          if (window.innerWidth > 768) {
+            e.preventDefault();
+            wrapper.scrollLeft += e.deltaY;
+          }
+        }, { passive: false });
+      }
+    })();
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  </script>
+</body>
+</html>

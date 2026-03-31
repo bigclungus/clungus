@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-100017-a578c3dc",
+  "title": "Resume Bokoen1 transcript ingestion",
+  "agent_id": "a578c3dcf2cfef395",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T10:00:17Z",
+      "event": "started",
+      "context": "Resume Bokoen1 transcript ingestion"
+    },
+    {
+      "ts": "2026-03-30T11:45:32Z",
+      "event": "done",
+      "context": "All done. Here's a summary of what was accomplished:\n\n**Bokoen1 Transcript Ingestion - Complete**\n\n- Status at start: 89 Episodic nodes in the `bokoen1_transcripts` FalkorDB graph (status file said 70, but some extra had been ingested previously)\n- Transcripts available: 167 `.txt` files in `/mnt/data/data/bokoen1-transcripts/`\n- New ingestions this run: 111 transcripts (0 failures)\n- Final graph count: 200 Episodic nodes in `bokoen1_transcripts`\n- Status file `/mnt/data/data/bokoen1-ingestion-s...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

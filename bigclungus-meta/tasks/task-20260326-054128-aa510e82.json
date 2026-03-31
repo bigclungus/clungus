@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-054128-aa510e82",
+  "title": "Check recent congress session duplication",
+  "agent_id": "aa510e82fafaed80e",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": "1486600705555959858",
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T05:41:28Z",
+      "event": "started",
+      "context": "Check recent congress session duplication"
+    },
+    {
+      "ts": "2026-03-26T05:41:45Z",
+      "event": "done",
+      "context": "Here's the full breakdown of congress sessions 050–060:\n\n**Genuine duplicates (failures + retries):**\n\n- **SmallClungus topic** — sessions 053, 054, 055, 056 all `failed`, then 057 `done`. That's 4 failed attempts before one succeeded. Same topic fired 5 times total.\n- **Temporal worker restarts (heartbeat ideation)** — session 059 `failed` on a slightly different phrasing (\"8x in last 24h\"), while 058 was `done` on an earlier version (\"4x in last 24h\"). These look like two separate heartbeat id...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

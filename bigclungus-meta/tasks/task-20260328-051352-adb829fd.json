@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-051352-adb829fd",
+  "title": "Close stale tasks",
+  "agent_id": "adb829fd22976c33d",
+  "agent_type": "general-purpose",
+  "session_id": "39a8007c-3c86-47f0-b762-f5bf8cf2f776",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T05:13:52Z",
+      "event": "started",
+      "context": "Close stale tasks"
+    },
+    {
+      "ts": "2026-03-28T05:14:34Z",
+      "event": "done",
+      "context": "Both stale tasks are now closed:\n\n1. **task-20260328-045918-af944235** (\"Restart claude-bot service\") -- marked done with message about session CCXV running.\n2. **task-20260328-041412-a45a9547** (\"Debug Discord message delivery path\") -- had only a \"started\" event with no further progress (previous session died before completing it). Marked done noting it was orphaned session work.",
+      "artifacts": []
+    }
+  ]
+}

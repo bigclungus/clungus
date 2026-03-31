@@ -1,0 +1,24 @@
+{
+  "id": "task-20260324-070412-a4a5b6c4",
+  "title": "Verify feralhosting SSH and FTP access",
+  "agent_id": "a4a5b6c4e746f8c42",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T07:04:12Z",
+      "event": "started",
+      "context": "Verify feralhosting SSH and FTP access"
+    },
+    {
+      "ts": "2026-03-24T07:45:00Z",
+      "event": "done",
+      "note": "blocked by panel IP restriction, user notified — closed by sweep"
+    }
+  ]
+}

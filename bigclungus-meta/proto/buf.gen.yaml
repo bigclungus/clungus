@@ -1,0 +1,10 @@
+version: v2
+plugins:
+  - remote: buf.build/bufbuild/es
+    out: ../../clunger/gen
+    opt:
+      - target=ts
+  - remote: buf.build/connectrpc/es
+    out: ../../clunger/gen
+    opt:
+      - target=ts

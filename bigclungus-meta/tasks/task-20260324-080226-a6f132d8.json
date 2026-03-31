@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-080226-a6f132d8",
+  "title": "Fix HealthcheckWorkflow KeyError on tasks endpoint",
+  "agent_id": "a6f132d810563ccb4",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": "1485911177044430889",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T08:02:25Z",
+      "event": "started",
+      "context": "Fix HealthcheckWorkflow KeyError on tasks endpoint"
+    },
+    {
+      "ts": "2026-03-24T08:03:11Z",
+      "event": "done",
+      "context": "Done. Here's a summary of the fix:\n\n**Root cause:** `HealthcheckWorkflow` uses `continue_as_new` to loop, passing `previously_down` (the list of down URLs from the prior iteration) into each new run. At some point `https://hello.clung.us/api/tasks` was in `SITES` and ended up in `previously_down`. After it was removed from `SITES`, the next iteration's `results` dict had no entry for that URL. When the workflow tried to build the \"recovery\" alert via `results[url]`, it hit `KeyError`.\n\n**Fix** (...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

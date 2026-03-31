@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-071610-a1194be4",
+  "title": "Stop first spec agent",
+  "agent_id": "a1194be4da44d90d6",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T07:16:10Z",
+      "event": "started",
+      "context": "Stop first spec agent"
+    },
+    {
+      "ts": "2026-03-26T07:16:13Z",
+      "event": "done",
+      "context": "stopped",
+      "artifacts": []
+    }
+  ]
+}

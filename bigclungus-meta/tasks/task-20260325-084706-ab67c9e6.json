@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-084706-ab67c9e6",
+  "title": "Investigate [improve] trigger",
+  "agent_id": "ab67c9e64c250441f",
+  "agent_type": "general-purpose",
+  "session_id": "4a58e62d-fa69-4ca2-a0a8-edcc21bb73c1",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T08:47:06Z",
+      "event": "started",
+      "context": "Investigate [improve] trigger"
+    },
+    {
+      "ts": "2026-03-25T08:47:40Z",
+      "event": "done",
+      "context": "Here's the full picture:\n\n---\n\n**What `[improve]` is**\n\n`[improve]` is sent by `HourlyIntrospectionWorkflow` — an hourly Temporal workflow defined in `/mnt/data/temporal-workflows/workflows/introspection.py`. It fires the activity `send_discord_introspection_nudge` (in `/mnt/data/temporal-workflows/activities/introspection_act.py`), which injects the string `[improve]` into BigClungus's session via the local inject endpoint (`localhost:9876`), with `user=\"temporal-sweeper\"`. That's why it shows ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

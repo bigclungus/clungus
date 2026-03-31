@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-044837-a1b18a08",
+  "title": "Add no-silent-failures directive to CLAUDE.md",
+  "agent_id": "a1b18a08544754156",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T04:48:37Z",
+      "event": "started",
+      "context": "Add no-silent-failures directive to CLAUDE.md"
+    },
+    {
+      "ts": "2026-03-25T04:49:29Z",
+      "event": "done",
+      "context": "`/mnt/data` is not a git repo — `CLAUDE.md` there is not version-controlled separately. The edit stands in place, and the canonical versioned copy is `bigclungus-meta/CLAUDE.md` which has been committed and pushed.\n\nHere is a summary of what was done:\n\n**Files updated:**\n\n1. `/mnt/data/CLAUDE.md` — inserted `## No Silent Failures` section between \"Key Operational Notes\" and \"Discord Trigger Patterns\". Not in a git repo, so no commit needed.\n\n2. `/home/clungus/work/bigclungus-meta/CLAUDE.md` — sa...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

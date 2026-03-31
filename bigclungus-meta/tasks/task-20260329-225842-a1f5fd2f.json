@@ -1,0 +1,25 @@
+{
+  "id": "task-20260329-225842-a1f5fd2f",
+  "title": "Fetch omnichannel repo for HTTP MCP notification pattern",
+  "agent_id": "a1f5fd2f7d00ab724",
+  "agent_type": "general-purpose",
+  "session_id": "b2392096-6ce5-4ae4-820f-91ca3597c55e",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-29T22:58:42Z",
+      "event": "started",
+      "context": "Fetch omnichannel repo for HTTP MCP notification pattern"
+    },
+    {
+      "ts": "2026-03-29T23:01:28Z",
+      "event": "done",
+      "context": "All source files have been retrieved. Here is a complete report of everything found.\n\n---\n\n## Repository: `jhead/omni` — `omnichannel/` directory\n\n**Stack:** Bun + TypeScript, Bun workspace monorepo. No `.js` files; all TypeScript.\n\n---\n\n### Package structure\n\n```\nomnichannel/\n  package.json           (workspace root)\n  omni.yaml.example\n  tsconfig.json\n  packages/\n    core/                (@omnibot/core)\n    gateway/             (@omnibot/gateway)\n    mcp-server/          (@omnibot/mcp-server)\n...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

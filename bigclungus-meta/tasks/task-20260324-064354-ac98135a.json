@@ -1,0 +1,24 @@
+{
+  "id": "task-20260324-064354-ac98135a",
+  "title": "Update congress context injection prompt",
+  "agent_id": "ac98135a7576eef86",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T06:43:54Z",
+      "event": "started",
+      "context": "Update congress context injection prompt"
+    },
+    {
+      "ts": "2026-03-24T07:45:00Z",
+      "event": "done",
+      "note": "completed — CONGRESS_CONTEXT preamble was added — closed by sweep"
+    }
+  ]
+}

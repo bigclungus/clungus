@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-071027-a0c68188",
+  "title": "Get SSH host fingerprint",
+  "agent_id": "a0c68188fd469c3fd",
+  "agent_type": "general-purpose",
+  "session_id": "a73508af-b739-48f4-b9cb-a7829a4a15c0",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T07:10:27Z",
+      "event": "started",
+      "context": "Get SSH host fingerprint"
+    },
+    {
+      "ts": "2026-03-25T07:10:40Z",
+      "event": "done",
+      "context": "Posted successfully. Here are the fingerprints that were sent to Discord channel 1486258651818623007:\n\n- **ED25519** (256-bit): `SHA256:0/BuSkqHms9PksnV48WJmnei7Av547ZnxhKZzaVmNCA`\n- **RSA** (3072-bit): `SHA256:vbwim9jPtqRhogk4YKf3ZryZbn8km1TK/Z5NiBTNShA`\n- **ECDSA** (256-bit): `SHA256:94e287ij9iGk0X6TiAmS92cQsJMPFQUqwsCAXpIHYms`\n\nAll three host key types were retrieved and posted as message ID `1486261002726019295`.",
+      "artifacts": []
+    }
+  ]
+}

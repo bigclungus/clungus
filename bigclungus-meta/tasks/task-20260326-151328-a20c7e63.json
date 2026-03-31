@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-151328-a20c7e63",
+  "title": "Startup checklist",
+  "agent_id": "a20c7e638d4bc688d",
+  "agent_type": "general-purpose",
+  "session_id": "ef1a5e01-b3c3-41d6-abd3-172f68d92559",
+  "discord_message_id": "1486744730485129397",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T15:13:28Z",
+      "event": "started",
+      "context": "Startup checklist"
+    },
+    {
+      "ts": "2026-03-26T15:16:17Z",
+      "event": "done",
+      "context": "Restart checklist complete. Here's a summary of findings:\n\n**Services:** All expected services running (20 total). `website.service` does not exist as a unit — clung.us is served by `clunger.service` which is running. No failed services.\n\n**Disk:** Root 19% used (18G/97G), /mnt/data 7% (5.8G/98G). Both well under 85%.\n\n**Redis:** Fix applied successfully.\n\n**Open tasks:** 9 open tasks tracked.\n\n**Watchdog:** 0 stale tasks. 1 orphaned congress session (congress-0064) cleaned up.\n\n**Congress direc...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

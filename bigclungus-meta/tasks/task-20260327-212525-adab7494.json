@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-212525-adab7494",
+  "title": "Congress unification phase 2",
+  "agent_id": "adab74945ea1c9c5c",
+  "agent_type": "general-purpose",
+  "session_id": "083baee4-2f6f-4f81-8ced-0e9b97f43956",
+  "discord_message_id": "1487200737229410305",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T21:25:25Z",
+      "event": "started",
+      "context": "Congress unification phase 2"
+    },
+    {
+      "ts": "2026-03-27T21:28:46Z",
+      "event": "done",
+      "context": "Done. Here is what was changed:\n\n**`/mnt/data/temporal-workflows/activities/trial_act.py`:**\n\n1. **Removed `_next_trial_number()`** — the helper that scanned `trial-NNNN.json` files for the next number is gone.\n\n2. **`trial_announce`** now calls `congress_client.start_session(StartSessionRequest(...))` to get a unified `session_id` (format `session-NNNN`) and `session_number` from clunger. Immediately after, it REST PATCHes `flavor: \"trial\"`, `defendant`, and `charges` onto the session. All refe...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

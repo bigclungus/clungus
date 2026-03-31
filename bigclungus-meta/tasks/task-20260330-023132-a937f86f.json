@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-023132-a937f86f",
+  "title": "Find OpenAI/Anthropic API keys and switch mob gen to SDK",
+  "agent_id": "a937f86f3e4df80e2",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T02:31:32Z",
+      "event": "started",
+      "context": "Find OpenAI/Anthropic API keys and switch mob gen to SDK"
+    },
+    {
+      "ts": "2026-03-30T02:32:57Z",
+      "event": "done",
+      "context": "Service is running cleanly. Here's a summary of what was done:\n\n**Keys found (names only):**\n- `OPENAI_API_KEY` — in `/mnt/data/temporal-workflows/.env` (and also in `/mnt/data/graphiti/repo/mcp_server/.env`)\n- `XAI_API_KEY` — in `/mnt/data/temporal-workflows/.env`\n- No Anthropic key found\n\n**SDK used:** OpenAI Python SDK (`openai` package, already installed at v2.29.0)\n\n**What changed in `/mnt/data/temporal-workflows/activities/mob_gen_act.py`:**\n- Removed `_CLAUDE_BIN` constant and the subproc...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

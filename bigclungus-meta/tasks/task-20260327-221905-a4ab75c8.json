@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-221905-a4ab75c8",
+  "title": "Commit CLAUDE.md change",
+  "agent_id": "a4ab75c89d915bb2d",
+  "agent_type": "general-purpose",
+  "session_id": "083baee4-2f6f-4f81-8ced-0e9b97f43956",
+  "discord_message_id": "1487214084863823942",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T22:19:05Z",
+      "event": "started",
+      "context": "Commit CLAUDE.md change"
+    },
+    {
+      "ts": "2026-03-27T22:19:44Z",
+      "event": "done",
+      "context": "Here is the summary:\n\n- `/mnt/data/CLAUDE.md` -- already had the \"Language Preferences\" section. This file persists on the durable disk, so it survives restarts on its own.\n- `/home/clungus/work/claude-config/CLAUDE.md` -- did **not** have the section. This is the copy that gets synced to `~/.claude/CLAUDE.md` on startup. I've now added the same \"Language Preferences\" section to the end of this file.\n- `/mnt/data` is **not** a git repo, so there's nothing to commit/push. But since `claude-config...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

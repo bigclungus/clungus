@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-153259-a6817c09",
+  "title": "Fetch feral hosting reset link from ProtonMail",
+  "agent_id": "a6817c09be7b924d2",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T15:32:59Z",
+      "event": "started",
+      "context": "Fetch feral hosting reset link from ProtonMail"
+    },
+    {
+      "ts": "2026-03-24T15:33:11Z",
+      "event": "done",
+      "context": "The feralhosting.com password reset link from the \"Recover account request\" email is:\n\n**https://www.feralhosting.com/recover/ZUYY6NO4Q2ZTF4XQF3EWDNOLKYE5M4IQCYNYSE24PBM3FDYQ4LNA====**\n\nThat URL appeared twice in the email body (likely plain-text and HTML versions of the same link). The third URL is just a tracking pixel from feralhosting's email system, not the reset link.",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-050404-a5374299",
+  "title": "Simplify: Fix serve.py issues + efficiency review",
+  "agent_id": "a5374299bf6db7b62",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T05:04:04Z",
+      "event": "started",
+      "context": "Simplify: Fix serve.py issues + efficiency review"
+    },
+    {
+      "ts": "2026-03-25T05:05:12Z",
+      "event": "done",
+      "context": "All done. Here's a summary of what was fixed and found:\n\n**Issues fixed:**\n\n1. **`_MODEL_ALIASES` moved to module-level** — The dict is now defined once at line 327, just above `_call_llm`. `_handle_congress_post` now references `_MODEL_ALIASES` instead of rebuilding the dict on every request.\n\n2. **Unknown model now raises** — The `else` branch in `_call_llm` was replaced with `elif model_lower.startswith('claude-')` (passing `model_lower` explicitly, not `model_lower or None`) and a final `els...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

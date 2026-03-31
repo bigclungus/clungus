@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-032300-ad10585b",
+  "title": "Update sync script and install skill",
+  "agent_id": "ad10585ba1b7cfcd5",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": "1485841186924269730",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T03:23:00Z",
+      "event": "started",
+      "context": "Update sync script and install skill"
+    },
+    {
+      "ts": "2026-03-24T03:23:33Z",
+      "event": "done",
+      "context": "All three steps done. Here's a summary:\n\n**What the script looked like before:**\nIt only looped over `settings.json` and `settings.local.json`, copying each from `$STAGING` (`/mnt/data/claude-config`) to `$DEST` (`~/.claude`) if they existed. There was no handling of subdirectories.\n\n**What was added:**\nA block at the end that checks if `$STAGING/skills` exists and, if so, runs `rsync -a \"$STAGING/skills/\" \"$DEST/skills/\"` to mirror the entire skills directory into `~/.claude/skills/`.\n\n**Other ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

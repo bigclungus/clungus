@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-203709-a60150ad",
+  "title": "Debug why Giga mandate didn't stick",
+  "agent_id": "a60150ad56a1884e0",
+  "agent_type": "general-purpose",
+  "session_id": "e4d4bf00-991b-4f0e-aac7-2ab4056f18c5",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T20:37:09Z",
+      "event": "started",
+      "context": "Debug why Giga mandate didn't stick"
+    },
+    {
+      "ts": "2026-03-25T20:39:35Z",
+      "event": "done",
+      "context": "GigaClungus is running with a fresh session. Here's the full diagnosis and what was fixed:\n\n---\n\n**Root cause: the start script never called the sync script.**\n\nThe chain of events:\n\n1. `sync-claude-config.sh` exists and correctly copies `work/claude-config/CLAUDE.md` → `~/.claude/CLAUDE.md`. It works fine.\n2. `start-gigaclungus.sh` did **not** call `sync-claude-config.sh` before launching. The sync had to be run manually as a separate step.\n3. When GigaClungus was last restarted (~20:30), it la...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

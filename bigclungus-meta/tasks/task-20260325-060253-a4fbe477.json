@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-060253-a4fbe477",
+  "title": "Get GitHub issues and task status for koole__",
+  "agent_id": "a4fbe47770da9d6e1",
+  "agent_type": "general-purpose",
+  "session_id": "c1806e9d-e1da-4a07-a244-5f8ab9aec7c5",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T06:02:53Z",
+      "event": "started",
+      "context": "Get GitHub issues and task status for koole__"
+    },
+    {
+      "ts": "2026-03-25T06:03:45Z",
+      "event": "done",
+      "context": "Summary posted successfully via the inject endpoint. Here's what was reported:\n\n**GitHub Issues:** Zero open issues on `bigclungus/bigclungus-meta`.\n\n**In-Progress Tasks (from `/tmp/bc-open-tasks.json` sweeper snapshot):** 8 tasks all showing \"In Progress\":\n- Restart bot and check logs\n- Build persona metadata SQLite DB\n- Generate high-quality Punished Trump avatar\n- Commit changes and restart bot\n- Ingest Discord messages into Graphiti\n- Commit CLAUDE.md refinement\n- Build fast multithreaded Di...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

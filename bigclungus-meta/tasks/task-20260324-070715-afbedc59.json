@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-070715-afbedc59",
+  "title": "Fix Chud avatar URL with cache buster",
+  "agent_id": "afbedc594e77aa1e9",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T07:07:15Z",
+      "event": "started",
+      "context": "Fix Chud avatar URL with cache buster"
+    },
+    {
+      "ts": "2026-03-24T07:07:33Z",
+      "event": "done",
+      "context": "Done. Summary:\n\n- `avatar_url` in `/home/clungus/work/bigclungus-meta/agents/active/pm.md` was `/static/avatars/pm.gif`\n- Updated to `/static/avatars/pm.gif?v=1` (matching the otto/ux fix pattern)\n- `http://localhost:8080/static/avatars/pm.gif?v=1` returns HTTP 200\n- Committed as \"Add cache buster to Chud avatar URL\" and pushed to main",
+      "artifacts": []
+    }
+  ]
+}

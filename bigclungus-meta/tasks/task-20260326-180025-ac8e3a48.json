@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-180025-ac8e3a48",
+  "title": "Simplify cron scan and NightOwl re-queue",
+  "agent_id": "ac8e3a488e4fd4f89",
+  "agent_type": "general-purpose",
+  "session_id": "ef1a5e01-b3c3-41d6-abd3-172f68d92559",
+  "discord_message_id": "1486786775576870973",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T18:00:25Z",
+      "event": "started",
+      "context": "Simplify cron scan and NightOwl re-queue"
+    },
+    {
+      "ts": "2026-03-26T18:01:44Z",
+      "event": "done",
+      "context": "These `except: pass` blocks are in graph query fallback logic (optional context enrichment for congress) — swallowing graph errors when FalkorDB is unavailable is intentional. They're pre-existing and not part of recent changes. Nothing to simplify here.\n\nThe code across both repos looks clean post recent commits. No dead code, no duplicate logic, no hardcoded values that should be constants, no obvious bugs in the recent changes.\n\n---\n\n**Summary:**\n\n**Task 1 — Simplify scan:**\n- Secret scan: cl...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

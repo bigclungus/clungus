@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-122335-a9c0b292",
+  "title": "Get VC channel ID",
+  "agent_id": "a9c0b2922ac516c6d",
+  "agent_type": "general-purpose",
+  "session_id": "3ee726c7-43fe-4eee-8e5b-9fd4fe2465af",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T12:23:35Z",
+      "event": "started",
+      "context": "Get VC channel ID"
+    },
+    {
+      "ts": "2026-03-28T12:23:41Z",
+      "event": "done",
+      "context": "Here are the cached voice channels from `/tmp/vc-channels.json`:\n\n**Guild ID:** `1008814210144292894`\n\n| Channel Name | Channel ID | Type |\n|---|---|---|\n| General | `1008814210618245225` | 2 (voice) |\n| allies | `1325567700029931560` | 2 (voice) |\n\nTwo voice channels available: **General** and **allies**.",
+      "artifacts": []
+    }
+  ]
+}

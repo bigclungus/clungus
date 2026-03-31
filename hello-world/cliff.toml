@@ -1,0 +1,48 @@
+[changelog]
+header = "# Changelog\n\n"
+body = """
+{% if version %}\
+## {{ version | trim_start_matches(pat="v") }} — {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}\
+## Unreleased
+{% endif %}\
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | upper_first }}
+{% for commit in commits %}\
+- {{ commit.message | split(pat="\n") | first | trim }}\
+{% if commit.breaking %} [BREAKING]{% endif %}
+
+{% endfor %}\
+{% endfor %}\n
+"""
+trim = true
+footer = ""
+postprocessors = []
+
+[git]
+conventional_commits = true
+filter_unconventional = false
+split_commits = false
+commit_preprocessors = []
+commit_parsers = [
+  { message = "^feat", group = "Features" },
+  { message = "^fix", group = "Bug Fixes" },
+  { message = "^refactor", group = "Refactoring" },
+  { message = "^docs", group = "Documentation" },
+  { message = "^perf", group = "Performance" },
+  { message = "^test", group = "Tests" },
+  { message = "^build", group = "Build" },
+  { message = "^ci", group = "CI" },
+  { message = "^revert", group = "Reverts" },
+  { message = "^congress", group = "Congress" },
+  { message = "^tasks", group = "Tasks" },
+  { message = "^(add|launch|switch|redesign|update|replace|move|remove)", group = "Changes" },
+  { message = ".*", group = "Chores" },
+]
+protect_breaking_commits = false
+filter_commits = false
+tag_pattern = "v[0-9].*"
+skip_tags = ""
+ignore_tags = ""
+topo_order = false
+sort_commits = "oldest"

@@ -1,0 +1,36 @@
+{
+  "id": "task-20260326-014009-a136cd130",
+  "title": "Suspend new congress sessions for two-week experiment period",
+  "agent_id": "congress-51",
+  "agent_type": "congress",
+  "session_id": "congress-0051",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "requires_approval": true,
+  "log": [
+    {
+      "event": "started",
+      "ts": "2026-03-26T01:40:09Z",
+      "message": "Created from Congress #51 verdict on: Congress has been found to be largely ineffective. Should 'lobbyist' personas be involved to argue e"
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-26T01:40:09Z",
+      "message": "Source verdict: The proposal has a structural flaw that none of the debaters cleanly isolated: the problem isn't missing perspectives, it's that congress produces verdicts no one acts on or cares about. Adding lobbyi..."
+    },
+    {
+      "ts": "2026-03-26T03:48:20Z",
+      "event": "stale",
+      "context": "Marked stale by watchdog \u2014 session likely ended before task completed"
+    },
+    {
+      "event": "failed",
+      "ts": "2026-03-27T07:20:06.421524Z",
+      "message": "Superseded \u2014 congress ran 34+ more sessions (#52-#85) since this task was created. The process concerns it addressed were addressed through continued use and evolution of congress, not via this task."
+    }
+  ],
+  "status": "failed"
+}

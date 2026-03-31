@@ -1,0 +1,12 @@
+[Unit]
+Description=Inject Proxy — forwards old /inject endpoint to omni-gateway
+After=omni-gateway.service
+
+[Service]
+EnvironmentFile=/home/clungus/.claude/channels/discord/.env
+ExecStart=/home/clungus/.bun/bin/bun run /mnt/data/inject/src/index.ts
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

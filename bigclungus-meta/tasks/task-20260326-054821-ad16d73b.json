@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-054821-ad16d73b",
+  "title": "Update NightOwl to 3am + queue migration",
+  "agent_id": "ad16d73b81845b8f0",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": "1486602379183919224",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T05:48:21Z",
+      "event": "started",
+      "context": "Update NightOwl to 3am + queue migration"
+    },
+    {
+      "ts": "2026-03-26T05:49:58Z",
+      "event": "done",
+      "context": "Done. Here's the summary:\n\n**1. `nightowl_wf.py` updated:**\n- Default `target_hour_utc` changed from `6` to `8`\n- All three \"1am\" references updated to \"3am EST\" (docstring, class docstring, inline comment)\n- Committed as `fix: nightowl fires at 3am EST (08:00 UTC)` to `bigclungus/temporal-workflows` (commit `eb7ff44`)\n- `temporal-worker.service` restarted\n\n**2. Migration task queued:**\n- Workflow ID: `nightowl-today`\n- Run ID: `019d28b0-e17a-72ca-9399-b8f526c7d673`\n- The Python→TypeScript migra...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-021313-a378a54e",
+  "title": "Check Discord plugin voice status",
+  "agent_id": "a378a54e4f12d1bb8",
+  "agent_type": "general-purpose",
+  "session_id": "4b512792-9717-4aea-80d7-c6d3d56a2841",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T02:13:13Z",
+      "event": "started",
+      "context": "Check Discord plugin voice status"
+    },
+    {
+      "ts": "2026-03-28T02:15:35Z",
+      "event": "done",
+      "context": "Here is the full picture:\n\n**Voice integration is COMPLETE.** Here's what was found:\n\n### 1. `@discordjs/voice` in package.json -- YES\nThe file at `/home/clungus/.claude/plugins/marketplaces/claude-plugins-official/external_plugins/discord/package.json` lists:\n- `@discordjs/voice: ^0.19.2`\n- `@discordjs/opus: ^0.10.0`\n- `sodium-native: ^5.1.0`\n\nAll three are voice-related dependencies (opus for audio encoding, sodium-native for encryption).\n\n### 2. `join_voice` / `leave_voice` MCP tools -- YES\nB...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

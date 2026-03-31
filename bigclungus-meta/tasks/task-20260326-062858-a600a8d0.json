@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-062858-a600a8d0",
+  "title": "Cancel and remake NightOwl with coalesced tasks",
+  "agent_id": "a600a8d06117da17c",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T06:28:58Z",
+      "event": "started",
+      "context": "Cancel and remake NightOwl with coalesced tasks"
+    },
+    {
+      "ts": "2026-03-26T06:29:32Z",
+      "event": "done",
+      "context": "Done. Here's what happened:\n\n**Cancelled:** The existing `nightowl-today` workflow was terminated with reason \"coalescing tasks\".\n\n**Started fresh:** A new `nightowl-today` workflow was started (run_id: `019d28d5-1e31-7e6a-be84-080e7e32963e`) with 3 coalesced tasks queued in order:\n\n1. **Full TypeScript migration** — grazing.html JS monolith → 8 TS modules (Bun build), Python Temporal workflows/activities → TypeScript SDK, end-to-end verification\n2. **Commons world expansion** — weather system, ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

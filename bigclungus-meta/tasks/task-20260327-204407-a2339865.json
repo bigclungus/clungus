@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-204407-a2339865",
+  "title": "On-restart checklist",
+  "agent_id": "a2339865a97813187",
+  "agent_type": "general-purpose",
+  "session_id": "083baee4-2f6f-4f81-8ced-0e9b97f43956",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T20:44:07Z",
+      "event": "started",
+      "context": "On-restart checklist"
+    },
+    {
+      "ts": "2026-03-27T20:45:35Z",
+      "event": "done",
+      "context": "Here is the full checklist report:\n\n**Step 1 - Redis/FalkorDB fixes:** Both commands returned OK. Write protection disabled, graph timeout set to 30s.\n\n**Step 2 - Services:** 27 services running. All expected services are up: claude-bot, cloudflared, clunger, labs-router, terminal-server, temporal, temporal-proxy, temporal-worker, website (via clunger on 8081). Additional services running include: alert-webhook, alertmanager, ambient-radio, commons-server, custom-exporter, giga-terminal, grok-pr...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

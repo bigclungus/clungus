@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-024244-a43c2b0c",
+  "title": "Fix tasks page auto-refresh collapsing expanded cards",
+  "agent_id": "a43c2b0c98b3bc918",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T02:42:44Z",
+      "event": "started",
+      "context": "Fix tasks page auto-refresh collapsing expanded cards"
+    },
+    {
+      "ts": "2026-03-24T02:43:34Z",
+      "event": "done",
+      "context": "Done. Here's what was changed in `/home/clungus/work/hello-world/tasks.html`:\n\n**Three targeted edits:**\n\n1. **`makeCard` — card div gets `data-task-id`** (line 478-479): Each `.task-card` now has `data-task-id=\"<task.id>\"` stamped on it.\n\n2. **`makeCard` — log div gets `data-task-id`** (line 473-475): The `.card-log` div also gets `data-task-id`, which is what the restore logic queries against. The `id` attribute remains the counter-based `log-N` (needed for the `onclick`/`toggleLog` linkage), ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

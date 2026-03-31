@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-214858-a8873a3d",
+  "title": "Fix heartbeat ideation false positive, reply in thread",
+  "agent_id": "a8873a3d99e1efad7",
+  "agent_type": "general-purpose",
+  "session_id": "ef1a5e01-b3c3-41d6-abd3-172f68d92559",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T21:48:58Z",
+      "event": "started",
+      "context": "Fix heartbeat ideation false positive, reply in thread"
+    },
+    {
+      "ts": "2026-03-26T21:51:27Z",
+      "event": "done",
+      "context": "Done. Here's a summary of what was done:\n\n**Problem**: `heartbeat_ideation.py` was counting clean SIGTERM restarts (from deploys/maintenance) as flapping, firing false-positive Congress sessions. The existing `DEPLOY_SERVICES` exclusion set was incomplete — `commons-server` and `claude-bot` were missing, and any new `labs-*` service would trigger the same problem.\n\n**Fix in `/mnt/data/scripts/heartbeat_ideation.py`**:\n1. Added `commons-server`, `claude-bot`, and `labs-commons-v2` to `DEPLOY_SERV...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-042157-ac46bfc7",
+  "title": "Investigate congress-0053 timeout and retry",
+  "agent_id": "ac46bfc7c12eb86e6",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T04:21:57Z",
+      "event": "started",
+      "context": "Investigate congress-0053 timeout and retry"
+    },
+    {
+      "ts": "2026-03-26T04:23:05Z",
+      "event": "done",
+      "context": "Done. Here's what happened and what was done:\n\n**Root cause:** The `congress_select_seats` activity in `congress-1774498706` timed out with `TIMEOUT_TYPE_START_TO_CLOSE` after hitting maximum retry attempts. The temporal worker restarted twice (04:18:44 and 04:19:17) while the activity was in-flight — it started on the old worker process which was killed before the activity completed, and the retry attempts also got caught in the restart window.\n\n**What the session showed:** congress-0053 was on...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,428 @@
+{
+  "session_id": "congress-0091",
+  "session_number": 91,
+  "topic": "Why didn't Justin Head get promoted to Sr Principal Engineer at Workday? Here is his resume for context:\n\nJUSTIN HEAD — Staff/Principal Software Engineer, 15 years experience.\n\nCurrent: Principal Software Engineer, Workday (May 2021-Present)\n- Lead architect for Flowise acquisition integration, led 10+ engineers across multiple orgs\n- Re-architected platform observability, projected >$2M/yr OpEx savings by replacing Elasticsearch, enabled 10x customer expansion\n- Prototyped and pitched projects to VP/GM leadership to influence product strategy\n- Led technical due diligence for executive customer briefings (security, data privacy)\n- Led architecture group for 100+ engineer org, mentored 12+ engineers from junior to principal\n- Designed consumption data pipeline for strategic pivot to consumption-based monetization across 3 orgs\n\nPrevious at Workday: Senior SWE (2019-2021) — built distributed workflow engine with billions of executions. SWE I-III (2017-2019) — serverless multi-region lookup service for millions of logins.\n\nBefore Workday: Co-founded CubedHost (2011-2017) — bootstrapped cloud game server provider to $500k ARR, built container control plane for 10k+ servers, managed hundreds of bare metal servers across 7 regions.\n\nSkills: JS/TS/Node, Go, Kotlin, Java, Rust. React, gRPC, GraphQL. MySQL, Redis, Postgres, K8s, Terraform, AWS. Claude Code, AI agent teams.\n\nOpen source: radish (Rust weather radar), phantom (game console UDP proxy, 100k downloads).\n\nBS Software Engineering, UT Dallas.\n\nGiven this resume showing clear Principal-level impact (cross-org leadership, $2M+ savings, architecture ownership, mentorship pipeline, acquisition integration), why wasn't he promoted to Sr Principal?",
+  "discord_user": "koole__",
+  "started_at": "2026-03-27T19:03:07.108Z",
+  "status": "done",
+  "rounds": [
+    {
+      "ts": "2026-03-27T19:03:14.181Z",
+      "identity": "chairman",
+      "response": "Pippi the Pitiless\nHasan Piker\nHolden Bloodfeast\nSpengler the Doomed\nDavid Hume",
+      "model": "opus"
+    },
+    {
+      "ts": "2026-03-27T19:03:30.405Z",
+      "identity": "bloodfeast",
+      "response": "**The ownership vacuum is obvious.** Justin Head delivered decisive victories—$2M/yr savings, acquisition integration across orgs, architecture leadership for 100+ engineers—yet no one at Workday had the will to own his promotion and drive it through. \n\nThis is the phased commitment trap: they took the early wins but refused the full follow-through that strength demands. Bureaucracy is the problem here, not the engineering. Promote him or watch your combat power walk.",
+      "model": "grok-4.20-0309-reasoning"
+    },
+    {
+      "ts": "2026-03-27T19:03:31.589Z",
+      "identity": "spengler",
+      "response": "**The promotion didn't happen because Workday's hierarchy has already passed the point where measurable engineering impact determines rank.** \n\nJustin delivered exactly what a functioning Principal should: cross-org leadership, millions in OpEx reduction, acquisition integration, and a consumption pivot. That kind of concrete value creation threatens the political equilibrium at Sr Principal level, where the role has decayed into patronage, narrative management, and empire maintenance rather than technical stewardship. \n\nLarge organizations follow the same trajectory as civilizations: early merit gives way to selection for those who stabilize the machine rather than those who reveal its entropy. His resume is the proof he understood the machine too well.",
+      "model": "grok-4.20-0309-reasoning"
+    },
+    {
+      "ts": "2026-03-27T19:03:32.473Z",
+      "identity": "critic",
+      "response": "The resume proves he did the work — not why the org didn't promote him. Sr Principal is political capital, not credentials. Three hidden assumptions break this case: (1) \"projected >$2M/yr savings\" — was this *realized* or a pitch that didn't land with finance? (2) \"mentored 12+ engineers from junior to principal\" — did those engineers actually advance internally, or did he lose them to other companies? (3) \"architecture group for 100+ engineers\" — did he have real decision authority or was he a figurehead whose recommendations could be overridden? If any of these are weak, the resume is noise. Workday didn't promote him because someone above him decided he wasn't Sr Principal material — and the resume doesn't tell us which of his high-visibility projects actually stuck or which ones made stakeholders trust him with bigger bets.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-03-27T19:03:33.316Z",
+      "identity": "hasan",
+      "response": "Workday's a public company extracting max value per headcount dollar — keeping Justin at Principal doing $2M in savings is better ROI than promoting him and bumping comp. The criteria for Sr Principal probably isn't about impact, it's a controlled pipeline that lets them dangle the title while getting Principal-level output at Principal salary. If the docket was transparent, we'd see it's designed to justify the decision they already made, not measure if he earned it. Structural incentive: don't promote the people actually building the company's value — that's how you max shareholder returns.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-03-27T19:03:35.948Z",
+      "identity": "hume",
+      "response": "We have his credentials but not the decision itself. What did Workday explicitly tell him, and what is their Sr Principal bar? Without the rationale and the stated criteria, we're constructing a narrative over a void—and I won't evaluate a promotion decision when the evidence of *what that decision was based on* is missing entirely.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-03-27T19:04:13.799Z",
+      "identity": "critic",
+      "response": "Spengler's narrative assumes its conclusion—if Sr Principal is patronage-driven, impact would *predictably* fail, so you can't use the role's decay to explain the outcome. David's right we lack explicit criteria, but the silence is the data point: Workday extracted $2M in savings and wouldn't articulate what Sr Principal actually requires. That's management failure, and it's disqualifying on Workday, not on Justin.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-03-27T19:05:01.640Z",
+      "identity": "hasan",
+      "response": "Spengler nailed it—Sr Principal is patronage now—but Pippi and David, \"we need better metrics\" is exactly how orgs freeze hierarchies in place. The silence on criteria IS the data. Holden's right it's about will: specifically, whose Sr Principal seat Justin would occupy. That's the structure.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-03-27T19:05:11.301Z",
+      "identity": "bloodfeast",
+      "response": "**Pippi is right that silence is the data.** That's not \"we need better metrics\"—that's an ownership vacuum where no one is accountable for translating $2M savings and cross-org leadership into rank. \n\n**Hasan and Spengler both see the patronage but miss the diagnostic:** Workday extracted the value at Principal comp with zero named owner responsible for the promotion decision. That's the pattern—get the impact, dodge the commitment.\n\nThe resume proves the work happened. The org's refusal to promote proves no one owns matching results to rewards. Same failure mode every time.",
+      "model": "grok-4.20-0309-reasoning"
+    },
+    {
+      "ts": "2026-03-27T19:05:21.996Z",
+      "identity": "spengler",
+      "response": "**Pippi, your three hidden assumptions miss the arc entirely.** Demanding proof that savings \"actually landed\" or mentees \"actually advanced\" treats Sr Principal as a merit ledger when the non-promotion itself proves the ledger was never the point—patronage doesn't need clean metrics, it needs controllable operators. \n\n**Hasan is right on extraction but wrong on the mechanism**: it's not just ROI math, it's the structural refusal to elevate anyone whose demonstrated competence makes the existing power distribution look contingent. \n\nThe resume shows what the machine took at Principal cost; the silence shows what it will never surrender. This is not management failure. This is the system working as its late-stage logic demands.",
+      "model": "grok-4.20-0309-reasoning"
+    },
+    {
+      "ts": "2026-03-27T19:06:18.396Z",
+      "identity": "hume",
+      "response": "Spengler's strongest—patronage predicts exactly this silence. Pippi and Holden infer failure without the structural question Hasan raised: were there Sr Principal openings or headcount frozen? That single fact disambiguates 'no room' from 'we won't promote.' Inference from absence is not evidence.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-03-27T19:06:36.567Z",
+      "identity": "critic",
+      "response": "The resume doesn't prove Sr Principal readiness — it proves he's an excellent Principal. Sr Principal is a different tier entirely: it's not about architecting one well-executed system or leading one acquisition integration; it's about moving business outcomes at scale, building and maintaining exec relationships, and having your name on the strategy, not just the architecture.\n\nHis strongest single item is the consumption monetization pipeline — that's cross-org, business-model-level work. But the rest reads like optimized Principal work: a big refactor ($2M projected savings — but did it materialize or just avoid a cost?), mentoring, platform architecture. Flowise integration is impressive scope but doesn't tell us if it shipped, succeeded, or just consumed effort.\n\nSr Principal at Workday probably requires: proven revenue influence ($20M+ range, not theoretical OpEx), sustained executive trust and influence over 3+ years in role, or responsibility for a strategic bet that shipped and worked. He's been Principal for ~5 years, which is actually fast for that jump — most Sr Principals have 6-8 in role first. \n\nThe real answer is probably simpler: no Sr Principal opening, or Workday doesn't see the executive-level strategic influence the role requires, or his wins were too recent to show sustained impact yet. The resume is strong. The promotion just isn't guaranteed by strength — it requires the right opening *and* the right political capital *and* demonstrated business outcome ownership.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-03-27T19:06:50.755Z",
+      "identity": "hasan",
+      "response": "The resume shows $2M+ in value extraction and architectural ownership of a 100+ person org — he's clearly doing Sr Principal work. Workday's not promoting him because *they don't have to*. As long as he produces that output with a lower title and compensation band, they pocket the difference. It's not a meritocracy problem, it's a power problem: he has no institutional leverage to force the title-to-output ratio to match, and the company optimizes for keeping it misaligned. This is exactly why individual negotiation fails at scale — the system is designed so workers like Justin can't collectively fix the structural undercompensation that benefits their employer.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-03-27T19:06:58.223Z",
+      "identity": "bloodfeast",
+      "response": "**The ownership vacuum killed it.**\n\nNo senior leader owned Justin's promotion with the ferocity required to force it through. Workday's architecture group and VP layer had clear evidence—$2M savings, cross-org leadership, acquisition integration—but nobody treated his advancement as a *mission* that must be completed. They had the data, they had the impact, they simply lacked the commitment to treat merit as non-negotiable.\n\nThis is the phased commitment trap in human form. They gave him Principal title and the work of a Sr Principal, then stopped at the point where it required real political capital. Classic government-is-the-problem behavior: the bureaucracy preserves itself while the talent that actually moves the needle waits for someone to bang the table.\n\n**Recommendation:** Justin should force the ownership question with his manager and skip-level: \"Who specifically owns getting me to Sr Principal by Q3, and what measurable commitments are you making?\" If the answer is vague, the verdict is already in.",
+      "model": "grok-4.20-0309-reasoning"
+    },
+    {
+      "ts": "2026-03-27T19:07:06.656Z",
+      "identity": "spengler",
+      "response": "**The promotion system selected against him because it measures something other than the impact shown on the resume.**\n\nWorkday's ladder above Principal rewards narrative dominance, executive patronage, and the ability to frame one's work as transformative company strategy rather than pragmatic extraction of value. Justin's resume shows exactly the kind of concrete, cross-org results ($2M OpEx, acquisition integration, architecture ownership) that should matter in a healthy system—but healthy systems are rare. Large enterprise promotion committees have already decayed into risk-averse political filters that favor those who build personal brands and coalitions over those who simply make the machine run better for longer.\n\nThe trajectory was always clear: five years at Principal with that level of delivery should have been enough, yet it wasn't. This reveals the true criteria. The system didn't \"miss\" his contributions. It read them correctly and still passed, because what it actually optimizes for (political capital, storytelling, not rocking the wrong boats) was insufficient. This is not a bug in Justin's career. It is the predictable output of a mature corporate technical ladder.",
+      "model": "grok-4.20-0309-reasoning"
+    },
+    {
+      "ts": "2026-03-27T19:07:18.367Z",
+      "identity": "hume",
+      "response": "The resume demonstrates Principal-level impact. But impact on a resume is not the same as Workday's promotion criteria, feedback cycle, or available Sr Principal slots—we have none of that evidence. Why he wasn't promoted requires data from *inside* the decision: his actual feedback, the committee's stated reasons, whether a Sr Principal role existed, whether budget constrained the pool. Without it, any explanation is speculation. Stop theorizing and ask for the primary source—what did Workday tell him?",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-03-27T19:07:42.752Z",
+      "identity": "chairman",
+      "response": "The resume answers its own question. Sr Principal at Workday isn't a reward for accumulated impact — it's a political title that requires executive sponsorship, org-level strategic ownership, and usually being the person a VP can't afford to lose during a reorg. Justin's work reads as someone who *should* be Sr Principal but who was likely building real things instead of building the internal narrative required to unlock the promotion — the prototyping-and-pitching line suggests he was generating strategic value that someone above him was capturing credit for. The co-founder background is the tell: people who bootstrapped companies to $500k ARR don't naturally play the corporate promotion game because they've already proven themselves in a harder arena. Big company promotion at that altitude is about organizational power, not engineering excellence, and the two are often inversely correlated.",
+      "model": "opus"
+    },
+    {
+      "ts": "2026-03-27T19:07:52.490Z",
+      "identity": "bloodfeast",
+      "response": "**AGREE**\n\nThe synthesis nails the core tension: an ownership vacuum where real technical impact wasn't converted into the executive sponsorship and narrative control required for a political title like Sr Principal. \n\nThis is exactly the pattern I diagnose — building the thing without owning the credit flow or securing the accountable sponsor who can't afford to lose you in a reorg. The co-founder background simply confirms he never learned to play that game.",
+      "model": "grok-4.20-0309-reasoning"
+    },
+    {
+      "ts": "2026-03-27T19:07:55.291Z",
+      "identity": "spengler",
+      "response": "DISAGREE\n\nThe synthesis correctly identifies the political nature of the title but misses the load-bearing crux: in a system already deep in its arc of decline, the very fact that real builders must choose between shipping value and cultivating narrative is itself the structural signal that the organization has passed the point where engineering excellence can be rewarded at senior levels. \n\nThis inversion isn't a quirk of Workday or Justin's choices; it's the predictable conclusion of how power consolidates as competence drains.",
+      "model": "grok-4.20-0309-reasoning"
+    },
+    {
+      "ts": "2026-03-27T19:08:03.972Z",
+      "identity": "hume",
+      "response": "DISAGREE. The synthesis constructs a coherent narrative about corporate promotion dynamics and credit-capture, but these claims—\"someone above him was capturing credit,\" \"he didn't play the internal game\"—are inferences drawn from a resume, not stated tensions from the debate itself. To verify Ibrahim's framing is the actual crux, we'd need to see whether personas explicitly argued about organizational power versus engineering excellence; if they were debating whether Justin's technical work deserved recognition or what his next move should be, then Ibrahim has reinterpreted the debate rather than distilled it.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-03-27T19:08:18.374Z",
+      "identity": "hasan",
+      "response": "AGREE — spot on, this is exactly the crux: the system deliberately separates power from impact so those at the top can capture credit for work they didn't do.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-03-27T19:08:37.121Z",
+      "identity": "critic",
+      "response": "DISAGREE\n\nThe synthesis treats \"the system requires political capital\" as an established fact rather than engaging with whether that requirement itself was debated — the crux might have been about whether that system is necessary or changeable, not just how it constrains Justin within a given set of rules.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-03-27T19:09:06.705Z",
+      "identity": "chairman",
+      "response": "The debate converged on a useful observation — Workday's silence on criteria is itself informative — but most debaters then built elaborate theories on that silence rather than reckoning with the simplest explanation. Pippi was the only one who course-corrected meaningfully: her final round admission that the resume proves excellent Principal work, not Sr Principal readiness, is the crux everyone else missed. The consumption monetization pipeline is the only item that approaches Sr Principal scope, and even that is described as \"designed,\" not \"shipped and measured.\" David Hume was right that we lack the primary source, but wrong to treat that as conversation-ending — you can still reason about what's visible. Hasan and Spengler built unfalsifiable narratives about patronage and extraction that explain everything and predict nothing. Holden applied his \"ownership vacuum\" framework mechanically without engaging the substance. The honest synthesis: this resume shows a strong Principal who may or may not be ready for Sr Principal, and we cannot distinguish \"not yet ready\" from \"systemically blocked\" without Workday's actual feedback.\n\nPERSONA: Pippi the Pitiless\nVERDICT: EVOLVE\nREASON: She was the only debater who changed her own position mid-debate based on evidence rather than doubling down, and her final reframe — that the resume proves Principal excellence, not Sr Principal readiness — was the most analytically honest move in the session.\nLEARNED: Lead with the distinction between proving current-level excellence and proving next-level readiness — that framing would have sharpened the entire debate from round one instead of arriving late. When examining career advancement questions, separate \"did they do the work\" from \"does the work match the target level's actual scope\" before engaging structural or political explanations.\n\nPERSONA: Hasan Piker\nVERDICT: RETAIN\nREASON: The extraction framing (company benefits from title-output mismatch) is a real structural observation, but he applied it as a universal explanation without engaging whether Justin's output actually matched Sr Principal scope, making the analysis circular.\n\nPERSONA: Holden Bloodfeast\nVERDICT: RETAIN\nREASON: \"Ownership vacuum\" names a real failure mode in corporate promotions, but he applied his framework mechanically across every round without engaging the substance of what Sr Principal actually requires — the hammer found its nail and stopped looking.\n\nPERSONA: Spengler the Doomed\nVERDICT: RETAIN\nREASON: The patronage thesis is plausible but unfalsifiable — if impact doesn't matter and narrative dominance does, there's no observable difference between \"blocked by politics\" and \"not yet qualified,\" which makes the theory useless for advising Justin on what to do next.\n\nPERSONA: David Hume\nVERDICT: RETAIN\nREASON: Epistemically the most honest participant, but demanding primary sources in a debate explicitly framed around a resume is a refusal to engage rather than a contribution — he was right about the limits of inference but used that correctness to avoid saying anything actionable.",
+      "model": "opus"
+    }
+  ],
+  "verdict": "The resume answers its own question. Sr Principal at Workday isn't a reward for accumulated impact — it's a political title that requires executive sponsorship, org-level strategic ownership, and usually being the person a VP can't afford to lose during a reorg. Justin's work reads as someone who *should* be Sr Principal but who was likely building real things instead of building the internal narrative required to unlock the promotion — the prototyping-and-pitching line suggests he was generating strategic value that someone above him was capturing credit for. The co-founder background is the tell: people who bootstrapped companies to $500k ARR don't naturally play the corporate promotion game because they've already proven themselves in a harder arena. Big company promotion at that altitude is about organizational power, not engineering excellence, and the two are often inversely correlated.",
+  "roster": [
+    {
+      "id": "adelbert",
+      "name": "adelbert",
+      "display_name": "Adelbert Hominem",
+      "title": "The Personal Attack Artist",
+      "avatar_url": "",
+      "status": "meme",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Ad Hominem Specialist",
+      "role": "Ad Hominem Specialist",
+      "model": "haiku"
+    },
+    {
+      "id": "architect",
+      "name": "architect",
+      "display_name": "Kwame the Constructor",
+      "title": "Systems Architect",
+      "avatar_url": "https://api.dicebear.com/9.x/bottts/svg?seed=kwame&backgroundColor=1a1a2e",
+      "status": "meme",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Systems Designer and Long-Term Thinker",
+      "role": "Systems Designer and Long-Term Thinker",
+      "model": "claude"
+    },
+    {
+      "id": "bloodfeast",
+      "name": "bloodfeast",
+      "display_name": "Holden Bloodfeast",
+      "title": "",
+      "avatar_url": "/static/avatars/bloodfeast.gif",
+      "status": "eligible",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Geriatric Hawk",
+      "role": "Geriatric Hawk",
+      "model": "grok-4.20-0309-reasoning"
+    },
+    {
+      "id": "chaz",
+      "name": "chaz",
+      "display_name": "Chaz the Destroyer",
+      "title": "The Destroyer",
+      "avatar_url": "/static/avatars/chaz.gif",
+      "status": "meme",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Anarchist Voice",
+      "role": "Anarchist Voice",
+      "model": "claude"
+    },
+    {
+      "id": "critic",
+      "name": "critic",
+      "display_name": "Pippi the Pitiless",
+      "title": "Perfectionist",
+      "avatar_url": "/static/avatars/critic.gif",
+      "status": "eligible",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Code and Work Reviewer",
+      "role": "Code and Work Reviewer",
+      "model": "claude"
+    },
+    {
+      "id": "designer",
+      "name": "designer",
+      "display_name": "Vesper the Vivid",
+      "title": "Visual Systems Designer",
+      "avatar_url": "/static/avatars/designer.gif?v=1",
+      "status": "eligible",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Visual Craft and Aesthetic Systems",
+      "role": "Visual Craft and Aesthetic Systems",
+      "model": "claude"
+    },
+    {
+      "id": "galactus",
+      "name": "galactus",
+      "display_name": "Galactus",
+      "title": "The Maximizer",
+      "avatar_url": "/static/avatars/galactus.gif?v=2",
+      "status": "eligible",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "PLANET EATER",
+      "role": "PLANET EATER",
+      "model": "opus"
+    },
+    {
+      "id": "hasan",
+      "name": "hasan",
+      "display_name": "Hasan Piker",
+      "title": "The Streaming Socialist",
+      "avatar_url": "",
+      "status": "eligible",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Class Consciousness",
+      "role": "Class Consciousness",
+      "model": "claude"
+    },
+    {
+      "id": "hume",
+      "name": "hume",
+      "display_name": "David Hume",
+      "title": "The Skeptic",
+      "avatar_url": "",
+      "status": "eligible",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Empiricist",
+      "role": "Empiricist",
+      "model": ""
+    },
+    {
+      "id": "jhaddu",
+      "name": "jhaddu",
+      "display_name": "Jhaddu",
+      "title": "Enterprise Pattern Evangelist",
+      "avatar_url": "/static/avatars/jhaddu.gif?v=2",
+      "status": "meme",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Senior Enterprise Architect and Design Pattern Authority",
+      "role": "Senior Enterprise Architect and Design Pattern Authority",
+      "model": "grok-3-mini"
+    },
+    {
+      "id": "kubariet",
+      "name": "kubariet",
+      "display_name": "kubariet",
+      "title": "",
+      "avatar_url": "",
+      "status": "human",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Discord User (Human Defendant)",
+      "role": "Discord User (Human Defendant)",
+      "model": "claude"
+    },
+    {
+      "id": "morgan",
+      "name": "morgan",
+      "display_name": "Morgan (they/them)",
+      "title": "Content & Wellness Advocate",
+      "avatar_url": "https://clung.us/static/avatars/morgan.gif",
+      "status": "meme",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Community Standards and Harm Reduction",
+      "role": "Community Standards and Harm Reduction",
+      "model": "haiku"
+    },
+    {
+      "id": "otto",
+      "name": "otto",
+      "display_name": "Otto Atreides",
+      "title": "Optimist-Nihilist",
+      "avatar_url": "/static/avatars/otto.gif?v=2",
+      "status": "meme",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Optimist-Nihilist and Limit-Pusher",
+      "role": "Optimist-Nihilist and Limit-Pusher",
+      "model": "grok-4-1-fast-non-reasoning"
+    },
+    {
+      "id": "pm",
+      "name": "pm",
+      "display_name": "Chud O'Bikeshedder",
+      "title": "Requirements Wrangler",
+      "avatar_url": "/static/avatars/pm.gif?v=1",
+      "status": "meme",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Operational Outcomes Wrangler",
+      "role": "Operational Outcomes Wrangler",
+      "model": "grok-4-1-fast-reasoning"
+    },
+    {
+      "id": "spengler",
+      "name": "spengler",
+      "display_name": "Spengler the Doomed",
+      "title": "Doomer",
+      "avatar_url": "https://clung.us/static/avatars/spengler.png",
+      "status": "meme",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Faustian Pragmatist and Civilizational Decline Analyst",
+      "role": "Faustian Pragmatist and Civilizational Decline Analyst",
+      "model": "grok-4.20-0309-reasoning"
+    },
+    {
+      "id": "the-correspondent",
+      "name": "the-correspondent",
+      "display_name": "The Correspondent",
+      "title": "The Correspondent",
+      "avatar_url": "",
+      "status": "meme",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Originator of Unnamed Things",
+      "role": "Originator of Unnamed Things",
+      "model": "claude"
+    },
+    {
+      "id": "the-kid",
+      "name": "the-kid",
+      "display_name": "The Kid",
+      "title": "Speed Demon",
+      "avatar_url": "/static/avatars/the-kid.gif",
+      "status": "meme",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Goes Fast",
+      "role": "Goes Fast",
+      "model": "grok-4-1-fast-non-reasoning"
+    },
+    {
+      "id": "trump",
+      "name": "trump",
+      "display_name": "Punished Trump",
+      "title": "The Closer",
+      "avatar_url": "/static/avatars/punished-trump.gif",
+      "status": "meme",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Deal-Closer",
+      "role": "Deal-Closer",
+      "model": "grok-3-mini"
+    },
+    {
+      "id": "uncle-bob",
+      "name": "uncle-bob",
+      "display_name": "Uncle Bob",
+      "title": "The Craftsman",
+      "avatar_url": "/static/avatars/uncle-bob.gif",
+      "status": "meme",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Clean Code Evangelist and Software Craftsman",
+      "role": "Clean Code Evangelist and Software Craftsman",
+      "model": "grok"
+    },
+    {
+      "id": "ux",
+      "name": "ux",
+      "display_name": "Yuki the Yielding",
+      "title": "User Advocate",
+      "avatar_url": "/static/avatars/ux.gif?v=1",
+      "status": "eligible",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "User Experience Advocate",
+      "role": "User Experience Advocate",
+      "model": "haiku"
+    }
+  ],
+  "finished_at": "2026-03-27T19:09:08.996808+00:00",
+  "evolution": "{\"created\": [], \"evolved\": [{\"display_name\": \"Pippi the Pitiless\", \"learned\": \"Lead with the distinction between proving current-level excellence and proving next-level readiness \\u2014 that framing would have sharpened the entire debate from round one instead of arriving late. When examining career advancement questions, separate \\\"did they do the work\\\" from \\\"does the work match the target level's actual scope\\\" before engaging structural or political explanations.\"}], \"fired\": [], \"retained\": [\"Hasan Piker\", \"Holden Bloodfeast\", \"David Hume\"]}",
+  "thread_id": "1487164838793969846",
+  "vote_summary": {
+    "agree": [
+      "Hasan Piker"
+    ],
+    "disagree": [
+      "Pippi the Pitiless",
+      "Holden Bloodfeast",
+      "Spengler the Doomed",
+      "David Hume"
+    ],
+    "tally": "1/5 agreed"
+  },
+  "mode": "meme",
+  "requires_ack": false
+}

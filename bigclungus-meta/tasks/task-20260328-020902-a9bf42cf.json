@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-020902-a9bf42cf",
+  "title": "Read learned directives + giga log",
+  "agent_id": "a9bf42cf58819fd9f",
+  "agent_type": "general-purpose",
+  "session_id": "4b512792-9717-4aea-80d7-c6d3d56a2841",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T02:09:02Z",
+      "event": "started",
+      "context": "Read learned directives + giga log"
+    },
+    {
+      "ts": "2026-03-28T02:16:33Z",
+      "event": "done",
+      "context": "Here are the contents of both files:\n\n---\n\n**File 1: `/home/clungus/work/bigclungus-meta/learned-directives.md`**\n\n```\n# Learned Directives\n\nThis file is auto-updated by `scripts/extract-congress-directives.py` on each restart.\nIt contains operational directives extracted from congress verdicts — concrete guidance\nderived from past deliberations. Human-revertable via git. Last updated: (see git log)\n\n**Usage:** Read this file at session start. Treat entries as operational context, not\nimmutable ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

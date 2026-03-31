@@ -1,0 +1,7 @@
+{
+  "name": "snippet",
+  "title": "Snippet",
+  "description": "Paste and share code or text with syntax highlighting and a short link",
+  "port": 8103,
+  "status": "active"
+}

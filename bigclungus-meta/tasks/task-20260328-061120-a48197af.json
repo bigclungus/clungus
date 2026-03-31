@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-061120-a48197af",
+  "title": "Generate TTS and speak in VC",
+  "agent_id": "a48197af97dfa19ef",
+  "agent_type": "general-purpose",
+  "session_id": "39a8007c-3c86-47f0-b762-f5bf8cf2f776",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T06:11:20Z",
+      "event": "started",
+      "context": "Generate TTS and speak in VC"
+    },
+    {
+      "ts": "2026-03-28T06:14:12Z",
+      "event": "done",
+      "context": "Audio file generated and ready at **`/tmp/vc-test.wav`** (235K WAV). Used Kokoro TTS with the `bm_george` voice. The text is: \"Hello from Clungus the two hundred and fifteenth. Voice test successful.\"\n\nYou can now play it via the `speak` tool with that path. I also had to install `kokoro-onnx` and `soundfile` packages -- they weren't previously installed on this system.",
+      "artifacts": []
+    }
+  ]
+}

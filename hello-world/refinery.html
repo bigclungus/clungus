@@ -1,0 +1,1619 @@
+<!-- refinery.html — Poll UI for clung.us
+     Displays all active polls from /api/polls, grouped by category prefix.
+     Users vote on sprite variants and other poll types. Results feed into site features.
+     Add new poll types by creating poll files in /mnt/data/hello-world/polls/ -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Refinery</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="stylesheet" href="/sitenav.css?v=d004dbf">
+  <script src="/sitenav.js?v=d004dbf" defer></script>
+  <script src="/sprites-batch1.js"></script>
+  <script src="/sprites-batch2.js"></script>
+  <script src="/sprites-batch3.js"></script>
+  <script src="/sprites-batch4.js"></script>
+  <script src="/sprites-batch5.js"></script>
+  <style>
+    body {
+      margin: 0;
+      background: #0d0d1a;
+      color: #e0e0ff;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .vote-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 12px 48px;
+      flex: 1;
+    }
+    .vote-title {
+      font-size: 20px;
+      letter-spacing: 0.15em;
+      color: #4ecca3;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+    .vote-subtitle {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 32px;
+      letter-spacing: 0.08em;
+    }
+    .variants {
+      display: flex;
+      gap: 40px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .variant {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    canvas {
+      border: 1px solid #2a2a4a;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    .variant-label {
+      font-size: 28px;
+      font-weight: bold;
+      color: #4ecca3;
+      letter-spacing: 0.1em;
+    }
+    .variant-desc {
+      font-size: 11px;
+      color: #a0a0c0;
+      text-align: center;
+      max-width: 160px;
+      line-height: 1.5;
+      letter-spacing: 0.04em;
+    }
+    .vote-btn {
+      background: #4ecca3;
+      color: #0d0d1a;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 13px;
+      font-weight: bold;
+      padding: 8px 20px;
+      cursor: pointer;
+      transition: opacity 0.15s, box-shadow 0.2s, border-color 0.2s;
+      letter-spacing: 0.05em;
+    }
+    .vote-btn:hover {
+      opacity: 0.85;
+    }
+    .vote-btn:disabled {
+      cursor: default;
+      opacity: 0.7;
+    }
+    .vote-btn.voting {
+      background: #3aaa88;
+      cursor: wait;
+    }
+    .vote-btn.voted {
+      background: transparent;
+      border: 2px solid #4ecca3;
+      color: #4ecca3;
+      cursor: default;
+      font-size: 12px;
+      padding: 6px 14px;
+      letter-spacing: 0.06em;
+    }
+    .vote-btn.voted:hover {
+      opacity: 1;
+    }
+    .vote-btn.winner-glow {
+      border-color: #4ecca3;
+      box-shadow: 0 0 10px 2px #4ecca3aa;
+    }
+    .vote-count {
+      font-size: 11px;
+      color: #6a9a88;
+      letter-spacing: 0.05em;
+      min-height: 16px;
+    }
+    .concluded-details {
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto 48px;
+      padding: 0 12px;
+    }
+    .concluded-details summary {
+      font-size: 13px;
+      color: #556;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      padding: 10px 4px;
+      user-select: none;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-top: 1px solid #1e1e3a;
+    }
+    .concluded-details summary::-webkit-details-marker { display: none; }
+    .concluded-details summary::before {
+      content: '▶';
+      font-size: 10px;
+      transition: transform 0.15s;
+      display: inline-block;
+    }
+    .concluded-details[open] summary::before {
+      transform: rotate(90deg);
+    }
+    .concluded-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .sprite-section {
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 12px 48px;
+    }
+    .sprite-section-title {
+      font-size: 20px;
+      letter-spacing: 0.15em;
+      color: #4ecca3;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      text-align: center;
+    }
+    .sprite-section-subtitle {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 32px;
+      letter-spacing: 0.08em;
+      text-align: center;
+    }
+    .sprite-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 40px;
+      justify-content: center;
+    }
+    .sprite-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      background: #13132a;
+      border: 1px solid #2a2a4a;
+      border-radius: 6px;
+      padding: 16px 12px 14px;
+      min-width: 280px;
+    }
+    .sprite-card-name {
+      font-size: 13px;
+      font-weight: bold;
+      color: #4ecca3;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .sprite-variants {
+      display: flex;
+      gap: 16px;
+      align-items: flex-end;
+    }
+    .sprite-variant {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .sprite-canvas {
+      width: 80px;
+      height: 120px;
+      border: 1px solid #2a2a4a;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    .sprite-variant-label {
+      font-size: 18px;
+      font-weight: bold;
+      color: #4ecca3;
+      letter-spacing: 0.1em;
+    }
+    .page-header {
+      text-align: center;
+      padding: 32px 12px 8px;
+    }
+    .page-header h1 {
+      font-size: 28px;
+      letter-spacing: 0.2em;
+      color: #4ecca3;
+      text-transform: uppercase;
+      margin: 0 0 6px;
+    }
+    .page-header p {
+      font-size: 13px;
+      color: #888;
+      margin: 0;
+      letter-spacing: 0.04em;
+    }
+    .vote-ratio-bar {
+      width: 100%;
+      max-width: 120px;
+      height: 4px;
+      background: #1a1a2e;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .vote-ratio-fill {
+      height: 100%;
+      background: #4ecca3;
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1a1a2e;
+      border: 1px solid #4ecca3;
+      color: #e0e0ff;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      z-index: 1000;
+      pointer-events: none;
+    }
+    .toast.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .toast.error {
+      border-color: #cc4444;
+    }
+    #auth-prompt {
+      text-align: center;
+      padding: 120px 20px;
+    }
+    #auth-prompt h2 {
+      font-size: 1.4rem;
+      color: #4ecca3;
+      margin-bottom: 10px;
+    }
+    #auth-prompt p {
+      color: #888;
+      margin-bottom: 28px;
+      font-size: 0.9rem;
+    }
+    #auth-prompt a {
+      display: inline-block;
+      background: #24292e;
+      color: #fff;
+      padding: 12px 28px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 1rem;
+      font-weight: 500;
+      border: 1px solid rgba(255,255,255,0.12);
+      transition: background 0.15s ease;
+    }
+    #auth-prompt a:hover { background: #2f363d; }
+  </style>
+</head>
+<body>
+  <div id="auth-prompt" style="display:none;">
+    <h2>Sign in to view the refinery</h2>
+    <p>Authentication required</p>
+    <a id="login-link" href="/auth/github">Sign in with GitHub</a>
+  </div>
+  <div id="refinery-content" style="display:none;">
+  <div class="page-header">
+    <h1>The Refinery</h1>
+    <p>Vote on designs for BigClungus personas — sprites, avatars, and more. Results shape the world.</p>
+  </div>
+  <!-- poll sections are injected dynamically by JS from /api/polls -->
+  <div id="dynamic-poll-sections"></div>
+  <div id="toast" class="toast"></div>
+
+  <script>
+  const T = 8; // tile size
+
+  function px(ctx, col, row, w, h, color) {
+    ctx.fillStyle = color;
+    ctx.fillRect(col * T, row * T, w * T, h * T);
+  }
+
+  // Shared pixel-font data for "CONGRESS" — used by all three variant drawers
+  const LETTERS_CONGRESS = [
+    // C
+    [[0,0],[0,1],[0,2],[1,0],[1,2]],
+    // O
+    [[0,0],[1,0],[2,0],[0,1],[2,1],[0,2],[1,2],[2,2]],
+    // N
+    [[0,0],[0,1],[0,2],[1,1],[2,0],[2,1],[2,2]],
+    // G
+    [[0,0],[1,0],[0,1],[0,2],[1,2],[2,2],[2,1]],
+    // R
+    [[0,0],[0,1],[0,2],[1,0],[2,0],[1,1],[2,2]],
+    // E
+    [[0,0],[1,0],[2,0],[0,1],[0,2],[1,2],[2,2]],
+    // S
+    [[0,0],[1,0],[2,0],[0,1],[1,1],[2,2],[1,2],[0,2]],
+    // S
+    [[0,0],[1,0],[2,0],[0,1],[1,1],[2,2],[1,2],[0,2]],
+  ];
+
+  // ─── VARIANT A: Classical Pillars ─────────────────────────────────────────
+  function drawCongressA(ctx) {
+    const W = 20, H = 15;
+
+    // Background
+    ctx.fillStyle = '#0d0d1a';
+    ctx.fillRect(0, 0, W * T, H * T);
+
+    const wall   = '#5a5a7a';
+    const col    = '#7a7a9a';
+    const shadow = '#3a3a5a';
+    const dark   = '#1a1a2a';
+    const amber  = '#c08020';
+    const lite   = '#9a9aba';
+    const step   = '#4a4a6a';
+
+    // Main body of building (rows 4–13, cols 1–18)
+    px(ctx, 1, 4, 18, 10, wall);
+
+    // Shadow base under building
+    px(ctx, 1, 13, 18, 1, shadow);
+
+    // Pediment (triangular roof) — pixel staircase approximation
+    // Row 2: center 2 tiles wide
+    px(ctx, 9, 2, 2, 1, wall);
+    // Row 3: wider
+    px(ctx, 6, 3, 8, 1, wall);
+    // Row 4 top edge (merges with body)
+    // Pediment outline highlight
+    px(ctx, 9, 2, 2, 1, lite);
+    px(ctx, 6, 3, 8, 1, lite);
+    // Pediment top shadow interior fill
+    px(ctx, 7, 3, 6, 1, shadow);
+    px(ctx, 9, 2, 2, 1, shadow);
+
+    // Wide entablature (beam above columns) rows 4–5
+    px(ctx, 1, 4, 18, 2, lite);
+    px(ctx, 1, 5, 18, 1, shadow);
+
+    // Four columns (2 tiles wide each), rows 5–12
+    const colPositions = [2, 6, 10, 14];
+    for (const c of colPositions) {
+      px(ctx, c, 5, 2, 8, col);
+      // Highlight left edge
+      px(ctx, c, 5, 1, 8, lite);
+      // Shadow right edge
+      px(ctx, c + 1, 5, 1, 8, shadow);
+    }
+
+    // Wall fills between columns
+    px(ctx, 4, 5, 2, 8, wall);
+    px(ctx, 8, 5, 2, 8, wall);
+    px(ctx, 12, 5, 2, 8, wall);
+
+    // Left and right flanks
+    px(ctx, 1, 5, 1, 8, wall);
+    px(ctx, 16, 5, 2, 8, wall);
+
+    // Central doorway rows 8–12, cols 8–11
+    px(ctx, 8, 8, 4, 5, dark);
+    // Door frame
+    px(ctx, 8, 8, 4, 1, shadow);
+    px(ctx, 8, 8, 1, 5, shadow);
+    px(ctx, 11, 8, 1, 5, shadow);
+    // Amber glow inside door
+    px(ctx, 9, 9, 2, 4, amber);
+    ctx.globalAlpha = 0.35;
+    px(ctx, 9, 9, 2, 4, '#ffdd88');
+    ctx.globalAlpha = 1.0;
+
+    // Steps: 3 rows, each slightly wider
+    px(ctx, 4, 13, 12, 1, step);    // top step
+    px(ctx, 3, 13, 14, 1, shadow);  // shadow under
+    px(ctx, 3, 13, 14, 1, step);
+    px(ctx, 2, 14, 16, 1, step);
+    px(ctx, 2, 14, 16, 1, lite);
+    ctx.globalAlpha = 0.4;
+    px(ctx, 2, 14, 16, 1, '#0d0d1a');
+    ctx.globalAlpha = 1.0;
+
+    // Step details
+    px(ctx, 3, 13, 14, 1, step);
+    px(ctx, 2, 14, 16, 1, '#4a4a6e');
+    px(ctx, 1, 13, 1, 2, shadow);
+    px(ctx, 18, 13, 1, 2, shadow);
+
+    // "CONGRESS" text above columns — pixel font, row 6 in the entablature area
+    const startX = 25, startY = 35; // pixel coords inside the entablature strip
+    const dotSize = 1;
+    const letterSpacing = 5;
+    ctx.fillStyle = '#c0c0e0';
+    LETTERS_CONGRESS.forEach((letter, li) => {
+      const ox = startX + li * letterSpacing;
+      letter.forEach(([dc, dr]) => {
+        ctx.fillRect(ox + dc * dotSize, startY + dr * dotSize, dotSize, dotSize);
+      });
+    });
+
+    // Column capitals (top of columns)
+    for (const c of colPositions) {
+      px(ctx, c, 5, 2, 1, lite);
+    }
+
+    // Roof highlight line
+    px(ctx, 1, 4, 18, 1, '#8a8aaa');
+  }
+
+
+  // ─── VARIANT B: Brutalist Block ────────────────────────────────────────────
+  function drawCongressB(ctx) {
+    const W = 20, H = 15;
+
+    // Background
+    ctx.fillStyle = '#0d0d1a';
+    ctx.fillRect(0, 0, W * T, H * T);
+
+    const band1  = '#2a2050';
+    const band2  = '#3a3068';
+    const shadow = '#1a1038';
+    const lite   = '#4a4080';
+    const dark   = '#0e0a28';
+    const name_c = '#7070a8';
+
+    // Main body: rows 2–13, cols 2–17 (16 wide, 12 tall)
+    // Horizontal banding — alternating every 2 rows
+    for (let r = 2; r <= 13; r++) {
+      const band = (Math.floor((r - 2) / 2) % 2 === 0) ? band1 : band2;
+      px(ctx, 2, r, 16, 1, band);
+    }
+
+    // Shadow edges
+    px(ctx, 2, 2, 16, 1, lite);     // top highlight
+    px(ctx, 2, 2, 1, 12, lite);     // left highlight
+    px(ctx, 17, 2, 1, 12, shadow);  // right shadow
+    px(ctx, 2, 13, 16, 1, shadow);  // bottom shadow
+
+    // Two flanking towers: rows 1–13 (taller by 1), cols 2–4 and 15–17
+    for (let r = 1; r <= 13; r++) {
+      const band = (Math.floor((r - 1) / 2) % 2 === 0) ? band1 : band2;
+      px(ctx, 2, r, 3, 1, band);
+      px(ctx, 15, r, 3, 1, band);
+    }
+    // Tower tops
+    px(ctx, 2, 1, 3, 1, lite);
+    px(ctx, 15, 1, 3, 1, lite);
+    px(ctx, 2, 1, 1, 13, lite);
+    px(ctx, 15, 1, 1, 13, lite);
+    px(ctx, 4, 1, 1, 13, shadow);
+    px(ctx, 17, 1, 1, 13, shadow);
+
+    // Slit windows on towers — thin verticals
+    // Left tower
+    px(ctx, 3, 3, 1, 3, dark);
+    px(ctx, 3, 8, 1, 3, dark);
+    // Right tower
+    px(ctx, 16, 3, 1, 3, dark);
+    px(ctx, 16, 8, 1, 3, dark);
+
+    // Slit windows on main body
+    px(ctx, 6,  4, 1, 2, dark);
+    px(ctx, 8,  4, 1, 2, dark);
+    px(ctx, 11, 4, 1, 2, dark);
+    px(ctx, 13, 4, 1, 2, dark);
+
+    px(ctx, 6,  8, 1, 2, dark);
+    px(ctx, 8,  8, 1, 2, dark);
+    px(ctx, 11, 8, 1, 2, dark);
+    px(ctx, 13, 8, 1, 2, dark);
+
+    // Large recessed entryway center rows 9–13, cols 8–11
+    px(ctx, 7, 9, 6, 5, shadow);
+    px(ctx, 8, 9, 4, 5, dark);
+    // Recessed frame
+    px(ctx, 7, 9, 1, 5, '#1a1840');
+    px(ctx, 12, 9, 1, 5, '#1a1840');
+    px(ctx, 7, 9, 6, 1, '#1a1840');
+
+    // Ground base
+    px(ctx, 1, 13, 18, 1, shadow);
+    px(ctx, 1, 14, 18, 1, '#18102e');
+
+    // Name "CONGRESS" etched in facade — pixel dots, stark
+    const startX = 11, startY = 49;
+    const dotSize = 1;
+    const letterSpacing = 5;
+    ctx.fillStyle = name_c;
+    LETTERS_CONGRESS.forEach((letter, li) => {
+      const ox = startX + li * letterSpacing;
+      letter.forEach(([dc, dr]) => {
+        ctx.fillRect(ox + dc * dotSize, startY + dr * dotSize, dotSize, dotSize);
+      });
+    });
+  }
+
+
+  // ─── VARIANT C: Gothic Spire ───────────────────────────────────────────────
+  function drawCongressC(ctx) {
+    const W = 20, H = 15;
+
+    // Background
+    ctx.fillStyle = '#0d0d1a';
+    ctx.fillRect(0, 0, W * T, H * T);
+
+    const stone  = '#1e1e3a';
+    const hi     = '#3a4a8a';
+    const mid    = '#2a2a50';
+    const dark   = '#0e0e22';
+    const win    = '#2a3a6a';
+    const garg   = '#1a1a30';
+    const spire  = '#2a3860';
+
+    // Main body: rows 5–13, cols 3–16 (14 wide, 9 tall)
+    px(ctx, 3, 5, 14, 9, stone);
+
+    // Stone texture — subtle horizontal lines
+    for (let r = 5; r <= 13; r += 2) {
+      px(ctx, 3, r, 14, 1, mid);
+    }
+
+    // Edges / depth
+    px(ctx, 3, 5, 1, 9, hi);
+    px(ctx, 16, 5, 1, 9, dark);
+    px(ctx, 3, 13, 14, 1, dark);
+    px(ctx, 3, 5, 14, 1, hi);
+
+    // Central tower: rows 1–5, cols 8–11
+    px(ctx, 8, 1, 4, 5, spire);
+    px(ctx, 8, 1, 1, 5, hi);
+    px(ctx, 11, 1, 1, 5, dark);
+    px(ctx, 8, 1, 4, 1, hi);
+
+    // Spire tip: rows 0 (1 tile wide at col 9)
+    px(ctx, 9, 0, 2, 1, hi);
+    // Spire taper
+    px(ctx, 8, 1, 4, 1, spire);
+
+    // Side towers / buttresses
+    px(ctx, 3, 3, 2, 3, spire);
+    px(ctx, 15, 3, 2, 3, spire);
+    px(ctx, 3, 3, 1, 3, hi);
+    px(ctx, 16, 3, 1, 3, dark);
+    px(ctx, 3, 3, 2, 1, hi);
+    px(ctx, 15, 3, 2, 1, hi);
+
+    // Arched gothic windows (left and right of entrance)
+    // Left arch window: cols 4–5, rows 6–10
+    px(ctx, 4, 7, 2, 4, win);
+    px(ctx, 4, 6, 2, 1, win);  // arch top
+    px(ctx, 4, 6, 1, 1, hi);
+    px(ctx, 5, 6, 1, 1, hi);
+    // Arch peak pixel
+    ctx.fillStyle = hi;
+    ctx.fillRect(4 * T + 4, 6 * T, 8, 4);
+
+    // Right arch window: cols 13–14, rows 6–10
+    px(ctx, 13, 7, 2, 4, win);
+    px(ctx, 13, 6, 2, 1, win);
+    px(ctx, 13, 6, 1, 1, hi);
+    px(ctx, 14, 6, 1, 1, hi);
+    ctx.fillStyle = hi;
+    ctx.fillRect(13 * T + 4, 6 * T, 8, 4);
+
+    // Window tracery (cross dividers)
+    ctx.fillStyle = stone;
+    ctx.fillRect(4 * T + 3, 7 * T + 4, 2, 16);
+    ctx.fillRect(4 * T + 3, 8 * T + 4, 12, 2);
+    ctx.fillRect(13 * T + 3, 7 * T + 4, 2, 16);
+    ctx.fillRect(13 * T + 3, 8 * T + 4, 12, 2);
+
+    // Central doorway: arched, cols 8–11, rows 9–13
+    px(ctx, 8, 9, 4, 5, dark);
+    // Arch top of door
+    ctx.fillStyle = dark;
+    ctx.fillRect(8 * T + 2, 9 * T - 4, T * 4 - 4, 8);
+    // Door frame highlight
+    px(ctx, 8, 9, 1, 5, hi);
+    px(ctx, 11, 9, 1, 5, dark);
+    px(ctx, 8, 9, 4, 1, hi);
+    // Faint blue glow inside
+    ctx.fillStyle = '#1a2860';
+    ctx.globalAlpha = 0.6;
+    ctx.fillRect(9 * T, 10 * T, 2 * T, 3 * T);
+    ctx.globalAlpha = 1.0;
+
+    // Gargoyle blobs — corners of main body
+    // Left gargoyle: col 2–3, row 4–5
+    px(ctx, 2, 4, 2, 2, garg);
+    // Horns
+    ctx.fillStyle = dark;
+    ctx.fillRect(2 * T, 4 * T, T, T / 2);   // left horn
+    ctx.fillRect(3 * T, 4 * T, T, T / 2);   // right horn
+    ctx.fillStyle = hi;
+    ctx.fillRect(2 * T + 2, 4 * T + 4, 4, 4); // glowing eye
+    // Right gargoyle
+    px(ctx, 15, 4, 2, 2, garg);
+    ctx.fillStyle = dark;
+    ctx.fillRect(15 * T, 4 * T, T, T / 2);
+    ctx.fillRect(16 * T, 4 * T, T, T / 2);
+    ctx.fillStyle = hi;
+    ctx.fillRect(15 * T + 2, 4 * T + 4, 4, 4);
+
+    // Ground base
+    px(ctx, 2, 13, 16, 1, dark);
+    px(ctx, 2, 14, 16, 1, '#12122a');
+
+    // "CONGRESS" arched above door — pixel text at row 8 center area
+    const startX = 22, startY = 67;
+    ctx.fillStyle = '#4a5a9a';
+    LETTERS_CONGRESS.forEach((letter, li) => {
+      const ox = startX + li * 5;
+      letter.forEach(([dc, dr]) => {
+        ctx.fillRect(ox + dc, startY + dr, 1, 1);
+      });
+    });
+
+    // Tower cross motif at top
+    ctx.fillStyle = hi;
+    ctx.fillRect(9 * T + 3, 1 * T + 2, 2, 5);
+    ctx.fillRect(9 * T, 1 * T + 4, 8, 2);
+  }
+  </script>
+
+  <script>
+  // ─── VARIANT FA: Tiered Roman Fountain ────────────────────────────────────────
+  function drawFountainA(ctx) {
+    const W = 20, H = 15;
+    ctx.fillStyle = '#0d0d1a';
+    ctx.fillRect(0, 0, W * T, H * T);
+
+    const stone  = '#5a5a7a';
+    const shadow = '#3a3a5a';
+    const lite   = '#7a7a9a';
+    const water  = '#2255aa';
+    const wlite  = '#4499dd';
+    const pillar = '#6a6a8a';
+
+    // Wide base basin: rows 11–13, cols 2–17 (16 wide, 3 tall)
+    px(ctx, 2, 11, 16, 3, stone);
+    px(ctx, 2, 11, 16, 1, lite);
+    px(ctx, 2, 13, 16, 1, shadow);
+    px(ctx, 2, 11, 1, 3, lite);
+    px(ctx, 17, 11, 1, 3, shadow);
+    // Basin water surface
+    px(ctx, 3, 12, 14, 1, water);
+
+    // Middle tier: rows 7–10, cols 5–14 (10 wide, 4 tall)
+    px(ctx, 5, 7, 10, 4, stone);
+    px(ctx, 5, 7, 10, 1, lite);
+    px(ctx, 5, 10, 10, 1, shadow);
+    px(ctx, 5, 7, 1, 4, lite);
+    px(ctx, 14, 7, 1, 4, shadow);
+    // Mid tier water
+    px(ctx, 6, 8, 8, 2, water);
+
+    // Top tier: rows 4–6, cols 8–11 (4 wide, 3 tall)
+    px(ctx, 8, 4, 4, 3, stone);
+    px(ctx, 8, 4, 4, 1, lite);
+    px(ctx, 8, 6, 4, 1, shadow);
+    px(ctx, 8, 4, 1, 3, lite);
+    px(ctx, 11, 4, 1, 3, shadow);
+    // Top tier water
+    px(ctx, 9, 5, 2, 1, water);
+
+    // Central pillar: rows 1–4, cols 9–10
+    px(ctx, 9, 1, 2, 3, pillar);
+    px(ctx, 9, 1, 1, 3, lite);
+    px(ctx, 10, 1, 1, 3, shadow);
+    // Pillar cap
+    px(ctx, 9, 1, 2, 1, lite);
+
+    // Ground base
+    px(ctx, 1, 13, 18, 2, shadow);
+    ctx.fillStyle = '#18182e';
+    ctx.fillRect(T, 14 * T, 18 * T, T);
+  }
+
+  function animFountainA(ctx) {
+    const stone  = '#5a5a7a';
+    const water  = '#2255aa';
+    const wlite  = '#4499dd';
+    const spray  = '#88ccff';
+    const ripple = '#3377bb';
+
+    function frame() {
+      // Cascade from pillar down: col 9-10, rows 1-3
+      for (let r = 1; r <= 3; r++) {
+        ctx.fillStyle = Math.random() > 0.4 ? wlite : water;
+        ctx.fillRect(9 * T + 2 + Math.floor(Math.random() * 4), r * T + Math.floor(Math.random() * T), 2, 3);
+      }
+
+      // Cascade from top tier edge down to mid: shimmer on col 8 and 11, rows 4-7
+      for (const col of [8, 11]) {
+        for (let r = 4; r <= 6; r++) {
+          ctx.fillStyle = Math.random() > 0.5 ? wlite : water;
+          ctx.fillRect(col * T + (col === 8 ? 1 : T - 3), r * T + Math.floor(Math.random() * T), 2, 3);
+        }
+      }
+
+      // Cascade from mid tier edge down to base: shimmer on col 5 and 14, rows 7-11
+      for (const col of [5, 14]) {
+        for (let r = 7; r <= 10; r++) {
+          ctx.fillStyle = Math.random() > 0.5 ? wlite : water;
+          ctx.fillRect(col * T + (col === 5 ? 1 : T - 3), r * T + Math.floor(Math.random() * T), 2, 3);
+        }
+      }
+
+      // Ripples in basin (row 12, cols 3-16)
+      for (let i = 0; i < 5; i++) {
+        const rx = (3 + Math.floor(Math.random() * 14)) * T + Math.floor(Math.random() * T);
+        ctx.fillStyle = Math.random() > 0.6 ? ripple : spray;
+        ctx.fillRect(rx, 12 * T + Math.floor(Math.random() * T), 2, 1);
+      }
+
+      // Shimmer mid tier water
+      for (let i = 0; i < 3; i++) {
+        const rx = (6 + Math.floor(Math.random() * 8)) * T + Math.floor(Math.random() * T);
+        ctx.fillStyle = Math.random() > 0.5 ? ripple : wlite;
+        ctx.fillRect(rx, 8 * T + Math.floor(Math.random() * T * 2), 2, 1);
+      }
+    }
+
+    setInterval(() => requestAnimationFrame(frame), 200);
+  }
+
+  // ─── VARIANT FB: Geyser / Gushing Spout ──────────────────────────────────────
+  function drawFountainB(ctx) {
+    const W = 20, H = 15;
+    ctx.fillStyle = '#0d0d1a';
+    ctx.fillRect(0, 0, W * T, H * T);
+
+    const earth  = '#2a2020';
+    const crack  = '#1a1010';
+    const stone  = '#3a3030';
+    const rim    = '#4a4040';
+    const water  = '#4a9fff';
+    const wmid   = '#2266cc';
+    const spray  = '#aaddff';
+
+    // Cracked earth / ground: rows 10–14
+    for (let r = 10; r <= 14; r++) {
+      ctx.fillStyle = r < 12 ? earth : stone;
+      ctx.fillRect(0, r * T, W * T, T);
+    }
+
+    // Ground cracks radiating from hole
+    px(ctx, 4, 10, 2, 1, crack);
+    px(ctx, 14, 10, 2, 1, crack);
+    px(ctx, 2, 11, 1, 2, crack);
+    px(ctx, 17, 11, 1, 2, crack);
+    px(ctx, 6, 11, 1, 1, crack);
+    px(ctx, 13, 11, 1, 1, crack);
+    px(ctx, 3, 12, 1, 1, crack);
+    px(ctx, 16, 12, 1, 1, crack);
+
+    // Hole / vent in ground: cols 8–11, rows 11–13
+    px(ctx, 8, 11, 4, 3, '#0a0808');
+    px(ctx, 8, 11, 1, 3, crack);
+    px(ctx, 11, 11, 1, 3, crack);
+    px(ctx, 8, 11, 4, 1, crack);
+    // Rim highlight
+    px(ctx, 7, 10, 6, 1, rim);
+    px(ctx, 7, 10, 1, 3, rim);
+    px(ctx, 12, 10, 1, 3, rim);
+
+    // Main jet: thick column, cols 9–10, rows 0–10
+    for (let r = 0; r <= 10; r++) {
+      ctx.fillStyle = water;
+      ctx.fillRect(9 * T, r * T, 2 * T, T);
+      // Highlight left edge
+      ctx.fillStyle = spray;
+      ctx.fillRect(9 * T, r * T, 2, T);
+    }
+    // Jet widens slightly at base rows 9-10 (cols 8-11)
+    px(ctx, 8, 9, 4, 2, wmid);
+    px(ctx, 9, 9, 2, 2, water);
+
+    // Spray/mist at top: rows 0–2
+    for (let i = 0; i < 12; i++) {
+      const sx = (6 + Math.floor(Math.random() * 8)) * T + Math.floor(Math.random() * T);
+      const sy = Math.floor(Math.random() * 2) * T + Math.floor(Math.random() * T);
+      ctx.fillStyle = Math.random() > 0.5 ? spray : water;
+      ctx.fillRect(sx, sy, 2, 2);
+    }
+  }
+
+  function animFountainB(ctx) {
+    const water  = '#4a9fff';
+    const spray  = '#aaddff';
+    const wmid   = '#2266cc';
+    const dark   = '#1a3a7a';
+
+    function frame() {
+      // Redraw jet with shimmer variation: cols 9-10, full height rows 0-10
+      for (let r = 0; r <= 10; r++) {
+        const jitter = Math.floor(Math.random() * 3) - 1;
+        ctx.fillStyle = Math.random() > 0.3 ? water : wmid;
+        ctx.fillRect(9 * T + jitter, r * T, 2 * T, T);
+        // Random highlight streaks
+        if (Math.random() > 0.6) {
+          ctx.fillStyle = spray;
+          ctx.fillRect(9 * T + Math.floor(Math.random() * T), r * T + Math.floor(Math.random() * T), 1, 2);
+        }
+      }
+
+      // Spray chaos at top rows 0-3
+      for (let i = 0; i < 8; i++) {
+        const sx = (5 + Math.floor(Math.random() * 10)) * T + Math.floor(Math.random() * T);
+        const sy = Math.floor(Math.random() * 3) * T + Math.floor(Math.random() * T);
+        ctx.fillStyle = Math.random() > 0.4 ? spray : water;
+        ctx.fillRect(sx, sy, Math.floor(Math.random() * 3) + 1, Math.floor(Math.random() * 3) + 1);
+      }
+
+      // Widen/narrow the jet at mid rows 4-8 randomly
+      for (let r = 4; r <= 8; r++) {
+        if (Math.random() > 0.7) {
+          const side = Math.random() > 0.5 ? 8 : 11;
+          ctx.fillStyle = Math.random() > 0.5 ? water : wmid;
+          ctx.fillRect(side * T, r * T, T, T);
+        }
+      }
+    }
+
+    setInterval(() => requestAnimationFrame(frame), 200);
+  }
+
+  // ─── VARIANT FC: Japanese Garden Bamboo Spout ─────────────────────────────────
+  function drawFountainC(ctx) {
+    const W = 20, H = 15;
+    ctx.fillStyle = '#0d0d1a';
+    ctx.fillRect(0, 0, W * T, H * T);
+
+    const soil   = '#1a1810';
+    const moss   = '#2a3a1a';
+    const rock1  = '#3a3a4a';
+    const rock2  = '#2a2a3a';
+    const rock3  = '#4a4a5a';
+    const bamboo = '#6b4423';
+    const bamhi  = '#8a5a30';
+    const water  = '#1a6aaa';
+    const basin  = '#2a2a3a';
+    const node_c = '#4a2e14';
+
+    // Ground / soil: rows 10–14
+    for (let r = 10; r <= 14; r++) {
+      ctx.fillStyle = r === 10 ? moss : soil;
+      ctx.fillRect(0, r * T, W * T, T);
+    }
+
+    // Moss patches
+    ctx.fillStyle = moss;
+    ctx.fillRect(2 * T, 11 * T, T, T);
+    ctx.fillRect(5 * T, 11 * T, 2 * T, T);
+    ctx.fillRect(15 * T, 10 * T, T, 2 * T);
+    ctx.fillRect(17 * T, 11 * T, T, T);
+
+    // Shallow stone basin: cols 10–15, rows 9–11
+    px(ctx, 10, 9, 6, 3, basin);
+    px(ctx, 10, 9, 6, 1, rock3);
+    px(ctx, 10, 11, 6, 1, rock2);
+    px(ctx, 10, 9, 1, 3, rock3);
+    px(ctx, 15, 9, 1, 3, rock2);
+    // Water in basin
+    px(ctx, 11, 10, 4, 1, water);
+
+    // Zen rocks around basin
+    // Left large rock
+    px(ctx, 7, 9, 3, 2, rock1);
+    px(ctx, 7, 9, 3, 1, rock3);
+    px(ctx, 7, 9, 1, 2, rock3);
+    px(ctx, 9, 9, 1, 2, rock2);
+    // Right small rock
+    px(ctx, 16, 8, 2, 2, rock2);
+    px(ctx, 16, 8, 2, 1, rock3);
+    // Far left pebble
+    px(ctx, 3, 10, 2, 1, rock2);
+    // Moss on rocks
+    ctx.fillStyle = moss;
+    ctx.fillRect(7 * T + 2, 9 * T, T - 4, 3);
+    ctx.fillRect(16 * T + 1, 8 * T, T - 2, 2);
+
+    // Bamboo pole: horizontal, angled from col 2 row 5 to col 12 row 9
+    // Draw as a series of segments approximating a diagonal
+    // We'll draw 1-tile-tall rectangles at varying columns/rows
+    const bamSegs = [
+      [2, 6, 2, 1],   // far left, row 6
+      [4, 6, 2, 1],   // continue
+      [6, 7, 2, 1],   // drop a row
+      [8, 7, 2, 1],   // continue
+      [10, 8, 2, 1],  // drop another row toward tip
+    ];
+    for (const [c, r, w, h] of bamSegs) {
+      ctx.fillStyle = bamboo;
+      ctx.fillRect(c * T, r * T + T / 2 - 2, w * T, 4); // 4px tall bamboo pole
+      ctx.fillStyle = bamhi;
+      ctx.fillRect(c * T, r * T + T / 2 - 2, w * T, 1); // highlight top
+    }
+    // Bamboo nodes (dark rings at joints)
+    for (const [c, r] of [[4, 6], [8, 7]]) {
+      ctx.fillStyle = node_c;
+      ctx.fillRect(c * T, r * T + T / 2 - 3, 2, 6);
+    }
+    // Bamboo support post: vertical, col 4, rows 7-9
+    ctx.fillStyle = bamboo;
+    ctx.fillRect(4 * T + 3, 7 * T, 2, 3 * T);
+    ctx.fillStyle = bamhi;
+    ctx.fillRect(4 * T + 3, 7 * T, 1, 3 * T);
+
+    // Water trickle from bamboo tip (col 12, row 9 → basin)
+    ctx.fillStyle = water;
+    ctx.fillRect(11 * T + 3, 9 * T - 2, 2, T + 4);
+  }
+
+  function animFountainC(ctx) {
+    const water  = '#1a6aaa';
+    const wlite  = '#2a8acc';
+    const drip   = '#0d4a88';
+    const ripple = '#2277aa';
+
+    function frame() {
+      // Trickle from tip: animate drips at col 11, rows 8-9
+      for (let r = 8; r <= 9; r++) {
+        if (Math.random() > 0.3) {
+          ctx.fillStyle = Math.random() > 0.5 ? water : wlite;
+          const offset = Math.floor(Math.random() * 4);
+          ctx.fillRect(11 * T + 2 + offset, r * T + Math.floor(Math.random() * T), 1, 2);
+        }
+      }
+
+      // Ripples in basin (row 10, cols 11-14)
+      for (let i = 0; i < 3; i++) {
+        const rx = (11 + Math.floor(Math.random() * 4)) * T + Math.floor(Math.random() * T);
+        ctx.fillStyle = Math.random() > 0.5 ? ripple : wlite;
+        ctx.fillRect(rx, 10 * T + Math.floor(Math.random() * T), 2, 1);
+      }
+
+      // Occasional slight shimmer on basin water surface (random single pixel)
+      if (Math.random() > 0.6) {
+        const rx = (11 + Math.floor(Math.random() * 4)) * T + Math.floor(Math.random() * T);
+        ctx.fillStyle = wlite;
+        ctx.fillRect(rx, 10 * T + 1, 1, 1);
+      }
+    }
+
+    setInterval(() => requestAnimationFrame(frame), 200);
+  }
+
+  // Canvas renderers for polls that have bespoke pixel art per option.
+  // Keyed by poll_id; each value maps option key -> { draw, anim? } functions.
+  // draw(ctx) renders the static frame; anim(ctx) starts an animation loop.
+  const CANVAS_RENDERERS = {
+    'congress-building-v1': {
+      A: { draw: drawCongressA },
+      B: { draw: drawCongressB },
+      C: { draw: drawCongressC },
+    },
+    'commons-fountain-v1': {
+      A: { draw: drawFountainA, anim: animFountainA },
+      B: { draw: drawFountainB, anim: animFountainB },
+      C: { draw: drawFountainC, anim: animFountainC },
+    },
+  };
+  </script>
+
+  <script>
+  // ── Poll state driven by GET /api/polls ────────────────────────────────────
+
+  // Map poll_id -> { options, prefix } for button/count element id construction
+  // Populated dynamically at runtime — nothing hardcoded here.
+  const POLL_UI_MAP = {};
+
+  // voter_token is set by backend automatically via Set-Cookie on first vote/GET
+  // We track your_vote per poll_id from individual vote API responses
+  const yourVotes = {};
+
+  // Track which poll_ids have a winner (concluded)
+  const pollWinners = {};
+
+  // ── Toast notification ──────────────────────────────────────────────────────
+  function showToast(msg, isError) {
+    const el = document.getElementById('toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'toast visible' + (isError ? ' error' : '');
+    clearTimeout(el._tid);
+    el._tid = setTimeout(() => { el.className = 'toast'; }, 2500);
+  }
+
+  // ── Generic vote cast ───────────────────────────────────────────────────────
+  function resetVoteBtn(btn, option) {
+    if (!btn) return;
+    btn.disabled = false;
+    btn.textContent = 'Vote ' + option;
+    btn.classList.remove('voting');
+  }
+
+  async function castVote(pollId, option) {
+    const ui = POLL_UI_MAP[pollId];
+    const btn = ui ? document.getElementById(ui.prefix + option) : null;
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Voting\u2026';
+      btn.classList.add('voting');
+    }
+    try {
+      const resp = await fetch('/api/vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ poll_id: pollId, option }),
+        credentials: 'same-origin',
+      });
+      if (!resp.ok) {
+        console.error('vote failed:', resp.status, 'poll:', pollId);
+        resetVoteBtn(btn, option);
+        showToast('Vote failed (' + resp.status + ')', true);
+        return;
+      }
+      const data = await resp.json();
+      yourVotes[pollId] = data.your_vote ?? option;
+      applyPollState(pollId, data.counts, data.winner, yourVotes[pollId]);
+      showToast('Vote recorded');
+    } catch (e) {
+      console.error('vote error:', e);
+      resetVoteBtn(btn, option);
+      showToast('Vote failed', true);
+    }
+  }
+
+  // ── Apply counts/winner state to a poll's buttons and count elements ────────
+  function applyPollState(pollId, counts, winner, yourVote) {
+    const ui = POLL_UI_MAP[pollId];
+    if (!ui) return;
+    if (winner) pollWinners[pollId] = winner;
+    // Compute total votes for ratio bars
+    let total = 0;
+    for (const opt of ui.options) { total += (counts && counts[opt]) || 0; }
+    for (const opt of ui.options) {
+      const btn = document.getElementById(ui.prefix + opt);
+      const countEl = document.getElementById(ui.countPrefix + opt);
+      if (!btn || !countEl) continue;
+      const n = (counts && counts[opt]) || 0;
+      countEl.textContent = n + (n === 1 ? ' vote' : ' votes');
+      btn.classList.remove('voted', 'winner-glow', 'voting');
+      if (yourVote === opt) {
+        btn.textContent = '\u2713 voted ' + opt;
+        btn.classList.add('voted');
+        btn.disabled = true;
+        btn.onclick = null;
+      } else if (yourVote) {
+        btn.textContent = 'Vote ' + opt;
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+      } else {
+        btn.textContent = 'Vote ' + opt;
+        btn.disabled = false;
+        btn.style.opacity = '';
+      }
+      if (winner && winner === opt) {
+        btn.classList.add('winner-glow');
+      }
+      // Ratio bar
+      let bar = countEl.nextElementSibling;
+      if (!bar || !bar.classList.contains('vote-ratio-bar')) {
+        bar = document.createElement('div');
+        bar.className = 'vote-ratio-bar';
+        bar.innerHTML = '<div class="vote-ratio-fill"></div>';
+        countEl.parentNode.insertBefore(bar, countEl.nextSibling);
+      }
+      const pct = total > 0 ? Math.round((n / total) * 100) : 0;
+      bar.querySelector('.vote-ratio-fill').style.width = pct + '%';
+    }
+  }
+
+  // ── Refresh all known polls from the API ───────────────────────────────────
+  async function refreshAllPolls() {
+    try {
+      const resp = await fetch('/api/polls', { credentials: 'same-origin' });
+      if (!resp.ok) { console.error('polls fetch failed:', resp.status); return; }
+      const data = await resp.json();
+      for (const poll of (data.polls || [])) {
+        applyPollState(poll.poll_id, poll.vote_counts, poll.winner, yourVotes[poll.poll_id] ?? null);
+      }
+    } catch (e) {
+      console.error('polls refresh error:', e);
+    }
+  }
+
+  // ── Section layout: bucket concluded polls into a collapsible <details> ─────
+  function applyLayoutBuckets(container) {
+    const allCards = Array.from(container.querySelectorAll('[data-poll-id]'));
+    const concludedCards = allCards.filter(el => pollWinners[el.getAttribute('data-poll-id')]);
+    if (concludedCards.length === 0) return;
+
+    const details = document.createElement('details');
+    details.className = 'concluded-details';
+    details.open = true;
+
+    const summary = document.createElement('summary');
+    summary.textContent = 'Concluded (' + concludedCards.length + ')';
+    details.appendChild(summary);
+
+    const inner = document.createElement('div');
+    inner.className = 'concluded-inner';
+    details.appendChild(inner);
+
+    for (const el of concludedCards) {
+      inner.appendChild(el);
+    }
+
+    container.appendChild(details);
+  }
+
+  // ── Build a sprite canvas card for a sprite-* poll ─────────────────────────
+  // Resolves draw functions from window by naming convention:
+  //   sprite-chairman -> drawSprite_chairman_A/B/C
+  //   sprite-the-kid  -> drawSprite_the_kid_A/B/C (hyphens become underscores)
+  function buildSpriteCard(pollData) {
+    const { poll_id, title, options, vote_counts, winner } = pollData;
+    // poll_id: sprite-<slug> (hyphens). Function names use underscores.
+    const slug = poll_id.replace(/^sprite-/, '').replace(/-/g, '_');
+    const variants = Object.keys(options || {}).sort();
+
+    const btnPrefix   = 'sprbtn-' + slug + '-';
+    const countPrefix = 'sprcount-' + slug + '-';
+    POLL_UI_MAP[poll_id] = { prefix: btnPrefix, countPrefix: countPrefix, options: variants };
+
+    const card = document.createElement('div');
+    card.className = 'sprite-card';
+    card.setAttribute('data-poll-id', poll_id);
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'sprite-card-name';
+    nameEl.textContent = title || slug;
+    card.appendChild(nameEl);
+
+    const variantsRow = document.createElement('div');
+    variantsRow.className = 'sprite-variants';
+
+    const isGalactus = slug === 'galactus';
+
+    variants.forEach((v) => {
+      const varDiv = document.createElement('div');
+      varDiv.className = 'sprite-variant';
+
+      const canvas = document.createElement('canvas');
+      canvas.id = 'sprcanvas-' + slug + '-' + v;
+      canvas.width  = isGalactus ? 160 : 40;
+      canvas.height = isGalactus ? 240 : 60;
+      canvas.className = 'sprite-canvas';
+
+      const label = document.createElement('div');
+      label.className = 'sprite-variant-label';
+      label.textContent = v;
+
+      const btn = document.createElement('button');
+      btn.id = btnPrefix + v;
+      btn.className = 'vote-btn';
+      btn.textContent = 'Vote ' + v;
+      btn.onclick = () => castVote(poll_id, v);
+
+      const countEl = document.createElement('div');
+      countEl.id = countPrefix + v;
+      countEl.className = 'vote-count';
+      countEl.textContent = '— votes';
+
+      varDiv.appendChild(canvas);
+      varDiv.appendChild(label);
+      varDiv.appendChild(btn);
+      varDiv.appendChild(countEl);
+      variantsRow.appendChild(varDiv);
+    });
+
+    card.appendChild(variantsRow);
+
+    // Draw sprites after card is in DOM — resolved by window function name convention
+    requestAnimationFrame(() => {
+      variants.forEach((v) => {
+        const fnName = 'drawSprite_' + slug + '_' + v;
+        const drawFn = window[fnName];
+        const cvs = document.getElementById('sprcanvas-' + slug + '-' + v);
+        if (!cvs) return;
+        const ctx = cvs.getContext('2d');
+        ctx.fillStyle = '#0d0d1a';
+        ctx.fillRect(0, 0, cvs.width, cvs.height);
+        if (typeof drawFn !== 'function') {
+          ctx.fillStyle = '#556';
+          ctx.font = '10px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText('Could not', cvs.width / 2, cvs.height / 2 - 6);
+          ctx.fillText('load', cvs.width / 2, cvs.height / 2 + 8);
+          return;
+        }
+        ctx.save();
+        if (isGalactus) {
+          ctx.scale(2, 2);
+          drawFn(ctx, 80, 232);
+        } else {
+          ctx.scale(0.5, 0.5);
+          drawFn(ctx, 40, 116);
+        }
+        ctx.restore();
+      });
+    });
+
+    if (vote_counts) {
+      applyPollState(poll_id, vote_counts, winner, yourVotes[poll_id] ?? null);
+    }
+
+    return card;
+  }
+
+  // ── Build a canvas-rendered card for polls with bespoke pixel art ───────────
+  // Uses CANVAS_RENDERERS[poll_id] to find draw/anim functions per option.
+  function buildCanvasCard(pollData) {
+    const { poll_id, title, options, vote_counts, winner } = pollData;
+    const variants = Object.keys(options || {}).sort();
+    const renderers = CANVAS_RENDERERS[poll_id] || {};
+
+    const btnPrefix   = 'cvsbtn-'   + poll_id + '-';
+    const countPrefix = 'cvscount-' + poll_id + '-';
+    POLL_UI_MAP[poll_id] = { prefix: btnPrefix, countPrefix: countPrefix, options: variants };
+
+    const wrap = document.createElement('div');
+    wrap.className = 'vote-wrap';
+    wrap.setAttribute('data-poll-id', poll_id);
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'vote-title';
+    titleEl.textContent = title || poll_id;
+    wrap.appendChild(titleEl);
+
+    const subtitle = document.createElement('div');
+    subtitle.className = 'vote-subtitle';
+    subtitle.textContent = 'click to vote \u2014 results refresh automatically';
+    wrap.appendChild(subtitle);
+
+    const variantsRow = document.createElement('div');
+    variantsRow.className = 'variants';
+
+    variants.forEach((v) => {
+      const varDiv = document.createElement('div');
+      varDiv.className = 'variant';
+
+      const canvasId = 'cvs-' + poll_id + '-' + v;
+      const canvas = document.createElement('canvas');
+      canvas.id = canvasId;
+      canvas.width = 160;
+      canvas.height = 120;
+
+      const label = document.createElement('div');
+      label.className = 'variant-label';
+      label.textContent = v;
+
+      const desc = document.createElement('div');
+      desc.className = 'variant-desc';
+      desc.textContent = options[v] || '';
+
+      const btn = document.createElement('button');
+      btn.id = btnPrefix + v;
+      btn.className = 'vote-btn';
+      btn.textContent = 'Vote ' + v;
+      btn.onclick = () => castVote(poll_id, v);
+
+      const countEl = document.createElement('div');
+      countEl.id = countPrefix + v;
+      countEl.className = 'vote-count';
+      countEl.textContent = '\u2014 votes';
+
+      varDiv.appendChild(canvas);
+      varDiv.appendChild(label);
+      varDiv.appendChild(desc);
+      varDiv.appendChild(btn);
+      varDiv.appendChild(countEl);
+      variantsRow.appendChild(varDiv);
+    });
+
+    wrap.appendChild(variantsRow);
+
+    // Run draw/anim functions after the card is in the DOM
+    requestAnimationFrame(() => {
+      variants.forEach((v) => {
+        const r = renderers[v];
+        if (!r) return;
+        const cvs = document.getElementById('cvs-' + poll_id + '-' + v);
+        if (!cvs) return;
+        const ctx = cvs.getContext('2d');
+        if (r.draw) r.draw(ctx);
+        if (r.anim) r.anim(ctx);
+      });
+    });
+
+    if (vote_counts) {
+      applyPollState(poll_id, vote_counts, winner, yourVotes[poll_id] ?? null);
+    }
+
+    return wrap;
+  }
+
+  // ── Build an avatar card with GIF previews for avatar-* polls ───────────────
+  function buildAvatarCard(pollData) {
+    const { poll_id, title, options, vote_counts, winner } = pollData;
+    const slug = poll_id.replace(/^avatar-/, '');
+    const variants = Object.keys(options || {}).sort();
+
+    const btnPrefix   = 'avbtn-'   + poll_id + '-';
+    const countPrefix = 'avcount-' + poll_id + '-';
+    POLL_UI_MAP[poll_id] = { prefix: btnPrefix, countPrefix: countPrefix, options: variants };
+
+    const wrap = document.createElement('div');
+    wrap.className = 'vote-wrap';
+    wrap.setAttribute('data-poll-id', poll_id);
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'vote-title';
+    titleEl.textContent = title || poll_id;
+    wrap.appendChild(titleEl);
+
+    const subtitle = document.createElement('div');
+    subtitle.className = 'vote-subtitle';
+    subtitle.textContent = 'click to vote \u2014 results refresh automatically';
+    wrap.appendChild(subtitle);
+
+    const variantsRow = document.createElement('div');
+    variantsRow.className = 'variants';
+
+    variants.forEach((v) => {
+      const varDiv = document.createElement('div');
+      varDiv.className = 'variant';
+
+      const img = document.createElement('img');
+      img.src = '/static/avatars/' + slug + '_' + v.toLowerCase() + '.gif';
+      img.alt = slug + ' variant ' + v;
+      img.style.width = '128px';
+      img.style.height = '128px';
+      img.style.imageRendering = 'pixelated';
+      img.style.border = '1px solid #2a2a4a';
+
+      const label = document.createElement('div');
+      label.className = 'variant-label';
+      label.textContent = v;
+
+      const desc = document.createElement('div');
+      desc.className = 'variant-desc';
+      desc.textContent = options[v] || '';
+
+      const btn = document.createElement('button');
+      btn.id = btnPrefix + v;
+      btn.className = 'vote-btn';
+      btn.textContent = 'Vote ' + v;
+      btn.onclick = () => castVote(poll_id, v);
+
+      const countEl = document.createElement('div');
+      countEl.id = countPrefix + v;
+      countEl.className = 'vote-count';
+      countEl.textContent = '\u2014 votes';
+
+      varDiv.appendChild(img);
+      varDiv.appendChild(label);
+      varDiv.appendChild(desc);
+      varDiv.appendChild(btn);
+      varDiv.appendChild(countEl);
+      variantsRow.appendChild(varDiv);
+    });
+
+    wrap.appendChild(variantsRow);
+
+    if (vote_counts) {
+      applyPollState(poll_id, vote_counts, winner, yourVotes[poll_id] ?? null);
+    }
+
+    return wrap;
+  }
+
+  // ── Build a generic text-option card for any unknown poll type ──────────────
+  function buildGenericCard(pollData) {
+    const { poll_id, title, description, options, vote_counts, winner } = pollData;
+    const variants = Object.keys(options || {}).sort();
+
+    const btnPrefix   = 'genbtn-'   + poll_id + '-';
+    const countPrefix = 'gencount-' + poll_id + '-';
+    POLL_UI_MAP[poll_id] = { prefix: btnPrefix, countPrefix: countPrefix, options: variants };
+
+    const wrap = document.createElement('div');
+    wrap.className = 'vote-wrap';
+    wrap.setAttribute('data-poll-id', poll_id);
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'vote-title';
+    titleEl.textContent = title || poll_id;
+    wrap.appendChild(titleEl);
+
+    if (description) {
+      const descEl = document.createElement('div');
+      descEl.className = 'vote-subtitle';
+      descEl.textContent = description;
+      wrap.appendChild(descEl);
+    }
+
+    const variantsRow = document.createElement('div');
+    variantsRow.className = 'variants';
+
+    variants.forEach((v) => {
+      const varDiv = document.createElement('div');
+      varDiv.className = 'variant';
+
+      const label = document.createElement('div');
+      label.className = 'variant-label';
+      label.textContent = v;
+
+      const desc = document.createElement('div');
+      desc.className = 'variant-desc';
+      desc.textContent = options[v] || '';
+
+      const btn = document.createElement('button');
+      btn.id = btnPrefix + v;
+      btn.className = 'vote-btn';
+      btn.textContent = 'Vote ' + v;
+      btn.onclick = () => castVote(poll_id, v);
+
+      const countEl = document.createElement('div');
+      countEl.id = countPrefix + v;
+      countEl.className = 'vote-count';
+      countEl.textContent = '\u2014 votes';
+
+      varDiv.appendChild(label);
+      varDiv.appendChild(desc);
+      varDiv.appendChild(btn);
+      varDiv.appendChild(countEl);
+      variantsRow.appendChild(varDiv);
+    });
+
+    wrap.appendChild(variantsRow);
+
+    if (vote_counts) {
+      applyPollState(poll_id, vote_counts, winner, yourVotes[poll_id] ?? null);
+    }
+
+    return wrap;
+  }
+
+  // ── Auth check ──────────────────────────────────────────────────────────────
+  (async function checkAuth() {
+    var loginUrl = '/auth/github?next=' + encodeURIComponent(window.location.pathname);
+    document.getElementById('login-link').href = loginUrl;
+    try {
+      var r = await fetch('/api/me');
+      if (r.status === 401 || r.status === 403) {
+        document.getElementById('auth-prompt').style.display = 'block';
+        document.getElementById('refinery-content').style.display = 'none';
+        return;
+      }
+      var user = await r.json();
+      if (!user || !user.username) {
+        document.getElementById('auth-prompt').style.display = 'block';
+        document.getElementById('refinery-content').style.display = 'none';
+        return;
+      }
+    } catch (e) {
+      document.getElementById('auth-prompt').style.display = 'block';
+      document.getElementById('refinery-content').style.display = 'none';
+      return;
+    }
+    document.getElementById('auth-prompt').style.display = 'none';
+    document.getElementById('refinery-content').style.display = '';
+    initAllPolls();
+  })();
+
+  // ── Main init: fetch all polls, group by prefix, render sections ────────────
+  async function initAllPolls() {
+    let polls;
+    try {
+      const resp = await fetch('/api/polls', { credentials: 'same-origin' });
+      if (!resp.ok) { console.error('polls fetch failed:', resp.status); return; }
+      const data = await resp.json();
+      polls = data.polls || [];
+    } catch (e) {
+      console.error('polls init error:', e);
+      return;
+    }
+
+    // Fetch your_vote for every poll
+    for (const poll of polls) {
+      try {
+        const resp = await fetch('/api/vote/' + poll.poll_id, { credentials: 'same-origin' });
+        if (!resp.ok) continue;
+        const data = await resp.json();
+        if (data.your_vote) yourVotes[poll.poll_id] = data.your_vote;
+      } catch { /* ignore */ }
+    }
+
+    // Group polls by their category prefix (everything before the first '-')
+    const groups = {};
+    for (const poll of polls) {
+      const prefix = poll.poll_id.split('-')[0];
+      if (!groups[prefix]) groups[prefix] = [];
+      groups[prefix].push(poll);
+    }
+
+    const container = document.getElementById('dynamic-poll-sections');
+
+    // Render each group as a section
+    for (const [prefix, groupPolls] of Object.entries(groups)) {
+      const section = document.createElement('div');
+
+      if (prefix === 'sprite') {
+        // Sprite section: grid of persona canvas cards
+        section.className = 'sprite-section';
+        const titleEl = document.createElement('div');
+        titleEl.className = 'sprite-section-title';
+        titleEl.textContent = 'Persona Sprites';
+        section.appendChild(titleEl);
+        const subtitleEl = document.createElement('div');
+        subtitleEl.className = 'sprite-section-subtitle';
+        subtitleEl.textContent = 'vote for your favorite variant of each persona';
+        section.appendChild(subtitleEl);
+        const grid = document.createElement('div');
+        grid.className = 'sprite-grid';
+        for (const poll of groupPolls) {
+          grid.appendChild(buildSpriteCard(poll));
+        }
+        section.appendChild(grid);
+        container.appendChild(section);
+
+      } else if (prefix === 'avatar') {
+        // Avatar GIF polls — show preview images
+        section.className = 'vote-wrap-group';
+        const titleEl = document.createElement('div');
+        titleEl.className = 'sprite-section-title';
+        titleEl.textContent = 'Congress Avatars';
+        section.appendChild(titleEl);
+        const subtitleEl = document.createElement('div');
+        subtitleEl.className = 'sprite-section-subtitle';
+        subtitleEl.textContent = 'vote for your favorite congress avatar';
+        section.appendChild(subtitleEl);
+        for (const poll of groupPolls) {
+          section.appendChild(buildAvatarCard(poll));
+        }
+        container.appendChild(section);
+      } else {
+        // Canvas-rendered polls (congress, commons) or generic unknown polls
+        // Each poll gets its own vote-wrap card rendered into the section
+        section.className = 'vote-wrap-group';
+        for (const poll of groupPolls) {
+          const card = CANVAS_RENDERERS[poll.poll_id]
+            ? buildCanvasCard(poll)
+            : buildGenericCard(poll);
+          section.appendChild(card);
+        }
+        container.appendChild(section);
+      }
+    }
+
+    // Single concluded bucket for all groups
+    applyLayoutBuckets(container);
+
+    // Start periodic refresh
+    setInterval(refreshAllPolls, 5000);
+  }
+  </script>
+</div><!-- /refinery-content -->
+</body>
+</html>

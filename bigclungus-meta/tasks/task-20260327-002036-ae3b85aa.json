@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-002036-ae3b85aa",
+  "title": "Fix inject test to avoid main channel noise",
+  "agent_id": "ae3b85aaab4b7a277",
+  "agent_type": "general-purpose",
+  "session_id": "e3ea5000-d340-46d8-a63c-960e3baff74f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T00:20:36Z",
+      "event": "started",
+      "context": "Fix inject test to avoid main channel noise"
+    },
+    {
+      "ts": "2026-03-27T00:21:24Z",
+      "event": "done",
+      "context": "Done. Changed the inject test message content from `[integration-test] inject endpoint check` to `🧪 inject-health-check` in `/mnt/data/bigclungus-meta/tests/integration_test.py` (line 110). The `user` field stays `\"integration-test\"` as before. Committed as `bb90793` and pushed to main.",
+      "artifacts": []
+    }
+  ]
+}

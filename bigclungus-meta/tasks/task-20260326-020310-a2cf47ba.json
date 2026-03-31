@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-020310-a2cf47ba",
+  "title": "Fix personas tab terminology and modal schema",
+  "agent_id": "a2cf47bafd3b0fe1a",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T02:03:10Z",
+      "event": "started",
+      "context": "Fix personas tab terminology and modal schema"
+    },
+    {
+      "ts": "2026-03-26T02:06:37Z",
+      "event": "done",
+      "context": "Both commits are pushed. Here's a summary of everything changed:\n\n---\n\n## Changes Made\n\n### `/mnt/data/hello-world/congress.html` (committed to `bigclungus/clung.us`, pushed)\n\n**1. Status dropdown in modal** — Options changed from `active` / `fired (severance)` to `eligible` / `ineligible (retired)`. These are now the canonical values the form submits.\n\n**2. Status badge display** — The table status pill now shows human-readable labels: `eligible` stays \"eligible\", `ineligible` shows **\"retired\"...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

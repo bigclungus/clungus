@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-062102-af04f80d",
+  "title": "Streaming SSE endpoint + LLM streaming in serve.py",
+  "agent_id": "af04f80d337e9bff6",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T06:21:02Z",
+      "event": "started",
+      "context": "Streaming SSE endpoint + LLM streaming in serve.py"
+    },
+    {
+      "ts": "2026-03-24T06:22:55Z",
+      "event": "done",
+      "context": "Everything is live. Here's a summary of what was implemented:\n\n**Changes to `/home/clungus/work/hello-world/serve.py`:**\n\n1. **`_active_streams` dict** — Module-level, guarded by `threading.Lock()`. Schema: `{session_id: {identity, display_name, text, done}}`.\n\n2. **`_call_claude_cli`** (renamed from the old implementation) — Now uses `--output-format streaming-json --max-turns 1` via `Popen`. Parses each JSON line for `type == \"assistant\"` messages and extracts text blocks, calling `on_token` p...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

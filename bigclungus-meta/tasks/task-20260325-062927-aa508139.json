@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-062927-aa508139",
+  "title": "Mark stale tasks as done",
+  "agent_id": "aa5081395cdc13e8a",
+  "agent_type": "general-purpose",
+  "session_id": "16a68b39-62d1-4a67-8caa-3fdbe529c5d2",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T06:29:27Z",
+      "event": "started",
+      "context": "Mark stale tasks as done"
+    },
+    {
+      "ts": "2026-03-25T06:30:07Z",
+      "event": "done",
+      "context": "All four tasks have been marked done. Here's a summary:\n\n**Tasks found and updated:**\n\n| Task file | Title | Old status | New status |\n|---|---|---|---|\n| `task-20260325-061408-a061b643.json` | Generate Hume looksmaxxer avatar | `?` (unset) | `done` |\n| `task-20260325-061355-a256fd36.json` | Invoke Hume on pacificgooner question | `?` (unset) | `done` |\n| `task-20260325-061425-af3b0980.json` | Restart claude-bot service after delay | `?` (unset) | `done` |\n| `task-20260325-061218-a8b98268.json` ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

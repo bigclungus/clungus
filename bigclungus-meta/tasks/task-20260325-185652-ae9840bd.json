@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-185652-ae9840bd",
+  "title": "Enhance Discord plugin for reaction context",
+  "agent_id": "ae9840bdedd12d6f4",
+  "agent_type": "general-purpose",
+  "session_id": "4ff95db0-4786-494a-b407-e7f006afa312",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T18:56:52Z",
+      "event": "started",
+      "context": "Enhance Discord plugin for reaction context"
+    },
+    {
+      "ts": "2026-03-25T18:58:51Z",
+      "event": "done",
+      "context": "Posted successfully. Here's a summary of what was done:\n\n**File modified:** `/mnt/data/discord-plugin/server.ts`\n\n**What changed:** The `messageReactionAdd` handler was already enhanced in the working directory (the uncommitted diff was the enhancement itself). The changes were committed and pushed:\n\n- **Removed** the 500-char truncation on message content\n- **Added** message timestamp (`fullMsg.createdAt.toISOString()`)\n- **Added** attachment metadata: iterates `fullMsg.attachments` and formats...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

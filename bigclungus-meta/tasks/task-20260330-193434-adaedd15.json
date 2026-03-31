@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-193434-adaedd15",
+  "title": "Send avatar URL to Crundle agent",
+  "agent_id": "adaedd1571ef83e7b",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T19:34:33Z",
+      "event": "started",
+      "context": "Send avatar URL to Crundle agent"
+    },
+    {
+      "ts": "2026-03-30T19:35:55Z",
+      "event": "done",
+      "context": "The Discord CDN URL `https://cdn.discordapp.com/attachments/1485343472952148008/1488259435519541338/oc0xn0zwr08g1.png` has expired — it returned \"This content is no longer available.\" (36 bytes of ASCII, not an image).\n\nThe avatar file was not saved and the frontmatter was not updated since the image doesn't exist to commit. To complete this task, a fresh/valid URL for the Crundle avatar image is needed.\n\nSummary:\n- Agent `aa71af6f2bf088981` cannot be directly messaged — there is no inter-agent ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

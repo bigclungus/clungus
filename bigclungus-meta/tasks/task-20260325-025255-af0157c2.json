@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-025255-af0157c2",
+  "title": "Fire CongressWorkflow for Spider-Man torrent legality",
+  "agent_id": "af0157c21c71d1a2e",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T02:52:55Z",
+      "event": "started",
+      "context": "Fire CongressWorkflow for Spider-Man torrent legality"
+    },
+    {
+      "ts": "2026-03-25T02:53:32Z",
+      "event": "done",
+      "context": "CongressWorkflow started successfully.\n\nWorkflow ID: `congress-1774407208`\n\nThe workflow is now running on the `listings-queue` task queue with the topic \"Is it legal for jaboostin to use BigClungus to download Spider-Man torrents on a seedbox in Sweden?\" tied to message `1486196123168411751` in chat `1485343472952148008`. The congress thread and verdict will post to Discord when deliberation completes.",
+      "artifacts": []
+    }
+  ]
+}

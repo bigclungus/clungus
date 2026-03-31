@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-000053-ad1cc4f7",
+  "title": "Investigate commons-server WebSocket opcode 4 error",
+  "agent_id": "ad1cc4f75355b5b67",
+  "agent_type": "general-purpose",
+  "session_id": "e3ea5000-d340-46d8-a63c-960e3baff74f",
+  "discord_message_id": "1486877495910207528",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T00:00:53Z",
+      "event": "started",
+      "context": "Investigate commons-server WebSocket opcode 4 error"
+    },
+    {
+      "ts": "2026-03-27T00:06:48Z",
+      "event": "done",
+      "context": "7/7. Here's the summary:\n\n---\n\n**Root cause:** The \"unexpected opcode 4\" error was a bug in the integration test's raw WebSocket handshake reader, not in commons-server itself. The server is fine.\n\nBun coalesces the HTTP 101 Upgrade response and the first WS frame into a single TCP segment roughly 40% of the time. The test's HTTP response reader (`recv(1024)`) would grab both the 166-byte HTTP response AND the beginning of the WS welcome frame (~858 bytes) in one call. After finding `\\r\\n\\r\\n`, ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

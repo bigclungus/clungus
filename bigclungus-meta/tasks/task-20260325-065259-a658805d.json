@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-065259-a658805d",
+  "title": "Diagnose stalled tasks",
+  "agent_id": "a658805d95a30d56a",
+  "agent_type": "general-purpose",
+  "session_id": "a73508af-b739-48f4-b9cb-a7829a4a15c0",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T06:52:59Z",
+      "event": "started",
+      "context": "Diagnose stalled tasks"
+    },
+    {
+      "ts": "2026-03-25T06:54:39Z",
+      "event": "done",
+      "context": "The inject endpoint is unavailable from this subagent context (it's only available to the main bot process). That's expected — the inject is meant to be called from within the bot's own process. The diagnosis is complete.\n\n---\n\nHere is the full diagnostic report:\n\n**Stalled tasks: 7 total** (all stuck at `started` with no `done` log)\n\n| Task ID | Title | Diagnosis |\n|---|---|---|\n| `abe3d7ff` | Restart claude-bot service | Bot is running and healthy since 06:42 UTC — this task predates the resta...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

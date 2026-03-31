@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-065057-af36ee52",
+  "title": "Debug Ibrahim portrait display",
+  "agent_id": "af36ee529041b3cb5",
+  "agent_type": "general-purpose",
+  "session_id": "a73508af-b739-48f4-b9cb-a7829a4a15c0",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T06:50:57Z",
+      "event": "started",
+      "context": "Debug Ibrahim portrait display"
+    },
+    {
+      "ts": "2026-03-25T06:51:48Z",
+      "event": "done",
+      "context": "Now the picture is complete. Here's the full diagnosis:\n\n---\n\n**Root cause: `personas.db` has a stale `avatar_url` for `hiring-manager`.**\n\nTwo things are going wrong, for two different pages:\n\n**1. Congress viewer (`/congress`) — shows \"just the scales\" (DiceBear robot)**\n\nThe viewer fetches `/api/agents`, which reads directly from the `.md` files — so it correctly picks up `avatar_url: /static/avatars/hiring-manager.gif`. That URL resolves fine at `clung.us/static/avatars/hiring-manager.gif` s...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

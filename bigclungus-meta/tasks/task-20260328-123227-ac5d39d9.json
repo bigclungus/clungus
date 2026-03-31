@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-123227-ac5d39d9",
+  "title": "Investigate timeline entries added",
+  "agent_id": "ac5d39d9b478bdbe7",
+  "agent_type": "general-purpose",
+  "session_id": "9d3a7a6c-fa33-4af8-9205-836e0c432301",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T12:32:27Z",
+      "event": "started",
+      "context": "Investigate timeline entries added"
+    },
+    {
+      "ts": "2026-03-28T12:33:17Z",
+      "event": "done",
+      "context": "Here are the findings:\n\n## The 16 New Entries (IDs 52-67)\n\nAll 16 have `source=git` -- they were auto-ingested by `timeline_ingest.py` and then bulk-approved by `timeline_approve.py --approve-all`. Here they are:\n\n| ID | Date | Category | Title |\n|----|------|----------|-------|\n| 52 | 2026-03-27 | feature | feat: add moffstation via search API, fetch per-server pages |\n| 53 | 2026-03-27 | feature | feat: add RunPod Pepe 70B routing alongside Grok |\n| 54 | 2026-03-27 | milestone | Replace vis-ne...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

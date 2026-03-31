@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-062028-a4c3da0b",
+  "title": "Commit WASD fix + Bloodfeast sprites regen",
+  "agent_id": "a4c3da0ba9ffd0d34",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T06:20:28Z",
+      "event": "started",
+      "context": "Commit WASD fix + Bloodfeast sprites regen"
+    },
+    {
+      "ts": "2026-03-26T06:23:09Z",
+      "event": "done",
+      "context": "Both tasks done.\n\n**1. WASD fix** — committed and pushed as `7f15a91`. The modal check was using inline style inspection instead of the `congressModalOpen` flag.\n\n**2. Bloodfeast sprites** — all three functions in `/mnt/data/hello-world/sprites-batch3.js` replaced and pushed as `6a63124`. The new sprites are ~1.5x wider (30px, centered on cx) and all share: massive rotund blob body with belly rolls, wheelchair with spoked wheels and footrests, oxygen tank on the right side with green tubing runn...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

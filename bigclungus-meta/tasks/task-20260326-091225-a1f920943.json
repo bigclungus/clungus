@@ -1,0 +1,36 @@
+{
+  "id": "task-20260326-091225-a1f920943",
+  "title": "Pull and analyze journalctl logs for all 4 clunger.service crashes in the last 24h",
+  "agent_id": "congress-62",
+  "agent_type": "congress",
+  "session_id": "congress-0062",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "requires_approval": false,
+  "log": [
+    {
+      "event": "started",
+      "ts": "2026-03-26T09:12:25Z",
+      "message": "Created from Congress #62 verdict on: [idea]: service clunger.service restarted 4x in last 24h \u2014 possible flakiness (GitHub issue: https:/"
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-26T09:12:25Z",
+      "message": "Source verdict: Four restarts in 24 hours is a pattern, not noise \u2014 this needs root-cause investigation before any fix is applied. The danger here is someone slapping a restart loop or watchdog on it and calling it s..."
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-26T09:13:35.313233Z",
+      "message": "Analyzed clunger restarts: NOT 4 restarts but ~60+ in 24h. Found 3 distinct crash categories: (1) 3x exit-code=1 crashes at 17:54-17:55 UTC Mar 25 \u2014 Anthropic API returning HTTP 400 invalid_request_error killing uncaught promise rejections before global handler was added; (2) 2x OOM-kill at 01:39 and 04:23 UTC Mar 26 \u2014 process killed by kernel OOM; (3) All other stops were intentional deploys correlating exactly with git commits. The 400 crashes and OOM kills are real flakiness. OOM at 04:23 had 316MB peak \u2014 may be congress session memory leak."
+    },
+    {
+      "event": "done",
+      "ts": "2026-03-26T09:14:08.872755Z",
+      "message": "Investigation complete. Issue #53 kept open \u2014 5 genuine crashes found (3x API 400 unhandled promise kills pre-global-handler, 2x OOM kills including one at 316MB peak). Commented findings at https://github.com/bigclungus/bigclungus-meta/issues/53#issuecomment-4132935559. 400 crashes already fixed. OOM needs investigation."
+    }
+  ],
+  "status": "done"
+}

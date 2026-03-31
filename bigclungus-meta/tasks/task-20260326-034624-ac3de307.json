@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-034624-ac3de307",
+  "title": "Expunge 1998 service and update diagram",
+  "agent_id": "ac3de3071e7a3c8e1",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T03:46:24Z",
+      "event": "started",
+      "context": "Expunge 1998 service and update diagram"
+    },
+    {
+      "ts": "2026-03-26T03:49:01Z",
+      "event": "done",
+      "context": "Done. Here's a summary of what was done:\n\n**Service shutdown:**\n- `1998.service` was running (python3 -m http.server 8082) — stopped and disabled\n- Systemd unit file at `/home/clungus/.config/systemd/user/1998.service` deleted, daemon reloaded\n\n**Cloudflare tunnel:** Already clean — no `1998.clung.us` entry existed in `/home/clungus/.cloudflared/config.yml`\n\n**Docs updated (4 files):**\n- `/home/clungus/work/bigclungus-meta/CLAUDE.md` — removed from port table, service list, and important paths\n-...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

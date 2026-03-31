@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-153254-a43e854a",
+  "title": "Code reuse review",
+  "agent_id": "a43e854a5acccd1f3",
+  "agent_type": "general-purpose",
+  "session_id": "4a58e62d-fa69-4ca2-a0a8-edcc21bb73c1",
+  "discord_message_id": "1486386985751810369",
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T15:32:54Z",
+      "event": "started",
+      "context": "Code reuse review"
+    },
+    {
+      "ts": "2026-03-25T15:33:42Z",
+      "event": "done",
+      "context": "Good, I have a complete picture. Here are the findings:\n\n---\n\n## Findings\n\n### 1. FalkorDB connection pattern — duplicated, extractable\n\nThe identical connection boilerplate exists in two places:\n\n**`/mnt/data/temporal-workflows/activities/congress_act.py`, lines 82–90:**\n```python\nimport falkordb as _falkordb\nr = _falkordb.FalkorDB(\n    host=os.environ.get(\"FALKORDB_HOST\", \"localhost\"),\n    port=int(os.environ.get(\"FALKORDB_PORT\", \"6379\")),\n)\ngraph = r.select_graph(\"discord_history\")\n```\n\n**`/m...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

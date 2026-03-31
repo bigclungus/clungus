@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-033310-a9ced1fe",
+  "title": "Fire spoon congress with discord_user passed correctly",
+  "agent_id": "a9ced1fed66a2affe",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T03:33:10Z",
+      "event": "started",
+      "context": "Fire spoon congress with discord_user passed correctly"
+    },
+    {
+      "ts": "2026-03-25T03:33:17Z",
+      "event": "done",
+      "context": "Workflow started successfully. The workflow ID is `congress-1774409596`.",
+      "artifacts": []
+    }
+  ]
+}

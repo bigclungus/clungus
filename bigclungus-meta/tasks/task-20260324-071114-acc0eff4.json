@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-071114-acc0eff4",
+  "title": "Enrich Uncle Bob with real Clean Code doctrine",
+  "agent_id": "acc0eff40a0c92908",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T07:11:14Z",
+      "event": "started",
+      "context": "Enrich Uncle Bob with real Clean Code doctrine"
+    },
+    {
+      "ts": "2026-03-24T07:13:41Z",
+      "event": "done",
+      "context": "Done. Here's what was changed in `/home/clungus/work/bigclungus-meta/agents/fired/uncle-bob.md`:\n\n**What changed:** The prose body was fully rewritten. The old version made vague Clean Code gestures (\"functions should do one thing,\" \"SOLID is not optional\"). The new version gives him genuine chapter-and-verse depth:\n\n- He now cites specific heuristic codes inline when making points — F2 (output arguments), F3 (flag arguments), C5 (commented-out code), G5 (duplication), G6/G34 (abstraction levels...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

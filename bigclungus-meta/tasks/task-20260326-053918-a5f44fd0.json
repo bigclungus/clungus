@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-053918-a5f44fd0",
+  "title": "Slow down NPC movement speeds in commons",
+  "agent_id": "a5f44fd032d807fbd",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": "1486600194073165904",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T05:39:18Z",
+      "event": "started",
+      "context": "Slow down NPC movement speeds in commons"
+    },
+    {
+      "ts": "2026-03-26T05:39:50Z",
+      "event": "done",
+      "context": "Done. Both changes applied and pushed:\n\n- **Line 541** — speed ternary: Galactus 0.4→0.2, Ibrahim 0.5→0.25, The-kid 2.2→1.2, Wolf 1.6→0.8, normal 0.8→0.4\n- **Line 759** — pause ternary: Ibrahim 60→40, Galactus 40→30, normal `15 + random*30` → `8 + random*20` (The-kid kept at 2)\n\nCommit `4afe589` pushed to `main`. No service restart needed.",
+      "artifacts": []
+    }
+  ]
+}

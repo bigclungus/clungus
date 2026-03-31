@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-045721-a608b1a8",
+  "title": "Regenerate TTS test clip",
+  "agent_id": "a608b1a83e1b945c9",
+  "agent_type": "general-purpose",
+  "session_id": "c292e4ea-af5d-4856-aa25-4a8040477813",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T04:57:21Z",
+      "event": "started",
+      "context": "Regenerate TTS test clip"
+    },
+    {
+      "ts": "2026-03-28T04:57:31Z",
+      "event": "done",
+      "context": "The TTS clip was generated successfully. The output file is at `/tmp/vc-test2.wav`.",
+      "artifacts": []
+    }
+  ]
+}

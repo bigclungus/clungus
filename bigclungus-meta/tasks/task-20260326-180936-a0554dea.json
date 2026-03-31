@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-180936-a0554dea",
+  "title": "Fix warthog z-order bug in grazing.html",
+  "agent_id": "a0554dea9996e97cb",
+  "agent_type": "general-purpose",
+  "session_id": "ef1a5e01-b3c3-41d6-abd3-172f68d92559",
+  "discord_message_id": "1486788855683350588",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T18:09:36Z",
+      "event": "started",
+      "context": "Fix warthog z-order bug in grazing.html"
+    },
+    {
+      "ts": "2026-03-26T18:10:48Z",
+      "event": "done",
+      "context": "Done. Here's what was implemented:\n\n**`drawForegroundTiles()` function** added at line 3009 in `/mnt/data/hello-world/grazing.html`:\n- Computes the warthog bounding box from `warthog.x/y`, `WARTHOG_W` (60), `WARTHOG_H` (30)\n- Calculates the tile range that could overlap that bbox (no full-map scan)\n- For each tile of type 4 (tree) or 5 (rock) in that range, checks if `tileCenterY > wCenterY` (tile visually in front of warthog)\n- If so, redraws it directly on `ctx` using the exact same drawing co...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

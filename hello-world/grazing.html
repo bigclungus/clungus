@@ -1,0 +1,3484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Commons — clung.us</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="stylesheet" href="/sitenav.css?v=d004dbf">
+  <script src="/sitenav.js?v=d004dbf" defer></script>
+  <script src="/sprites-batch1.js?v=1594dea"></script>
+  <script src="/sprites-batch2.js?v=1594dea"></script>
+  <script src="/sprites-batch3.js?v=1594dea"></script>
+  <script src="/sprites-batch4.js?v=1594dea"></script>
+  <script src="/sprites-batch5.js?v=1594dea"></script>
+  <style>
+    body {
+      margin: 0;
+      background: var(--bg, #0d0d1a);
+      color: var(--text, #e0e0ff);
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .commons-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 12px 32px;
+      flex: 1;
+    }
+    .commons-title {
+      font-size: 22px;
+      letter-spacing: 0.15em;
+      color: #4ecca3;
+      margin: 10px 0 6px;
+      text-transform: uppercase;
+      font-weight: 700;
+      text-shadow: 0 0 12px #4ecca388;
+    }
+    .commons-sub {
+      font-size: 11px;
+      color: #555570;
+      margin: 0 0 12px;
+      letter-spacing: 0.08em;
+    }
+    canvas {
+      display: block;
+      border: 2px solid #2a2a40;
+      border-radius: 4px;
+      image-rendering: pixelated;
+      cursor: default;
+      max-width: 100%;
+    }
+    .tooltip {
+      position: fixed;
+      background: #11111f;
+      border: 1px solid #4ecca3;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-size: 11px;
+      color: #e0e0ff;
+      pointer-events: none;
+      display: none;
+      z-index: 100;
+      max-width: 180px;
+    }
+    .tooltip .tt-name { color: #4ecca3; font-weight: 700; margin-bottom: 3px; }
+    .tooltip .tt-role { color: #888898; font-size: 10px; }
+    .tooltip img { display: block; width: 32px; height: 32px; margin-bottom: 5px; image-rendering: pixelated; border-radius: 2px; }
+    #load-error {
+      color: #e94560;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+    /* ── Invoke overlay ──────────────────────────────────────────────── */
+    #invoke-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(0,0,0,0.75);
+    }
+    #invoke-overlay.active { display: flex; align-items: center; justify-content: center; gap: 20px; }
+    #invoke-portrait-col {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    #npc-portrait {
+      image-rendering: pixelated;
+      display: block;
+    }
+    #invoke-dialog-col {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    #invoke-box {
+      background: #0a0f1a;
+      border: 2px solid #00ffaa;
+      border-radius: 8px;
+      padding: 18px 20px 16px;
+      width: 420px;
+      max-width: 90vw;
+      box-shadow: 0 0 24px #00ffaa22;
+    }
+    #invoke-title {
+      color: #00ffaa;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: monospace;
+      letter-spacing: 0.05em;
+      margin-bottom: 10px;
+    }
+    #invoke-input {
+      width: 100%;
+      box-sizing: border-box;
+      background: #111827;
+      border: none;
+      border-bottom: 1px solid #2a2a40;
+      border-radius: 0;
+      color: #e0e0ff;
+      font-family: monospace;
+      font-size: 13px;
+      padding: 7px 9px;
+      outline: none;
+      resize: none;
+    }
+    #invoke-input:focus { border-bottom-color: #00ffaa; }
+    #invoke-hint {
+      color: #4a5568;
+      font-size: 10px;
+      margin-top: 6px;
+    }
+    #invoke-cancel {
+      background: none;
+      border: none;
+      color: #4a5568;
+      font-family: inherit;
+      font-size: 10px;
+      cursor: pointer;
+      margin-top: 8px;
+      padding: 0;
+    }
+    #invoke-cancel:hover { color: #e94560; }
+    /* ── Persona audition concept card ───────────────────────────────────────── */
+    #audition-card {
+      display: none;
+      position: fixed;
+      z-index: 250;
+      background: #0d0d1a;
+      border: 1px solid #a78bfa;
+      border-radius: 6px;
+      padding: 14px 16px 12px;
+      width: 280px;
+      max-width: 90vw;
+      box-shadow: 0 0 20px #a78bfa44;
+      pointer-events: auto;
+    }
+    #audition-card.active { display: block; }
+    #audition-card-name {
+      color: #a78bfa;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      margin-bottom: 2px;
+    }
+    #audition-card-title {
+      color: #666688;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    #audition-card-traits {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .audition-trait {
+      background: #1a1a2e;
+      border: 1px solid #2a2a50;
+      border-radius: 3px;
+      color: #8888aa;
+      font-size: 9px;
+      padding: 2px 6px;
+      letter-spacing: 0.05em;
+    }
+    #audition-card-desc {
+      color: #9898b8;
+      font-size: 10px;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+    #audition-card-actions {
+      display: flex;
+      gap: 8px;
+    }
+    #audition-keep-btn {
+      flex: 1;
+      background: #a78bfa22;
+      border: 1px solid #a78bfa;
+      border-radius: 4px;
+      color: #a78bfa;
+      font-family: inherit;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 6px 0;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    #audition-keep-btn:hover { background: #a78bfa44; }
+    #audition-dismiss-btn {
+      flex: 1;
+      background: none;
+      border: 1px solid #333355;
+      border-radius: 4px;
+      color: #555570;
+      font-family: inherit;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      padding: 6px 0;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    #audition-dismiss-btn:hover { border-color: #e94560; color: #e94560; }
+    #music-btn {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      background: #11111f;
+      border: 1px solid #2a2a40;
+      border-radius: 4px;
+      color: #e0e0ff;
+      font-size: 18px;
+      padding: 6px 10px;
+      cursor: pointer;
+      z-index: 50;
+      font-family: monospace;
+    }
+    #music-btn:hover { border-color: #4ecca3; }
+    /* ── Congress modal ───────────────────────────────────────────────── */
+    #congress-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      background: rgba(0,0,0,0.72);
+      align-items: center;
+      justify-content: center;
+    }
+    #congress-modal {
+      background: #0d0d1a;
+      border: 2px solid #4ecca3;
+      border-radius: 8px;
+      padding: 28px 32px 24px;
+      width: 380px;
+      max-width: 92vw;
+      box-shadow: 0 0 40px #4ecca344;
+      position: relative;
+      text-align: center;
+    }
+    #congress-modal-close {
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      background: none;
+      border: none;
+      color: #555570;
+      font-size: 18px;
+      cursor: pointer;
+      font-family: inherit;
+      line-height: 1;
+    }
+    #congress-modal-close:hover { color: #e94560; }
+    #congress-modal-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #4ecca3;
+      letter-spacing: 0.15em;
+      text-shadow: 0 0 14px #4ecca366;
+      margin-bottom: 12px;
+    }
+    #congress-modal-body {
+      color: #888898;
+      font-size: 12px;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    #congress-modal-link {
+      display: inline-block;
+      background: none;
+      border: 1px solid #4ecca3;
+      border-radius: 4px;
+      color: #4ecca3;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 8px 20px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    #congress-modal-link:hover { background: #4ecca322; }
+    #auth-prompt {
+      text-align: center;
+      padding: 120px 20px;
+    }
+    #auth-prompt h2 {
+      font-size: 1.4rem;
+      color: #4ecca3;
+      margin-bottom: 10px;
+    }
+    #auth-prompt p {
+      color: #888;
+      margin-bottom: 28px;
+      font-size: 0.9rem;
+    }
+    #auth-prompt a {
+      display: inline-block;
+      background: #24292e;
+      color: #fff;
+      padding: 12px 28px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 1rem;
+      font-weight: 500;
+      border: 1px solid rgba(255,255,255,0.12);
+      transition: background 0.15s ease;
+    }
+    #auth-prompt a:hover { background: #2f363d; }
+  </style>
+</head>
+<body>
+  <div id="auth-prompt" style="display:none;">
+    <h2>Sign in to visit the commons</h2>
+    <p>Authentication required</p>
+    <a id="login-link" href="/auth/github">Sign in with GitHub</a>
+  </div>
+  <div id="commons-content" style="display:none;">
+  <div class="commons-wrap">
+    <canvas id="map" width="1000" height="700"></canvas>
+    <div id="load-error"></div>
+  </div>
+  <div class="tooltip" id="tooltip">
+    <img id="tt-avatar" src="" alt="">
+    <div class="tt-name" id="tt-name"></div>
+    <div class="tt-role" id="tt-role"></div>
+  </div>
+
+  <!-- Click-to-invoke overlay -->
+  <div id="invoke-overlay">
+    <div id="invoke-portrait-col">
+      <canvas id="npc-portrait" width="160" height="320"></canvas>
+    </div>
+    <div id="invoke-dialog-col">
+      <div id="invoke-box">
+        <div id="invoke-title">speak to <span id="invoke-persona-label"></span></div>
+        <textarea id="invoke-input" rows="3" placeholder="ask something..."></textarea>
+        <div id="invoke-hint">Enter to send · Shift+Enter for newline</div>
+        <button id="invoke-cancel">cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden YouTube player -->
+  <div id="yt-player-wrap" style="position:fixed;left:-1px;top:-1px;width:0;height:0;overflow:hidden;pointer-events:none;">
+    <div id="yt-player"></div>
+  </div>
+
+  <!-- Music toggle button -->
+  <button id="music-btn" title="Toggle ambient music">🔇</button>
+
+  <!-- Congress modal -->
+  <div id="congress-modal-overlay">
+    <div id="congress-modal">
+      <button id="congress-modal-close" title="Close (Esc)">✕</button>
+      <div id="congress-modal-title">⚖️ CONGRESS</div>
+      <div id="congress-modal-body">
+        The congress chamber awaits.<br>
+        Sessions are broadcast live when in progress.
+      </div>
+      <a id="congress-modal-link" href="/congress" target="_blank" rel="noopener">Open Congress →</a>
+    </div>
+  </div>
+
+  <!-- Persona audition concept card -->
+  <div id="audition-card">
+    <div id="audition-card-name"></div>
+    <div id="audition-card-title"></div>
+    <div id="audition-card-traits"></div>
+    <div id="audition-card-desc"></div>
+    <div id="audition-card-actions">
+      <button id="audition-keep-btn">Keep ✦</button>
+      <button id="audition-dismiss-btn">Dismiss</button>
+    </div>
+  </div>
+</div><!-- /commons-content -->
+
+<script>
+(function() {
+  var loginUrl = '/auth/github?next=' + encodeURIComponent(window.location.pathname);
+  document.getElementById('login-link').href = loginUrl;
+
+  fetch('/api/me')
+    .then(function(r) {
+      if (r.status === 401 || r.status === 403) {
+        document.getElementById('auth-prompt').style.display = 'block';
+        document.getElementById('commons-content').style.display = 'none';
+        window.__commons_authed = false;
+        return null;
+      }
+      return r.json();
+    })
+    .then(function(user) {
+      if (!user || !user.username) {
+        document.getElementById('auth-prompt').style.display = 'block';
+        document.getElementById('commons-content').style.display = 'none';
+        window.__commons_authed = false;
+        return;
+      }
+      document.getElementById('auth-prompt').style.display = 'none';
+      document.getElementById('commons-content').style.display = '';
+      window.__commons_authed = true;
+    })
+    .catch(function() {
+      document.getElementById('auth-prompt').style.display = 'block';
+      document.getElementById('commons-content').style.display = 'none';
+      window.__commons_authed = false;
+    });
+})();
+</script>
+
+<script>
+(function () {
+'use strict';
+
+// ── Constants ──────────────────────────────────────────────────────────────────
+var W = 1000, H = 700;
+var TILE = 20;
+var COLS = Math.floor(W / TILE); // 50
+var ROWS = Math.floor(H / TILE); // 35
+
+// ── Persona audition system ─────────────────────────────────────────────────────
+var AUDITION_URL = '';
+var auditionWalkers = [];
+var auditionLastFetch = 0;
+var auditionHoveredId = null;
+var auditionCardWalkerId = null;
+var auditionWalkerY = 18 * 20 + 10; // pixel y (TILE*18 center)
+
+function fetchAuditionWalkers() {
+  var now = Date.now();
+  if (now - auditionLastFetch < 2000) return;
+  auditionLastFetch = now;
+  fetch(AUDITION_URL + '/api/audition/walkers')
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(data) { if (data) auditionWalkers = data; })
+    .catch(function() {});
+}
+
+function drawAuditionWalkers() {
+  for (var i = 0; i < auditionWalkers.length; i++) {
+    var w = auditionWalkers[i];
+    // Skip walkers that haven't entered the visible canvas yet
+    if (w.x < 0) continue;
+    var wx = Math.round(w.x);
+    var wy = auditionWalkerY;
+    // Simple humanoid silhouette (similar to drawCharacter but more mysterious)
+    var color = w.avatar_color || '#a78bfa';
+    var isHovered = (w.id === auditionHoveredId);
+
+    if (isHovered) {
+      // Glow behind paused walker
+      ctx.save();
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 12;
+    }
+
+    // Shadow
+    ctx.fillStyle = '#00000044';
+    ctx.fillRect(wx - 4 + 2, wy + 12 - 2, 8, 4);
+
+    // Body
+    ctx.fillStyle = color;
+    ctx.fillRect(wx - 4, wy, 8, 12);
+
+    // Head
+    ctx.fillStyle = lighten(color, 20);
+    ctx.fillRect(wx - 3, wy - 6, 6, 6);
+
+    // Eyes
+    ctx.fillStyle = '#00000088';
+    ctx.fillRect(wx - 2, wy - 5, 1, 2);
+    ctx.fillRect(wx + 1, wy - 5, 1, 2);
+
+    if (isHovered) {
+      ctx.restore();
+      // Name + title bubble above
+      var bubLines = [w.name, w.title];
+      drawBubble(wx, wy - 8, bubLines, 1.0);
+    } else {
+      // Subtle "?" indicator above non-paused walkers
+      ctx.save();
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = color + 'aa';
+      ctx.fillText('?', wx, wy - 10);
+      ctx.restore();
+    }
+  }
+}
+
+// Audition card UI elements
+var auditionCard = document.getElementById('audition-card');
+var auditionCardName = document.getElementById('audition-card-name');
+var auditionCardTitle = document.getElementById('audition-card-title');
+var auditionCardTraits = document.getElementById('audition-card-traits');
+var auditionCardDesc = document.getElementById('audition-card-desc');
+var auditionKeepBtn = document.getElementById('audition-keep-btn');
+var auditionDismissBtn = document.getElementById('audition-dismiss-btn');
+
+function showAuditionCard(walker, clientX, clientY) {
+  auditionCardWalkerId = walker.id;
+  auditionCardName.textContent = walker.name;
+  auditionCardTitle.textContent = walker.title;
+  auditionCardTraits.innerHTML = walker.traits.map(function(t) {
+    return '<span class="audition-trait">' + t + '</span>';
+  }).join('');
+  auditionCardDesc.textContent = walker.description;
+  // Position card near walker but ensure it's visible
+  var cardLeft = Math.min(clientX + 20, window.innerWidth - 300);
+  var cardTop = Math.max(clientY - 20, 10);
+  auditionCard.style.left = cardLeft + 'px';
+  auditionCard.style.top = cardTop + 'px';
+  auditionCard.classList.add('active');
+}
+
+function hideAuditionCard() {
+  auditionCard.classList.remove('active');
+  auditionCardWalkerId = null;
+}
+
+auditionKeepBtn.addEventListener('click', function() {
+  var id = auditionCardWalkerId;
+  if (!id) return;
+  hideAuditionCard();
+  fetch(AUDITION_URL + '/api/audition/keep', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: id }),
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      // Remove from local list
+      auditionWalkers = auditionWalkers.filter(function(w) { return w.id !== id; });
+      auditionHoveredId = null;
+    })
+    .catch(function(err) { console.error('[audition] keep failed:', err); });
+});
+
+auditionDismissBtn.addEventListener('click', function() {
+  var id = auditionCardWalkerId;
+  if (!id) return;
+  hideAuditionCard();
+  fetch(AUDITION_URL + '/api/audition/dismiss', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: id }),
+  })
+    .then(function() {
+      auditionWalkers = auditionWalkers.filter(function(w) { return w.id !== id; });
+      auditionHoveredId = null;
+    })
+    .catch(function(err) { console.error('[audition] dismiss failed:', err); });
+});
+
+// ── Chunk system ───────────────────────────────────────────────────────────────
+var chunkX = 0, chunkY = 0;
+
+function chunkSeed(cx, cy) {
+  var h = cx * 374761393 + cy * 668265263;
+  h = (h ^ (h >> 13)) * 1274126177;
+  return h ^ (h >> 16);
+}
+
+function seededRand(seed) {
+  return function() {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function generateChunk(cx, cy) {
+  var m = [];
+  for (var r = 0; r < ROWS; r++) {
+    m.push(new Uint8Array(COLS));
+  }
+
+  var rng = seededRand(chunkSeed(cx, cy));
+
+  // Scatter trees (~10%) — keep 2-tile border clear
+  for (var r = 2; r < ROWS - 2; r++) {
+    for (var c = 2; c < COLS - 2; c++) {
+      // Keep center 20x12 area mostly clear for NPCs
+      var inCenter = (c >= 15 && c <= 35 && r >= 12 && r <= 23);
+      if (inCenter) continue;
+      var roll = rng();
+      if (roll < 0.10) {
+        m[r][c] = 4; // tree
+      }
+    }
+  }
+
+  // Scatter water clusters (~5%)
+  var numPonds = 1 + Math.floor(rng() * 3);
+  for (var p = 0; p < numPonds; p++) {
+    var pr = 5 + Math.floor(rng() * (ROWS - 12));
+    var pc = 5 + Math.floor(rng() * (COLS - 12));
+    var pw = 3 + Math.floor(rng() * 5);
+    var ph = 2 + Math.floor(rng() * 4);
+    for (var wr = pr; wr < Math.min(pr + ph, ROWS - 3); wr++) {
+      for (var wc = pc; wc < Math.min(pc + pw, COLS - 3); wc++) {
+        m[wr][wc] = 2;
+      }
+    }
+  }
+
+  // Scatter rocks
+  var numRocks = 3 + Math.floor(rng() * 6);
+  for (var k = 0; k < numRocks; k++) {
+    var rr = 2 + Math.floor(rng() * (ROWS - 4));
+    var rc = 2 + Math.floor(rng() * (COLS - 4));
+    if (m[rr][rc] === 0) m[rr][rc] = 5;
+  }
+
+  // Add 1-2 path corridors (grass strips through tree areas)
+  var numPaths = 1 + Math.floor(rng() * 2);
+  for (var pp = 0; pp < numPaths; pp++) {
+    if (rng() < 0.5) {
+      // Horizontal strip
+      var pathRow = 3 + Math.floor(rng() * (ROWS - 6));
+      for (var pc2 = 0; pc2 < COLS; pc2++) {
+        if (m[pathRow][pc2] === 4 || m[pathRow][pc2] === 5) m[pathRow][pc2] = 1;
+      }
+    } else {
+      // Vertical strip
+      var pathCol = 3 + Math.floor(rng() * (COLS - 6));
+      for (var pr2 = 0; pr2 < ROWS; pr2++) {
+        if (m[pr2][pathCol] === 4 || m[pr2][pathCol] === 5) m[pr2][pathCol] = 1;
+      }
+    }
+  }
+
+  // Always clear entry/exit corridors at each edge (middle 10 tiles)
+  var midC = Math.floor(COLS / 2);
+  var midR = Math.floor(ROWS / 2);
+  for (var i = -5; i <= 5; i++) {
+    // Top edge
+    if (m[0][midC + i] !== 0) m[0][midC + i] = 0;
+    if (m[1][midC + i] !== 0) m[1][midC + i] = 0;
+    // Bottom edge
+    if (m[ROWS - 1][midC + i] !== 0) m[ROWS - 1][midC + i] = 0;
+    if (m[ROWS - 2][midC + i] !== 0) m[ROWS - 2][midC + i] = 0;
+    // Left edge
+    if (m[midR + i][0] !== 0) m[midR + i][0] = 0;
+    if (m[midR + i][1] !== 0) m[midR + i][1] = 0;
+    // Right edge
+    if (m[midR + i][COLS - 1] !== 0) m[midR + i][COLS - 1] = 0;
+    if (m[midR + i][COLS - 2] !== 0) m[midR + i][COLS - 2] = 0;
+  }
+
+  return m;
+}
+
+// ── Sprite winner system ────────────────────────────────────────────────────────
+// Maps npc.name → winning variant letter ('A'|'B'|'C') once quorum is reached
+var SPRITE_WINNERS = {};
+
+// Maps npc.name (API slug) → sprite function ID (used in drawSprite_<id>_<letter>)
+// and poll slug (used in /api/vote/results?poll_id=sprite-<slug>)
+var SPRITE_SLUG_MAP = {
+  'chairman':   { id: 'chairman',   pollSlug: 'chairman'  },
+  'critic':     { id: 'critic',     pollSlug: 'critic'    },
+  'architect':  { id: 'architect',  pollSlug: 'architect' },
+  'ux':         { id: 'ux',         pollSlug: 'ux'        },
+  'designer':   { id: 'designer',   pollSlug: 'designer'  },
+  'galactus':   { id: 'galactus',   pollSlug: 'galactus'  },
+  'hume':       { id: 'hume',       pollSlug: 'hume'      },
+  'otto':       { id: 'otto',       pollSlug: 'otto'      },
+  'pm':         { id: 'pm',         pollSlug: 'pm'        },
+  'spengler':   { id: 'spengler',   pollSlug: 'spengler'  },
+  'trump':      { id: 'trump',      pollSlug: 'trump'     },
+  'uncle-bob':  { id: 'unclebob',   pollSlug: 'uncle-bob' },
+  'bloodfeast': { id: 'bloodfeast', pollSlug: 'bloodfeast'},
+  'adelbert':   { id: 'adelbert',   pollSlug: 'adelbert'  },
+  'jhaddu':     { id: 'jhaddu',     pollSlug: 'jhaddu'    },
+  'morgan':     { id: 'morgan',     pollSlug: 'morgan'    },
+  'the-kid':    { id: 'the_kid',    pollSlug: 'the-kid'   },
+  'hasan':      { id: 'hasan',     pollSlug: 'hasan'     },
+  'pepe':       { id: 'pepe',      pollSlug: 'pepe'      },
+  'ronpaul':    { id: 'ronpaul',   pollSlug: 'ronpaul'   },
+};
+
+function fetchSpriteWinners() {
+  var slugs = Object.keys(SPRITE_SLUG_MAP);
+  slugs.forEach(function(name) {
+    var info = SPRITE_SLUG_MAP[name];
+    fetch('/api/vote/sprite-' + encodeURIComponent(info.pollSlug))
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(d) {
+        if (d && d.winner) {
+          SPRITE_WINNERS[name] = d.winner;
+        }
+      })
+      .catch(function() {});
+  });
+}
+
+// Poll for winners every 30 seconds
+fetchSpriteWinners();
+setInterval(fetchSpriteWinners, 30000);
+
+// ── Persona quips ──────────────────────────────────────────────────────────────
+var QUIPS = {
+  'chairman': ["Order.", "The gavel is patient.", "...", "Retained.", "The record stands.", "Deliberate."],
+  'critic':     ["That's wrong.", "Prove it works.", "No.", "Show your data.", "Unacceptable.", "Rejected."],
+  'architect':  ["Consider the load.", "What scales here?", "Draw the diagram.", "Single source.", "Decouple this.", "The foundation matters."],
+  'ux':         ["Is this usable?", "Who's the user?", "Friction is failure.", "Test with humans.", "Accessibility first.", "Can my gran do it?"],
+  'wolf':       ["*awoo*", "rewrite it in Rust", "*grr*", "FASTER", "*howls*", "Ship. Now."],
+  'galactus':   ["I HUNGER.", "YOUR SYSTEMS WILL FEED ME.", "INCONSEQUENTIAL.", "I HAVE SEEN BILLIONS OF STACKS.", "MORTAL CODE.", "FEED ME YOUR DATA."],
+  'designer':   ["Aesthetically, no.", "More contrast.", "Wrong font.", "The kerning is off.", "Iterate the palette.", "Beauty is function."],
+  'the-kid':    ["FAST", "GO GO GO", "*zooms*", "CAN'T STOP", "SPEEEEED", "AAAA"],
+  'uncle-bob':  ["Clean this up.", "SOLID.", "One responsibility.", "Extract that method.", "No comments needed.", "Meaningful names."],
+  'adelbert':   ["I know what you did.", "Classic Yuki move.", "Interesting choice.", "I remember.", "Some of us are watching.", "As expected."],
+  'spengler':   ["Doomed.", "We had a good run.", "The entropy is winning.", "I called it.", "Everything decays.", "*sighs*"],
+  'otto':       ["Chaos is order.", "I see patterns.", "Everything connects.", "The vortex knows.", "Cycles within cycles.", "Observe the flow."],
+  'hume':       ["Where's the evidence?", "Show me the data.", "That's speculation.", "Observation first.", "Prove it empirically.", "I reject the a priori."],
+  'bloodfeast': ["OVERWHELMING FORCE.", "Half measures lose wars.", "Commit or go home.", "I've seen weak plans fail.", "No phased rollout. Deploy.", "The Soviets wouldn't phase."],
+  'pm':         ["Does this move the needle?", "Cut scope.", "Ship something.", "What's the outcome?", "That's not a requirement.", "Validate it first."],
+  'trump':      ["Tremendous.", "Nobody does it better.", "Big. Very big.", "I win. That's what I do.", "They said it couldn't be done.", "Believe me."],
+  'morgan':     ["I need to sit with that.", "That's a lot to unpack.", "I'm not sure I have bandwidth.", "That lands differently for me.", "We should hold space here.", "I felt that."],
+  'jhaddu':     ["As we learned at SVITEMS...", "Simply apply the Factory pattern.", "One more layer of abstraction.", "This is very simple, actually.", "The Enterprise Approach is...", "AbstractRepositoryManagerFactory."],
+};
+
+// Fallback quips for unknown personas
+var DEFAULT_QUIPS = ["...", "hmm.", "processing.", "interesting.", "noted.", "ok."];
+
+// Per-persona color overrides (fallback to API color)
+var COLOR_OVERRIDES = {
+  'chairman':  '#8B1A1A',
+  'critic':    '#f87171',
+  'architect': '#f59e0b',
+  'ux':        '#60a5fa',
+  'wolf':      '#f97316',
+  'galactus':  '#6366f1',
+  'designer':  '#ec4899',
+  'the-kid':   '#facc15',
+  'uncle-bob': '#34d399',
+  'adelbert':  '#94a3b8',
+  'spengler':  '#94a3b8',
+  'otto':      '#a78bfa',
+  'hume':      '#38bdf8',
+  'bloodfeast':'#dc2626',
+  'pm':        '#84cc16',
+  'trump':     '#eab308',
+  'morgan':    '#d946ef',
+  'jhaddu':    '#fb923c',
+};
+
+// ── Season system (Feature 4) ─────────────────────────────────────────────────
+// Week-of-year mod 4 = 0=spring, 1=summer, 2=autumn, 3=winter
+function getSeason() {
+  var now = new Date();
+  var start = new Date(now.getFullYear(), 0, 1);
+  var weekOfYear = Math.floor((now - start) / (7 * 24 * 3600 * 1000));
+  return weekOfYear % 4; // 0=spring,1=summer,2=autumn,3=winter
+}
+var SEASON = getSeason();
+var SEASON_LABELS = ['🌸 spring', '☀️ summer', '🍂 autumn', '❄️ winter'];
+
+// ── Congress live state ────────────────────────────────────────────────────────
+var congressState = { active: false, topic: '', debaters: [] };
+var factionState = { debaters: [], expiresAt: 0 }; // Feature 2: post-congress faction window
+
+function pollCongress() {
+  fetch('/api/congress/active')
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(d) {
+      if (!d) return;
+      var wasActive = congressState.active;
+      var hadDebaters = congressState.debaters;
+      congressState = d;
+      // Feature 2: detect congress ending — set 3-minute faction window
+      if (wasActive && !d.active && hadDebaters && hadDebaters.length > 0) {
+        factionState = {
+          debaters: hadDebaters.slice(),
+          expiresAt: Date.now() + 3 * 60 * 1000,
+        };
+      }
+    })
+    .catch(function() {});
+}
+pollCongress();
+setInterval(pollCongress, 10000);
+
+// Apply faction targets to NPCs (called every second from main loop)
+var factionLastApplied = 0;
+function applyFactionClustering() {
+  var now = Date.now();
+  if (now - factionLastApplied < 1000) return;
+  factionLastApplied = now;
+  if (!npcs || npcs.length === 0) return;
+  var active = factionState.expiresAt > now;
+  for (var i = 0; i < npcs.length; i++) {
+    var n = npcs[i];
+    if (!active || factionState.debaters.indexOf(n.name) < 0) {
+      n.factionTarget = null;
+      continue;
+    }
+    // Find another debater to drift toward
+    for (var j = 0; j < npcs.length; j++) {
+      if (i === j) continue;
+      if (factionState.debaters.indexOf(npcs[j].name) >= 0) {
+        n.factionTarget = npcs[j];
+        break;
+      }
+    }
+  }
+}
+
+// Council area: top-left building (rows 2-6, cols 2-8) — pixel centers
+var COUNCIL_TILES = [];
+(function() {
+  for (var r = 2; r <= 6; r++) {
+    for (var c = 2; c <= 8; c++) {
+      COUNCIL_TILES.push({ tx: c, ty: r });
+    }
+  }
+})();
+
+// ── Time of day overlay ────────────────────────────────────────────────────────
+function getTimeOverlay() {
+  var h = new Date().getHours() + new Date().getMinutes() / 60;
+  if (h >= 6 && h < 18) return null; // daytime — no tint
+  if (h >= 18 && h < 21) return { r: 255, g: 140, b: 0, a: 0.15, stars: false };
+  if (h >= 21 && h < 24) return { r: 30, g: 0, b: 80, a: 0.25, stars: false };
+  // 00:00-06:00
+  return { r: 0, g: 0, b: 40, a: 0.40, stars: true };
+}
+
+// Pre-generate star positions (seeded deterministically)
+var STAR_POS = [];
+(function() {
+  for (var i = 0; i < 60; i++) {
+    // pseudo-random but deterministic
+    var x = ((i * 137 + 23) * 79) % W;
+    var y = ((i * 53 + 11) * 41) % (H * 0.6); // top 60% of canvas
+    STAR_POS.push({ x: x, y: y });
+  }
+})();
+
+// ── Map definition ──────────────────────────────────────────────────────────────
+// 0=grass, 1=path (dirt), 2=water(pond), 3=wall/building, 4=tree, 5=rock, 6=fountain
+function buildChunk00() {
+  var m = [];
+  for (var r = 0; r < ROWS; r++) {
+    m.push(new Uint8Array(COLS));
+  }
+
+  // Grass is default (0). Let's carve out paths, pond, buildings.
+
+  // Horizontal path across middle
+  for (var c = 0; c < COLS; c++) { m[17][c] = 1; m[18][c] = 1; }
+  // Vertical path down center
+  for (var r = 0; r < ROWS; r++) { m[r][24] = 1; m[r][25] = 1; }
+
+  // Pond bottom-left area  (rows 22-27, cols 4-10)
+  for (var r = 22; r <= 27; r++)
+    for (var c = 4; c <= 10; c++)
+      m[r][c] = 2;
+
+  // Building top-left (rows 2-6, cols 2-8)
+  for (var r = 2; r <= 6; r++)
+    for (var c = 2; c <= 8; c++)
+      m[r][c] = 3;
+
+  // Building top-right (rows 2-6, cols 40-47)
+  for (var r = 2; r <= 6; r++)
+    for (var c = 40; c <= 47; c++)
+      m[r][c] = 3;
+
+  // Building bottom-right (rows 26-31, cols 38-46)
+  for (var r = 26; r <= 31; r++)
+    for (var c = 38; c <= 46; c++)
+      m[r][c] = 3;
+
+  // Trees scattered
+  var trees = [
+    [1,1],[1,12],[1,35],[1,48],
+    [8,3],[8,14],[8,38],[8,47],
+    [10,10],[10,30],[10,45],
+    [14,2],[14,20],[14,44],
+    [20,5],[20,15],[20,35],[20,48],
+    [22,18],[22,40],
+    [28,3],[28,20],[28,47],
+    [32,8],[32,30],[32,46],
+    [33,1],[33,48],
+    [34,14],[34,35],
+  ];
+  trees.forEach(function(t) { if (t[0] < ROWS && t[1] < COLS) m[t[0]][t[1]] = 4; });
+
+  // Rocks
+  var rocks = [
+    [9,22],[11,40],[15,12],[16,32],[21,27],[25,14],[29,35],[31,12],[33,40],
+  ];
+  rocks.forEach(function(t) { if (t[0] < ROWS && t[1] < COLS) m[t[0]][t[1]] = 5; });
+
+  // Fountain — 3x3 town square near path intersection (rows 13-15, cols 19-21)
+  for (var r = 13; r <= 15; r++)
+    for (var c = 19; c <= 21; c++)
+      m[r][c] = 6;
+
+  return m;
+}
+
+var MAP = buildChunk00();
+
+// Rebuild the MAP for the given chunk coords and invalidate the map cache
+function loadChunk(cx, cy) {
+  chunkX = cx;
+  chunkY = cy;
+  if (cx === 0 && cy === 0) {
+    MAP = buildChunk00();
+  } else {
+    MAP = generateChunk(cx, cy);
+  }
+  // Redraw static map cache
+  var saveCtx = ctx;
+  ctx = mapCtx;
+  mapCtx.clearRect(0, 0, W, H);
+  drawMap();
+  ctx = saveCtx;
+}
+
+
+function isBlocked(tx, ty) {
+  if (tx < 0 || tx >= COLS || ty < 0 || ty >= ROWS) return true;
+  // Allow entering congress building through doorway (chunk 0,0 only)
+  if (chunkX === 0 && chunkY === 0) {
+    if (tx === 5 && ty === 5) return false; // doorway
+    if (tx === 5 && ty === 6) return false; // steps
+  }
+  var t = MAP[ty][tx];
+  return t === 2 || t === 3 || t === 4 || t === 5 || t === 6;
+}
+
+// ── Canvas & context ───────────────────────────────────────────────────────────
+var canvas = document.getElementById('map');
+var ctx = canvas.getContext('2d');
+
+// ── Rendering: draw map ────────────────────────────────────────────────────────
+// Grass color variants (seeded by position for variety, season-aware)
+function grassColor(tx, ty) {
+  var h = (tx * 7 + ty * 13 + tx * ty) % 16;
+  if (SEASON === 1) { // summer — brighter
+    if (h < 4) return '#1f501f';
+    if (h < 8) return '#235223';
+    if (h < 12) return '#244d24';
+    return '#1f4a1f';
+  }
+  if (SEASON === 2) { // autumn — brown-tinged
+    if (h < 4) return '#3a2c14';
+    if (h < 8) return '#3d2e18';
+    if (h < 12) return '#3a3018';
+    return '#382c14';
+  }
+  if (SEASON === 3) { // winter — dark snow-gray
+    if (h < 4) return '#28283a';
+    if (h < 8) return '#2c2c3e';
+    if (h < 12) return '#2a2a3c';
+    return '#2a2a3a';
+  }
+  // spring (default)
+  if (h < 4) return '#1a3a1a';
+  if (h < 8) return '#1d421d';
+  if (h < 12) return '#1f3d1f';
+  return '#1c381c';
+}
+
+function drawMap() {
+  for (var ty = 0; ty < ROWS; ty++) {
+    for (var tx = 0; tx < COLS; tx++) {
+      var t = MAP[ty][tx];
+      var x = tx * TILE, y = ty * TILE;
+      switch (t) {
+        case 0: // grass
+          ctx.fillStyle = grassColor(tx, ty);
+          ctx.fillRect(x, y, TILE, TILE);
+          // occasional darker grass blade
+          if ((tx * 3 + ty * 5) % 7 === 0) {
+            ctx.fillStyle = '#14281480';
+            ctx.fillRect(x + 2, y + 6, 2, 6);
+          }
+          // Seasonal decorations
+          if (SEASON === 0 && (tx * 11 + ty * 17) % 50 === 0) {
+            // Spring: white flower pixels (2% chance per tile)
+            ctx.fillStyle = '#ffffffcc';
+            ctx.fillRect(x + 6, y + 5, 2, 2);
+            ctx.fillStyle = '#ffccddcc';
+            ctx.fillRect(x + 5, y + 6, 4, 1);
+          } else if (SEASON === 1 && (tx * 13 + ty * 19) % 50 === 0) {
+            // Summer: yellow wildflowers
+            ctx.fillStyle = '#f0e030cc';
+            ctx.fillRect(x + 6, y + 4, 2, 2);
+            ctx.fillStyle = '#f0e030aa';
+            ctx.fillRect(x + 5, y + 5, 4, 1);
+          } else if (SEASON === 2 && (tx * 7 + ty * 11) % 30 === 0) {
+            // Autumn: fallen leaf pixels
+            ctx.fillStyle = '#c06820aa';
+            ctx.fillRect(x + ((tx * 5) % 8) + 2, y + ((ty * 7) % 8) + 2, 3, 2);
+          }
+          break;
+        case 1: // path/dirt
+          ctx.fillStyle = (tx + ty) % 2 === 0 ? '#5a4020' : '#503a1c';
+          ctx.fillRect(x, y, TILE, TILE);
+          break;
+        case 2: // water
+          ctx.fillStyle = (tx + ty) % 2 === 0 ? '#1a3a6a' : '#1e4278';
+          ctx.fillRect(x, y, TILE, TILE);
+          // shimmer highlight
+          if ((tx + ty * 2) % 3 === 0) {
+            ctx.fillStyle = '#3a6ab880';
+            ctx.fillRect(x + 3, y + 2, 4, 2);
+          }
+          break;
+        case 3: // building
+          if (ty >= 2 && ty <= 6 && tx >= 2 && tx <= 8) {
+            // ── Classical Pillars — Council Building (Variant A winner) ──────
+            // Base: stone gray wall
+            ctx.fillStyle = '#2a2050';
+            ctx.fillRect(x, y, TILE, TILE);
+            ctx.fillStyle = '#3a3068';
+            ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+
+            if (ty === 2) {
+              // Pediment row: triangular peak effect
+              var distFromCenter = Math.abs(tx - 5);
+              var peakColor = distFromCenter <= 1 ? '#8a8aaa' : distFromCenter <= 2 ? '#6a6a8a' : '#4a4a6a';
+              ctx.fillStyle = peakColor;
+              ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+              // Pediment triangle: fill top portion proportionally to distance
+              var triH = Math.max(0, (3 - distFromCenter) * 4);
+              if (triH > 0) {
+                ctx.fillStyle = '#9a9abb';
+                ctx.fillRect(x + 2, y + 1, TILE - 4, triH);
+              }
+            } else if (ty === 6) {
+              // Steps row: 3-tier lighter stone at bottom
+              ctx.fillStyle = '#4a4080';
+              ctx.fillRect(x, y + 10, TILE, 6);
+              ctx.fillStyle = '#5a5090';
+              ctx.fillRect(x, y + 12, TILE, 4);
+              ctx.fillStyle = '#6a60a0';
+              ctx.fillRect(x, y + 14, TILE, TILE - 14);
+            }
+
+            // Columns: at tx 2, 4, 6, 8 draw vertical column strips
+            if (tx === 2 || tx === 4 || tx === 6 || tx === 8) {
+              if (ty > 2 && ty < 6) {
+                ctx.fillStyle = '#7a7a9a';
+                ctx.fillRect(x + 5, y, 5, TILE);
+                // Column highlight
+                ctx.fillStyle = '#9a9ab8';
+                ctx.fillRect(x + 6, y, 2, TILE);
+              } else if (ty === 6) {
+                // Column base on steps row
+                ctx.fillStyle = '#7a7a9a';
+                ctx.fillRect(x + 5, y, 5, 10);
+              }
+            }
+
+            // Doorway: center column at tx===5, lower rows
+            if (tx === 5 && (ty === 5 || ty === 6)) {
+              ctx.fillStyle = '#000010';
+              ctx.fillRect(x + 3, y + (ty === 5 ? 4 : 0), 9, ty === 5 ? TILE - 4 : 10);
+              // Amber glow around doorway
+              ctx.fillStyle = '#f0d06044';
+              ctx.fillRect(x + 2, y + (ty === 5 ? 4 : 0), 1, ty === 5 ? TILE - 4 : 10);
+              ctx.fillRect(x + 12, y + (ty === 5 ? 4 : 0), 1, ty === 5 ? TILE - 4 : 10);
+              if (ty === 5) {
+                ctx.fillStyle = '#f0d06066';
+                ctx.fillRect(x + 3, y + 3, 9, 2);
+              }
+            }
+          } else if (ty >= 2 && ty <= 6 && tx >= 40 && tx <= 47) {
+            // ── Dungeon Entrance Building (top-right corner) ──────────────────
+            // Dark stone walls
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(x, y, TILE, TILE);
+            ctx.fillStyle = '#2a2a2a';
+            ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+
+            // Stone block texture: mortar lines
+            ctx.fillStyle = '#111';
+            ctx.fillRect(x, y + TILE / 2, TILE, 1);
+            var brickOffset = (ty % 2 === 0) ? 0 : TILE / 2;
+            ctx.fillRect(x + brickOffset, y, 1, TILE);
+
+            if (ty === 2) {
+              // Battlements / crenellations on top row
+              ctx.fillStyle = '#3a3a3a';
+              ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+              if ((tx % 2) === 0) {
+                ctx.fillStyle = '#0a0a0a';
+                ctx.fillRect(x + 4, y, TILE - 8, 8);
+              } else {
+                ctx.fillStyle = '#3a3a3a';
+                ctx.fillRect(x + 1, y + 1, TILE - 2, 8);
+              }
+            } else if (ty === 6) {
+              // Bottom row: gate arch base / steps
+              ctx.fillStyle = '#222';
+              ctx.fillRect(x, y + 14, TILE, TILE - 14);
+              ctx.fillStyle = '#2e2e2e';
+              ctx.fillRect(x, y + 10, TILE, 4);
+            }
+
+            // Torch sconces on col 41 and 46, rows 4-5
+            if ((tx === 41 || tx === 46) && (ty === 4 || ty === 5)) {
+              ctx.fillStyle = '#8b4513';
+              ctx.fillRect(x + 8, y + 2, 3, 8);
+              ctx.fillStyle = 'rgba(255,140,0,0.85)';
+              ctx.fillRect(x + 7, y, 5, 5);
+              ctx.fillStyle = 'rgba(255,220,0,0.6)';
+              ctx.fillRect(x + 8, y + 1, 3, 3);
+            }
+
+            // Dungeon doorway arch at tx=43, rows 5-6
+            if (tx === 43 && (ty === 5 || ty === 6)) {
+              ctx.fillStyle = '#000';
+              ctx.fillRect(x + 2, y + (ty === 5 ? 3 : 0), 12, ty === 5 ? TILE - 3 : 14);
+              ctx.fillStyle = '#3a3030';
+              ctx.fillRect(x + 1, y + (ty === 5 ? 2 : 0), 2, ty === 5 ? TILE - 2 : 14);
+              ctx.fillRect(x + 14, y + (ty === 5 ? 2 : 0), 2, ty === 5 ? TILE - 2 : 14);
+              if (ty === 5) {
+                ctx.fillStyle = '#3a3030';
+                ctx.fillRect(x + 2, y + 2, 12, 2);
+              }
+              // Eerie green glow from the void
+              ctx.fillStyle = 'rgba(0,80,30,0.22)';
+              ctx.fillRect(x + 3, y + (ty === 5 ? 5 : 0), 10, ty === 5 ? TILE - 5 : 14);
+            }
+          } else {
+            // Generic building tile (outside named areas)
+            ctx.fillStyle = '#2a2050';
+            ctx.fillRect(x, y, TILE, TILE);
+            ctx.fillStyle = '#3a3068';
+            ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+            // window
+            if ((tx + ty) % 3 === 0) {
+              ctx.fillStyle = '#f0d060aa';
+              ctx.fillRect(x + 4, y + 4, 4, 5);
+            }
+          }
+          break;
+        case 4: // tree
+        case 5: // rock
+          drawTreeRockTile(t, x, y);
+          break;
+        case 6: // fountain (static stone structure — water drawn each frame in drawFountainAnimation)
+          // Outer basin — stone gray base fill
+          ctx.fillStyle = '#3a3a54';
+          ctx.fillRect(x, y, TILE, TILE);
+          // Outer basin ring
+          ctx.fillStyle = '#5a5a7a';
+          ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+          // Basin interior (darker water-bed)
+          ctx.fillStyle = '#1a2848';
+          ctx.fillRect(x + 3, y + 3, TILE - 6, TILE - 6);
+          // Mid-tier ring (drawn only for center tile at tx=23,ty=14)
+          if (tx === 23 && ty === 14) {
+            ctx.fillStyle = '#6a6a8a';
+            ctx.fillRect(x + 4, y + 4, TILE - 8, TILE - 8);
+            ctx.fillStyle = '#1e2c50';
+            ctx.fillRect(x + 6, y + 6, TILE - 12, TILE - 12);
+            // Top-tier center nub
+            ctx.fillStyle = '#7a7a9a';
+            ctx.fillRect(x + 7, y + 7, TILE - 14, TILE - 14);
+          }
+          break;
+      }
+    }
+  }
+
+  // Pond edge ripple
+  for (var ty = 22; ty <= 27; ty++) {
+    for (var tc = 4; tc <= 10; tc++) {
+      var x = tc * TILE, y = ty * TILE;
+      if (tc === 4 || tc === 10 || ty === 22 || ty === 27) {
+        ctx.fillStyle = '#2a5a9888';
+        ctx.fillRect(x, y, TILE, TILE);
+      }
+    }
+  }
+
+  // Path edge shading
+  ctx.fillStyle = '#3a2810aa';
+  for (var c = 0; c < COLS; c++) {
+    if (MAP[16] && MAP[16][c] === 0) { ctx.fillRect(c*TILE, 16*TILE, TILE, 2); }
+    if (MAP[19] && MAP[19][c] === 0) { ctx.fillRect(c*TILE, 19*TILE-2, TILE, 2); }
+  }
+}
+
+// Cache the static map to an offscreen canvas for performance
+var mapCache = document.createElement('canvas');
+mapCache.width = W; mapCache.height = H;
+var mapCtx = mapCache.getContext('2d');
+(function() {
+  var save = ctx;
+  ctx = mapCtx;
+  drawMap();
+  ctx = save;
+})();
+
+// ── Fountain animation ────────────────────────────────────────────────────────
+// Fountain center: rows 13-15, cols 19-21 → center tile row=14, col=20
+var FOUNTAIN_CX = 20; // center tile col
+var FOUNTAIN_CY = 14; // center tile row
+var fountainFrame = 0;
+
+function drawFountainAnimation() {
+  fountainFrame++;
+
+  // Fountain occupies a 3×3 tile block (rows 13-15, cols 19-21)
+  // Pixel origin of the block
+  var bx = 19 * TILE; // left edge of the 3-tile block
+  var by = 13 * TILE; // top edge
+
+  // Basin water — animate ripples across the 3×3 area (48×48 px)
+  // Use fountainFrame to cycle through shimmer positions
+  var phase = fountainFrame % 30;
+  ctx.save();
+
+  // Outer basin water sheen (ripple ring)
+  for (var i = 0; i < 8; i++) {
+    if (((fountainFrame + i * 4) % 30) < 15) {
+      ctx.fillStyle = '#1a6aaaaa';
+    } else {
+      ctx.fillStyle = '#1a6aaa44';
+    }
+    // Scatter ripple pixels around basin ring
+    var rx = bx + 3 + (i * 5) % 40;
+    var ry = by + 3 + (i * 7) % 40;
+    ctx.fillRect(rx, ry, 2, 1);
+  }
+
+  // Cascade streams from top tier — bright blue drops falling outward
+  // Top tier is at center tile (col 20, row 14) pixel center
+  var cx0 = FOUNTAIN_CX * TILE + TILE / 2;
+  var cy0 = FOUNTAIN_CY * TILE + TILE / 2;
+
+  // 4 cascade directions: up, down, left, right
+  var cascades = [
+    { dx: 0,  dy: -1, len: 8 },
+    { dx: 0,  dy:  1, len: 8 },
+    { dx: -1, dy:  0, len: 8 },
+    { dx:  1, dy:  0, len: 8 },
+  ];
+  cascades.forEach(function(c, ci) {
+    var offset = (fountainFrame + ci * 8) % 16;
+    // Bright cascade pixel moving outward
+    var px = cx0 + c.dx * (4 + offset);
+    var py = cy0 + c.dy * (4 + offset);
+    ctx.fillStyle = '#4a9fff';
+    ctx.fillRect(Math.round(px), Math.round(py), 2, 2);
+    // Trailing lighter pixel
+    if (offset > 2) {
+      ctx.fillStyle = '#1a6aaa88';
+      ctx.fillRect(Math.round(px - c.dx * 2), Math.round(py - c.dy * 2), 2, 2);
+    }
+  });
+
+  // Sporadic splash pixels in the basin
+  if (phase < 10) {
+    ctx.fillStyle = '#4a9fff88';
+    ctx.fillRect(bx + 4 + (phase * 3) % 32, by + 8 + (phase * 5) % 24, 2, 1);
+    ctx.fillRect(bx + 8 + (phase * 7) % 28, by + 4 + (phase * 3) % 32, 1, 2);
+  }
+
+  ctx.restore();
+}
+
+// ── Character sprite drawing ───────────────────────────────────────────────────
+function drawCharacter(cx, cy, color, scale, isGalactus) {
+  var s = scale || 1;
+  var bw = isGalactus ? 14 : 8;   // body width
+  var bh = isGalactus ? 20 : 12;  // body height
+  var hw = isGalactus ? 12 : 6;   // head width
+  var hh = isGalactus ? 10 : 6;   // head height
+
+  // Shadow
+  ctx.fillStyle = '#00000044';
+  ctx.fillRect(Math.round(cx - bw/2 * s + 2), Math.round(cy + (bh - 2) * s), Math.round(bw * s), Math.round(4 * s));
+
+  // Body
+  ctx.fillStyle = color;
+  ctx.fillRect(Math.round(cx - bw/2 * s), Math.round(cy + hh * s), Math.round(bw * s), Math.round(bh * s));
+
+  // Head
+  ctx.fillStyle = lighten(color, 30);
+  ctx.fillRect(Math.round(cx - hw/2 * s), Math.round(cy), Math.round(hw * s), Math.round(hh * s));
+
+  // Eyes (little dark dots)
+  ctx.fillStyle = '#00000088';
+  ctx.fillRect(Math.round(cx - hw/2 * s + 1*s), Math.round(cy + 2*s), Math.round(1*s), Math.round(2*s));
+  ctx.fillRect(Math.round(cx + hw/2 * s - 2*s), Math.round(cy + 2*s), Math.round(1*s), Math.round(2*s));
+
+  if (isGalactus) {
+    // Cosmic crown spikes
+    ctx.fillStyle = '#a78bfa';
+    ctx.fillRect(Math.round(cx - 6*s), Math.round(cy - 8*s), Math.round(4*s), Math.round(8*s));
+    ctx.fillRect(Math.round(cx - 2*s), Math.round(cy - 11*s), Math.round(4*s), Math.round(11*s));
+    ctx.fillRect(Math.round(cx + 3*s), Math.round(cy - 8*s), Math.round(4*s), Math.round(8*s));
+  }
+}
+
+function lighten(hex, amt) {
+  var r = parseInt(hex.slice(1,3), 16);
+  var g = parseInt(hex.slice(3,5), 16);
+  var b = parseInt(hex.slice(5,7), 16);
+  r = Math.min(255, r + amt); g = Math.min(255, g + amt); b = Math.min(255, b + amt);
+  return '#' + ('0' + r.toString(16)).slice(-2) + ('0' + g.toString(16)).slice(-2) + ('0' + b.toString(16)).slice(-2);
+}
+
+// ── Speech bubble ──────────────────────────────────────────────────────────────
+function drawBubble(cx, cy, lines, alpha) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  var pad = 5;
+  ctx.font = '9px monospace';
+  var lineH = 11;
+  // lines can be a string or array
+  var lineArr = Array.isArray(lines) ? lines : [lines];
+  var maxW = 0;
+  lineArr.forEach(function(l) { var w = ctx.measureText(l).width; if (w > maxW) maxW = w; });
+  var bw = maxW + pad * 2;
+  var bh = lineH * lineArr.length + 4;
+  var bx = cx - bw / 2;
+  var by = cy - bh - 6;
+
+  // Clamp to canvas
+  if (bx < 2) bx = 2;
+  if (bx + bw > W - 2) bx = W - 2 - bw;
+  if (by < 2) by = 2;
+
+  // Background
+  ctx.fillStyle = '#ffffffee';
+  ctx.beginPath();
+  ctx.roundRect(bx, by, bw, bh, 3);
+  ctx.fill();
+
+  // Border
+  ctx.strokeStyle = '#333355';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Tail
+  ctx.fillStyle = '#ffffffee';
+  ctx.beginPath();
+  ctx.moveTo(cx - 3, by + bh);
+  ctx.lineTo(cx + 3, by + bh);
+  ctx.lineTo(cx, by + bh + 5);
+  ctx.closePath();
+  ctx.fill();
+
+  // Text
+  ctx.fillStyle = '#111122';
+  lineArr.forEach(function(l, i) {
+    ctx.fillText(l, bx + pad, by + lineH * (i + 1) - 1);
+  });
+
+  ctx.restore();
+}
+
+// ── Gossip thought bubble (Feature 1) ────────────────────────────────────────
+function drawGossipBubble(cx, cy, lines, alpha) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  var pad = 5;
+  ctx.font = 'italic 9px monospace';
+  var lineH = 11;
+  var lineArr = Array.isArray(lines) ? lines : [lines];
+  var maxW = 0;
+  lineArr.forEach(function(l) { var w = ctx.measureText(l).width; if (w > maxW) maxW = w; });
+  var bw = maxW + pad * 2;
+  var bh = lineH * lineArr.length + 4;
+  var bx = cx - bw / 2;
+  var by = cy - bh - 12;
+  if (bx < 2) bx = 2;
+  if (bx + bw > W - 2) bx = W - 2 - bw;
+  if (by < 2) by = 2;
+  ctx.fillStyle = '#fffae0ee';
+  ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 3); ctx.fill();
+  ctx.strokeStyle = '#c8a000'; ctx.lineWidth = 1; ctx.stroke();
+  // Thought dots
+  ctx.fillStyle = '#fffae0ee';
+  ctx.beginPath(); ctx.arc(cx, by + bh + 3, 2.5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + 3, by + bh + 7, 1.5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#7a6000';
+  ctx.font = 'italic 9px monospace';
+  lineArr.forEach(function(l, i) {
+    ctx.fillText(l, bx + pad, by + lineH * (i + 1) - 1);
+  });
+  ctx.restore();
+}
+
+// ── Worn paths (Feature 5) ─────────────────────────────────────────────────────
+// Track tile visit counts; reset daily via localStorage
+var WORN_TILES = (function() {
+  var DAY_MS = 24 * 3600 * 1000;
+  var now = Date.now();
+  var stored = null;
+  try {
+    var raw = localStorage.getItem('commons_worn_tiles');
+    if (raw) {
+      var obj = JSON.parse(raw);
+      if (now - obj.ts < DAY_MS) stored = obj;
+    }
+  } catch(e) {}
+  if (!stored) {
+    stored = { ts: now, counts: {} };
+    try { localStorage.setItem('commons_worn_tiles', JSON.stringify(stored)); } catch(e) {}
+  }
+  return stored;
+})();
+
+function recordTileVisit(tx, ty) {
+  var key = tx + ',' + ty;
+  WORN_TILES.counts[key] = (WORN_TILES.counts[key] || 0) + 1;
+  // Persist every 30 visits (avoid thrashing localStorage)
+  var total = WORN_TILES.counts[key];
+  if (total % 30 === 0) {
+    try { localStorage.setItem('commons_worn_tiles', JSON.stringify(WORN_TILES)); } catch(e) {}
+  }
+}
+
+function getWornLevel(tx, ty) {
+  var key = tx + ',' + ty;
+  var count = WORN_TILES.counts[key] || 0;
+  if (count >= 30) return 2; // dirt
+  if (count >= 10) return 1; // worn
+  return 0;
+}
+
+// ── NPC Gossip state (Feature 1) ───────────────────────────────────────────────
+// gossipBubble: { lines, ttl } — shown like a thought bubble (yellow/italic style)
+
+// ── NPC class ────────────────────────────────────────────────────────────────
+var DIRS = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
+
+function NPC(persona, startTx, startTy) {
+  this.name = persona.name;
+  this.displayName = persona.display_name || persona.name;
+  this.color = COLOR_OVERRIDES[persona.name] || persona.color || '#888888';
+  this.role = persona.role || '';
+  this.avatarUrl = persona.avatar_url || '';
+  this.quips = QUIPS[persona.name] || DEFAULT_QUIPS;
+
+  // Pixel position (center of character)
+  this.px = startTx * TILE + TILE / 2;
+  this.py = startTy * TILE + TILE / 2;
+
+  // Tile position
+  this.tx = startTx;
+  this.ty = startTy;
+
+  // Movement params
+  var isGalactus = this.name === 'galactus';
+  var isKid = this.name === 'the-kid';
+  var isIbrahim = this.name === 'chairman';
+  var isWolf = this.name === 'wolf';
+  var isUncle = this.name === 'uncle-bob';
+
+  this.speed = isGalactus ? 0.2 : isIbrahim ? 0.25 : isKid ? 1.2 : isWolf ? 0.8 : 0.4; // px per frame
+  this.isGalactus = isGalactus;
+  this.isKid = isKid;
+  this.isIbrahim = isIbrahim;
+  this.isUncle = isUncle;
+  this.isDesigner = this.name === 'designer';
+  this.isAdelbert = this.name === 'adelbert';
+
+  // Wander state
+  this.dir = { dx: 1, dy: 0 };
+  this.stepsLeft = 0;
+  this.waitFrames = 0;
+  this.frame = Math.floor(Math.random() * 60);
+
+  // Speech state
+  this.bubble = null; // {lines: [], ttl} null when silent
+  this.speakCooldown = 120 + Math.floor(Math.random() * 240); // frames before can speak again
+  this.quipIndex = Math.floor(Math.random() * this.quips.length);
+
+  // Response bubble (from invoke)
+  this.responseBubble = null; // {lines: [], ttl}
+
+  // Target for movement
+  this.targetPx = this.px;
+  this.targetPy = this.py;
+
+  // Congress target tile
+  this.congressTarget = null;
+  this.inCouncil = false;
+
+  // Drag state
+  this.held = false;
+
+  // Gossip state (Feature 1)
+  this.gossipBubble = null; // {lines, ttl}
+  this.lastSpokenQuip = '';
+  this.proximityTimers = {}; // npc.name -> frames spent close
+
+  // Faction post-congress (Feature 2)
+  this.factionTarget = null; // NPC to drift toward
+
+  // Last tile (for worn path tracking)
+  this.lastTx = this.tx;
+  this.lastTy = this.ty;
+
+  // Server-authoritative position (from tick WS message npcs array)
+  this.serverX = null; // null = no server data yet, use client simulation
+  this.serverY = null;
+  this.serverFacing = null;
+  this.firstServerSync = true; // snap on first tick to avoid fly-in
+}
+
+NPC.prototype.pickNewDir = function (npcs) {
+  var self = this;
+
+  // Uncle Bob: always picks axis-aligned straight lines (no random turn)
+  if (this.isUncle) {
+    // Stay on current dir if possible, else turn 90 degrees
+    var newTx = this.tx + this.dir.dx;
+    var newTy = this.ty + this.dir.dy;
+    if (!isBlocked(newTx, newTy)) {
+      this.stepsLeft = 6 + Math.floor(Math.random() * 4);
+      return;
+    }
+    // Turn 90
+    var perp = this.dir.dx !== 0 ? [{dx:0,dy:1},{dx:0,dy:-1}] : [{dx:1,dy:0},{dx:-1,dy:0}];
+    this.dir = perp[Math.floor(Math.random() * 2)];
+    this.stepsLeft = 4;
+    return;
+  }
+
+
+  // Designer: circular-ish motion
+  if (this.isDesigner) {
+    // Rotate dir clockwise with some randomness
+    var rotate = [{dx:0,dy:-1},{dx:1,dy:0},{dx:0,dy:1},{dx:-1,dy:0}];
+    var curIdx = rotate.findIndex(function(d) { return d.dx === self.dir.dx && d.dy === self.dir.dy; });
+    if (curIdx < 0) curIdx = 0;
+    var nextIdx = (curIdx + 1) % 4;
+    var nextDir = rotate[nextIdx];
+    var nx = this.tx + nextDir.dx, ny = this.ty + nextDir.dy;
+    if (!isBlocked(nx, ny) && Math.random() < 0.6) {
+      this.dir = nextDir;
+    } else {
+      this.dir = rotate[curIdx]; // keep going
+    }
+    this.stepsLeft = 2 + Math.floor(Math.random() * 4);
+    return;
+  }
+
+  // Adelbert: try to move toward nearest other NPC
+  if (this.isAdelbert && npcs && npcs.length > 1) {
+    var target = null, bestDist = 999;
+    npcs.forEach(function(n) {
+      if (n === self) return;
+      var dist = Math.abs(n.tx - self.tx) + Math.abs(n.ty - self.ty);
+      if (dist > 1 && dist < bestDist) { bestDist = dist; target = n; }
+    });
+    if (target && Math.random() < 0.6) {
+      var ddx = target.tx - this.tx;
+      var ddy = target.ty - this.ty;
+      var candidates = [];
+      if (Math.abs(ddx) >= Math.abs(ddy)) {
+        candidates.push({dx: Math.sign(ddx), dy: 0});
+        candidates.push({dx: 0, dy: Math.sign(ddy)});
+      } else {
+        candidates.push({dx: 0, dy: Math.sign(ddy)});
+        candidates.push({dx: Math.sign(ddx), dy: 0});
+      }
+      for (var i = 0; i < candidates.length; i++) {
+        var nd = candidates[i];
+        if (!isBlocked(this.tx + nd.dx, this.ty + nd.dy)) {
+          this.dir = nd;
+          this.stepsLeft = 2 + Math.floor(Math.random() * 3);
+          return;
+        }
+      }
+    }
+  }
+
+  // Feature 2: Faction clustering — after congress, debaters drift toward co-debaters
+  if (this.factionTarget && Math.random() < 0.4) {
+    var ft = this.factionTarget;
+    var fddx = ft.tx - this.tx;
+    var fddy = ft.ty - this.ty;
+    var fdist = Math.abs(fddx) + Math.abs(fddy);
+    if (fdist > 2) {
+      var fcandidates = [];
+      if (Math.abs(fddx) >= Math.abs(fddy)) {
+        if (fddx !== 0) fcandidates.push({dx: Math.sign(fddx), dy: 0});
+        if (fddy !== 0) fcandidates.push({dx: 0, dy: Math.sign(fddy)});
+      } else {
+        if (fddy !== 0) fcandidates.push({dx: 0, dy: Math.sign(fddy)});
+        if (fddx !== 0) fcandidates.push({dx: Math.sign(fddx), dy: 0});
+      }
+      for (var fi = 0; fi < fcandidates.length; fi++) {
+        var fnd = fcandidates[fi];
+        if (!isBlocked(this.tx + fnd.dx, this.ty + fnd.dy)) {
+          this.dir = fnd;
+          this.stepsLeft = 2 + Math.floor(Math.random() * 3);
+          return;
+        }
+      }
+    }
+  }
+
+  // Default: pick a random walkable direction
+  var valid = DIRS.filter(function(d) {
+    return !isBlocked(self.tx + d.dx, self.ty + d.dy);
+  });
+  if (valid.length === 0) { this.stepsLeft = 10; return; }
+  this.dir = valid[Math.floor(Math.random() * valid.length)];
+  this.stepsLeft = 2 + Math.floor(Math.random() * (this.isKid ? 8 : this.isGalactus ? 3 : 5));
+};
+
+// Step toward a target tile (for congress mode)
+NPC.prototype.stepToward = function(targetTx, targetTy) {
+  var ddx = targetTx - this.tx;
+  var ddy = targetTy - this.ty;
+  if (ddx === 0 && ddy === 0) return true; // arrived
+  var candidates = [];
+  if (Math.abs(ddx) >= Math.abs(ddy)) {
+    if (ddx !== 0) candidates.push({dx: Math.sign(ddx), dy: 0});
+    if (ddy !== 0) candidates.push({dx: 0, dy: Math.sign(ddy)});
+  } else {
+    if (ddy !== 0) candidates.push({dx: 0, dy: Math.sign(ddy)});
+    if (ddx !== 0) candidates.push({dx: Math.sign(ddx), dy: 0});
+  }
+  for (var i = 0; i < candidates.length; i++) {
+    var nd = candidates[i];
+    var nx = this.tx + nd.dx, ny = this.ty + nd.dy;
+    if (!isBlocked(nx, ny)) {
+      this.dir = nd;
+      this.tx = nx; this.ty = ny;
+      this.targetPx = nx * TILE + TILE / 2;
+      this.targetPy = ny * TILE + TILE / 2;
+      this.stepsLeft = 0;
+      return false;
+    }
+  }
+  return false; // blocked
+};
+
+NPC.prototype.update = function (npcs) {
+  // Skip all movement and speech while being dragged
+  if (this.held) return;
+
+  this.frame++;
+
+  // Speech cooldown
+  if (this.speakCooldown > 0) this.speakCooldown--;
+  if (this.bubble) {
+    this.bubble.ttl--;
+    if (this.bubble.ttl <= 0) {
+      this.bubble = null;
+      var baseCD = this.isIbrahim ? 600 : this.isGalactus ? 450 : this.isKid ? 80 : 180;
+      this.speakCooldown = baseCD + Math.floor(Math.random() * 200);
+    }
+  } else if (this.speakCooldown <= 0) {
+    var chance = this.isIbrahim ? 0.002 : this.isKid ? 0.02 : this.isGalactus ? 0.004 : 0.006;
+    if (Math.random() < chance) {
+      var quip = this.quips[this.quipIndex % this.quips.length];
+      this.bubble = { lines: [quip], ttl: Math.round(2.5 * 60) };
+      this.lastSpokenQuip = quip;
+      this.quipIndex++;
+    }
+  }
+
+  // Gossip bubble TTL (Feature 1)
+  if (this.gossipBubble) {
+    this.gossipBubble.ttl--;
+    if (this.gossipBubble.ttl <= 0) this.gossipBubble = null;
+  }
+
+  // Response bubble TTL
+  if (this.responseBubble) {
+    this.responseBubble.ttl--;
+    if (this.responseBubble.ttl <= 0) this.responseBubble = null;
+  }
+
+  // Feature 1: Gossip spreading — check proximity to other NPCs
+  if (npcs && !this.gossipBubble) {
+    for (var gi = 0; gi < npcs.length; gi++) {
+      var other = npcs[gi];
+      if (other === this) continue;
+      var gdist = Math.abs(other.tx - this.tx) + Math.abs(other.ty - this.ty);
+      if (gdist <= 3) {
+        // Track time spent close
+        this.proximityTimers[other.name] = (this.proximityTimers[other.name] || 0) + 1;
+        // >5 seconds at 60fps = 300 frames; 10% chance per proximity check (run every frame)
+        if (this.proximityTimers[other.name] > 300 && other.lastSpokenQuip && Math.random() < 0.001) {
+          var distortedQuip = other.lastSpokenQuip;
+          this.gossipBubble = {
+            lines: ['*heard: "' + distortedQuip.slice(0, 25) + '"*'],
+            ttl: 4 * 60,
+          };
+          this.proximityTimers[other.name] = 0; // reset after gossip
+          break;
+        }
+      } else {
+        this.proximityTimers[other.name] = 0;
+      }
+    }
+  }
+
+  // Congress mode: if debater, move toward council area
+  var isDebater = congressState.active && congressState.debaters.indexOf(this.name) >= 0;
+  if (isDebater) {
+    // Pick a council tile if we don't have one yet
+    if (!this.congressTarget) {
+      var idx = Math.floor(Math.random() * COUNCIL_TILES.length);
+      this.congressTarget = COUNCIL_TILES[idx];
+    }
+    // Move toward it every few frames (not every frame — pace it)
+    if (this.frame % 20 === 0) {
+      var arrived = this.stepToward(this.congressTarget.tx, this.congressTarget.ty);
+      this.inCouncil = arrived || (Math.abs(this.tx - this.congressTarget.tx) <= 1 && Math.abs(this.ty - this.congressTarget.ty) <= 1);
+    }
+  } else {
+    this.congressTarget = null;
+    this.inCouncil = false;
+  }
+
+  // If server has sent position data, lerp toward it; otherwise fall back to client simulation
+  if (this.serverX !== null && this.serverY !== null) {
+    if (this.firstServerSync) {
+      // Snap directly on first server sync to avoid fly-in from random client position
+      this.px = this.serverX;
+      this.py = this.serverY;
+      this.targetPx = this.serverX;
+      this.targetPy = this.serverY;
+      this.firstServerSync = false;
+    }
+    var LERP = 0.15;
+    this.px += (this.serverX - this.px) * LERP;
+    this.py += (this.serverY - this.py) * LERP;
+    // Sync tile coords for worn path tracking
+    var newTx = Math.floor(this.px / TILE);
+    var newTy = Math.floor(this.py / TILE);
+    if (newTx !== this.lastTx || newTy !== this.lastTy) {
+      if (MAP[newTy] && MAP[newTy][newTx] === 0) {
+        recordTileVisit(newTx, newTy);
+      }
+      this.tx = newTx;
+      this.ty = newTy;
+      this.lastTx = newTx;
+      this.lastTy = newTy;
+    }
+  } else {
+    // Client-side simulation fallback (before first server tick arrives)
+    if (!isDebater || !this.inCouncil) {
+      // Waiting between moves
+      if (this.waitFrames > 0) {
+        this.waitFrames--;
+        return;
+      }
+
+      // Feature 4 winter: 70% speed
+      var effectiveSpeed = SEASON === 3 ? this.speed * 0.7 : this.speed;
+
+      var dx = this.targetPx - this.px;
+      var dy = this.targetPy - this.py;
+      var dist = Math.sqrt(dx*dx + dy*dy);
+
+      if (dist < effectiveSpeed + 0.5) {
+        this.px = this.targetPx;
+        this.py = this.targetPy;
+
+        // Feature 5: record tile visit when NPC lands on a grass tile
+        if (this.tx !== this.lastTx || this.ty !== this.lastTy) {
+          if (MAP[this.ty] && MAP[this.ty][this.tx] === 0) {
+            recordTileVisit(this.tx, this.ty);
+          }
+          this.lastTx = this.tx;
+          this.lastTy = this.ty;
+        }
+
+        if (this.stepsLeft > 0) {
+          var nx = this.tx + this.dir.dx;
+          var ny = this.ty + this.dir.dy;
+          if (isBlocked(nx, ny)) {
+            this.stepsLeft = 0;
+          } else {
+            this.tx = nx;
+            this.ty = ny;
+            this.targetPx = nx * TILE + TILE / 2;
+            this.targetPy = ny * TILE + TILE / 2;
+            this.stepsLeft--;
+          }
+        } else {
+          var pause = this.isKid ? 2 : this.isGalactus ? 30 : this.isIbrahim ? 40 : 8 + Math.floor(Math.random() * 20);
+          this.waitFrames = pause;
+          this.pickNewDir(npcs);
+        }
+      } else {
+        this.px += (dx / dist) * effectiveSpeed;
+        this.py += (dy / dist) * effectiveSpeed;
+      }
+    }
+  }
+};
+
+NPC.prototype.draw = function () {
+  // Don't draw until server has sent first position (prevents fly-in from random spawn)
+  if (this.firstServerSync) return;
+
+  var cx = Math.round(this.px);
+  var cy = Math.round(this.py) - 14; // top of sprite (for generic NPC drawing + bubble anchoring)
+  // cy_feet: bottom of sprite position for drawSprite_* functions (they draw upward from feet)
+  var cy_feet = Math.round(this.py) + 8;
+
+  // Determine facing from serverFacing (server-authoritative) or dir (client fallback)
+  var facingLeft = this.serverFacing ? (this.serverFacing === 'left') : (this.dir && this.dir.dx < 0);
+
+  // Check if this persona has a sprite winner
+  var spriteInfo = SPRITE_SLUG_MAP[this.name];
+  var winner = spriteInfo ? SPRITE_WINNERS[this.name] : null;
+  var spriteFn = winner ? window['drawSprite_' + spriteInfo.id + '_' + winner] : null;
+
+  if (this.held) {
+    // Draw white glow halo behind character
+    ctx.save();
+    ctx.shadowColor = '#ffffff';
+    ctx.shadowBlur = 12;
+    if (typeof spriteFn === 'function') {
+      if (this.isGalactus) {
+        ctx.save();
+        ctx.scale(2, 2);
+        spriteFn(ctx, cx / 2, cy_feet / 2);
+        ctx.restore();
+      } else if (facingLeft) {
+        ctx.save();
+        ctx.translate(cx * 2, 0);
+        ctx.scale(-1, 1);
+        spriteFn(ctx, cx, cy_feet);
+        ctx.restore();
+      } else {
+        spriteFn(ctx, cx, cy_feet);
+      }
+    } else {
+      var heldScale = (this.isGalactus ? 1.8 : 1) * 1.3;
+      if (facingLeft && !this.isGalactus) {
+        ctx.save();
+        ctx.translate(cx * 2, 0);
+        ctx.scale(-1, 1);
+        drawCharacter(cx, cy, this.color, heldScale, this.isGalactus);
+        ctx.restore();
+      } else {
+        drawCharacter(cx, cy, this.color, heldScale, this.isGalactus);
+      }
+    }
+    ctx.restore();
+    // No speech bubbles while held
+    return;
+  }
+
+  if (typeof spriteFn === 'function') {
+    if (this.isGalactus) {
+      ctx.save();
+      ctx.scale(2, 2);
+      spriteFn(ctx, cx / 2, cy_feet / 2);
+      ctx.restore();
+    } else if (facingLeft) {
+      ctx.save();
+      ctx.translate(cx * 2, 0);
+      ctx.scale(-1, 1);
+      spriteFn(ctx, cx, cy_feet);
+      ctx.restore();
+    } else {
+      spriteFn(ctx, cx, cy_feet);
+    }
+  } else {
+    if (facingLeft && !this.isGalactus) {
+      ctx.save();
+      ctx.translate(cx * 2, 0);
+      ctx.scale(-1, 1);
+      drawCharacter(cx, cy, this.color, this.isGalactus ? 1.8 : 1, this.isGalactus);
+      ctx.restore();
+    } else {
+      drawCharacter(cx, cy, this.color, this.isGalactus ? 1.8 : 1, this.isGalactus);
+    }
+  }
+
+  // Response bubble takes priority over quip bubble, gossip shows separately
+  if (this.responseBubble) {
+    var alpha = this.responseBubble.ttl > 30 ? 1.0 : this.responseBubble.ttl / 30;
+    var headY = cy - 4;
+    drawBubble(cx, headY, this.responseBubble.lines, alpha);
+  } else if (this.bubble) {
+    var alpha = this.bubble.ttl > 20 ? 1.0 : this.bubble.ttl / 20;
+    var headY = cy - 4;
+    drawBubble(cx, headY, this.bubble.lines, alpha);
+  }
+
+  // Feature 1: gossip thought bubble (amber, italic, shown above normal bubble)
+  if (this.gossipBubble) {
+    var galpha = this.gossipBubble.ttl > 20 ? 1.0 : this.gossipBubble.ttl / 20;
+    drawGossipBubble(cx, cy - 4, this.gossipBubble.lines, galpha);
+  }
+};
+
+// ── Spawn positions (pixel centers away from blocked tiles) ────────────────────
+var SPAWN_TILES = [
+  [13, 9], [27, 10], [12, 22], [35, 28],
+  [15, 5], [32, 5],  [5, 14],  [44, 20],
+  [20, 12],[38, 12], [10, 29], [30, 22],
+  [22, 3], [48, 30],
+];
+
+// ── NPC list ─────────────────────────────────────────────────────────────────
+var npcs = [];
+
+// ── Last known mouse position in canvas coords (for per-frame tooltip update) ─
+var lastMouseCanvas = null; // null | { mx, my }
+
+// ── Tooltip ──────────────────────────────────────────────────────────────────
+var tooltip = document.getElementById('tooltip');
+var ttName = document.getElementById('tt-name');
+var ttRole = document.getElementById('tt-role');
+var ttAvatar = document.getElementById('tt-avatar');
+
+canvas.addEventListener('mouseleave', function() {
+  tooltip.style.display = 'none';
+  lastMouseCanvas = null;
+  if (!dragState) canvas.style.cursor = 'default';
+  // Resume any paused audition walker when mouse leaves canvas and hide the card
+  if (auditionHoveredId) {
+    // Always hide the card when mouse leaves canvas
+    hideAuditionCard();
+    fetch(AUDITION_URL + '/api/audition/resume', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: auditionHoveredId }),
+    }).catch(function() {});
+    for (var ri = 0; ri < auditionWalkers.length; ri++) {
+      if (auditionWalkers[ri].id === auditionHoveredId) auditionWalkers[ri].paused = false;
+    }
+    auditionHoveredId = null;
+  }
+});
+
+// ── Click to invoke ───────────────────────────────────────────────────────────
+var invokeOverlay = document.getElementById('invoke-overlay');
+var invokeInput = document.getElementById('invoke-input');
+var invokePersonaLabel = document.getElementById('invoke-persona-label');
+var invokeCancel = document.getElementById('invoke-cancel');
+var activeInvokeNPC = null;
+var npcPortraitCanvas = document.getElementById('npc-portrait');
+var npcPortraitCtx = npcPortraitCanvas.getContext('2d');
+
+function drawNpcPortrait(npc) {
+  var pw = npcPortraitCanvas.width;   // 160
+  var ph = npcPortraitCanvas.height;  // 320
+  npcPortraitCtx.clearRect(0, 0, pw, ph);
+
+  // Determine sprite function
+  var spriteInfo = SPRITE_SLUG_MAP[npc.name];
+  var winner = spriteInfo ? SPRITE_WINNERS[npc.name] : null;
+  var spriteFn = winner ? window['drawSprite_' + spriteInfo.id + '_' + winner] : null;
+
+  // Draw at 4x scale, centered horizontally, positioned in lower portion of portrait
+  var scale = 4;
+  var cx = Math.round(pw / 2);
+  var cy_feet = Math.round(ph * 0.78);
+
+  // Temporarily redirect ctx to portrait canvas
+  var savedCtx = ctx;
+  ctx = npcPortraitCtx;
+
+  if (typeof spriteFn === 'function') {
+    npcPortraitCtx.save();
+    npcPortraitCtx.scale(scale, scale);
+    spriteFn(npcPortraitCtx, cx / scale, cy_feet / scale);
+    npcPortraitCtx.restore();
+  } else {
+    // Fallback: draw generic character at 4x scale
+    drawCharacter(cx, cy_feet - Math.round(18 * scale), npc.color, scale, npc.isGalactus);
+  }
+
+  ctx = savedCtx;
+
+  // NPC name label at bottom
+  npcPortraitCtx.save();
+  npcPortraitCtx.font = 'bold 13px monospace';
+  npcPortraitCtx.textAlign = 'center';
+  npcPortraitCtx.fillStyle = '#00ffaa';
+  npcPortraitCtx.fillText(npc.displayName, pw / 2, ph - 12);
+  npcPortraitCtx.restore();
+}
+
+// ── Drag state ────────────────────────────────────────────────────────────────
+var dragState = null; // null | { npc, startClientX, startClientY, dragging }
+
+function canvasCoords(e) {
+  var rect = canvas.getBoundingClientRect();
+  return {
+    mx: (e.clientX - rect.left) * (W / rect.width),
+    my: (e.clientY - rect.top) * (H / rect.height),
+  };
+}
+
+function npcAtCanvasCoords(mx, my) {
+  for (var i = 0; i < npcs.length; i++) {
+    var n = npcs[i];
+    var dx = mx - n.px;
+    var dy = my - (n.py - 8);
+    if (Math.abs(dx) < 14 && Math.abs(dy) < 20) return n;
+  }
+  return null;
+}
+
+function nearestValidTile(mx, my) {
+  // Convert pixel coords to tile, then spiral out to find non-blocked tile
+  var bestTx = Math.round((mx - TILE / 2) / TILE);
+  var bestTy = Math.round((my - TILE / 2) / TILE);
+  if (!isBlocked(bestTx, bestTy)) return { tx: bestTx, ty: bestTy };
+  // Search expanding radius
+  for (var r = 1; r <= 8; r++) {
+    for (var dy = -r; dy <= r; dy++) {
+      for (var dx = -r; dx <= r; dx++) {
+        if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+        var tx = bestTx + dx, ty = bestTy + dy;
+        if (!isBlocked(tx, ty)) return { tx: tx, ty: ty };
+      }
+    }
+  }
+  return { tx: bestTx, ty: bestTy }; // fallback
+}
+
+canvas.addEventListener('mousedown', function(e) {
+  if (e.button !== 0) return;
+  var c = canvasCoords(e);
+  var found = npcAtCanvasCoords(c.mx, c.my);
+  if (!found) return;
+  dragState = {
+    npc: found,
+    startClientX: e.clientX,
+    startClientY: e.clientY,
+    dragging: false,
+  };
+  found.held = true;
+  e.preventDefault();
+});
+
+canvas.addEventListener('mousemove', function(e) {
+  // Track mouse position in canvas coords for per-frame tooltip updates
+  var rect0 = canvas.getBoundingClientRect();
+  lastMouseCanvas = {
+    mx: (e.clientX - rect0.left) * (W / rect0.width),
+    my: (e.clientY - rect0.top) * (H / rect0.height),
+    clientX: e.clientX,
+    clientY: e.clientY,
+  };
+
+  // Tooltip logic (only when not dragging)
+  if (!dragState || !dragState.dragging) {
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = W / rect.width;
+    var mx = (e.clientX - rect.left) * scaleX;
+    var my = (e.clientY - rect.top) * (H / rect.height);
+
+    var found = null;
+    for (var i = 0; i < npcs.length; i++) {
+      var n = npcs[i];
+      var dx = mx - n.px;
+      var dy = my - (n.py - 8);
+      if (Math.abs(dx) < 14 && Math.abs(dy) < 20) { found = n; break; }
+    }
+
+    if (found) {
+      ttName.textContent = found.displayName;
+      ttRole.textContent = found.role;
+      if (found.avatarUrl) {
+        ttAvatar.src = found.avatarUrl;
+        ttAvatar.style.display = 'block';
+      } else {
+        ttAvatar.style.display = 'none';
+      }
+      tooltip.style.display = 'block';
+      tooltip.style.left = (e.clientX + 14) + 'px';
+      tooltip.style.top = (e.clientY - 10) + 'px';
+      canvas.style.cursor = dragState ? 'grabbing' : 'pointer';
+    } else {
+      tooltip.style.display = 'none';
+      canvas.style.cursor = dragState ? 'grabbing' : 'default';
+    }
+
+    // Audition walker hover detection (only walkers on-canvas)
+    var foundWalker = null;
+    for (var ai = 0; ai < auditionWalkers.length; ai++) {
+      var aw = auditionWalkers[ai];
+      if (aw.x < 0) continue; // not yet on canvas — no ghost tooltips
+      var awdx = mx - aw.x;
+      var awdy = my - auditionWalkerY;
+      if (Math.abs(awdx) < 20 && Math.abs(awdy) < 20) { foundWalker = aw; break; }
+    }
+    if (foundWalker) {
+      if (auditionHoveredId !== foundWalker.id) {
+        // New hover: pause previous if any
+        if (auditionHoveredId) {
+          fetch(AUDITION_URL + '/api/audition/resume', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: auditionHoveredId }),
+          }).catch(function() {});
+        }
+        auditionHoveredId = foundWalker.id;
+        // Pause this walker
+        fetch(AUDITION_URL + '/api/audition/pause', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: foundWalker.id }),
+        }).catch(function() {});
+        // Mark paused in local state
+        for (var pi = 0; pi < auditionWalkers.length; pi++) {
+          auditionWalkers[pi].paused = (auditionWalkers[pi].id === foundWalker.id);
+        }
+        showAuditionCard(foundWalker, e.clientX, e.clientY);
+      }
+      canvas.style.cursor = 'pointer';
+    } else if (auditionHoveredId && !auditionCard.classList.contains('active')) {
+      // Mouse left walker and card was closed — resume
+      fetch(AUDITION_URL + '/api/audition/resume', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: auditionHoveredId }),
+      }).catch(function() {});
+      for (var ri = 0; ri < auditionWalkers.length; ri++) {
+        if (auditionWalkers[ri].id === auditionHoveredId) auditionWalkers[ri].paused = false;
+      }
+      auditionHoveredId = null;
+    }
+  }
+
+  if (!dragState) return;
+
+  var ddx = e.clientX - dragState.startClientX;
+  var ddy = e.clientY - dragState.startClientY;
+  if (!dragState.dragging && Math.sqrt(ddx * ddx + ddy * ddy) >= 5) {
+    dragState.dragging = true;
+    tooltip.style.display = 'none';
+    canvas.style.cursor = 'grabbing';
+  }
+
+  if (dragState.dragging) {
+    var c = canvasCoords(e);
+    dragState.npc.px = c.mx;
+    dragState.npc.py = c.my + 20; // offset -20px y means NPC floats 20px above cursor
+  }
+});
+
+canvas.addEventListener('mouseup', function(e) {
+  if (!dragState) return;
+  var npc = dragState.npc;
+  var wasDragging = dragState.dragging;
+  dragState = null;
+  npc.held = false;
+
+  if (!wasDragging) {
+    // Treat as click — invoke
+    activeInvokeNPC = npc;
+    invokePersonaLabel.textContent = npc.displayName;
+    invokeInput.value = '';
+    drawNpcPortrait(npc);
+    invokeOverlay.classList.add('active');
+    setTimeout(function() { invokeInput.focus(); }, 50);
+  } else {
+    // Drop — find nearest valid tile
+    var tile = nearestValidTile(npc.px, npc.py - 20);
+    npc.tx = tile.tx;
+    npc.ty = tile.ty;
+    npc.px = tile.tx * TILE + TILE / 2;
+    npc.py = tile.ty * TILE + TILE / 2;
+    npc.targetPx = npc.px;
+    npc.targetPy = npc.py;
+    npc.stepsLeft = 0;
+    npc.waitFrames = 10;
+    npc.congressTarget = null;
+    npc.pickNewDir(npcs);
+    canvas.style.cursor = 'default';
+  }
+});
+
+invokeCancel.addEventListener('click', function() {
+  invokeOverlay.classList.remove('active');
+  activeInvokeNPC = null;
+});
+
+invokeOverlay.addEventListener('click', function(e) {
+  if (e.target === invokeOverlay) {
+    invokeOverlay.classList.remove('active');
+    activeInvokeNPC = null;
+  }
+});
+
+// Feature 3: Determine location context from tile position
+function getLocationContext(tx, ty) {
+  // Congress building area (tx 2-8, ty 2-6)
+  if (tx >= 2 && tx <= 8 && ty >= 2 && ty <= 6) {
+    return 'the congress building — formal, deliberative atmosphere';
+  }
+  // Near the pond (tx 4-10, ty 22-27)
+  if (tx >= 4 && tx <= 10 && ty >= 22 && ty <= 27) {
+    return 'the pond — reflective, tranquil surroundings';
+  }
+  // Path (horizontal or vertical)
+  if (MAP[ty] && (MAP[ty][tx] === 1)) {
+    return 'the main path through the commons';
+  }
+  return 'the open commons';
+}
+
+invokeInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    var text = invokeInput.value.trim();
+    if (!text || !activeInvokeNPC) return;
+    var npc = activeInvokeNPC;
+    var locationCtx = getLocationContext(npc.tx, npc.ty);
+    invokeOverlay.classList.remove('active');
+    activeInvokeNPC = null;
+    // Show a "..." bubble while waiting
+    npc.responseBubble = { lines: ['...'], ttl: 600 };
+    fetch('/api/invoke-persona', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: npc.name, prompt: text, location: locationCtx }),
+    })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        var raw = (d.response || d.error || 'no response').trim();
+        // Wrap to ~40 chars per line, max 3 lines
+        var words = raw.split(' ');
+        var lines = [], cur = '';
+        for (var i = 0; i < words.length; i++) {
+          var test = cur ? cur + ' ' + words[i] : words[i];
+          if (test.length > 40) { lines.push(cur); cur = words[i]; }
+          else cur = test;
+        }
+        if (cur) lines.push(cur);
+        if (lines.length > 3) { lines = lines.slice(0, 3); lines[2] = lines[2].slice(0, 37) + '...'; }
+        npc.responseBubble = { lines: lines, ttl: 7 * 60 };
+      })
+      .catch(function(err) {
+        npc.responseBubble = { lines: ['(error: ' + err.message.slice(0,30) + ')'], ttl: 4 * 60 };
+      });
+  }
+  if (e.key === 'Escape') {
+    invokeOverlay.classList.remove('active');
+    activeInvokeNPC = null;
+  }
+});
+
+// ── Load personas and init ────────────────────────────────────────────────────
+fetch('/api/agents')
+  .then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  })
+  .then(function(data) {
+    var all = [];
+    if (data.moderator) all.push(data.moderator);
+    if (data.eligible) all = all.concat(data.eligible);
+    // Include up to 3 meme personas so they can still graze
+    if (data.meme) all = all.concat(data.meme.slice(0, 3));
+
+    // Shuffle spawn positions
+    var spawns = SPAWN_TILES.slice();
+    for (var i = spawns.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = spawns[i]; spawns[i] = spawns[j]; spawns[j] = tmp;
+    }
+
+    all.forEach(function(p, i) {
+      var spawnIdx = i % spawns.length;
+      var st = spawns[spawnIdx];
+      var n = new NPC(p, st[0], st[1]);
+      n.pickNewDir(null);
+      npcs.push(n);
+    });
+
+    startLoop();
+  })
+  .catch(function(err) {
+    document.getElementById('load-error').textContent = 'Could not load personas: ' + err.message;
+    // Still start with hardcoded fallback NPCs
+    var fallbacks = [
+      {name:'chairman', display_name:'Ibrahim the Immovable', color:'#8B1A1A', role:'Chairman', avatar_url:''},
+      {name:'critic',   display_name:'Pippi the Pitiless',    color:'#f87171', role:'Critic',   avatar_url:''},
+      {name:'architect',display_name:'Kwame the Constructor', color:'#f59e0b', role:'Architect', avatar_url:''},
+      {name:'ux',       display_name:'Yuki the Yielding',     color:'#60a5fa', role:'UX',        avatar_url:''},
+    ];
+    var spawns = SPAWN_TILES.slice(0, 4);
+    fallbacks.forEach(function(p, i) {
+      var n = new NPC(p, spawns[i][0], spawns[i][1]);
+      n.pickNewDir(null);
+      npcs.push(n);
+    });
+    startLoop();
+  });
+
+// ── Traces (NPC footprints/thoughts/artifacts) ────────────────────────────────
+var tracesData = []; // [{persona_name, trace_type, tile_x, tile_y, content, age_ms}]
+var tracesLastFetch = 0;
+var TRACES_FETCH_INTERVAL = 30000; // ms
+
+function fetchTraces() {
+  var now = Date.now();
+  if (now - tracesLastFetch < TRACES_FETCH_INTERVAL) return;
+  tracesLastFetch = now;
+  fetch('/api/commons/traces')
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(d) { if (d && d.traces) tracesData = d.traces; })
+    .catch(function() {});
+}
+
+function drawTraces() {
+  var STALE_MS = 10 * 60 * 1000; // fade out over last minute before expiry (7 days)
+  for (var i = 0; i < tracesData.length; i++) {
+    var t = tracesData[i];
+    var px = t.tile_x * TILE + TILE / 2;
+    var py = t.tile_y * TILE + TILE / 2;
+    var alpha = Math.max(0.1, Math.min(1, 1 - (t.age_ms / (7 * 24 * 3600 * 1000))));
+
+    ctx.save();
+    ctx.globalAlpha = alpha * 0.55;
+
+    if (t.trace_type === 'footprint') {
+      // Small dots representing footsteps
+      ctx.fillStyle = COLOR_OVERRIDES[t.persona_name] || '#aaaaaa';
+      ctx.beginPath();
+      ctx.arc(px - 3, py + 2, 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(px + 3, py - 2, 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (t.trace_type === 'thought') {
+      // Small speech bubble dot
+      ctx.fillStyle = COLOR_OVERRIDES[t.persona_name] || '#aaaaaa';
+      ctx.beginPath();
+      ctx.arc(px, py, 3, 0, Math.PI * 2);
+      ctx.fill();
+      // Tiny thought dots above
+      ctx.beginPath(); ctx.arc(px, py - 6, 1.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px + 3, py - 9, 1, 0, Math.PI * 2); ctx.fill();
+    } else if (t.trace_type === 'artifact') {
+      // Small diamond
+      ctx.strokeStyle = COLOR_OVERRIDES[t.persona_name] || '#aaaaaa';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(px, py - 4);
+      ctx.lineTo(px + 4, py);
+      ctx.lineTo(px, py + 4);
+      ctx.lineTo(px - 4, py);
+      ctx.closePath();
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+}
+
+// ── Multiplayer: local player + remote players ────────────────────────────────
+var ADJECTIVES = ['swift','quiet','bold','bright','calm','dark','wild','keen','kind','proud','fierce','gentle','silver','gold','iron','lost','found','lone','brave','odd'];
+var ANIMALS = ['fox','bear','wolf','deer','hawk','owl','crow','lynx','seal','elk','hare','mole','wren','kite','vole','newt','toad','crab','ibis','moth'];
+
+function genPlayerName() {
+  var stored = sessionStorage.getItem('commons_player_name');
+  if (stored) return stored;
+  var adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+  var ani = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
+  var name = adj + '-' + ani;
+  sessionStorage.setItem('commons_player_name', name);
+  return name;
+}
+
+// Fetch real GitHub identity from server and update player name if authed
+fetch('/api/me').then(function(r) { return r.ok ? r.json() : null; }).then(function(d) {
+  if (d && d.username) {
+    localPlayer.name = d.username;
+    sessionStorage.setItem('commons_player_name', d.username);
+    sendPlayerMove();
+  }
+}).catch(function() {});
+
+function genPlayerColor() {
+  var stored = sessionStorage.getItem('commons_player_color');
+  if (stored) return stored;
+  var hue = Math.floor(Math.random() * 360);
+  var color = 'hsl(' + hue + ',70%,65%)';
+  // Convert to hex-ish for consistency
+  var c = document.createElement('canvas');
+  c.width = 1; c.height = 1;
+  var cx2 = c.getContext('2d');
+  cx2.fillStyle = color;
+  cx2.fillRect(0, 0, 1, 1);
+  var d = cx2.getImageData(0, 0, 1, 1).data;
+  var hex = '#' + ('0' + d[0].toString(16)).slice(-2) + ('0' + d[1].toString(16)).slice(-2) + ('0' + d[2].toString(16)).slice(-2);
+  sessionStorage.setItem('commons_player_color', hex);
+  return hex;
+}
+
+var localPlayer = {
+  tx: 13, ty: 20, // tile coords (kept in sync for collision and WS)
+  px: 0, py: 0,   // pixel coords (smooth render position)
+  vx: 0, vy: 0,   // pixel velocity
+  name: genPlayerName(),
+  color: genPlayerColor(),
+  facing: 'right', // 'left' or 'right'
+  hopFrame: 0,     // >0 = mid-hop; counts down to 0
+  socketId: null,  // assigned by server on connect
+};
+localPlayer.px = localPlayer.tx * TILE + TILE / 2;
+localPlayer.py = localPlayer.ty * TILE + TILE / 2;
+
+var PLAYER_SPEED = 1.8; // pixels per frame (smooth, similar to NPC pace)
+var DIAGONAL_NORM = Math.sqrt(2); // normalise diagonal movement to unit speed
+
+var remotePlayers = {}; // id -> {x, y, name, color, facing, hopFrame, ts}
+var keysDown = {};
+
+// ── Warthog vehicle ───────────────────────────────────────────────────────────
+var warthog = {
+  x: 600, y: 350,
+  vx: 0, vy: 0,
+  facing: 'right',
+  seats: [null, null, null, null], // null or {name, socketId, color}
+  driverSeat: 0,
+};
+var inVehicle = false;
+var localSeatIndex = -1;
+var WARTHOG_SPEED = 18; // ~10x player foot speed (PLAYER_SPEED=1.8)
+var WARTHOG_W = 60;
+var WARTHOG_H = 30;
+var WARTHOG_BOARD_DIST = 60; // pixels — how close you must be to board/see hint
+
+function drawWarthog(wx, wy, facing, seats) {
+  ctx.save();
+  if (facing === 'left') {
+    ctx.translate(wx + WARTHOG_W, wy);
+    ctx.scale(-1, 1);
+  } else {
+    ctx.translate(wx, wy);
+  }
+
+  // Shadow
+  ctx.fillStyle = '#00000044';
+  ctx.fillRect(4, 28, 52, 4);
+
+  // Main body (olive/tan military green)
+  ctx.fillStyle = '#6b7c3a';
+  ctx.fillRect(8, 8, 44, 18); // main body
+  ctx.fillRect(12, 2, 36, 10); // cab top
+
+  // Accent panels
+  ctx.fillStyle = '#5a6830';
+  ctx.fillRect(8, 20, 44, 6); // lower body stripe
+  ctx.fillRect(12, 2, 4, 8); // left cab pillar
+  ctx.fillRect(44, 2, 4, 8); // right cab pillar
+
+  // Wheels (dark grey)
+  ctx.fillStyle = '#2a2a2a';
+  ctx.fillRect(4, 22, 14, 8);  // front wheel
+  ctx.fillRect(42, 22, 14, 8); // rear wheel
+  // Wheel rims
+  ctx.fillStyle = '#555';
+  ctx.fillRect(7, 24, 8, 4);   // front rim
+  ctx.fillRect(45, 24, 8, 4);  // rear rim
+  // Rim center dot
+  ctx.fillStyle = '#888';
+  ctx.fillRect(10, 25, 2, 2);
+  ctx.fillRect(48, 25, 2, 2);
+
+  // Windshield
+  ctx.fillStyle = '#4a8fa8';
+  ctx.fillRect(14, 4, 14, 7);
+  // Windshield glare
+  ctx.fillStyle = '#7abfcc';
+  ctx.fillRect(15, 5, 4, 2);
+
+  // Hood details
+  ctx.fillStyle = '#7a8c42';
+  ctx.fillRect(8, 10, 8, 4); // front hood box
+  ctx.fillStyle = '#3a3a2a';
+  ctx.fillRect(10, 11, 4, 2); // grill slot 1
+  ctx.fillRect(10, 14, 4, 2); // grill slot 2 (small)
+
+  // Gun mount (rear — turret post)
+  ctx.fillStyle = '#3a3a2a';
+  ctx.fillRect(44, 4, 4, 8); // turret base
+  ctx.fillRect(40, 4, 12, 3); // gun barrel
+  // Barrel tip
+  ctx.fillStyle = '#555';
+  ctx.fillRect(40, 5, 2, 1);
+
+  // Seat occupant heads
+  for (var i = 0; i < seats.length; i++) {
+    if (seats[i]) {
+      var headX = 16 + i * 10;
+      var headY = 3;
+      // Body hint
+      ctx.fillStyle = seats[i].color || '#fff';
+      ctx.fillRect(headX, headY, 6, 6);
+      // Eye dots
+      ctx.fillStyle = '#000';
+      ctx.fillRect(headX + 1, headY + 2, 1, 1);
+      ctx.fillRect(headX + 4, headY + 2, 1, 1);
+    }
+  }
+
+  ctx.restore();
+}
+
+function sendWarthogInput(dx, dy) {
+  if (!commonsWs || commonsWs.readyState !== WebSocket.OPEN) return;
+  commonsWs.send(JSON.stringify({
+    type: 'warthog_input',
+    dx: dx,
+    dy: dy,
+  }));
+}
+
+function sendWarthogJoin() {
+  if (!commonsWs || commonsWs.readyState !== WebSocket.OPEN) return;
+  commonsWs.send(JSON.stringify({ type: 'warthog_join' }));
+}
+
+function sendWarthogLeave() {
+  if (!commonsWs || commonsWs.readyState !== WebSocket.OPEN) return;
+  commonsWs.send(JSON.stringify({ type: 'warthog_leave' }));
+}
+
+document.addEventListener('keydown', function(e) {
+  if (congressModalOpen) return;
+  // If focus is inside a text input or textarea, let it handle the key
+  if (document.activeElement && (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT')) return;
+  keysDown[e.key] = true;
+  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
+  // Spacebar hop
+  if (e.key === ' ' && localPlayer.hopFrame === 0) {
+    localPlayer.hopFrame = 12;
+    sendPlayerHop();
+    e.preventDefault();
+  }
+  // E key — enter/exit warthog
+  if (e.key === 'e' || e.key === 'E') {
+    if (inVehicle) {
+      // Exit vehicle
+      inVehicle = false;
+      localSeatIndex = -1;
+      sendWarthogLeave();
+    } else {
+      // Check proximity to warthog center
+      var wcx = warthog.x + WARTHOG_W / 2;
+      var wcy = warthog.y + WARTHOG_H / 2;
+      var dx = localPlayer.px - wcx;
+      var dy = localPlayer.py - wcy;
+      if (Math.sqrt(dx * dx + dy * dy) < WARTHOG_BOARD_DIST) {
+        // Find first empty seat (server assigns seat; we'll learn our index from next tick)
+        var hasEmptySeat = false;
+        for (var si = 0; si < warthog.seats.length; si++) {
+          if (!warthog.seats[si]) { hasEmptySeat = true; break; }
+        }
+        if (hasEmptySeat) {
+          inVehicle = true;
+          localSeatIndex = 0; // tentative; corrected on next tick
+          sendWarthogJoin();
+        }
+      }
+    }
+  }
+});
+document.addEventListener('keyup', function(e) {
+  delete keysDown[e.key];
+});
+window.addEventListener('blur', function() {
+  for (var k in keysDown) keysDown[k] = false;
+});
+
+// ── Congress modal ────────────────────────────────────────────────────────────
+var congressModalOpen = false;
+
+function showCongressModal() {
+  if (congressModalOpen) return;
+  congressModalOpen = true;
+  document.getElementById('congress-modal-overlay').style.display = 'flex';
+}
+
+function hideCongressModal() {
+  congressModalOpen = false;
+  document.getElementById('congress-modal-overlay').style.display = 'none';
+}
+
+document.getElementById('congress-modal-close').addEventListener('click', hideCongressModal);
+document.getElementById('congress-modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) hideCongressModal();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && congressModalOpen) { e.stopPropagation(); hideCongressModal(); }
+});
+
+function updateLocalPlayer() {
+  // If local player is driver (seat 0), drive the warthog
+  if (inVehicle && localSeatIndex === warthog.driverSeat) {
+    var inputDx = 0, inputDy = 0;
+    if (keysDown['ArrowLeft']  || keysDown['a'] || keysDown['A']) inputDx = -1;
+    if (keysDown['ArrowRight'] || keysDown['d'] || keysDown['D']) inputDx = 1;
+    if (keysDown['ArrowUp']    || keysDown['w'] || keysDown['W']) inputDy = -1;
+    if (keysDown['ArrowDown']  || keysDown['s'] || keysDown['S']) inputDy = 1;
+
+    // Send input to server; server is authoritative for warthog position
+    sendWarthogInput(inputDx, inputDy);
+
+    // Apply local prediction for smooth rendering (server will correct on next tick)
+    if (inputDx !== 0 && inputDy !== 0) {
+      warthog.vx = (inputDx / DIAGONAL_NORM) * WARTHOG_SPEED;
+      warthog.vy = (inputDy / DIAGONAL_NORM) * WARTHOG_SPEED;
+    } else {
+      warthog.vx = inputDx * WARTHOG_SPEED;
+      warthog.vy = inputDy * WARTHOG_SPEED;
+    }
+
+    warthog.x += warthog.vx;
+    warthog.y += warthog.vy;
+    warthog.x = Math.max(0, Math.min(W - WARTHOG_W, warthog.x));
+    warthog.y = Math.max(0, Math.min(H - WARTHOG_H, warthog.y));
+
+    if (warthog.vx > 0) warthog.facing = 'right';
+    else if (warthog.vx < 0) warthog.facing = 'left';
+
+    // Player tracks warthog center
+    localPlayer.px = warthog.x + WARTHOG_W / 2;
+    localPlayer.py = warthog.y + WARTHOG_H / 2;
+    localPlayer.tx = Math.floor(localPlayer.px / TILE);
+    localPlayer.ty = Math.floor(localPlayer.py / TILE);
+    localPlayer.facing = warthog.facing;
+
+    sendPlayerMove();
+    return;
+  }
+
+  // Passenger: track warthog position but don't drive
+  if (inVehicle) {
+    localPlayer.px = warthog.x + WARTHOG_W / 2;
+    localPlayer.py = warthog.y + WARTHOG_H / 2;
+    localPlayer.tx = Math.floor(localPlayer.px / TILE);
+    localPlayer.ty = Math.floor(localPlayer.py / TILE);
+    return;
+  }
+
+  var inputDx = 0, inputDy = 0;
+  if (keysDown['ArrowLeft']  || keysDown['a'] || keysDown['A']) inputDx = -1;
+  if (keysDown['ArrowRight'] || keysDown['d'] || keysDown['D']) inputDx = 1;
+  if (keysDown['ArrowUp']    || keysDown['w'] || keysDown['W']) inputDy = -1;
+  if (keysDown['ArrowDown']  || keysDown['s'] || keysDown['S']) inputDy = 1;
+
+  // Normalise diagonal
+  if (inputDx !== 0 && inputDy !== 0) {
+    localPlayer.vx = (inputDx / DIAGONAL_NORM) * PLAYER_SPEED;
+    localPlayer.vy = (inputDy / DIAGONAL_NORM) * PLAYER_SPEED;
+  } else {
+    localPlayer.vx = inputDx * PLAYER_SPEED;
+    localPlayer.vy = inputDy * PLAYER_SPEED;
+  }
+
+  // Track facing direction based on horizontal velocity
+  if (localPlayer.vx > 0) localPlayer.facing = 'right';
+  else if (localPlayer.vx < 0) localPlayer.facing = 'left';
+
+  if (localPlayer.vx === 0 && localPlayer.vy === 0) return;
+
+  var newPx = localPlayer.px + localPlayer.vx;
+  var newPy = localPlayer.py + localPlayer.vy;
+
+  // ── Chunk edge detection — MUST happen before collision check ─────────────
+  // isBlocked() returns true for out-of-bounds tiles, so edge crossing must
+  // be detected here before the collision code can block it with an early return.
+  var crossed = false;
+  var newCx = chunkX, newCy = chunkY;
+  var wrapPx = newPx, wrapPy = newPy;
+
+  if (newPx < 0) {
+    newCx = chunkX - 1;
+    wrapPx = W - TILE;
+    crossed = true;
+  } else if (newPx >= W) {
+    newCx = chunkX + 1;
+    wrapPx = TILE;
+    crossed = true;
+  }
+
+  if (newPy < 0) {
+    newCy = chunkY - 1;
+    wrapPy = H - TILE;
+    crossed = true;
+  } else if (newPy >= H) {
+    newCy = chunkY + 1;
+    wrapPy = TILE;
+    crossed = true;
+  }
+
+  if (crossed) {
+    loadChunk(newCx, newCy);
+    localPlayer.px = wrapPx;
+    localPlayer.py = wrapPy;
+    localPlayer.tx = Math.floor(wrapPx / TILE);
+    localPlayer.ty = Math.floor(wrapPy / TILE);
+    // Reset NPC positions to center so they don't get stuck in walls of new chunk
+    for (var ni = 0; ni < npcs.length; ni++) {
+      var midTx = Math.floor(COLS / 2);
+      var midTy = Math.floor(ROWS / 2);
+      npcs[ni].tx = midTx + (ni % 5) - 2;
+      npcs[ni].ty = midTy + Math.floor(ni / 5) - 2;
+      npcs[ni].px = npcs[ni].tx * TILE + TILE / 2;
+      npcs[ni].py = npcs[ni].ty * TILE + TILE / 2;
+      npcs[ni].targetPx = npcs[ni].px;
+      npcs[ni].targetPy = npcs[ni].py;
+      npcs[ni].stepsLeft = 0;
+      npcs[ni].congressTarget = null;
+    }
+    sendChunkChange(newCx, newCy);
+    sendPlayerMove();
+    return;
+  }
+
+  var newTx = Math.floor(newPx / TILE);
+  var newTy = Math.floor(newPy / TILE);
+
+  // Try full movement; slide on each axis if blocked
+  if (!isBlocked(newTx, newTy)) {
+    localPlayer.px = newPx;
+    localPlayer.py = newPy;
+  } else if (!isBlocked(Math.floor(newPx / TILE), localPlayer.ty)) {
+    localPlayer.px = newPx;
+    newTy = localPlayer.ty;
+  } else if (!isBlocked(localPlayer.tx, Math.floor(newPy / TILE))) {
+    localPlayer.py = newPy;
+    newTx = localPlayer.tx;
+  } else {
+    return; // fully blocked
+  }
+
+  // Clamp to canvas bounds
+  localPlayer.px = Math.max(TILE / 2, Math.min(W - TILE / 2, localPlayer.px));
+  localPlayer.py = Math.max(TILE / 2, Math.min(H - TILE / 2, localPlayer.py));
+
+  // Sync tile coords
+  var prevTx = localPlayer.tx;
+  var prevTy = localPlayer.ty;
+  localPlayer.tx = Math.floor(localPlayer.px / TILE);
+  localPlayer.ty = Math.floor(localPlayer.py / TILE);
+
+  // Broadcast move if tile changed
+  if (localPlayer.tx !== prevTx || localPlayer.ty !== prevTy) {
+    sendPlayerMove();
+  }
+
+  // Congress building entry: trigger modal when player reaches the approach path,
+  // steps, or doorway at tx=5 (chunk 0,0 only). ty=7 is just outside, ty=6 is
+  // the steps row, ty=5 is the doorway interior.
+  if (chunkX === 0 && chunkY === 0 &&
+      localPlayer.tx === 5 &&
+      (localPlayer.ty === 5 || localPlayer.ty === 6 || localPlayer.ty === 7)) {
+    showCongressModal();
+  }
+}
+
+function drawLocalPlayer() {
+  // Hide player avatar while mounted in vehicle
+  if (inVehicle) return;
+  var cx = Math.round(localPlayer.px);
+  // Hop arc: offset Y upward based on hopFrame (12→0)
+  var hopOffset = 0;
+  if (localPlayer.hopFrame > 0) {
+    hopOffset = -Math.sin(localPlayer.hopFrame / 12 * Math.PI) * 10;
+    localPlayer.hopFrame--;
+  }
+  var cy = Math.round(localPlayer.py) - 14 + hopOffset;
+
+  // White glow halo (radial gradient, drawn under character — avoids shadowBlur bleeding onto map)
+  var glowCy = cy + 14; // center at feet level (cy is top-of-sprite; feet at cy+14)
+  var grad = ctx.createRadialGradient(cx, glowCy, 2, cx, glowCy, 16);
+  grad.addColorStop(0, 'rgba(255,255,255,0.30)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.beginPath();
+  ctx.arc(cx, glowCy, 16, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+  // Draw character on top of halo (no shadow)
+  if (localPlayer.facing === 'left') {
+    ctx.save();
+    ctx.translate(cx * 2, 0);
+    ctx.scale(-1, 1);
+    drawCharacter(cx, cy, localPlayer.color, 1, false);
+    ctx.restore();
+  } else {
+    drawCharacter(cx, cy, localPlayer.color, 1, false);
+  }
+
+  // Name label above
+  ctx.save();
+  ctx.font = 'bold 8px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(localPlayer.name, cx, cy - 3);
+  ctx.restore();
+}
+
+function drawRemotePlayers() {
+  var now = Date.now();
+  var toDelete = [];
+  for (var id in remotePlayers) {
+    var p = remotePlayers[id];
+    if (now - p.ts > 10000) { toDelete.push(id); continue; }
+    // Skip self by socket_id (fix dual-avatar bug)
+    if (localPlayer.socketId && p.socket_id === localPlayer.socketId) continue;
+    // Only render players in the same chunk as us
+    var pCx = (p.chunkX !== undefined ? p.chunkX : 0);
+    var pCy = (p.chunkY !== undefined ? p.chunkY : 0);
+    if (pCx !== chunkX || pCy !== chunkY) continue;
+
+    // Lerp render position toward target pixel position
+    p.renderX += (p.targetX - p.renderX) * 0.2;
+    p.renderY += (p.targetY - p.renderY) * 0.2;
+
+    var cx = Math.round(p.renderX);
+    // Hop arc for remote player
+    var remoteHopOffset = 0;
+    if (p.hopFrame && p.hopFrame > 0) {
+      remoteHopOffset = -Math.sin(p.hopFrame / 12 * Math.PI) * 10;
+      p.hopFrame--;
+    }
+    var cy = Math.round(p.renderY) - 14 + remoteHopOffset;
+
+    // Draw sprite with facing flip (grey overlay if away)
+    ctx.save();
+    if (p.isAway) {
+      ctx.filter = 'grayscale(100%)';
+      ctx.globalAlpha = 0.4;
+    }
+    if (p.facing === 'left') {
+      ctx.save();
+      ctx.translate(cx * 2, 0);
+      ctx.scale(-1, 1);
+      drawCharacter(cx, cy, p.color, 1, false);
+      ctx.restore();
+    } else {
+      drawCharacter(cx, cy, p.color, 1, false);
+    }
+    ctx.restore();
+
+    // Small dot indicator above head
+    ctx.save();
+    if (p.isAway) ctx.globalAlpha = 0.4;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(cx, cy - 5, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Name label above sprite
+    if (p.name) {
+      ctx.save();
+      if (p.isAway) ctx.globalAlpha = 0.4;
+      ctx.font = 'bold 8px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = p.isAway ? '#666666' : '#cccccc';
+      ctx.fillText(p.name, cx, cy - 10);
+      ctx.restore();
+    }
+  }
+  for (var j = 0; j < toDelete.length; j++) delete remotePlayers[toDelete[j]];
+}
+
+// ── WebSocket connection (commons-server via /commons-ws proxy) ───────────────
+var commonsWs = null;
+var wsReconnectTimer = null;
+var wsMoveSeq = 0; // monotonic input sequence number
+
+function connectCommonsWs() {
+  if (commonsWs && (commonsWs.readyState === WebSocket.OPEN || commonsWs.readyState === WebSocket.CONNECTING)) return;
+
+  var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  var params = 'userId=' + encodeURIComponent(localPlayer.name) +
+               '&name=' + encodeURIComponent(localPlayer.name) +
+               '&color=' + encodeURIComponent(localPlayer.color);
+  var url = proto + '//' + location.host + '/commons-ws?' + params;
+  commonsWs = new WebSocket(url);
+
+  commonsWs.onopen = function() {
+    // Send initial position
+    sendPlayerMove();
+  };
+
+  commonsWs.onmessage = function(e) {
+    var msg;
+    try { msg = JSON.parse(e.data); } catch { return; }
+
+    // commons-server sends 'tick' messages containing players, npcs?, warthog?, congress?
+    if (msg.type === 'tick') {
+      // --- Players ---
+      var prevRemote = remotePlayers;
+      remotePlayers = {};
+      for (var id in msg.players) {
+        var p = msg.players[id];
+        // Identify our own socketId by matching name (server assigns socketId)
+        if (p.name === localPlayer.name && !localPlayer.socketId) {
+          localPlayer.socketId = p.socketId || id;
+        }
+        // Skip rendering ourselves as a remote player
+        if (p.socketId === localPlayer.socketId || (p.name === localPlayer.name && id === localPlayer.socketId)) continue;
+        // Tile coords from server; convert to pixel center
+        var targetX = p.x * TILE + TILE / 2;
+        var targetY = p.y * TILE + TILE / 2;
+        var existingHop = (prevRemote[id] && prevRemote[id].hopFrame) || p.hopFrame || 0;
+        var renderX = (prevRemote[id] && prevRemote[id].renderX !== undefined) ? prevRemote[id].renderX : targetX;
+        var renderY = (prevRemote[id] && prevRemote[id].renderY !== undefined) ? prevRemote[id].renderY : targetY;
+        remotePlayers[id] = {
+          x: p.x, y: p.y, name: p.name, color: p.color,
+          facing: p.facing || 'right',
+          socket_id: p.socketId || id,
+          hopFrame: existingHop,
+          ts: p.lastSeen || Date.now(),
+          chunkX: p.chunkX !== undefined ? p.chunkX : 0,
+          chunkY: p.chunkY !== undefined ? p.chunkY : 0,
+          targetX: targetX,
+          targetY: targetY,
+          renderX: renderX,
+          renderY: renderY,
+          isAway: p.isAway || false,
+        };
+      }
+
+      // --- NPCs (delta: only present when changed) ---
+      // Server and client share the same pixel coordinate space (TILE_SIZE=20).
+      if (msg.npcs && npcs.length > 0) {
+        for (var ni = 0; ni < msg.npcs.length; ni++) {
+          var npcData = msg.npcs[ni];
+          for (var nj = 0; nj < npcs.length; nj++) {
+            if (npcs[nj].name === npcData.name) {
+              npcs[nj].serverX = npcData.x;
+              npcs[nj].serverY = npcData.y;
+              npcs[nj].serverFacing = npcData.facing;
+              break;
+            }
+          }
+        }
+      }
+
+      // --- Congress state (delta: only present when changed) ---
+      if (msg.congress !== undefined) {
+        var wasActive = congressState.active;
+        congressState.active = !!msg.congress.active;
+        if (congressState.active && !wasActive) showCongressModal();
+        else if (!congressState.active && wasActive) hideCongressModal();
+      }
+
+      // --- Warthog (delta: only present when changed) ---
+      if (msg.warthog) {
+        var wsData = msg.warthog;
+        // Driver keeps local position authority; passengers follow server
+        if (!inVehicle) {
+          warthog.x = wsData.x;
+          warthog.y = wsData.y;
+        } else if (localSeatIndex !== warthog.driverSeat) {
+          warthog.x = wsData.x;
+          warthog.y = wsData.y;
+        }
+        warthog.vx = wsData.vx;
+        warthog.vy = wsData.vy;
+        warthog.facing = wsData.facing;
+        // seats are now socketId strings (or null); update all except local seat
+        for (var si2 = 0; si2 < wsData.seats.length; si2++) {
+          if (!(inVehicle && si2 === localSeatIndex)) {
+            // Convert socketId to a seat object with color looked up from remote players
+            var seatId = wsData.seats[si2];
+            if (seatId) {
+              var seatColor = (remotePlayers[seatId] && remotePlayers[seatId].color) ||
+                              (seatId === localPlayer.socketId ? localPlayer.color : '#ffffff');
+              var seatName = (remotePlayers[seatId] && remotePlayers[seatId].name) ||
+                             (seatId === localPlayer.socketId ? localPlayer.name : '?');
+              warthog.seats[si2] = { name: seatName, socketId: seatId, color: seatColor };
+            } else {
+              warthog.seats[si2] = null;
+            }
+          }
+        }
+        // Update localSeatIndex if our socketId appears in seats
+        if (localPlayer.socketId && inVehicle) {
+          var newSeatIdx = wsData.seats.indexOf(localPlayer.socketId);
+          if (newSeatIdx >= 0) localSeatIndex = newSeatIdx;
+        }
+      }
+    }
+  };
+
+  commonsWs.onclose = function() {
+    commonsWs = null;
+    // Reconnect after 3s
+    if (!wsReconnectTimer) {
+      wsReconnectTimer = setTimeout(function() { wsReconnectTimer = null; connectCommonsWs(); }, 3000);
+    }
+  };
+
+  commonsWs.onerror = function() {
+    // onclose will fire after onerror, so reconnect handled there
+  };
+}
+
+function sendPlayerMove() {
+  if (!commonsWs || commonsWs.readyState !== WebSocket.OPEN) return;
+  commonsWs.send(JSON.stringify({
+    type: 'move',
+    seq: ++wsMoveSeq,
+    x: localPlayer.tx,
+    y: localPlayer.ty,
+    facing: localPlayer.facing,
+    chunkX: chunkX,
+    chunkY: chunkY,
+  }));
+}
+
+function sendPlayerHop() {
+  if (!commonsWs || commonsWs.readyState !== WebSocket.OPEN) return;
+  commonsWs.send(JSON.stringify({ type: 'hop' }));
+}
+
+function sendChunkChange(cx, cy) {
+  if (!commonsWs || commonsWs.readyState !== WebSocket.OPEN) return;
+  commonsWs.send(JSON.stringify({
+    type: 'chunk',
+    chunkX: cx,
+    chunkY: cy,
+  }));
+}
+
+function sendPlayerStatus(status) {
+  if (!commonsWs || commonsWs.readyState !== WebSocket.OPEN) return;
+  commonsWs.send(JSON.stringify({
+    type: 'status',
+    away: status === 'away',
+  }));
+}
+
+// Broadcast away/active status when tab visibility changes or window loses/gains focus
+document.addEventListener('visibilitychange', function() {
+  sendPlayerStatus(document.hidden ? 'away' : 'active');
+});
+window.addEventListener('blur', function() {
+  sendPlayerStatus('away');
+});
+window.addEventListener('focus', function() {
+  sendPlayerStatus('active');
+});
+
+// Start WebSocket connection after personas are loaded (startLoop is called)
+var wsStarted = false;
+function maybeStartWs() {
+  if (wsStarted) return;
+  wsStarted = true;
+  connectCommonsWs();
+}
+
+// ── Feature 5: Worn path rendering ────────────────────────────────────────────
+function drawWornPaths() {
+  for (var ty = 0; ty < ROWS; ty++) {
+    for (var tx = 0; tx < COLS; tx++) {
+      if (MAP[ty][tx] !== 0) continue; // only grass
+      var wl = getWornLevel(tx, ty);
+      if (wl === 0) continue;
+      var x = tx * TILE, y = ty * TILE;
+      if (wl === 2) {
+        // dirt — light brown overlay
+        ctx.fillStyle = '#6b4c1888';
+        ctx.fillRect(x, y, TILE, TILE);
+      } else {
+        // worn — slight dark overlay
+        ctx.fillStyle = '#00000028';
+        ctx.fillRect(x, y, TILE, TILE);
+      }
+    }
+  }
+}
+
+// ── Game loop ─────────────────────────────────────────────────────────────────
+var loopStarted = false;
+function startLoop() {
+  if (loopStarted) return;
+  loopStarted = true;
+  maybeStartWs();
+  requestAnimationFrame(loop);
+}
+
+// Draw a single tree (t=4) or rock (t=5) tile at canvas position (x, y).
+// Shared by drawMap, drawForegroundTiles, and the glow-halo repair pass.
+function drawTreeRockTile(t, x, y) {
+  if (t === 4) {
+    // tree
+    ctx.fillStyle = '#4a2c0a';
+    ctx.fillRect(x + 6, y + 10, 4, 6);
+    if (SEASON === 2) {
+      ctx.fillStyle = '#8b4513'; ctx.fillRect(x + 2, y + 2, 12, 10);
+      ctx.fillStyle = '#a0521a'; ctx.fillRect(x + 4, y, 8, 6);
+    } else if (SEASON === 3) {
+      ctx.fillStyle = '#b0b8c0'; ctx.fillRect(x + 2, y + 2, 12, 10);
+      ctx.fillStyle = '#c8d0d8'; ctx.fillRect(x + 4, y, 8, 6);
+    } else {
+      ctx.fillStyle = '#1a5c1a'; ctx.fillRect(x + 2, y + 2, 12, 10);
+      ctx.fillStyle = '#236623'; ctx.fillRect(x + 4, y, 8, 6);
+    }
+  } else {
+    // rock (t === 5)
+    ctx.fillStyle = '#3a3a4a'; ctx.fillRect(x + 2, y + 6, 12, 8);
+    ctx.fillStyle = '#4e4e60'; ctx.fillRect(x + 3, y + 4, 10, 7);
+    ctx.fillStyle = '#606070'; ctx.fillRect(x + 5, y + 3, 4, 3);
+  }
+}
+
+// Redraw tree/rock tiles that spatially overlap the warthog and are visually in front of it.
+// This corrects the z-order bug where the warthog (drawn on top of the cached map) would
+// appear to pass over trees/rocks that should occlude it from the front.
+function drawForegroundTiles() {
+  // Warthog bounding box in canvas pixels
+  var wx = Math.round(warthog.x);
+  var wy = Math.round(warthog.y);
+  var wCenterY = wy + WARTHOG_H / 2;
+
+  // Tile range that could possibly overlap the warthog bbox
+  var txMin = Math.floor(wx / TILE);
+  var txMax = Math.floor((wx + WARTHOG_W) / TILE);
+  var tyMin = Math.floor(wy / TILE);
+  var tyMax = Math.floor((wy + WARTHOG_H) / TILE);
+
+  for (var ty = tyMin; ty <= tyMax; ty++) {
+    if (ty < 0 || ty >= ROWS) continue;
+    for (var tx = txMin; tx <= txMax; tx++) {
+      if (tx < 0 || tx >= COLS) continue;
+      var t = MAP[ty][tx];
+      if (t !== 4 && t !== 5) continue;
+
+      // Tile center y — if greater than warthog center y, tile is visually in front
+      var tileCenterY = ty * TILE + TILE / 2;
+      if (tileCenterY <= wCenterY) continue;
+
+      var x = tx * TILE, y = ty * TILE;
+      // Fill tile with grass first — tree/rock sprites have transparent pixels
+      // and without this fill the warthog bleeds through the gaps
+      ctx.fillStyle = grassColor(tx, ty);
+      ctx.fillRect(x, y, TILE, TILE);
+      drawTreeRockTile(t, x, y);
+    }
+  }
+}
+
+function loop() {
+  // Fetch traces periodically
+  fetchTraces();
+
+  // Feature 2: apply faction clustering bias
+  applyFactionClustering();
+
+  // Update all NPCs
+  for (var i = 0; i < npcs.length; i++) {
+    npcs[i].update(npcs);
+  }
+
+  // Per-frame tooltip staleness check: NPCs move each frame, so the tooltip
+  // can become stale if an NPC walks out from under a stationary mouse cursor.
+  // Re-run hit detection each frame using the last known mouse position.
+  if (lastMouseCanvas && !dragState) {
+    var _mx = lastMouseCanvas.mx, _my = lastMouseCanvas.my;
+    var _found = null;
+    for (var _i = 0; _i < npcs.length; _i++) {
+      var _n = npcs[_i];
+      var _dx = _mx - _n.px, _dy = _my - (_n.py - 8);
+      if (Math.abs(_dx) < 14 && Math.abs(_dy) < 20) { _found = _n; break; }
+    }
+    if (_found) {
+      ttName.textContent = _found.displayName;
+      ttRole.textContent = _found.role;
+      if (_found.avatarUrl) { ttAvatar.src = _found.avatarUrl; ttAvatar.style.display = 'block'; }
+      else { ttAvatar.style.display = 'none'; }
+      tooltip.style.display = 'block';
+      tooltip.style.left = (lastMouseCanvas.clientX + 14) + 'px';
+      tooltip.style.top = (lastMouseCanvas.clientY - 10) + 'px';
+    } else {
+      tooltip.style.display = 'none';
+    }
+
+    // Per-frame audition walker card staleness check: if card is open but cursor has moved
+    // off the walker (walker keeps moving), hide the card automatically.
+    if (auditionHoveredId && !auditionCard.classList.contains('active')) {
+      // Card was already dismissed but hover state wasn't cleared — clean up
+      auditionHoveredId = null;
+    } else if (auditionHoveredId && auditionCard.classList.contains('active')) {
+      var _cardWalker = null;
+      for (var _ai = 0; _ai < auditionWalkers.length; _ai++) {
+        if (auditionWalkers[_ai].id === auditionHoveredId) { _cardWalker = auditionWalkers[_ai]; break; }
+      }
+      if (_cardWalker && lastMouseCanvas) {
+        var _awdx = lastMouseCanvas.mx - _cardWalker.x;
+        var _awdy = lastMouseCanvas.my - auditionWalkerY;
+        if (Math.abs(_awdx) >= 20 || Math.abs(_awdy) >= 20) {
+          // Cursor is no longer over the walker — hide card
+          hideAuditionCard();
+          fetch(AUDITION_URL + '/api/audition/resume', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: auditionHoveredId }),
+          }).catch(function() {});
+          for (var _ri = 0; _ri < auditionWalkers.length; _ri++) {
+            if (auditionWalkers[_ri].id === auditionHoveredId) auditionWalkers[_ri].paused = false;
+          }
+          auditionHoveredId = null;
+        }
+      }
+    }
+  }
+
+  // Update local player (keyboard movement)
+  updateLocalPlayer();
+
+  // Clear canvas fully each frame so warthog (and other sprites) don't ghost
+  ctx.clearRect(0, 0, W, H);
+
+  // Draw map (cached)
+  ctx.drawImage(mapCache, 0, 0);
+
+  // Fountain water animation (dynamic, drawn each frame on top of cached map — chunk 0,0 only)
+  if (chunkX === 0 && chunkY === 0) drawFountainAnimation();
+
+  // Feature 5: draw worn path overlays on grass tiles
+  drawWornPaths();
+
+  // Draw NPC traces (footprints, thoughts, artifacts)
+  drawTraces();
+
+  // Sort NPCs by y position (painter's algorithm)
+  var sorted = npcs.slice().sort(function(a,b) { return a.py - b.py; });
+  for (var i = 0; i < sorted.length; i++) {
+    sorted[i].draw();
+  }
+
+  // Draw audition walkers (candidates crossing the map)
+  fetchAuditionWalkers();
+  drawAuditionWalkers();
+
+  // Draw Warthog (under players); apply hop offset if driver is hopping
+  var warthogHopOffset = 0;
+  if (inVehicle && localPlayer.hopFrame > 0) {
+    warthogHopOffset = -Math.sin(localPlayer.hopFrame / 12 * Math.PI) * 10;
+  }
+  drawWarthog(Math.round(warthog.x), Math.round(warthog.y) + warthogHopOffset, warthog.facing, warthog.seats);
+
+  // Foreground z-order pass: redraw trees/rocks that are visually in front of the warthog
+  drawForegroundTiles();
+
+  // "E to drive" hint when near warthog and not in vehicle
+  if (!inVehicle) {
+    var wcx2 = warthog.x + WARTHOG_W / 2;
+    var wcy2 = warthog.y + WARTHOG_H / 2;
+    var dxh = localPlayer.px - wcx2;
+    var dyh = localPlayer.py - wcy2;
+    if (Math.sqrt(dxh * dxh + dyh * dyh) < WARTHOG_BOARD_DIST) {
+      ctx.save();
+      ctx.font = 'bold 9px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#00000088';
+      ctx.fillText('[E] to drive', Math.round(wcx2) + 1, Math.round(warthog.y) - 4);
+      ctx.fillStyle = '#f0e060';
+      ctx.fillText('[E] to drive', Math.round(wcx2), Math.round(warthog.y) - 5);
+      ctx.restore();
+    }
+  }
+
+  // Draw remote players (other visitors)
+  drawRemotePlayers();
+
+  // Draw local player (always on top)
+  drawLocalPlayer();
+
+  // Redraw tree/rock tiles that overlap the player's glow halo (radius ~16px).
+  // The radial gradient halo bleeds semi-transparent white onto adjacent tiles;
+  // redrawing them here corrects the corruption without disrupting the draw order.
+  if (!inVehicle) {
+    var plx = Math.round(localPlayer.px);
+    var ply = Math.round(localPlayer.py);
+    var GLOW_R = 18; // slightly larger than the 16px glow radius
+    var ptxMin = Math.floor((plx - GLOW_R) / TILE);
+    var ptxMax = Math.floor((plx + GLOW_R) / TILE);
+    var ptyMin = Math.floor((ply - GLOW_R - 14) / TILE); // -14 for sprite top offset
+    var ptyMax = Math.floor((ply + GLOW_R) / TILE);
+    for (var pty = ptyMin; pty <= ptyMax; pty++) {
+      if (pty < 0 || pty >= ROWS) continue;
+      for (var ptx = ptxMin; ptx <= ptxMax; ptx++) {
+        if (ptx < 0 || ptx >= COLS) continue;
+        var pt = MAP[pty][ptx];
+        if (pt !== 4 && pt !== 5) continue;
+        var px0 = ptx * TILE, py0 = pty * TILE;
+        ctx.fillStyle = grassColor(ptx, pty);
+        ctx.fillRect(px0, py0, TILE, TILE);
+        drawTreeRockTile(pt, px0, py0);
+      }
+    }
+  }
+
+  // ── Time of day overlay ──────────────────────────────────────────────────
+  var tov = getTimeOverlay();
+  if (tov) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(' + tov.r + ',' + tov.g + ',' + tov.b + ',' + tov.a + ')';
+    ctx.fillRect(0, 0, W, H);
+    if (tov.stars) {
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      for (var si = 0; si < STAR_POS.length; si++) {
+        // Twinkle: show only ~80% each frame
+        if (Math.random() < 0.8) {
+          ctx.fillRect(STAR_POS[si].x, STAR_POS[si].y, 1, 1);
+        }
+      }
+    }
+    ctx.restore();
+  }
+
+  // ── Congress flag (above congress building when in session — chunk 0,0 only) ─
+  if (congressState.active && chunkX === 0 && chunkY === 0) {
+    ctx.save();
+    var fx = 5 * TILE; // flag pole x (center of building)
+    var fy = TILE;     // above building (row 1)
+    ctx.fillStyle = '#222';
+    ctx.fillRect(fx, fy, 2, TILE); // pole
+    ctx.fillStyle = '#f87171'; // red flag
+    ctx.fillRect(fx + 2, fy, 12, 8); // flag body
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(fx + 4, fy + 2, 2, 4); // simplified scale icon — left arm
+    ctx.fillRect(fx + 8, fy + 2, 2, 4); // right arm
+    ctx.fillRect(fx + 6, fy + 1, 2, 2); // center top
+    ctx.restore();
+  }
+
+  // Feature 4: Season indicator (bottom-left corner)
+  ctx.save();
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#00000066';
+  ctx.fillText(SEASON_LABELS[SEASON], 7, H - 7);
+  ctx.fillStyle = '#c8e8d0';
+  ctx.fillText(SEASON_LABELS[SEASON], 6, H - 8);
+  ctx.restore();
+
+  // Chunk coordinates indicator (bottom-right corner)
+  if (chunkX !== 0 || chunkY !== 0) {
+    var chunkLabel = 'chunk ' + chunkX + ',' + chunkY;
+    ctx.save();
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#00000066';
+    ctx.fillText(chunkLabel, W - 6, H - 7);
+    ctx.fillStyle = '#8888cc';
+    ctx.fillText(chunkLabel, W - 7, H - 8);
+    ctx.restore();
+  }
+
+  // "The Commons" title overlay (pixel-ish style)
+  ctx.save();
+  ctx.font = 'bold 18px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#00000088';
+  ctx.fillText('The Commons', W/2 + 1, 22);
+  ctx.fillStyle = '#4ecca3';
+  ctx.fillText('The Commons', W/2, 21);
+  ctx.restore();
+
+  // Council building label (chunk 0,0 only)
+  if (chunkX === 0 && chunkY === 0) {
+    ctx.save();
+    ctx.font = 'bold 8px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#00000066';
+    ctx.fillText('CONGRESS', 5*TILE + TILE/2 + 1, 2*TILE - 2);
+    ctx.fillStyle = '#c8c8e8';
+    ctx.fillText('CONGRESS', 5*TILE + TILE/2, 2*TILE - 3);
+    // Dungeon entrance label (top-right building, col 43)
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillText('⚔ DUNGEON', 43*TILE + TILE/2 + 1, 2*TILE - 2);
+    ctx.fillStyle = '#a0ffa0';
+    ctx.fillText('⚔ DUNGEON', 43*TILE + TILE/2, 2*TILE - 3);
+    ctx.restore();
+  }
+
+  requestAnimationFrame(loop);
+}
+
+})();
+</script>
+
+<!-- YouTube IFrame API ambient soundtrack -->
+<script>
+(function() {
+  var ytPlayer = null;
+  var playerReady = false;
+  var musicStarted = false;
+  var btn = document.getElementById('music-btn');
+
+  // Load YouTube IFrame API
+  var tag = document.createElement('script');
+  tag.src = 'https://www.youtube.com/iframe_api';
+  var firstScript = document.getElementsByTagName('script')[0];
+  firstScript.parentNode.insertBefore(tag, firstScript);
+
+  window.onYouTubeIframeAPIReady = function() {
+    ytPlayer = new YT.Player('yt-player', {
+      width: '1',
+      height: '1',
+      videoId: 'cJQQrI7nCeY',
+      playerVars: {
+        autoplay: 0,
+        loop: 1,
+        playlist: 'cJQQrI7nCeY',
+        controls: 0,
+        disablekb: 1,
+        fs: 0,
+        iv_load_policy: 3,
+        modestbranding: 1,
+        rel: 0
+      },
+      events: {
+        onReady: function() {
+          playerReady = true;
+        }
+      }
+    });
+  };
+
+  btn.addEventListener('click', function() {
+    if (!playerReady || !ytPlayer) return;
+
+    if (!musicStarted) {
+      // First click: start playing
+      ytPlayer.unMute();
+      ytPlayer.setVolume(50);
+      ytPlayer.playVideo();
+      musicStarted = true;
+      btn.textContent = '🎵';
+    } else {
+      // Subsequent clicks: toggle mute
+      if (ytPlayer.isMuted()) {
+        ytPlayer.unMute();
+        btn.textContent = '🎵';
+      } else {
+        ytPlayer.mute();
+        btn.textContent = '🔇';
+      }
+    }
+  });
+})();
+</script>
+</body>
+</html>

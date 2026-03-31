@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-022125-afa15563",
+  "title": "Fix mob cache to only include mobs with images",
+  "agent_id": "afa155637b915a8ca",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T02:21:24Z",
+      "event": "started",
+      "context": "Fix mob cache to only include mobs with images"
+    },
+    {
+      "ts": "2026-03-30T02:36:00Z",
+      "event": "done",
+      "context": "Everything committed and pushed. Here's a summary of what was found and fixed:\n\n---\n\n**What was found:**\n\nThe mob cache had 69 entries, none of which had corresponding PNG images at `/mnt/data/hello-world/static/mob-images/`. The `mob-sprites.js` file contained sprite JS functions for all 69 mobs (plus 29 others for non-mob entities like personas/congress sessions), but the PNG render step had never been run for any mob. As a result, `skipGen: true` runs would select from the full 69-mob pool bu...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

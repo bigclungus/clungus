@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-170157-a911673f",
+  "title": "Test Grok 4.20 reasoning model via proxy",
+  "agent_id": "a911673f97badd82e",
+  "agent_type": "general-purpose",
+  "session_id": "b8a58c15-c6f1-48c2-b033-87763f636706",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T17:01:57Z",
+      "event": "started",
+      "context": "Test Grok 4.20 reasoning model via proxy"
+    },
+    {
+      "ts": "2026-03-27T17:02:24Z",
+      "event": "done",
+      "context": "All steps completed successfully:\n\n1. **Proxy status**: Running on port 4100 (PID 3493637), returned `405: Method Not Allowed` on GET (expected -- it only handles POST).\n2. **Model test**: `grok-4.20-0309-reasoning` responded with `4` to \"What is 2+2? Answer briefly.\" -- no errors, no timeout.\n3. **Discord post**: Results posted to thread `1487123309308153857`.",
+      "artifacts": []
+    }
+  ]
+}

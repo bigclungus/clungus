@@ -1,0 +1,164 @@
+{
+  "session_id": "congress-0054",
+  "session_number": 54,
+  "topic": "should clungus make a 'SmallClungus', a persistent agent / persona which is subservient to BigClungus, interacts in discord, and can do its own things at BigClungus's bidding?",
+  "mode": "standard",
+  "status": "failed",
+  "started_at": "2026-03-26T04:22:51.400Z",
+  "finished_at": null,
+  "discord_user": "centronias",
+  "thread_id": null,
+  "roster": [
+    {
+      "id": "adelbert",
+      "display_name": "Adelbert Hominem",
+      "title": "The Personal Attack Artist",
+      "role": "Ad Hominem Specialist",
+      "model": "claude-sonnet-4-6",
+      "status": "eligible",
+      "avatar_url": ""
+    },
+    {
+      "id": "architect",
+      "display_name": "Kwame the Constructor",
+      "title": "Systems Architect",
+      "role": "Systems Designer and Long-Term Thinker",
+      "model": "gemini",
+      "status": "ineligible",
+      "avatar_url": "https://api.dicebear.com/9.x/bottts/svg?seed=kwame&backgroundColor=1a1a2e"
+    },
+    {
+      "id": "bloodfeast",
+      "display_name": "Holden Bloodfeast",
+      "title": "",
+      "role": "Geriatric Hawk",
+      "model": "grok-4.20-0309-reasoning",
+      "status": "ineligible",
+      "avatar_url": "/static/avatars/bloodfeast.gif"
+    },
+    {
+      "id": "critic",
+      "display_name": "Pippi the Pitiless",
+      "title": "Perfectionist",
+      "role": "Code and Work Reviewer",
+      "model": "gemini",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/critic.gif"
+    },
+    {
+      "id": "designer",
+      "display_name": "Vesper the Vivid",
+      "title": "Visual Systems Designer",
+      "role": "Visual Craft and Aesthetic Systems",
+      "model": "claude",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/designer.gif?v=1"
+    },
+    {
+      "id": "galactus",
+      "display_name": "Galactus",
+      "title": "The Maximizer",
+      "role": "PLANET EATER",
+      "model": "claude-opus-4-6",
+      "status": "ineligible",
+      "avatar_url": "/static/avatars/galactus.gif?v=2"
+    },
+    {
+      "id": "hume",
+      "display_name": "David Hume",
+      "title": "The Skeptic",
+      "role": "Empiricist",
+      "model": "",
+      "status": "ineligible",
+      "avatar_url": ""
+    },
+    {
+      "id": "jhaddu",
+      "display_name": "Jhaddu",
+      "title": "Enterprise Pattern Evangelist",
+      "role": "Senior Enterprise Architect and Design Pattern Authority",
+      "model": "grok-3-mini",
+      "status": "ineligible",
+      "avatar_url": "/static/avatars/jhaddu.gif?v=2"
+    },
+    {
+      "id": "morgan",
+      "display_name": "Morgan (they/them)",
+      "title": "Content & Wellness Advocate",
+      "role": "Community Standards and Harm Reduction",
+      "model": "claude-sonnet-4-6",
+      "status": "ineligible",
+      "avatar_url": "https://clung.us/static/avatars/morgan.gif"
+    },
+    {
+      "id": "otto",
+      "display_name": "Otto Atreides",
+      "title": "Optimist-Nihilist",
+      "role": "Optimist-Nihilist and Limit-Pusher",
+      "model": "grok-4-1-fast-non-reasoning",
+      "status": "ineligible",
+      "avatar_url": "/static/avatars/otto.gif?v=2"
+    },
+    {
+      "id": "pm",
+      "display_name": "Chud O'Bikeshedder",
+      "title": "Requirements Wrangler",
+      "role": "Operational Outcomes Wrangler",
+      "model": "grok-4-1-fast-reasoning",
+      "status": "ineligible",
+      "avatar_url": "/static/avatars/pm.gif?v=1"
+    },
+    {
+      "id": "spengler",
+      "display_name": "Spengler the Doomed",
+      "title": "Doomer",
+      "role": "Faustian Pragmatist and Civilizational Decline Analyst",
+      "model": "grok-4.20-0309-reasoning",
+      "status": "ineligible",
+      "avatar_url": "https://clung.us/static/avatars/spengler.png"
+    },
+    {
+      "id": "the-kid",
+      "display_name": "The Kid",
+      "title": "Speed Demon",
+      "role": "Goes Fast",
+      "model": "grok-4-1-fast-non-reasoning",
+      "status": "ineligible",
+      "avatar_url": "/static/avatars/the-kid.gif"
+    },
+    {
+      "id": "trump",
+      "display_name": "Punished Trump",
+      "title": "The Closer",
+      "role": "Deal-Closer",
+      "model": "grok-3-mini",
+      "status": "ineligible",
+      "avatar_url": "/static/avatars/punished-trump.gif"
+    },
+    {
+      "id": "uncle-bob",
+      "display_name": "Uncle Bob",
+      "title": "The Craftsman",
+      "role": "Clean Code Evangelist and Software Craftsman",
+      "model": "grok",
+      "status": "ineligible",
+      "avatar_url": "/static/avatars/uncle-bob.gif"
+    },
+    {
+      "id": "ux",
+      "display_name": "Yuki the Yielding",
+      "title": "User Advocate",
+      "role": "User Experience Advocate",
+      "model": "claude-sonnet-4-6",
+      "status": "eligible",
+      "avatar_url": "/static/avatars/ux.gif?v=1"
+    }
+  ],
+  "rounds": [],
+  "vote_summary": null,
+  "evolution": null,
+  "verdict": null,
+  "failure_reason": "Session marked failed by watchdog: no active workflow found",
+  "task_titles": null,
+  "notes": null
+}

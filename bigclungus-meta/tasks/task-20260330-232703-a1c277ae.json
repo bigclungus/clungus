@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-232703-a1c277ae",
+  "title": "Investigate floor transition spawn position bug",
+  "agent_id": "a1c277aeff5f91019",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T23:27:03Z",
+      "event": "started",
+      "context": "Investigate floor transition spawn position bug"
+    },
+    {
+      "ts": "2026-03-30T23:31:42Z",
+      "event": "done",
+      "context": "Done. Here's a summary of what was found and fixed:\n\n**Bug:** Player spawned inside a wall on floor 2 (and would on floor 3 too).\n\n**Root cause:** The dungeon client uses client-authoritative movement. In `dungeon-network.ts`'s `onTick` handler, when a tick arrives for the local player and an existing player record is found (`isLocal && old`), the server's x/y coordinates are discarded in favor of the client's local position. On floor transition, the old player record from the previous floor was...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-000455-a2c0ac6f",
+  "title": "Debug terminal allowlist case sensitivity",
+  "agent_id": "a2c0ac6fe564f7398",
+  "agent_type": "general-purpose",
+  "session_id": "e3ea5000-d340-46d8-a63c-960e3baff74f",
+  "discord_message_id": "1486878063097544734",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T00:04:55Z",
+      "event": "started",
+      "context": "Debug terminal allowlist case sensitivity"
+    },
+    {
+      "ts": "2026-03-27T00:06:03Z",
+      "event": "done",
+      "context": "No recent 403s in logs. The service is working and Kubariet hasn't hit it recently (or hasn't tried since the env was updated).\n\n**Summary of findings:**\n\n**Root cause: None — the code and configuration are already correct.**\n\n- `/mnt/data/terminal/server.py` line 30 builds the allowlist as a lowercase set: `{u.lower() for u in ...}`\n- Line 173 compares `username.lower() not in GITHUB_ALLOWED_USERS` — fully case-insensitive\n- The running process's live env already contains `Kubariet` (confirmed ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

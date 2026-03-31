@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-155321-a68609a0",
+  "title": "Startup checklist and Discord catchup",
+  "agent_id": "a68609a022e0dd5f3",
+  "agent_type": "general-purpose",
+  "session_id": "51341aeb-6564-4d09-976a-62cc45a17a7a",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T15:53:21Z",
+      "event": "started",
+      "context": "Startup checklist and Discord catchup"
+    },
+    {
+      "event": "done",
+      "ts": "2026-03-28T16:20:13.799412Z",
+      "message": "Stale task from previous session \u2014 closing"
+    }
+  ],
+  "status": "done"
+}

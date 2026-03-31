@@ -1,0 +1,25 @@
+{
+  "id": "task-20260329-003808-a7d06921",
+  "title": "Post mob pipeline complete + push",
+  "agent_id": "a7d06921a50963d64",
+  "agent_type": "general-purpose",
+  "session_id": "5aac769e-2e6e-4bd3-a873-645eb001e989",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-29T00:38:08Z",
+      "event": "started",
+      "context": "Post mob pipeline complete + push"
+    },
+    {
+      "ts": "2026-03-29T00:38:27Z",
+      "event": "done",
+      "context": "All done:\n\n1. **Discord post** — Message posted to thread 1487537381547708508 successfully.\n2. **commons-server** — Pushed `3deb823` (7 files, 269 insertions, mob-registry.ts created).\n3. **temporal-workflows** — Pushed `faaa087` (3 files, 314 insertions, mob_gen_act.py + mob_gen_wf.py created). Ruff passed.\n4. **clungiverse-client** — Pushed `e80cd3d` (5 files, 198 insertions).\n5. **hello-world** — Pushed `3f15bde` (migration + client bundle, 165 insertions).",
+      "artifacts": []
+    }
+  ]
+}

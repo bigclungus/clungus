@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-072704-a17bece2",
+  "title": "Queue full commons spec to NightOwl",
+  "agent_id": "a17bece2d91576514",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T07:27:03Z",
+      "event": "started",
+      "context": "Queue full commons spec to NightOwl"
+    },
+    {
+      "ts": "2026-03-26T07:27:15Z",
+      "event": "done",
+      "context": "The task was successfully queued. Output:\n\n- **Status:** Queued into the already-running `nightowl-today` workflow via signal\n- **Task:** Full commons rewrite (all 4 phases) referencing `/mnt/data/commons-spec.md` and `/mnt/data/commons-spec-research.md`\n- **Fires at:** 3am PDT (10am UTC)\n\nThe workflow will execute the task at the scheduled time, batching it with up to 4 other queued tasks. NightOwl uses poll-based completion tracking, so each phase's commit-and-push steps will be monitored for ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+INSTRUCTION FOR AGENT a7b26a373a576b9ff:
+
+IMPORTANT: Make sure all changes (congress_act.py rewrite, generated stubs, any other modified files) are squashed into a single commit before pushing. Do not push multiple commits. If you've already made multiple commits, squash them with `git rebase -i` or `git reset --soft HEAD~N && git commit`. The commit message should be:
+
+feat: migrate congress activities to connectrpc Python SDK (clunger :8081)
+
+Atomically replaces all REST calls to serve.py with ConnectRPC calls
+to clunger. Single commit for clean rollback with git revert if needed.

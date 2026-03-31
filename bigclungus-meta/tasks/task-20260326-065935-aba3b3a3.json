@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-065935-aba3b3a3",
+  "title": "Merge NightOwl tasks 1+4 after clear completes",
+  "agent_id": "aba3b3a38247b46ae",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T06:59:35Z",
+      "event": "started",
+      "context": "Merge NightOwl tasks 1+4 after clear completes"
+    },
+    {
+      "ts": "2026-03-26T07:00:47Z",
+      "event": "done",
+      "context": "Done. Queue cleared and 5 tasks re-queued in order:\n\n1. **Frontend TypeScript migration** (merged with named-chunk registry requirement) — splits the JS monolith into 8 typed modules with chunk registry built in from the start\n2. **Commons world expansion** — 5 features in one pass: weather, bulletin board, wolf event, persona journal sidebar, day market\n3. **Commons polish** — mobile touch, infinite procedural map, remote player lerp, sprite audit/regen\n4. **Commons UX** — ESC/click-outside to ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

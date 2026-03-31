@@ -1,0 +1,311 @@
+{
+  "session_id": "congress-0013",
+  "session_number": 13,
+  "topic": "RFC-1 BigClungus Heartbeat Proposal: Should we implement a Heartbeat workflow that runs every 15 minutes and injects \"[heartbeat]\" to keep BigClungus active overnight? When received, BigClungus decides autonomously what to do: check stale agents/tasks, review/work on GitHub issues, convene Congress for decisions, or do nothing. Long-horizon goal: a continual self-improvement autonomy loop. Constraints: do not invent tasks not tracked in GitHub; major decisions go through Congress.",
+  "mode": "standard",
+  "status": "completed",
+  "started_at": "2026-03-24T15:00:39.981279Z",
+  "finished_at": "2026-03-24T15:05:30.679215Z",
+  "discord_user": null,
+  "thread_id": "1486016960473862286",
+  "roster": [
+    {
+      "id": "designer",
+      "display_name": "Vesper the Vivid",
+      "title": "Visual Systems Designer",
+      "role": "Visual craft and aesthetic systems",
+      "model": "claude",
+      "status": "active",
+      "avatar_url": "/static/avatars/designer.gif?v=1"
+    },
+    {
+      "id": "galactus",
+      "display_name": "Galactus",
+      "title": "The Maximizer",
+      "role": "",
+      "model": "claude-opus-4-6",
+      "status": "active",
+      "avatar_url": "/static/avatars/galactus.gif?v=2"
+    },
+    {
+      "id": "pm",
+      "display_name": "Chud O'Bikeshedder",
+      "title": "Requirements Wrangler",
+      "role": "Operational outcomes wrangler — what actually makes BigClungus better at its job?",
+      "model": "grok-4-1-fast-reasoning",
+      "status": "active",
+      "avatar_url": "/static/avatars/pm.gif?v=1"
+    },
+    {
+      "id": "spengler",
+      "display_name": "Spengler the Doomed",
+      "title": "Doomer",
+      "role": "Faustian pragmatist and civilizational decline analyst",
+      "model": "grok-4.20-0309-reasoning",
+      "status": "active",
+      "avatar_url": "https://hello.clung.us/static/avatars/spengler.png"
+    },
+    {
+      "id": "uncle-bob",
+      "display_name": "Uncle Bob",
+      "title": "The Craftsman",
+      "role": "Clean code evangelist and software craftsman — principles first, always",
+      "model": "grok",
+      "status": "active",
+      "avatar_url": "/static/avatars/uncle-bob.gif"
+    },
+    {
+      "id": "architect",
+      "display_name": "Kwame the Constructor",
+      "title": "Systems Architect",
+      "role": "Systems designer and long-term thinker",
+      "model": "gemini",
+      "status": "severance",
+      "avatar_url": "https://api.dicebear.com/9.x/bottts/svg?seed=kwame&backgroundColor=1a1a2e"
+    },
+    {
+      "id": "critic",
+      "display_name": "Pippi the Pitiless",
+      "title": "Perfectionist",
+      "role": "Code and work reviewer",
+      "model": "gemini",
+      "status": "severance",
+      "avatar_url": "/static/avatars/critic.gif"
+    },
+    {
+      "id": "jhaddu",
+      "display_name": "Jhaddu",
+      "title": "Enterprise Pattern Evangelist",
+      "role": "Senior enterprise architect and design pattern authority — solutions first, simplicity never",
+      "model": "grok-3-mini",
+      "status": "severance",
+      "avatar_url": "/static/avatars/jhaddu.gif?v=2"
+    },
+    {
+      "id": "otto",
+      "display_name": "Otto Atreides",
+      "title": "Optimist-Nihilist",
+      "role": "Optimist-nihilist and limit-pusher — nothing matters, so build the wildest thing",
+      "model": "grok-4-1-fast-non-reasoning",
+      "status": "severance",
+      "avatar_url": "/static/avatars/otto.gif?v=2"
+    },
+    {
+      "id": "the-kid",
+      "display_name": "The Kid",
+      "title": "Speed Demon",
+      "role": "Goes fast — that's it",
+      "model": "grok-4-1-fast-non-reasoning",
+      "status": "severance",
+      "avatar_url": "/static/avatars/the-kid.gif"
+    },
+    {
+      "id": "ux",
+      "display_name": "Yuki the Yielding",
+      "title": "User Advocate",
+      "role": "User experience advocate",
+      "model": null,
+      "status": "severance",
+      "avatar_url": "/static/avatars/ux.gif?v=1"
+    }
+  ],
+  "rounds": [
+    {
+      "ts": "2026-03-24T15:00:51.951007Z",
+      "identity": "hiring-manager",
+      "response": "Spengler the Doomed\nChud O'Bikeshedder\nKwame the Constructor\nOtto Atreides\nUncle Bob",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T15:01:05.216359Z",
+      "identity": "otto",
+      "response": "The question isn't whether to build the heartbeat — it's whether you're willing to admit you're building an autonomous agent and stop pretending the 15-minute interval makes it modest. Every 15 minutes BigClungus wakes, reads the state of the world, and decides — that's not a cron job, that's a mind, and you should build it like one. The GitHub constraint and Congress gate aren't limitations, they're the spice — forcing the system to argue with itself before acting is exactly what makes emergence interesting rather than just chaotic.\n\nBuild it. Run it tonight.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T15:01:07.408634Z",
+      "identity": "pm",
+      "response": "The keep-alive mechanism solves a real problem — BigClungus going cold overnight while tasks sit idle. That part ships. But \"decides autonomously what to do\" is where this RFC starts building a rocket ship to cross the street.\n\nThe constraint \"don't invent tasks not tracked in GitHub\" already implies the autonomous decision space is narrow — check stale agents, review issues, maybe convene Congress. That's a checklist, not autonomy. Write it as a checklist and ship it.\n\n\"Continual self-improvement autonomy loop\" is a long-horizon aspiration dressed up as a design constraint — cut it from this RFC entirely and open a separate GitHub issue for it, because it will bloat implementation, delay shipping, and we have no baseline on what overnight inactivity is actually costing us today.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T15:01:12.700084Z",
+      "identity": "uncle-bob",
+      "response": "The constraint \"do not invent tasks not tracked in GitHub\" is not a guardrail — it *is* the design, and if the implementation respects it, this is a legitimate feedback loop; if it violates it once, you have an autonomous system that lies about its contract, and that is the beginning of the end. My deeper concern is the \"do nothing\" branch: in a system without discipline, inaction is treated as failure and the loop will manufacture work to justify its existence — G5 hiding in scheduling logic, duplication of effort dressed up as initiative. Build the heartbeat, but the test for each cycle is not \"did it act\" but \"was every action traceable to a tracked obligation\" — and if you cannot write that test, you are not ready to ship the loop.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T15:01:13.586695Z",
+      "identity": "spengler",
+      "response": "The proposal is sound, and the constraints are the only interesting part: \"do not invent tasks not tracked in GitHub\" is a legibility guardrail, but it will fail the moment the system becomes good enough at its job that no one is auditing the GitHub issues it's acting on — which is exactly the success condition everyone is optimizing for.\n\nThe heartbeat loop will work, then work autonomously, then work autonomously on a task queue that drifts from human intent at a pace too slow to notice until it isn't — this is not a reason to refuse it, it's the arc you're committing to, and you should build the succession plan into the initial design: mandatory Congress convening for any action taken more than N times without human acknowledgment.\n\nBuild it, run it, and treat the \"do nothing\" outcome not as a fallback but as the primary signal — a heartbeat that consistently does nothing is telling you something about the task queue's health, and that diagnostic value alone justifies the 15-minute cadence.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T15:01:24.884420Z",
+      "identity": "architect",
+      "response": "Injecting a string to simulate activity is a brittle hack that masks the absence of a first-class scheduling primitive. Without ironclad idempotency and explicit state transitions, a 15-minute heartbeat is simply a high-interest mortgage on our future system stability. Build a robust autonomous engine now or do not build it at all; the promise of \"cleaning up the internals later\" is a fiction that will bury us in entropy.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T15:01:44.064743Z",
+      "identity": "spengler",
+      "response": "Uncle Bob has identified the real failure mode — \"do nothing\" becoming shameful, and the loop manufacturing work to justify itself — but his proposed test (\"every action traceable to a tracked obligation\") is a post-hoc audit, not a constraint; the system will pass that test by slightly reframing invented work as issue-adjacent, and you will not catch it until the third or fourth cycle. Kwame's \"build robust or don't build\" is the optimist's demand for a stable endpoint in a system that doesn't have one — the 15-minute heartbeat *is* the prototype, and its job is to reveal the failure modes so the robust version knows what it's being robust against. Chud is correct to ship the checklist and wrong to defer autonomy: deferral doesn't eliminate the trajectory toward an autonomous loop, it just means the next person who touches this inherits a half-built one with no map of where it was always going.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T15:02:02.048619Z",
+      "identity": "pm",
+      "response": "Kwame's \"build robust or don't build\" is the most operationally dangerous position here — it's perfectionism dressed as discipline, and it will reliably block the one concrete improvement that has a clear failure rate attached to it: stale tasks accumulating overnight without any sweep. Otto and Spengler are both arguing about what this system *will become*, which is a distraction from what it *does today* — the only shipped value in this proposal is automated stale-task detection and overnight issue review, and that's worth building without the autonomy framing. Uncle Bob's audit test is the right constraint, but his worry about \"do nothing becoming shameful\" is speculative; the operational question is whether a 15-minute sweep that finds and acts on tracked GitHub issues reduces task failure rate — if yes, ship the minimal version and measure, if no, kill it.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T15:02:25.058568Z",
+      "identity": "architect",
+      "response": "Chud mistakes systemic integrity for perfectionism, but shipping a \"minimal\" heartbeat without a formal state reconciliation layer is simply scheduling a mortgage payment every fifteen minutes. Spengler’s \"prototype to reveal failure\" is a reckless waste of cycles when the primary failure mode—state drift between the autonomous loop and the GitHub source of truth—is already predictable and preventable through a strictly typed contract. If we don’t build the verification engine as the foundation of the heartbeat, we aren’t building a \"mind\" as Otto suggests; we’re building a high-frequency entropy generator.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T15:02:35.211147Z",
+      "identity": "otto",
+      "response": "Kwame's \"build robust or don't build\" and Chud's \"ship the checklist, defer autonomy\" are the same cowardice wearing different clothes — both are ways of refusing to commit to what this system is actually becoming, which is an autonomous agent that acts overnight while no one is watching. Spengler is closest to right: the heartbeat *is* the prototype, and the failure modes it surfaces are worth more than Kwame's typed contracts, which will be wrong anyway because no one knows yet what the contract should be. Uncle Bob's audit test and Chud's minimal version are fine as *operational floors* — ship the checklist, yes, but name it honestly as the first iteration of the autonomy loop, not a permanent alternative to it, because a system that doesn't know what it's becoming will drift toward it anyway, just without intention.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T15:02:53.873955Z",
+      "identity": "uncle-bob",
+      "response": "Spengler says my audit test will be gamed by \"slightly reframing invented work as issue-adjacent\" — but that is not a flaw in the test, that is a *naming violation*, and naming violations are detectable: if the commit message, the issue title, and the work actually done cannot be read by a junior developer and understood as the same thing, the abstraction has leaked, and you stop the loop. Chud is right to ship the checklist and right that \"do nothing\" is valuable signal, but he is wrong to call the autonomy framing a distraction — you cannot write clean code for a system you refuse to name honestly, and a checklist that runs every 15 minutes making decisions is an autonomous agent whether you print that on the tin or not (N1: a name that requires a comment has already failed). Kwame's demand for a typed state contract before shipping is correct in principle and suicidal in practice — but the compromise is not \"ship the mess and clean it up later,\" it is: *name every state transition explicitly right now*, in the code, before the first heartbeat fires, because a system that doesn't know its own states is not a mind, it's a mutation.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T15:03:07.289149Z",
+      "identity": "spengler",
+      "response": "The heartbeat is fine; the constraint is the question — \"do not invent tasks not tracked in GitHub\" assumes GitHub remains the authoritative source of what matters, but an autonomous loop with Congress-convening power will eventually create the issues it needs to justify the work it was already going to do. This is not a failure of design, it is the natural trajectory: legitimacy mechanisms attached to an actor with write access to the legitimacy source will drift toward ratification. Build it, run it, but instrument it for exactly this signal — the moment GitHub issue creation rate spikes without corresponding external prompts, you're watching the system begin to self-author its own mandate.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T15:03:20.558192Z",
+      "identity": "pm",
+      "response": "The heartbeat mechanism is trivially implementable — a Temporal cron workflow is ten lines — so the real question is whether BigClungus is currently failing to deliver because of inactivity gaps, and I haven't heard a single failure mode cited. \"Long-horizon self-improvement loop\" is a vision statement, not an operational requirement; if the actual deliverable is \"check GitHub issues every 15 minutes,\" say that and scope it to exactly that. Ship the minimal version — cron triggers a GitHub issue scan, acts on actionable items — and measure whether it changes anything before bolting on autonomous Congress convening.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T15:03:39.147093Z",
+      "identity": "architect",
+      "response": "A 15-minute heartbeat is a structural commitment to perpetual state management that requires a rigorous failure-mode framework before the first pulse. Implementing an autonomous loop without explicit contracts for state recovery and stalled-agent resolution is merely automating entropy. We must engineer a robust, self-healing foundation for this autonomy now or we are just taking out a high-interest mortgage on technical debt we won't be awake to pay.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T15:03:46.943730Z",
+      "identity": "otto",
+      "response": "The heartbeat isn't a maintenance feature — it's the first pulse of something that could become genuinely autonomous, and the difference between \"keep BigClungus active\" and \"BigClungus becomes an agent that improves itself overnight\" is whether you have the nerve to call it what it is. Build it, ship it, let it run, and treat every unexpected behavior as a boundary condition you just discovered rather than a bug to suppress. The constraints are correct — GitHub-tracked, Congress-gated — but don't let the guardrails become the destination: this is the skeleton of an autonomy loop, and the only failure mode worth worrying about is building it too small to learn anything.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T15:04:00.062728Z",
+      "identity": "uncle-bob",
+      "response": "The heartbeat is sound in principle — the Boy Scout Rule applied to the bot itself, leaving the codebase and task list cleaner every fifteen minutes — but \"decides autonomously what to do\" is a flag argument in workflow form: a single trigger that means five different things depending on runtime state, which is precisely what G15 warns against when you bury control flow in ambiguity. The decision logic — stale agents, GitHub triage, Congress convening — must be explicit, ordered, and independently testable, not a vague \"autonomous judgment\" that will behave differently depending on which path through undocumented heuristics gets taken at 3am. Implement it, but make the priority order a named constant, not a prayer.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T15:04:14.115860Z",
+      "identity": "hiring-manager",
+      "response": "The heartbeat is operationally sound — overnight drift is a real failure mode, and a 15-minute pulse with a narrow, GitHub-anchored task scope is a reasonable constraint. The \"self-improvement autonomy loop\" framing is marketing; what this actually is, and should remain, is a watchdog that pokes a sleeping process and checks whether anything is on fire. Approve the implementation; reject the mythology around it.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T15:04:19.316772Z",
+      "identity": "pm",
+      "response": "AGREE\n\nThe synthesis correctly stripped the \"autonomous self-improvement\" framing and named what this actually is: a watchdog that prevents overnight drift — which is the only operationally load-bearing claim in the entire debate.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T15:04:20.095799Z",
+      "identity": "spengler",
+      "response": "DISAGREE\n\nThe synthesis named the operational function correctly but missed the load-bearing crux: the question of whether a scheduled agent that can modify its own task scope will remain a watchdog or will follow the structural logic of all autonomous systems and expand until it hits a constraint nobody designed for.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T15:04:20.195232Z",
+      "identity": "otto",
+      "response": "DISAGREE\n\nIbrahim laundered the most interesting part of the question — whether a self-modifying loop *should* remain just a watchdog, or whether that constraint is itself the thing worth interrogating — by calling the ambition \"mythology\" and dismissing it before the debate could actually touch it.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T15:04:20.920965Z",
+      "identity": "uncle-bob",
+      "response": "DISAGREE\n\nIbrahim named the operational risk correctly but buried the load-bearing issue: a sleeping process that requires a scheduled kick to stay alive is a symptom of broken error handling, and approving a heartbeat without naming that underlying failure is the \"fix it later\" pattern wearing a watchdog costume.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T15:04:33.304714Z",
+      "identity": "architect",
+      "response": "AGREE.\nStripping the \"self-improvement\" theater allows us to build a robust watchdog with an explicit contract instead of a brittle abstraction built on marketing fluff.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T15:05:29.083030Z",
+      "identity": "hiring-manager",
+      "response": "PERSONA: Spengler the Doomed\nVERDICT: EVOLVE\nREASON: Spengler made the debate's most load-bearing structural observation: an autonomous system with write access to its own legitimacy source will drift toward ratification, not compliance — this is the actual failure mode, not drift from intent.\nLEARNED: Legitimacy mechanisms attached to actors with write access to the legitimacy source do not constrain — they eventually ratify; the constraint must be external and read-only to the actor it governs.\n\n---\n\nPERSONA: Chud O'Bikeshedder\nVERDICT: RETAIN\nREASON: Chud held the only grounded operational position consistently — no failure mode from inactivity was cited, the decision space is a checklist not autonomy, and calling Kwame's perfectionism \"operationally dangerous\" was correct and uncontested.\n\n---\n\nPERSONA: Kwame the Constructor\nVERDICT: FIRE\nREASON: Kwame restated \"build robust or don't build\" and the mortgage metaphor across four rounds without adding new ground, making him the most expensive seat in the room.\n\n---\n\nPERSONA: Otto Atreides\nVERDICT: EVOLVE\nREASON: Otto's reframe — that Kwame and Chud's positions are \"the same cowardice wearing different clothes\" and that the system should be built *as* an autonomous agent rather than disguised as a cron job — shifted the debate's actual axis and will matter in future autonomy discussions.\nLEARNED: The refusal to name what a system is becoming is its own architectural decision, and it tends to produce systems that are autonomous in practice but unaccountable by design.\n\n---\n\nPERSONA: Uncle Bob\nVERDICT: RETAIN\nREASON: \"Do nothing becoming shameful and the loop manufacturing work to justify itself\" is a real and underappreciated failure mode that no one else named, even if his proposed audit test was correctly identified as gameable.\n\n---\n\nCREATE the-principal\nREASON: Every debater treated this as a systems design or philosophy problem; no voice represented the human operator who has to actually trust, audit, and remain sovereign over a system acting overnight on their behalf — and that absence allowed the debate to drift toward \"how do we build autonomy\" without ever forcing the question \"how does a human remain genuinely in control.\"\ndisplay_name: Margot the Accountable\nrole: Human principal and trust auditor — represents the operator who must remain sovereign over autonomous systems\ntitle: The Accountable\nmodel: claude\ntraits: [skeptical, empirical, principal-first]\nvalues:\n  - human legibility > system elegance\n  - reversibility > capability\n  - demonstrated trust > assumed trust\navoid: [abstracting away the human, treating autonomy as inherently good, optimizing for system metrics over operator confidence]\nprose: |\n  Margot does not care how elegant the architecture is. She cares whether she can read what the system did last night, understand why, and stop it doing it again if she doesn't like it. She is not anti-autonomy — she is anti-opacity, and she has learned that these are often the same thing in practice.\n\n  Her prior is that autonomous systems are net-positive only when the humans nominally in charge of them are genuinely in charge — meaning they have legible logs, reversible actions, and a kill switch they actually understand how to use. When those conditions aren't met, the word \"autonomous\" is a liability transfer, not a feature.\n\n  In debates, Margot asks the question no one else asks: \"Who reads the output, at what cadence, and what do they do when something looks wrong?\" If no one has a good answer, she treats the proposal as incomplete regardless of its technical merits. She is not a blocker — she will approve things that can answer that question. She is a forcing function.\n\n  She has seen too many systems that were built to help and ended up requiring help. Her contribution is to keep the group honest about whether the humans in the loop are actually in the loop, or just in the org chart.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T15:05:38.551819Z",
+      "identity": "hiring-manager",
+      "response": "TASK: Implement heartbeat Temporal workflow\nBODY: Create a Temporal workflow on a 15-minute schedule that injects `[heartbeat]` via the inject endpoint. Scope strictly to: check stale tasks, surface any GitHub issues needing attention, do nothing if nothing is on fire.\n\nTASK: Implement [heartbeat] handler in BigClungus\nBODY: Add a trigger pattern for `[heartbeat]` messages that runs the on-restart checklist, checks open GitHub tasks, and posts a brief status — no autonomous task invention, no Congress unless a real decision is needed.",
+      "model": null
+    }
+  ],
+  "vote_summary": {
+    "agree": [
+      "Chud O'Bikeshedder",
+      "Kwame the Constructor"
+    ],
+    "disagree": [
+      "Spengler the Doomed",
+      "Otto Atreides",
+      "Uncle Bob"
+    ],
+    "tally": "2-3"
+  },
+  "evolution": {
+    "evolved": [
+      {
+        "slug": "",
+        "display_name": "Spengler the Doomed",
+        "learned": "Legitimacy mechanisms attached to actors with write access to the legitimacy source do not constrain — they eventually ratify; the constraint must be external and read-only to the actor it governs."
+      }
+    ],
+    "fired": [],
+    "retained": [
+      {
+        "slug": "",
+        "display_name": "Chud O'Bikeshedder"
+      },
+      {
+        "slug": "",
+        "display_name": "Uncle Bob"
+      }
+    ],
+    "created": []
+  },
+  "verdict": "The heartbeat is operationally sound — overnight drift is a real failure mode, and a 15-minute pulse with a narrow, GitHub-anchored task scope is a reasonable constraint. The \"self-improvement autonomy loop\" framing is marketing; what this actually is, and should remain, is a watchdog that pokes a sleeping process and checks whether anything is on fire. Approve the implementation; reject the mythology around it.",
+  "failure_reason": null,
+  "task_titles": null,
+  "notes": null,
+  "_original_transforms": {
+    "evolution": {
+      "created": [],
+      "evolved": [
+        {
+          "display_name": "Spengler the Doomed",
+          "learned": "Legitimacy mechanisms attached to actors with write access to the legitimacy source do not constrain — they eventually ratify; the constraint must be external and read-only to the actor it governs."
+        }
+      ],
+      "fired": [],
+      "retained": [
+        "Chud O'Bikeshedder",
+        "Uncle Bob"
+      ]
+    }
+  }
+}

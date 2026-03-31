@@ -1,0 +1,30 @@
+{
+  "id": "task-20260327-234423-a236b358",
+  "title": "Batch ingest remaining Bokoen1",
+  "agent_id": "a236b35870e87d61d",
+  "agent_type": "general-purpose",
+  "session_id": "083baee4-2f6f-4f81-8ced-0e9b97f43956",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T23:44:23Z",
+      "event": "started",
+      "context": "Batch ingest remaining Bokoen1"
+    },
+    {
+      "ts": "2026-03-28T02:09:52Z",
+      "event": "stale",
+      "context": "Marked stale by watchdog \u2014 session likely ended before task completed"
+    },
+    {
+      "event": "failed",
+      "ts": "2026-03-28T10:49:28.698724Z",
+      "message": "Superseded by task-20260328-101741-a553dcf8 (resume ingestion) and NightOwl queue"
+    }
+  ],
+  "status": "failed"
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-214418-af9dacd5",
+  "title": "Timeline spacing + zebra stripes",
+  "agent_id": "af9dacd520fe5aaa0",
+  "agent_type": "general-purpose",
+  "session_id": "083baee4-2f6f-4f81-8ced-0e9b97f43956",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T21:44:18Z",
+      "event": "started",
+      "context": "Timeline spacing + zebra stripes"
+    },
+    {
+      "ts": "2026-03-27T21:46:30Z",
+      "event": "done",
+      "context": "Done. Here is what changed in `/mnt/data/hello-world/timeline.html`:\n\n**1. Tighter minimum spacing** -- Desktop min gap reduced from 100px to 40px, mobile from 40px to 20px. The log-scale algorithm was replaced with a three-tier power curve: sub-hour gaps use `sqrt(hours) * 0.15` (so 30-minute gaps map to only ~15% of the range), 1-4 hour gaps get moderate spread, and 4+ hour gaps use log scale up to max. Events within an hour will now cluster with dots nearly touching.\n\n**2. Zebra-stripe backgr...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

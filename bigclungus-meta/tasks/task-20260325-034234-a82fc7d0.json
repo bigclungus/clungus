@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-034234-a82fc7d0",
+  "title": "Verify Grok model is actually being called in congress",
+  "agent_id": "a82fc7d0d39c0199e",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T03:42:34Z",
+      "event": "started",
+      "context": "Verify Grok model is actually being called in congress"
+    },
+    {
+      "ts": "2026-03-25T03:43:19Z",
+      "event": "done",
+      "context": "All checks complete. Here's the summary:\n\n**Grok routing is live and working.**\n\n1. `/mnt/data/hello-world/serve.py` lines 889-893: personas with `model: grok` or `model: grok-3-mini` are routed to `_call_grok()`. A fallback to Claude only fires if the xAI call raises an exception.\n\n2. `_call_grok()` (lines 278-297) calls `https://api.x.ai/v1/chat/completions` directly via `urllib`, streaming, using `XAI_API_KEY` from the environment.\n\n3. `website.service` loads `EnvironmentFile=/mnt/data/.env.s...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

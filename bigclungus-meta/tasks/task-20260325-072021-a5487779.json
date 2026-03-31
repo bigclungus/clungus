@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-072021-a5487779",
+  "title": "Diagnose failed tasks",
+  "agent_id": "a548777958ec2feee",
+  "agent_type": "general-purpose",
+  "session_id": "a73508af-b739-48f4-b9cb-a7829a4a15c0",
+  "discord_message_id": "1486262930696831046",
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T07:20:21Z",
+      "event": "started",
+      "context": "Diagnose failed tasks"
+    },
+    {
+      "ts": "2026-03-25T07:25:02Z",
+      "event": "done",
+      "context": "I now have a complete picture. Here is the full diagnosis:\n\n---\n\n## Diagnosis: Why Tasks Are Being Marked FAILED\n\n### What's happening\n\nThere are two distinct mechanisms causing `failed` events — neither is a false positive from the watchdog script. Both are correct behavior.\n\n---\n\n### Mechanism 1: Bot restart cleanup (the main source — 20 tasks)\n\n**Who does it:** BigClungus itself, manually, on restart. At the start of the Mar 25 06:05 session, it spawned an agent titled \"Mark stale tasks as fa...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

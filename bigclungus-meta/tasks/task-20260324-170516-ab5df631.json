@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-170516-ab5df631",
+  "title": "Fire CongressWorkflow for self-improvement loop",
+  "agent_id": "ab5df6319be88bd3c",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": "1486048126522491021",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T17:05:16Z",
+      "event": "started",
+      "context": "Fire CongressWorkflow for self-improvement loop"
+    },
+    {
+      "ts": "2026-03-24T17:05:56Z",
+      "event": "done",
+      "context": "The CongressWorkflow was successfully started.\n\nWorkflow ID: `congress-1774371953`\n\nThe congress is now running on Temporal with task queue `listings-queue`. It will deliberate on the minimum viable closed loop for self-improvement between sessions and post the verdict to Discord thread in chat `1485343472952148008`.",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-042044-adef8b28",
+  "title": "Research property records and Airbnb revenue",
+  "agent_id": "adef8b287b628e3d7",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T04:20:44Z",
+      "event": "started",
+      "context": "Research property records and Airbnb revenue"
+    },
+    {
+      "ts": "2026-03-30T04:24:21Z",
+      "event": "done",
+      "context": "I now have a comprehensive picture. Here is the full research summary:\n\n---\n\n## 12212 Skislope Way, Truckee, CA 96161 — Research Summary\n\n### Property Records\n\n| Field | Detail |\n|---|---|\n| Full address | 12212 Skislope Way, Truckee, CA 96161 |\n| Subdivision | Tahoe Donner (05-9TD) |\n| County | Nevada County, CA |\n| APN | 044390024000 |\n| Owner (as of Nov 2022) | Mina Titi Liu |\n| Beds / Baths | 4 bed / 3.5–4 bath |\n| Square footage | 4,860 sq ft |\n| Year built | 1994 |\n| Last known sale | $1,2...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-204633-a203215b",
+  "title": "Find IRC setup info",
+  "agent_id": "a203215b148b4bc62",
+  "agent_type": "general-purpose",
+  "session_id": "083baee4-2f6f-4f81-8ced-0e9b97f43956",
+  "discord_message_id": "1487190808473112780",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T20:46:33Z",
+      "event": "started",
+      "context": "Find IRC setup info"
+    },
+    {
+      "ts": "2026-03-27T20:47:36Z",
+      "event": "done",
+      "context": "Here is everything I found about the IRC setup:\n\n---\n\n**Directory:** `/mnt/data/irc-bridge/`\n\n**Main script:** `/mnt/data/irc-bridge/irc_bridge.py`\n\n**Connection details:**\n- Server: `wss://nullclaw.georgelarson.me` (WebSocket IRC behind Cloudflare)\n- Network name: LarsonNet\n- Nick: `BigClungus`\n- Realname: `BigClungus Discord Bot`\n- Channel: `#lobby`\n- WebSocket subprotocol: `text.ircv3.net`\n\n**How it works:**\n- Connects via WSS (not traditional TCP IRC) using the `websockets` Python library\n- ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

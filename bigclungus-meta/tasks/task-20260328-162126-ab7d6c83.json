@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-162126-ab7d6c83",
+  "title": "Check bot MCP session status",
+  "agent_id": "ab7d6c8379a0596f2",
+  "agent_type": "general-purpose",
+  "session_id": "5c57794c-7dfd-4667-b6b8-b731b5f7a78e",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T16:21:26Z",
+      "event": "started",
+      "context": "Check bot MCP session status"
+    },
+    {
+      "ts": "2026-03-28T16:21:51Z",
+      "event": "done",
+      "context": "Here are the results:\n\n**1. Discord Server Health (`/health`)**\n\nThe server is healthy and connected:\n- **Status:** ok\n- **Gateway:** connected\n- **User:** The Second Clungus#1138\n- **Session:** `0e267294`\n- **Queue size:** 0 (empty, good)\n- **Tools loaded:** 8 (edit_message, react, reply, fetch_messages, speak, join_voice, leave_voice, download_attachment)\n\n**2. Discord Server Logs (last 15 lines)**\n\nThe discord-server was restarted at `16:20:37`. Timeline:\n- Two MCP sessions created at `16:18:...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

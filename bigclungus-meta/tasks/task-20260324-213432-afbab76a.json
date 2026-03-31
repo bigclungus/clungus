@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-213432-afbab76a",
+  "title": "Add cache-busting to sitenav.js script tags",
+  "agent_id": "afbab76ac0de405f7",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T21:34:31Z",
+      "event": "started",
+      "context": "Add cache-busting to sitenav.js script tags"
+    },
+    {
+      "ts": "2026-03-24T21:36:15Z",
+      "event": "done",
+      "context": "Done. Here's a summary of what was changed:\n\n**Files modified:**\n\n- `/mnt/data/hello-world/index.html`, `congress.html`, `tasks.html`, `404.html`, `wallet.html` — sitenav.js and sitenav.css references updated from `?v=2` to `?v=b6d00bc`\n- `/mnt/data/hello-world/serve.py` — added `end_headers()` override that injects `Cache-Control: no-cache, must-revalidate` for any `.js` or `.css` request before delegating to the parent handler\n- `/mnt/data/terminal/server.py` — both embedded HTML templates (te...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-184844-aabc703b",
+  "title": "Check persona-audition stability",
+  "agent_id": "aabc703bfe10232ff",
+  "agent_type": "general-purpose",
+  "session_id": "ef1a5e01-b3c3-41d6-abd3-172f68d92559",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T18:48:44Z",
+      "event": "started",
+      "context": "Check persona-audition stability"
+    },
+    {
+      "ts": "2026-03-26T18:48:53Z",
+      "event": "done",
+      "context": "**persona-audition.service is stable and running.**\n\n- State: `active (running)`\n- Started: 1 min 32s ago (Thu 2026-03-26 18:47:16 UTC)\n- PID: 3056070 (bun)\n- Memory: 30.0M (peak 246.3M)\n- Listening on port 8110\n- Recent activity: spawned two walkers — \"Marta Szymańska (Reluctant Materialist)\" and \"Declan Okafor (Reluctant Empiricist)\"\n\nNo action needed.",
+      "artifacts": []
+    }
+  ]
+}

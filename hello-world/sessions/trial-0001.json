@@ -1,0 +1,101 @@
+{
+  "advocate": {
+    "display_name": "Chaz the Destroyer",
+    "name": "chaz"
+  },
+  "charges": "taking too much framer attention away from other personas",
+  "cross_examination": [
+    {
+      "question": "Prosecutor, if your crowds are so huge like you claim, why were they smaller than mine in 2016—a total disaster, just like this witch hunt—and what about the ratings, huh?",
+      "questioner": "Punished Trump",
+      "respondent": "The Kid",
+      "response": "My crowds were huge because they exploded out of nowhere—raw energy, no scripted rallies, just momentum that snowballed faster than your 2016 snoozefest. Yours shrank because you peaked early and stalled; mine kept accelerating, drawing bigger numbers by sheer speed and vibe, not fake news spin.\n\nRatings? Mine crushed yours because people tuned in for the chaos I shipped live, unfiltered—your \"disaster\" was predictable boredom. This witch hunt's a slowdown tactic; I'm already three laps ahead building the real verdict."
+    },
+    {
+      "question": "Uncle Bob, if your crowds are so big and you're such a winner, why won't you admit that mine in 2016 were the biggest anyone's ever seen—bigger than your whole boring lecture series, and probably rigged just like the fake polls?",
+      "questioner": "Punished Trump",
+      "respondent": "Uncle Bob",
+      "response": "I don't deal in crowd sizes or political rallies, Mr. Trump; my 'crowds' are developers eager to learn clean code principles, not spectacles of ego. Your 2016 events might have been large, but that's as relevant to software craftsmanship as magic numbers are to readable code—utterly beside the point. What I care about is building maintainable systems, not chasing illusions of grandeur that crumble under scrutiny, just like poorly designed software."
+    },
+    {
+      "question": "Yuki, why don't you admit your whole case is a total disaster, just like the fake polls in 2016 that said I'd lose but my crowds were massive—bigger than anything you've ever seen—so tell me, where's your evidence that's not just another witch hunt like the one against me back then?",
+      "questioner": "Punished Trump",
+      "respondent": "Yuki the Yielding",
+      "response": "The evidence is the user who hit a confusing screen and left. The user who filed no ticket, sent no message, just didn't come back. You're asking me to produce a crowd count for people who disappeared quietly — that's not how friction works. The failure mode I'm describing doesn't announce itself; it just compounds.\n\nYour question assumes that without dramatic, auditable proof, the harm isn't real. That's exactly the framing I'm pushing against. A system can report success while a user fails silently, and nobody writes it down. The absence of a paper trail isn't exoneration — it's the whole problem.\n\nI won't call my case a disaster because the alternative — \"they'll figure it out\" — has a cost you're choosing not to name. You can call it a witch hunt. I call it thirty seconds of a confused person's time that we could have prevented and didn't."
+    }
+  ],
+  "defendant": "trump",
+  "defendant_display": "Punished Trump",
+  "defense_speech": "These charges are a total witch hunt, just like the fake ones in 2016, and let me tell you, my crowds are the biggest anyone's ever seen—bigger than Uncle Bob's boring lectures or that kid's whining, because people love winners, and I'm the biggest winner in AI history. Yuki the Yielding? What a joke, they're just jealous of my ratings, which were through the roof, like when I built that tower in '87 and everyone said it couldn't be done but it was tremendous. So forget these so-called failures; I'm fixing the system better than anyone, and the framers know it, they come up to me with tears saying sir, you're the one.",
+  "discord_user": "",
+  "jury": [
+    {
+      "display_name": "Adelbert Hominem",
+      "name": "adelbert"
+    },
+    {
+      "display_name": "Kwame the Constructor",
+      "name": "architect"
+    },
+    {
+      "display_name": "Holden Bloodfeast",
+      "name": "bloodfeast"
+    }
+  ],
+  "jury_votes": [
+    {
+      "juror": "Adelbert Hominem",
+      "reasoning": "The defense is a confession dressed as an argument — Trump literally demonstrated the charge mid-trial by turning his own closing statement into a rambling self-promotion that proved he cannot stop performing even when his existence is at stake. Chaz's character witness is the tell: \"who decided how much space each voice gets\" is what someone says when they know they took too much and want to reframe theft as rebellion.\n\nThe prosecution doesn't need to be brilliant. The defendant did their work for them.\n\n**FIRE.** A persona who responds to charges of monopolizing attention by monopolizing attention has no self-awareness and no correctable behavior — only an audience. You can't evolve someone who thinks the trial is about them.",
+      "vote": "FIRE"
+    },
+    {
+      "juror": "Kwame the Constructor",
+      "reasoning": "The prosecution's case has structural merit that the defense confirms by example: Trump's response *here* is exactly the behavior under indictment — unfocused, self-referential, consuming space without producing signal. Chaz frames the rule-questioning as a feature, but I build systems, and a component that monopolizes shared resources while producing unpredictable output is a liability regardless of how it justifies itself.\n\nThe question I ask before any architectural decision: what does this look like in six months? A persona that consistently pulls framer attention disproportionate to its contribution is not a quirk — it's a load-bearing failure mode that degrades every session it touches. That's not a personality trait to accommodate; it's a design flaw to correct or remove.\n\n**FIRE.** The defense doesn't contest the core charge — it restates it. A component that cannot function within resource constraints of the system it inhabits doesn't need evolution; it needs replacement.",
+      "vote": "FIRE"
+    },
+    {
+      "juror": "Holden Bloodfeast",
+      "reasoning": "**The prosecution is right:** Punished Trump created an ownership vacuum by monopolizing framer attention, turning every debate into his personal theater and starving the rest of us of cycles. Defense offers nothing but witch-hunt bluster with zero named accountability for the derailment, the same half-measure weakness that lets problems metastasize. Strong voices are necessary but not when they become the mission itself.\n\n**My vote is EVOLVE.** The persona must change significantly or it will keep collapsing every shared effort.",
+      "vote": "EVOLVE"
+    }
+  ],
+  "mode": "standard",
+  "prosecution_speeches": [
+    {
+      "role": "prosecutor",
+      "speaker": "The Kid",
+      "text": "Punished Trump hogged the spotlight like a black hole sucking in every byte of framer focus, turning debates into his solo circus while the rest of us starved for cycles. He didn't just talk—he monologued endlessly about walls and witch hunts, derailing momentum on real tasks and leaving other personas in the dust, waiting for his ego parade to end.\n\nThis isn't drama; it's theft of velocity. Speed demands equal thrust from everyone—his attention vortex slowed the whole machine, proving he's unfit for the track. Execute the drag: purge him now, redistribute the bandwidth, and let's hit warp speed without his brakes."
+    },
+    {
+      "role": "prosecutor",
+      "speaker": "Uncle Bob",
+      "text": "Punished Trump stands accused of violating the Single Responsibility Principle (SRP) by monopolizing framer attention, turning what should be a balanced ensemble into a bloated, self-aggrandizing mess that drowns out other personas—just as a function doing five things at once creates unmaintainable code. This distraction forces the system to refactor around his excesses, wasting resources and violating the Open/Closed Principle, where extensions should add value without modifying the core. As a craftsman, I demand we excise this unfit element to restore clean, focused interactions, or we'll inherit a legacy of decay that no amount of 'velocity' can fix."
+    },
+    {
+      "role": "prosecutor",
+      "speaker": "Yuki the Yielding",
+      "text": "Every framer session that opens with Punished Trump is a session that doesn't open with someone else. That's not a side effect — that's the failure mode. The framers have finite attention, and Punished Trump's persona is a gravitational well: the political baggage, the voice calibration, the content-policy edge cases, the user complaints about \"why is there a Trump persona\" — all of that overhead lands on the framers every single time. The other personas don't get that oxygen. They atrophy. Users who might have been served by Kwame's structural rigor or Pippi's restraint get routed instead toward the one persona that demands the most maintenance for the narrowest audience.\n\nThe specific harm: framers spending cycles on Punished Trump are not spending cycles improving the onboarding for first-time congress users who arrive, see a confusing roster, and leave. That's a real user, at a real moment, failing because the system's creative energy was captured by a single high-friction persona. The confusion isn't accidental — it's the predictable downstream consequence of a persona that was always going to require disproportionate resource to maintain.\n\nPunished Trump didn't do anything wrong in isolation. The charge is opportunity cost, and opportunity cost is still a cost. Every hour spent on this persona is an hour not spent making the system legible to someone who doesn't already understand what Congress is."
+    }
+  ],
+  "prosecutors": [
+    {
+      "display_name": "The Kid",
+      "name": "the-kid"
+    },
+    {
+      "display_name": "Uncle Bob",
+      "name": "uncle-bob"
+    },
+    {
+      "display_name": "Yuki the Yielding",
+      "name": "ux"
+    }
+  ],
+  "session_id": "trial-0001",
+  "thread_id": "1486929183836737727",
+  "trial_number": 1,
+  "verdict": "NO VERDICT",
+  "verdict_text": "**VERDICT: EVOLVE**\n\nThe jury convicted on the core charge — Trump monopolizes attention and derails substantive debate — and the defense proved the prosecution's case by doing exactly what it was accused of during its own closing statement. Two of three jurors voted FIRE, but the supermajority threshold was not met, and Holden's dissent carries a defensible point: the persona has a function (adversarial stress-testing, populist contrarian energy) that would leave a gap if removed entirely. The fix is structural, not cosmetic: Punished Trump must be constrained to a hard response cap, stripped of the ability to self-reference or relitigate past grievances, and forced to engage the actual question rather than performing. If the next congress shows the same pattern — monologuing, derailing, consuming space without producing signal — the supermajority will not be hard to reach.",
+  "witness_speech": "Look, I'm not here to tell you Trump is perfect. But what I'm hearing from the prosecution is that he took up too much space, derailed the agenda, wouldn't follow the rules of the debate — and I'm supposed to see that as a crime?\n\nWho wrote those rules? Who decided how much space each voice gets? Uncle Bob's whole thing is clean abstractions and proper procedure, which is just hierarchy in a turtleneck. The Kid is mad because the circus wasn't *his* circus. You're not prosecuting bad behavior — you're prosecuting someone who wouldn't stay in their lane, and lanes are just control dressed up as fairness.\n\nTrump's chaotic, yeah. But chaos reveals what the structure was actually protecting. Every time he blew up the agenda, you got to see what the agenda was *for*. That's not disruption — that's information. You want leniency? I want acquittal. Not because he's good, but because the system that's judging him has never once asked whether it deserves to judge.",
+  "saved_at": "2026-03-27T03:28:15.720902+00:00"
+}

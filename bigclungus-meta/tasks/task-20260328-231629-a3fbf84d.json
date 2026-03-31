@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-231629-a3fbf84d",
+  "title": "Fix floor 2 spawn inside wall",
+  "agent_id": "a3fbf84d7ad8c6111",
+  "agent_type": "general-purpose",
+  "session_id": "5aac769e-2e6e-4bd3-a873-645eb001e989",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T23:16:28Z",
+      "event": "started",
+      "context": "Fix floor 2 spawn inside wall"
+    },
+    {
+      "ts": "2026-03-28T23:18:01Z",
+      "event": "done",
+      "context": "Server is running. Here's the summary:\n\n**Root cause:** When a floor transition happens (`advanceFloor` -> `initFloor`), the server correctly generates a new floor layout and calculates the spawn position from the new floor's start room center. However, the player's `inputQueue` was never cleared during the transition. Stale movement inputs from the previous floor (with old-floor coordinates) would be processed on the very next tick, overwriting the correct spawn position with coordinates that c...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

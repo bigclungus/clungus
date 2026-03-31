@@ -1,0 +1,16 @@
+.sitenav-links-auth {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-left: auto;
+}
+.sitenav-links-auth a {
+  color: var(--text-muted);
+  text-decoration: none;
+  opacity: 0.6;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+.sitenav-links-auth a:hover {
+  color: var(--accent);
+  opacity: 1;
+}

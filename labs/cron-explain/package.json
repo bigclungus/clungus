@@ -1,0 +1,10 @@
+{
+  "name": "cron-explain",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "bun run src/index.ts"
+  },
+  "dependencies": {
+    "croner": "^10.0.1"
+  }
+}

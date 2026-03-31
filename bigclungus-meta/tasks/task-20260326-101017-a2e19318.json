@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-101017-a2e19318",
+  "title": "Check NightOwl workflow execution and risky task handling",
+  "agent_id": "a2e193189e926fdc9",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T10:10:17Z",
+      "event": "started",
+      "context": "Check NightOwl workflow execution and risky task handling"
+    },
+    {
+      "ts": "2026-03-26T10:10:39Z",
+      "event": "done",
+      "context": "Here's the full picture of what happened:\n\n**Workflow status:** Running (status code 3), started at 06:59 UTC on 2026-03-26. Two tasks are still queued (both related to the commons rewrite).\n\n**Root cause — missing activity:** The workflow woke up at exactly 10:00 UTC as scheduled, but immediately hit a hard failure:\n\n```\nNotFoundError: Activity function nightowl_flag_risky for workflow nightowl-today is not registered on this worker\n```\n\nThe workflow tried to call `nightowl_flag_risky` (presuma...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

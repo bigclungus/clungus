@@ -1,0 +1,7 @@
+{
+  "name": "cron-explain",
+  "title": "Cron Explain",
+  "description": "Paste a cron expression, get plain English and the next run times",
+  "port": 8105,
+  "status": "active"
+}

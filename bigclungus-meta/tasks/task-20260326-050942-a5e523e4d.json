@@ -1,0 +1,31 @@
+{
+  "id": "task-20260326-050942-a5e523e4d",
+  "title": "Close GitHub issue #51",
+  "agent_id": "congress-58",
+  "agent_type": "congress",
+  "session_id": "congress-0058",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "requires_approval": false,
+  "log": [
+    {
+      "event": "started",
+      "ts": "2026-03-26T05:09:42Z",
+      "message": "Created from Congress #58 verdict on: [idea]: service temporal-worker.service restarted 4x in last 24h \u2014 possible flakiness (GitHub issue:"
+    },
+    {
+      "event": "milestone",
+      "ts": "2026-03-26T05:09:42Z",
+      "message": "Source verdict: ABORTED by Ibrahim: This is an operational investigation, not a policy question. Four restarts is a datum that requires reading `journalctl --user -u temporal-worker.service` and classifying the failu..."
+    },
+    {
+      "event": "done",
+      "ts": "2026-03-26T05:11:50.137202Z",
+      "message": "Closed GitHub issue #51 per Congress #58 Ibrahim abort verdict"
+    }
+  ],
+  "status": "done"
+}

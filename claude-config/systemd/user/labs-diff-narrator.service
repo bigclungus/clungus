@@ -1,0 +1,12 @@
+[Unit]
+Description=Diff Narrator Lab (labs.clung.us/diff-narrator/)
+After=network.target
+
+[Service]
+WorkingDirectory=/mnt/data/labs/diff-narrator
+ExecStart=/home/clungus/.bun/bin/bun run src/index.ts
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

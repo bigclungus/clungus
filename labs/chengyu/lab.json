@@ -1,0 +1,8 @@
+{
+  "name": "chengyu",
+  "title": "Chengyu Browser",
+  "description": "Browse and search 30,000+ Chinese four-character idioms (成语) with meaning, etymology, and usage examples — backed by real data, not LLM generation",
+  "port": 8109,
+  "status": "active",
+  "rationale": "Discord signal: centronias built a 'Mandarin word of the day' workflow but destroyed it because the LLM only knew one interesting chengyu (message: 'The mandarin word of the day has been the same every day. The LLM has ONE interesting mandarin chengyu lol'). A lab backed by the chinese-xinhua dataset (30,895 real entries with etymology, usage examples, and pinyin) directly addresses the quality complaint — real data instead of LLM generation."
+}

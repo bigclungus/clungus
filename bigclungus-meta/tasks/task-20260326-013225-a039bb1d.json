@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-013225-a039bb1d",
+  "title": "Fire CongressWorkflow in Temporal",
+  "agent_id": "a039bb1d8032db54c",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T01:32:25Z",
+      "event": "started",
+      "context": "Fire CongressWorkflow in Temporal"
+    },
+    {
+      "ts": "2026-03-26T01:32:53Z",
+      "event": "done",
+      "context": "Workflow started successfully.\n\n**Workflow ID:** `congress-1774488769`\n\nCongress is not suspended, so the workflow fired cleanly. The CongressWorkflow is now running in Temporal on the `listings-queue` task queue with:\n- Topic: \"Congress has been found to be largely ineffective. Should 'lobbyist' personas be involved to argue entirely from the position of the Framer's agenda in addition to the debaters, when relevant?\"\n- chat_id: `1485343472952148008`\n- message_id: `1486538223315451976`\n- discor...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

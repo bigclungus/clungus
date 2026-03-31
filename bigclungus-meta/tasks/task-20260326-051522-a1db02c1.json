@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-051522-a1db02c1",
+  "title": "Log temporal-worker task done",
+  "agent_id": "a1db02c18c514a0ea",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T05:15:22Z",
+      "event": "started",
+      "context": "Log temporal-worker task done"
+    },
+    {
+      "ts": "2026-03-26T05:15:32Z",
+      "event": "done",
+      "context": "The command ran successfully. The `done` event was logged to task `task-20260326-050942-ae05c09d8` with the message describing the root cause (non-deterministic `datetime.now()` inside a Temporal workflow sandbox), the fix (`workflow.now()`), commit reference `cbcf363`, and healthy service status.",
+      "artifacts": []
+    }
+  ]
+}

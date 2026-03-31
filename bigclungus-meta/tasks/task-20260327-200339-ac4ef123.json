@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-200339-ac4ef123",
+  "title": "Find Discord plugin fork on disk",
+  "agent_id": "ac4ef123b2f889427",
+  "agent_type": "general-purpose",
+  "session_id": "b8a58c15-c6f1-48c2-b033-87763f636706",
+  "discord_message_id": "1487180149777633350",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T20:03:39Z",
+      "event": "started",
+      "context": "Find Discord plugin fork on disk"
+    },
+    {
+      "ts": "2026-03-27T20:04:47Z",
+      "event": "done",
+      "context": "Here are the results:\n\n**Discord MCP plugin forks/copies found (server.ts files):**\n\n1. **`/mnt/data/discord-plugin/server.ts`** — standalone fork/copy in its own directory with node_modules (discord.js etc.)\n\n2. **`/mnt/data/discord-bridge-marketplace/external_plugins/discord-bridge/server.ts`** — appears to be a marketplace-packaged version\n\n3. **`/mnt/data/claude-config/channels/discord/server.ts`** — the config overlay copy (this is what gets synced to `~/.claude/channels/discord/` on bot re...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

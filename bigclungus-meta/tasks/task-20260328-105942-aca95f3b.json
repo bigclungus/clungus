@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-105942-aca95f3b",
+  "title": "Add VC occupancy guardrail",
+  "agent_id": "aca95f3b2a2182984",
+  "agent_type": "general-purpose",
+  "session_id": "6f39db78-2fa2-4ae1-b73f-761ea988d046",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T10:59:42Z",
+      "event": "started",
+      "context": "Add VC occupancy guardrail"
+    },
+    {
+      "ts": "2026-03-28T11:00:19Z",
+      "event": "done",
+      "context": "Both edits are in place and correct.\n\nHere is what was changed in `/mnt/data/discord-plugin/server.ts`:\n\n**1. `join_voice` handler (line 812-822):** Added a check after fetching the voice channel that inspects the channel's `members` collection, filters out bot users via `m.user?.bot`, and returns an error `\"won't join an empty voice channel — no humans present\"` if no human members are found.\n\n**2. `speak` handler (line 875-890):** Added a check after resolving the voice connection but before a...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

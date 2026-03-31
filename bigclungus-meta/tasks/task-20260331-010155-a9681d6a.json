@@ -1,0 +1,25 @@
+{
+  "id": "task-20260331-010155-a9681d6a",
+  "title": "Check session JSONL for reaction event provenance",
+  "agent_id": "a9681d6a9a9c33bf1",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-31T01:01:55Z",
+      "event": "started",
+      "context": "Check session JSONL for reaction event provenance"
+    },
+    {
+      "ts": "2026-03-31T01:03:34Z",
+      "event": "done",
+      "context": "Now I have a complete picture. Here's the full findings:\n\n---\n\n## Provenance Report: `omni_lkvwqlln` (crundle reaction event)\n\n**The reaction event is REAL. It has proper `queue-operation` provenance.**\n\n### What the JSONL shows:\n\n**Line 5731** — `queue-operation` type: **enqueue** — This is the enqueue entry for the reaction event. The grep output shows it as `[Omitted long matching line]` because it contains the full event payload, but its presence confirms it was enqueued by omni.\n\n**Line 573...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

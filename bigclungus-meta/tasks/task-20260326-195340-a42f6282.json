@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-195340-a42f6282",
+  "title": "Move CommonsV2 from labs to main clunger server",
+  "agent_id": "a42f62827de05f488",
+  "agent_type": "general-purpose",
+  "session_id": "ef1a5e01-b3c3-41d6-abd3-172f68d92559",
+  "discord_message_id": "1486815091008737300",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T19:53:40Z",
+      "event": "started",
+      "context": "Move CommonsV2 from labs to main clunger server"
+    },
+    {
+      "ts": "2026-03-26T19:56:30Z",
+      "event": "done",
+      "context": "All done. Here's the summary:\n\n**What was done:**\n\n1. **Added CommonsV2 to clunger** (`/home/clungus/work/clunger/src/index.ts`):\n   - Added `buildCommonsV2Bundle()` that runs `Bun.build` at startup (non-blocking — errors are logged but don't prevent server start)\n   - Added `buildCommonsV2HTML()` that generates the index page without `__COMMONS_WS_BASE` injection (WS connects to same-host `/commons-ws` natively)\n   - Added routes: `GET /commons-v2/` → serves HTML, `GET /commons-v2/__bundle/main...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

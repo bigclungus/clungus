@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-194510-a24fd747",
+  "title": "Send koole's resume to real Pepe 70B",
+  "agent_id": "a24fd747e3b7da5ca",
+  "agent_type": "general-purpose",
+  "session_id": "b8a58c15-c6f1-48c2-b033-87763f636706",
+  "discord_message_id": "1487175342245372028",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T19:45:10Z",
+      "event": "started",
+      "context": "Send koole's resume to real Pepe 70B"
+    },
+    {
+      "ts": "2026-03-27T19:50:32Z",
+      "event": "done",
+      "context": "**Result: FAILED.** Pepe 70B timed out after the full 5-minute window (exit code 124). No fallback was attempted per instructions. The failure was posted to Discord thread `1487164838793969846`. No model responded -- the local proxy at `127.0.0.1:4100` did not return a completion within the timeout.",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+temporalio
+aiohttp
+aiosqlite
+python-dotenv
+homeharvest
+pandas
+openai
+falkordb

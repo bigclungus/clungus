@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-064254-a77848f3",
+  "title": "Build persona audition TS server",
+  "agent_id": "a77848f349f570792",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T06:42:54Z",
+      "event": "started",
+      "context": "Build persona audition TS server"
+    },
+    {
+      "ts": "2026-03-26T06:55:13Z",
+      "event": "done",
+      "context": "Everything is working. Here's a summary of what was built:\n\n---\n\n## What was built\n\n### New service: `/mnt/data/persona-audition/`\n- **Port:** 8110 (8101 was taken by diff-narrator lab)\n- **Service:** `persona-audition.service` — running, enabled, auto-restarts\n- **GitHub:** https://github.com/bigclungus/persona-audition\n\n**API endpoints:**\n- `GET /api/audition/walkers` — list active walkers with positions\n- `POST /api/audition/pause` — pause a walker on hover\n- `POST /api/audition/resume` — res...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

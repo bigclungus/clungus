@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-115139-a954865d",
+  "title": "Investigate transcript thread context",
+  "agent_id": "a954865d388c37e46",
+  "agent_type": "general-purpose",
+  "session_id": "d85cfa21-ac13-49bd-a459-80cf940f3507",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T11:51:39Z",
+      "event": "started",
+      "context": "Investigate transcript thread context"
+    },
+    {
+      "ts": "2026-03-28T11:53:14Z",
+      "event": "done",
+      "context": "Here is the complete analysis:\n\n---\n\n## Summary of the Issue\n\nrelarey tested the VC transcription feature. It records human speech (via Whisper STT) and bot speech (via `logBotSpeech`), then compiles a .txt transcript when the last human leaves VC. The test revealed that **only bot messages appeared in the transcript, not human messages**.\n\n## Root Cause\n\nThe code in `voice-receive.ts` is actually correct -- the `flushBuffer` function (line 438-446 in the `claude-config` version) does push human...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

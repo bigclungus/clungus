@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-205114-a7dca354",
+  "title": "Check persona avatar polls",
+  "agent_id": "a7dca35496bc839a1",
+  "agent_type": "general-purpose",
+  "session_id": "083baee4-2f6f-4f81-8ced-0e9b97f43956",
+  "discord_message_id": "1487192240253304923",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T20:51:14Z",
+      "event": "started",
+      "context": "Check persona avatar polls"
+    },
+    {
+      "ts": "2026-03-27T20:52:22Z",
+      "event": "done",
+      "context": "Here are the findings:\n\n**Is there automatic poll creation for new personas? No.**\n\nThe CREATE directive handling in `/mnt/data/temporal-workflows/activities/congress_act.py` (lines 796-887) does the following when a new persona is created:\n1. Validates the slug\n2. Checks it doesn't already exist\n3. Parses fields (display_name, role, title, model, traits, avoid, values, prose)\n4. Writes a new `.md` file to `/home/clungus/work/bigclungus-meta/agents/<slug>.md` with `avatar_url: ''`\n5. Appends the...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-174134-a2e49d5f",
+  "title": "Terminate Congress workflow 1774546757",
+  "agent_id": "a2e49d5fce717629c",
+  "agent_type": "general-purpose",
+  "session_id": "ef1a5e01-b3c3-41d6-abd3-172f68d92559",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T17:41:34Z",
+      "event": "started",
+      "context": "Terminate Congress workflow 1774546757"
+    },
+    {
+      "ts": "2026-03-26T17:42:14Z",
+      "event": "done",
+      "context": "All three steps complete:\n\n1. **Workflow terminated** — `congress-1774546757` was terminated with the reason message via the Temporal client (system Python had `temporalio` available; the `.venv` path in the command didn't exist but system Python worked fine).\n\n2. **Giga log updated** — Appended a new `## acting-before-design-closed / ignoring-explicit-instruction` section (count: 2, severity: suggestion) to `/mnt/data/bigclungus-meta/giga-log.md` with the full context of the intervention.\n\n3. *...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

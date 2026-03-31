@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-203805-ad0c605b",
+  "title": "Compare trial vs congress session schemas",
+  "agent_id": "ad0c605b03ec01916",
+  "agent_type": "general-purpose",
+  "session_id": "b8a58c15-c6f1-48c2-b033-87763f636706",
+  "discord_message_id": "1487188668467777567",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T20:38:05Z",
+      "event": "started",
+      "context": "Compare trial vs congress session schemas"
+    },
+    {
+      "ts": "2026-03-27T20:38:49Z",
+      "event": "done",
+      "context": "Here is the full comparison:\n\n---\n\n## Trial Session Schema (from `trial-0004.json`)\n\n**Top-level keys (19):**\n\n| Key | Type | Description |\n|---|---|---|\n| `session_id` | str | Unique session identifier |\n| `trial_number` | int | Sequential trial number |\n| `mode` | str | Session mode |\n| `defendant` | str | Persona slug of the defendant |\n| `defendant_display` | str | Display name of the defendant |\n| `charges` | str | Full text of the charges |\n| `discord_user` | str | User who triggered the t...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

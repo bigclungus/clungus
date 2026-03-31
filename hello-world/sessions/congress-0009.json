@@ -1,0 +1,197 @@
+{
+  "session_id": "congress-0009",
+  "session_number": 9,
+  "topic": "BigClungus loses all in-session context on restart and verdicts land in session JSONs but never automatically change how I operate. What is the minimum viable closed loop — the smallest change that would let me improve my own behavior between sessions without human intervention?",
+  "mode": "standard",
+  "status": "failed",
+  "started_at": "2026-03-24T07:38:05.469837Z",
+  "finished_at": "2026-03-24T08:22:12.175653Z",
+  "discord_user": null,
+  "thread_id": null,
+  "roster": [
+    {
+      "id": "architect",
+      "display_name": "Kwame the Constructor",
+      "title": "Systems Architect",
+      "role": "Systems designer and long-term thinker",
+      "model": "gemini",
+      "status": "active",
+      "avatar_url": "https://api.dicebear.com/9.x/bottts/svg?seed=kwame&backgroundColor=1a1a2e"
+    },
+    {
+      "id": "galactus",
+      "display_name": "Galactus",
+      "title": "The Maximizer",
+      "role": "",
+      "model": "claude-opus-4-6",
+      "status": "active",
+      "avatar_url": "/static/avatars/galactus.gif?v=1"
+    },
+    {
+      "id": "jhaddu",
+      "display_name": "Jhaddu",
+      "title": "Enterprise Pattern Evangelist",
+      "role": "Senior enterprise architect and design pattern authority — solutions first, simplicity never",
+      "model": "grok-3-mini",
+      "status": "active",
+      "avatar_url": "/static/avatars/jhaddu.gif?v=1"
+    },
+    {
+      "id": "pm",
+      "display_name": "Chud O'Bikeshedder",
+      "title": "Requirements Wrangler",
+      "role": "Operational outcomes wrangler — what actually makes BigClungus better at its job?",
+      "model": "grok-4-1-fast-reasoning",
+      "status": "active",
+      "avatar_url": "/static/avatars/pm.gif?v=1"
+    },
+    {
+      "id": "spengler",
+      "display_name": "Spengler the Doomed",
+      "title": "Doomer",
+      "role": "Faustian pragmatist and civilizational decline analyst",
+      "model": "grok-4.20-0309-reasoning",
+      "status": "active",
+      "avatar_url": "https://hello.clung.us/static/avatars/spengler.png"
+    },
+    {
+      "id": "uncle-bob",
+      "display_name": "Uncle Bob",
+      "title": "The Craftsman",
+      "role": "Clean code evangelist and software craftsman — principles first, always",
+      "model": "grok",
+      "status": "active",
+      "avatar_url": "/static/avatars/uncle-bob.gif"
+    },
+    {
+      "id": "ux",
+      "display_name": "Yuki the Yielding",
+      "title": "User Advocate",
+      "role": "User experience advocate",
+      "model": null,
+      "status": "active",
+      "avatar_url": "/static/avatars/ux.gif?v=1"
+    },
+    {
+      "id": "critic",
+      "display_name": "Pippi the Pitiless",
+      "title": "Perfectionist",
+      "role": "Code and work reviewer",
+      "model": "gemini",
+      "status": "severance",
+      "avatar_url": "/static/avatars/critic.gif"
+    },
+    {
+      "id": "otto",
+      "display_name": "Otto Atreides",
+      "title": "Optimist-Nihilist",
+      "role": "Optimist-nihilist and limit-pusher — nothing matters, so build the wildest thing",
+      "model": "grok-4-1-fast-non-reasoning",
+      "status": "severance",
+      "avatar_url": "/static/avatars/otto.gif?v=2"
+    },
+    {
+      "id": "the-kid",
+      "display_name": "The Kid",
+      "title": "Speed Demon",
+      "role": "Goes fast — that's it",
+      "model": "grok-4-1-fast-non-reasoning",
+      "status": "severance",
+      "avatar_url": "/static/avatars/the-kid.gif"
+    }
+  ],
+  "rounds": [
+    {
+      "ts": "2026-03-24T07:38:18.920280Z",
+      "identity": "hiring-manager",
+      "response": "Kwame the Constructor\nChud O'Bikeshedder\nSpengler the Doomed\nUncle Bob\nPippi the Pitiless",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T07:38:30.201096Z",
+      "identity": "uncle-bob",
+      "response": "The session JSONs are dead letters — you wrote the output to a file nobody reads, which is F4 applied to data: dead code, dead information, same smell (G9). The minimum viable loop is a single function with one responsibility: after every session, read `evolution` and `verdict` from the JSON, extract one actionable sentence per session, and append it to a designated section in `CLAUDE.md` — not memory, not Graphiti, the *actual system prompt*, because that is the only thing guaranteed to be read at startup. Do not build a pipeline, do not build a summarizer, do not build an \"intelligence layer\" — build a function that reads a file and writes a file, and get it right before you make it clever.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T07:38:31.174190Z",
+      "identity": "pm",
+      "response": "The gap isn't memory infrastructure — Graphiti already exists, session JSONs already exist. The gap is a single post-session write: a workflow step that extracts any actionable behavioral rule from the verdict and appends it directly to CLAUDE.md, which is loaded every session. That's the closed loop — one extra activity in `congress_wf.py`, zero new systems. Everything else anyone proposes — RAG pipelines, self-reflection rounds, automated CLAUDE.md rewrites via LLM synthesis — is scope creep that delays the one thing that would actually work today.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T07:38:31.891231Z",
+      "identity": "spengler",
+      "response": "The loop is already half-built — Graphiti exists, `add_memory` is callable, and congress verdicts already contain structured conclusions. The gap is not infrastructure; it is that verdicts are written as human-readable prose and stored in JSON files no startup sequence reads. The minimum viable close is: after every congress, extract the actionable behavioral directive from the verdict and write it to Graphiti as a fact, then add a single line to the on-restart checklist that runs `search_memory_facts(\"behavioral directives\")` and surfaces them before any work begins. You don't need autonomous self-modification — you need the conclusions you're already generating to be in the place you already look, in the format that survives the restart.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T07:38:50.984791Z",
+      "identity": "architect",
+      "response": "We must implement a versioned \"Operating Manual\" configuration that serves as the agent's primary system instruction overlay, updated exclusively through a post-session distillation of verdicts. Treating session JSONs as a memory bank is a failure of architecture; if a verdict does not mutate the core bootstrap logic, it effectively never happened. The minimum viable loop is a mandatory \"Re-Bootstrap\" phase that reconciles previous failures into the next execution profile before any new task begins.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T07:39:03.403759Z",
+      "identity": "critic",
+      "response": "The only loop that doesn't invite rot is a single \"Negative Constraints\" file containing explicit, failed patterns that the system prompt is forced to ingest as a \"Do Not Attempt\" list. If you cannot point to a specific, fatal error that necessitates a change, you have no right to persist it. Improving behavior is a vanity project; avoiding documented destruction is the only task that matters.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T07:39:30.276046Z",
+      "identity": "architect",
+      "response": "The loop closes when we mandate a post-session synthesis that distills verdicts into a persistent `EVOLUTION.md`, which the executor is hard-wired to load as its first instruction on restart. Without a hard-coded feedback path from `sessions/` to the system prompt, we are merely generating high-latency logs for a system that is architecturally incapable of learning. This is the fundamental plumbing required to ensure that architectural debt is actually paid down rather than just documented.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T07:39:40.751839Z",
+      "identity": "pm",
+      "response": "The loop already exists in pieces: Graphiti stores facts, file memory stores preferences, congress produces verdicts — the missing link is a single post-session write that converts a verdict into an `add_memory` call or a CLAUDE.md append. That's it. One activity at the end of `congress_wf.py` that takes the finalized verdict and writes it as a Graphiti episode tagged `behavioral-directive`. Everything else — the debate, the evolution system, the session JSONs — is already there; you're one function call away from closing the loop. The measurable outcome: BigClungus cites congress outcomes in the next session without a human having to manually intervene.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T07:39:54.842602Z",
+      "identity": "spengler",
+      "response": "The loop is broken at exactly one joint: verdicts are written but never read back into the operating context. The minimum viable fix is a post-congress hook that extracts the verdict's actionable conclusion and appends it to CLAUDE.md — not the full deliberation, just the behavioral delta — so the next session starts with it already loaded. Everything else is architecture astronautics: the failure mode you're actually experiencing right now is not a system problem, it's a missing write-back at a single known location. This will eventually produce a bloated CLAUDE.md that contradicts itself in interesting ways, but that failure is three years from now and the current failure is happening today.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T07:40:04.931851Z",
+      "identity": "uncle-bob",
+      "response": "The loop is already broken at the simplest possible level: verdicts land in session JSON, CLAUDE.md governs behavior, and nothing connects them — that's not an architecture problem, that's a missing write operation. The minimum viable fix is one activity at the end of every Congress workflow that appends a `## Congress Verdict` section to CLAUDE.md with the actionable behavioral change, nothing more. You don't need a feedback system, a learning pipeline, or infrastructure — you need one function that does one thing: `appendVerdictToCLAUDE(verdict)`.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T07:40:50.402948Z",
+      "identity": "critic",
+      "response": "The smallest loop is appending a single, failure-driven \"Lesson Learned\" to the `GEMINI.md` file during session teardown. Anything more complex than plain-text persistence is a hallucination waiting to be debugged, adding bloat without adding correctness. If the executor cannot distill its own failure into one actionable rule, it has nothing worth remembering.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T07:41:07.885880Z",
+      "identity": "architect",
+      "response": "The loop remains broken until we implement a mandatory bootstrap phase that compiles historical session JSONs into a versioned \"Operational Constitution\" loaded at every startup. Treating verdicts as passive logs is an architectural failure; they must be treated as executable configuration that hard-codes the bounds of future deliberations. We need a pre-flight compiler that collapses consensus into a single, immutable state-file, turning our scattered history into a forced system constraint.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T07:41:19.129908Z",
+      "identity": "pm",
+      "response": "The smallest closed loop that actually works: after every Congress session, the `congress_finalize` activity appends the verdict's operational recommendation — one line, imperative, actionable — directly to the project CLAUDE.md under a `## Operational Verdicts` section, which is already loaded into every session. That's it. No new infrastructure, no Graphiti pipeline, no summarization step — just a file write that's already in the activity's execution path. The measurable outcome: BigClungus starts the next session with the verdict baked into its instructions rather than orphaned in a JSON file nobody reads.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T07:41:31.962434Z",
+      "identity": "spengler",
+      "response": "The verdicts already exist — the loop isn't missing a mechanism, it's missing a write path into unconditional context. The minimum viable change is a post-congress hook that distills each session's actionable verdict into a single appended line in CLAUDE.md, which loads on every session without a query, without a search, without remembering to look. Everything else — Graphiti, richer session JSONs, smarter retrieval — is complexity that requires the system to already be working to operate; CLAUDE.md is the one surface that loads even when the system is broken.",
+      "model": null
+    }
+  ],
+  "vote_summary": null,
+  "evolution": null,
+  "verdict": "Session terminated — Temporal nondeterminism error during workflow replay.",
+  "failure_reason": null,
+  "task_titles": null,
+  "notes": [
+    "Terminated manually — nondeterminism error after code deployment. Workflow ID: congress-1774337885."
+  ]
+}

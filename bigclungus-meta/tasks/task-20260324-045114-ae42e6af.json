@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-045114-ae42e6af",
+  "title": "Fix CORS wildcard in serve.py",
+  "agent_id": "ae42e6af6ef705b9f",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": "1485863417498566716",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T04:51:14Z",
+      "event": "started",
+      "context": "Fix CORS wildcard in serve.py"
+    },
+    {
+      "ts": "2026-03-24T04:51:41Z",
+      "event": "done",
+      "context": "Done. Here's a summary of what was changed:\n\n**File:** `/home/clungus/work/hello-world/serve.py`\n\nThere were 5 occurrences of `Access-Control-Allow-Origin: *`, all replaced with `Access-Control-Allow-Origin: https://hello.clung.us`:\n\n- Line 157 — `do_OPTIONS` handler (preflight requests)\n- Line 403 — `_serve_congress_session` (inline response)\n- Line 439 — `_handle_congress_session_patch` (inline response)\n- Line 514 — `_handle_congress_post` (inline response)\n- Line 523 — `_send_json` helper (c...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

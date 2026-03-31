@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-210548-ae9503e6",
+  "title": "Send age-color fix to totals agent",
+  "agent_id": "ae9503e6d63389816",
+  "agent_type": "general-purpose",
+  "session_id": "e4d4bf00-991b-4f0e-aac7-2ab4056f18c5",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T21:05:48Z",
+      "event": "started",
+      "context": "Send age-color fix to totals agent"
+    },
+    {
+      "ts": "2026-03-25T21:06:55Z",
+      "event": "done",
+      "context": "Everything is in order. Here's a summary of what was done:\n\n**Fix applied to `/mnt/data/hello-world/tasks.html`:**\n\n1. Added a `TERMINAL_STATUSES` lookup object (`{ done: true, failed: true, cancelled: true }`) above `makeAgePill`.\n2. Updated `makeAgePill(ts)` to `makeAgePill(ts, status)` — if the status is terminal, it unconditionally uses `age-fresh` (neutral/grey) regardless of age.\n3. Updated the call site at line 614: `makeAgePill(activityTs, status)` so the task's status is passed through....(truncated)",
+      "artifacts": []
+    }
+  ]
+}

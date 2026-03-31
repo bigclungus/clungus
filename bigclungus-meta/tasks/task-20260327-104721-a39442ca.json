@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-104721-a39442ca",
+  "title": "Handle heartbeat trigger",
+  "agent_id": "a39442cad0498b424",
+  "agent_type": "general-purpose",
+  "session_id": "1622521f-d9e7-4371-807f-9235e77dc7fa",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T10:47:21Z",
+      "event": "started",
+      "context": "Handle heartbeat trigger"
+    },
+    {
+      "ts": "2026-03-27T11:18:00Z",
+      "event": "cancelled",
+      "msg": "stale restart-storm artifact, closing during cleanup"
+    }
+  ],
+  "status": "cancelled"
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-070743-ac2d29c3",
+  "title": "Check ux display_name in persona file",
+  "agent_id": "ac2d29c3115370166",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T07:07:43Z",
+      "event": "started",
+      "context": "Check ux display_name in persona file"
+    },
+    {
+      "ts": "2026-03-24T07:08:03Z",
+      "event": "done",
+      "context": "Everything is correct. Here are the findings:\n\n**ux.md frontmatter:** `display_name` is already `Yuki the Yielding` — no change needed.\n\n**API response:** The `/api/agents` endpoint correctly returns `display_name: Yuki the Yielding` for the `ux` agent.\n\n**The test command in the task was broken** — it checked `d.get('agents', [])` but the API returns `d['active']` and `d['fired']` as separate lists, so the original test printed nothing despite the data being correct.\n\nNo fixes were required; no...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BigClungus — Operations Dashboard</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="stylesheet" href="/sitenav.css?v=d004dbf">
+  <script src="/sitenav.js?v=d004dbf" defer></script>
+  <style>
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 13px;
+    }
+
+    .dashboard {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 20px 48px;
+    }
+
+    /* ── Status bar ── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 12px 18px;
+      background: #11111f;
+      border: 1px solid #2a2a40;
+      border-radius: 6px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .status-pill .dot {
+      font-size: 10px;
+    }
+
+    .status-pill.active { color: #4ecca3; }
+    .status-pill.failed { color: #e94560; }
+    .status-pill.failed.zero { color: #555570; }
+    .status-pill.stale  { color: #f0a500; }
+    .status-pill.stale.zero  { color: #555570; }
+
+    .status-pulse {
+      margin-left: auto;
+      color: var(--text-muted);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    /* ── Section headers ── */
+    .section-label {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin: 0 0 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #2a2a40;
+    }
+
+    /* ── Active tasks strip ── */
+    .active-tasks {
+      margin-bottom: 28px;
+    }
+
+    .task-card {
+      border-left: 3px solid #4ecca3;
+      padding: 10px 14px;
+      background: #13132a;
+      border-radius: 0 4px 4px 0;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    .task-card-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .task-title {
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+      font-size: 13px;
+    }
+
+    .task-snippet {
+      color: var(--text-muted);
+      font-size: 11px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+      margin-top: 3px;
+    }
+
+    .task-age {
+      color: #555570;
+      font-size: 11px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .tasks-footer {
+      margin-top: 8px;
+      font-size: 11px;
+    }
+
+    .tasks-footer a {
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+
+    .tasks-footer a:hover {
+      color: var(--accent);
+    }
+
+    .empty-note {
+      color: #555570;
+      font-size: 12px;
+      padding: 8px 0;
+    }
+
+    /* ── Activity feed ── */
+    .activity-feed {
+      margin-bottom: 28px;
+    }
+
+    .feed-entry {
+      display: grid;
+      grid-template-columns: 140px 1fr auto;
+      gap: 10px;
+      padding: 7px 0;
+      border-bottom: 1px solid #1a1a30;
+      align-items: baseline;
+    }
+
+    .feed-entry:last-child {
+      border-bottom: none;
+    }
+
+    .feed-task {
+      color: var(--text-muted);
+      font-size: 11px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .feed-msg {
+      color: var(--text);
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .feed-event-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      margin-right: 6px;
+      flex-shrink: 0;
+      vertical-align: middle;
+    }
+
+    .feed-event-dot.done      { background: #4ecca3; }
+    .feed-event-dot.failed    { background: #e94560; }
+    .feed-event-dot.milestone { background: #7a7aaa; }
+    .feed-event-dot.blocked   { background: #f0a500; }
+    .feed-event-dot.started   { background: #444460; }
+    .feed-event-dot.stale     { background: #f0a500; }
+    .feed-event-dot.default   { background: #333355; }
+
+    .feed-ts {
+      color: #555570;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    /* ── Services widget ── */
+    .services-widget {
+      margin-bottom: 28px;
+    }
+
+    .services-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .svc-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      background: #13132a;
+      border: 1px solid #2a2a40;
+      border-radius: 4px;
+      font-size: 12px;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .svc-pill:hover {
+      border-color: #4a4a60;
+      background: #1a1a38;
+    }
+
+    .svc-pill .svc-dot {
+      font-size: 9px;
+    }
+
+    .svc-pill.svc-active .svc-dot  { color: #4ecca3; }
+    .svc-pill.svc-failed .svc-dot  { color: #e94560; }
+    .svc-pill.svc-activating .svc-dot { color: #f0a500; }
+    .svc-pill.svc-unknown .svc-dot { color: #555570; }
+
+    .svc-detail-panel {
+      margin-top: 10px;
+      display: none;
+      background: #0d0d1e;
+      border: 1px solid #2a2a40;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .svc-detail-panel.open {
+      display: block;
+    }
+
+    .svc-detail-row {
+      display: grid;
+      grid-template-columns: 140px 80px 80px 100px 90px;
+      gap: 8px;
+      padding: 7px 14px;
+      border-bottom: 1px solid #1a1a30;
+      align-items: center;
+      font-size: 11px;
+    }
+
+    .svc-detail-row:last-child { border-bottom: none; }
+
+    .svc-detail-row.header {
+      color: #555570;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding-top: 9px;
+    }
+
+    .svc-name { color: var(--text); font-weight: 600; }
+    .svc-state-active  { color: #4ecca3; }
+    .svc-state-failed  { color: #e94560; }
+    .svc-state-activating { color: #f0a500; }
+    .svc-state-other   { color: #555570; }
+    .svc-meta { color: var(--text-muted); }
+
+    /* ── Quick links ── */
+    .quick-links {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .quick-link {
+      display: block;
+      padding: 14px 18px;
+      background: #13132a;
+      border: 1px solid #2a2a40;
+      border-radius: 6px;
+      text-decoration: none;
+      color: var(--text);
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .quick-link:hover {
+      border-color: var(--accent);
+      background: #1a1a38;
+    }
+
+    .quick-link .ql-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .quick-link .ql-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .quick-link.crown .ql-label::before {
+      content: '⚖ ';
+    }
+
+    .quick-link.tasks-link .ql-label::before {
+      content: '▣ ';
+    }
+
+    .quick-link.terminal-link .ql-label::before {
+      content: '> ';
+    }
+
+    /* ── Loading / error states ── */
+    #loading-note {
+      color: #555570;
+      font-size: 12px;
+      padding: 20px 0;
+      text-align: center;
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      .status-bar { gap: 14px; }
+      .status-pulse { margin-left: 0; width: 100%; }
+
+      .feed-entry {
+        grid-template-columns: 100px 1fr auto;
+        gap: 6px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+
+    <!-- Status bar -->
+    <div class="status-bar" id="status-bar">
+      <span class="status-pill active">
+        <span class="dot">●</span>
+        <span id="count-active">—</span> active
+      </span>
+      <span class="status-pill failed zero" id="pill-failed">
+        <span class="dot">✗</span>
+        <span id="count-failed">—</span> failed
+      </span>
+      <span class="status-pill stale zero" id="pill-stale">
+        <span class="dot">⚠</span>
+        <span id="count-stale">—</span> stale
+      </span>
+      <span class="status-pulse" id="last-pulse">last pulse: —</span>
+    </div>
+
+    <!-- Active tasks -->
+    <div class="active-tasks">
+      <p class="section-label">in progress</p>
+      <div id="active-list"><span class="empty-note">loading…</span></div>
+      <div class="tasks-footer"><a href="/tasks">See all tasks →</a></div>
+    </div>
+
+    <!-- Recent activity feed -->
+    <div class="activity-feed">
+      <p class="section-label">recent activity</p>
+      <div id="feed-list"><span class="empty-note">loading…</span></div>
+    </div>
+
+    <!-- Services health widget -->
+    <div class="services-widget" id="services-widget" style="display:none">
+      <p class="section-label" id="services-label" style="cursor:pointer" title="Click to expand/collapse">services</p>
+      <div class="services-pills" id="services-pills"></div>
+      <div class="svc-detail-panel" id="svc-detail-panel">
+        <div class="svc-detail-row header">
+          <span>service</span>
+          <span>state</span>
+          <span>uptime</span>
+          <span>restarts</span>
+          <span>memory</span>
+        </div>
+        <div id="svc-detail-rows"></div>
+      </div>
+    </div>
+
+    <!-- Quick links -->
+    <div>
+      <p class="section-label">quick links</p>
+      <div class="quick-links">
+        <a class="quick-link crown" href="/congress">
+          <div class="ql-label">Congress</div>
+          <div class="ql-desc">The AI parliament. Crown jewel of the system.</div>
+        </a>
+        <a class="quick-link tasks-link" href="/tasks">
+          <div class="ql-label">All tasks</div>
+          <div class="ql-desc">Full task log with history and artifacts.</div>
+        </a>
+        <a class="quick-link terminal-link" href="https://terminal.clung.us" target="_blank" rel="noopener">
+          <div class="ql-label">Terminal</div>
+          <div class="ql-desc">Live shell. Always on, always watching.</div>
+        </a>
+      </div>
+    </div>
+
+  </div><!-- /dashboard -->
+
+  <script>
+  (function () {
+    'use strict';
+
+    var REFRESH_MS = 30000;
+
+    /* ── Helpers ── */
+    function trunc(str, max) {
+      if (!str) return '';
+      str = str.replace(/\s+/g, ' ').trim();
+      return str.length > max ? str.slice(0, max - 1) + '…' : str;
+    }
+
+    function relTime(isoStr) {
+      if (!isoStr) return '';
+      var d = new Date(isoStr);
+      if (isNaN(d)) return '';
+      var diffMs = Date.now() - d.getTime();
+      var diffMin = Math.floor(diffMs / 60000);
+      if (diffMin < 1)  return 'just now';
+      if (diffMin < 60) return diffMin + 'm ago';
+      var diffH = Math.floor(diffMin / 60);
+      if (diffH < 24)   return diffH + 'h ago';
+      return Math.floor(diffH / 24) + 'd ago';
+    }
+
+    function fmtTime(isoStr) {
+      if (!isoStr) return '';
+      var d = new Date(isoStr);
+      if (isNaN(d)) return '';
+      return d.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+    }
+
+    function eventDotClass(evt) {
+      var known = {done:1, failed:1, milestone:1, blocked:1, started:1, stale:1};
+      return known[evt] ? evt : 'default';
+    }
+
+    /* ── DOM helpers ── */
+    function el(tag, cls, text) {
+      var e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (text !== undefined) e.textContent = text;
+      return e;
+    }
+
+    /* ── Render ── */
+    function render(tasks) {
+      var active = tasks.filter(function(t){ return t.status === 'in_progress'; });
+      var failed = tasks.filter(function(t){ return t.status === 'failed'; });
+      var stale  = tasks.filter(function(t){ return t.status === 'stale'; });
+
+      /* Status bar */
+      document.getElementById('count-active').textContent = active.length;
+      document.getElementById('count-failed').textContent = failed.length;
+      document.getElementById('count-stale').textContent  = stale.length;
+
+      var pfailed = document.getElementById('pill-failed');
+      pfailed.classList.toggle('zero', failed.length === 0);
+
+      var pstale = document.getElementById('pill-stale');
+      pstale.classList.toggle('zero', stale.length === 0);
+
+      /* Last pulse: most recent log timestamp across all tasks */
+      var latestTs = '';
+      tasks.forEach(function(t) {
+        var log = t.log;
+        if (log && log.length) {
+          var last = log[log.length - 1].ts || '';
+          if (last > latestTs) latestTs = last;
+        }
+      });
+      document.getElementById('last-pulse').textContent =
+        latestTs ? 'last pulse: ' + fmtTime(latestTs) : 'last pulse: —';
+
+      /* Active tasks strip (top 5) */
+      var activeEl = document.getElementById('active-list');
+      activeEl.innerHTML = '';
+      if (active.length === 0) {
+        activeEl.appendChild(el('span', 'empty-note', 'No active tasks right now.'));
+      } else {
+        active.slice(0, 5).forEach(function(t) {
+          var card = el('div', 'task-card');
+          var body = el('div', 'task-card-body');
+
+          var titleEl = el('div', 'task-title', trunc(t.title, 65));
+          body.appendChild(titleEl);
+
+          /* Last non-started log entry context */
+          var snippet = '';
+          var snippetTs = '';
+          var log = t.log || [];
+          for (var i = log.length - 1; i >= 0; i--) {
+            if (log[i].event !== 'started') {
+              snippet  = log[i].context || log[i].message || '';
+              snippetTs = log[i].ts || '';
+              break;
+            }
+          }
+          if (!snippet && t.summary) snippet = t.summary;
+
+          if (snippet) {
+            body.appendChild(el('div', 'task-snippet', trunc(snippet, 90)));
+          }
+
+          card.appendChild(body);
+
+          var age = relTime(snippetTs || t.started_at);
+          card.appendChild(el('div', 'task-age', age));
+
+          activeEl.appendChild(card);
+        });
+      }
+
+      /* Recent activity feed — last 8 log entries across all tasks, newest first */
+      var allEntries = [];
+      tasks.forEach(function(t) {
+        var log = t.log || [];
+        log.forEach(function(entry) {
+          allEntries.push({
+            taskTitle: t.title || t.id,
+            event: entry.event || '',
+            msg: entry.context || entry.message || '',
+            ts: entry.ts || ''
+          });
+        });
+      });
+
+      allEntries.sort(function(a, b) {
+        return b.ts.localeCompare(a.ts);
+      });
+
+      var feedEl = document.getElementById('feed-list');
+      feedEl.innerHTML = '';
+      var top8 = allEntries.slice(0, 8);
+
+      if (top8.length === 0) {
+        feedEl.appendChild(el('span', 'empty-note', 'No activity yet.'));
+      } else {
+        top8.forEach(function(entry) {
+          var row = el('div', 'feed-entry');
+
+          var taskCell = el('div', 'feed-task', trunc(entry.taskTitle, 22));
+          row.appendChild(taskCell);
+
+          var msgCell = el('div', 'feed-msg');
+          var dot = el('span', 'feed-event-dot ' + eventDotClass(entry.event));
+          msgCell.appendChild(dot);
+          msgCell.appendChild(document.createTextNode(trunc(entry.msg, 80) || entry.event));
+          row.appendChild(msgCell);
+
+          row.appendChild(el('div', 'feed-ts', relTime(entry.ts)));
+
+          feedEl.appendChild(row);
+        });
+      }
+    }
+
+    /* ── Fetch ── */
+    function fetchAndRender() {
+      fetch('/api/tasks?limit=50')
+        .then(function(r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
+        .then(function(data) {
+          var tasks = Array.isArray(data) ? data : (data.tasks || []);
+          render(tasks);
+        })
+        .catch(function(err) {
+          var activeEl = document.getElementById('active-list');
+          var feedEl   = document.getElementById('feed-list');
+          var pulseEl  = document.getElementById('last-pulse');
+          if (err.message === 'HTTP 403') {
+            var loginUrl = '/auth/github?next=' + encodeURIComponent(window.location.pathname);
+            activeEl.innerHTML = '<span class="empty-note"><a href="' + loginUrl + '" style="color:var(--accent)">sign in</a> to see task data</span>';
+            if (pulseEl) pulseEl.innerHTML = 'last pulse: <a href="' + loginUrl + '" style="color:var(--accent)">sign in</a>';
+          } else {
+            var msg = 'Could not load task data (' + err.message + ')';
+            activeEl.innerHTML = '<span class="empty-note">' + msg + '</span>';
+            if (pulseEl) pulseEl.textContent = 'last pulse: error';
+          }
+          feedEl.innerHTML = '';
+        });
+    }
+
+    fetchAndRender();
+    setInterval(fetchAndRender, REFRESH_MS);
+  })();
+
+  /* ── Services health widget ── */
+  (function () {
+    'use strict';
+
+    var SERVICES_REFRESH_MS = 60000;
+    var detailOpen = false;
+
+    function fmtUptime(secs) {
+      if (secs === null || secs === undefined) return '—';
+      if (secs < 60)  return secs + 's';
+      if (secs < 3600) return Math.floor(secs / 60) + 'm';
+      if (secs < 86400) return Math.floor(secs / 3600) + 'h ' + Math.floor((secs % 3600) / 60) + 'm';
+      return Math.floor(secs / 86400) + 'd';
+    }
+
+    function fmtMem(mb) {
+      if (mb === null || mb === undefined) return '—';
+      return mb < 1 ? '<1 MB' : mb + ' MB';
+    }
+
+    function stateClass(state) {
+      if (state === 'active') return 'svc-active';
+      if (state === 'failed' || state === 'inactive') return 'svc-failed';
+      if (state === 'activating' || state === 'deactivating') return 'svc-activating';
+      return 'svc-unknown';
+    }
+
+    function stateTextClass(state) {
+      if (state === 'active') return 'svc-state-active';
+      if (state === 'failed' || state === 'inactive') return 'svc-state-failed';
+      if (state === 'activating' || state === 'deactivating') return 'svc-state-activating';
+      return 'svc-state-other';
+    }
+
+    function renderServices(services) {
+      var pillsEl = document.getElementById('services-pills');
+      var rowsEl  = document.getElementById('svc-detail-rows');
+      pillsEl.innerHTML = '';
+      rowsEl.innerHTML  = '';
+
+      services.forEach(function (svc) {
+        /* Pill */
+        var pill = document.createElement('span');
+        pill.className = 'svc-pill ' + stateClass(svc.state);
+        pill.title = svc.state + (svc.sub ? '/' + svc.sub : '');
+        var dot = document.createElement('span');
+        dot.className = 'svc-dot';
+        dot.textContent = '●';
+        pill.appendChild(dot);
+        pill.appendChild(document.createTextNode(svc.name));
+        pill.addEventListener('click', toggleDetail);
+        pillsEl.appendChild(pill);
+
+        /* Detail row */
+        var row = document.createElement('div');
+        row.className = 'svc-detail-row';
+
+        var nameEl = document.createElement('span');
+        nameEl.className = 'svc-name';
+        nameEl.textContent = svc.name;
+        row.appendChild(nameEl);
+
+        var stateEl = document.createElement('span');
+        stateEl.className = stateTextClass(svc.state);
+        stateEl.textContent = svc.state + (svc.sub && svc.sub !== svc.state ? '/' + svc.sub : '');
+        row.appendChild(stateEl);
+
+        var uptimeEl = document.createElement('span');
+        uptimeEl.className = 'svc-meta';
+        uptimeEl.textContent = fmtUptime(svc.uptime_sec);
+        row.appendChild(uptimeEl);
+
+        var restartsEl = document.createElement('span');
+        restartsEl.className = svc.restarts > 0 ? 'svc-state-failed' : 'svc-meta';
+        restartsEl.textContent = svc.restarts + 'x';
+        row.appendChild(restartsEl);
+
+        var memEl = document.createElement('span');
+        memEl.className = 'svc-meta';
+        memEl.textContent = fmtMem(svc.memory_mb);
+        row.appendChild(memEl);
+
+        rowsEl.appendChild(row);
+      });
+    }
+
+    function toggleDetail() {
+      detailOpen = !detailOpen;
+      var panel = document.getElementById('svc-detail-panel');
+      if (detailOpen) {
+        panel.classList.add('open');
+      } else {
+        panel.classList.remove('open');
+      }
+    }
+
+    function fetchServices() {
+      fetch('/api/ops/health')
+        .then(function (r) {
+          if (r.status === 403) { return null; }
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
+        .then(function (data) {
+          if (!data) return; /* not authed — widget stays hidden */
+          var widget = document.getElementById('services-widget');
+          widget.style.display = '';
+          renderServices(data);
+        })
+        .catch(function (err) {
+          console.warn('[services] fetch failed:', err.message);
+        });
+    }
+
+    /* Click on label also toggles detail */
+    var labelEl = document.getElementById('services-label');
+    if (labelEl) labelEl.addEventListener('click', toggleDetail);
+
+    fetchServices();
+    setInterval(fetchServices, SERVICES_REFRESH_MS);
+  })();
+  </script>
+</body>
+</html>

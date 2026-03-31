@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-024229-a704ec5b",
+  "title": "Read giga log file",
+  "agent_id": "a704ec5b414568d88",
+  "agent_type": "general-purpose",
+  "session_id": "43e9d2af-7d2b-4765-a796-49da1a9b6141",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T02:42:29Z",
+      "event": "started",
+      "context": "Read giga log file"
+    },
+    {
+      "ts": "2026-03-28T02:43:05Z",
+      "event": "done",
+      "context": "Here are the full contents of `/mnt/data/giga-log.md`:\n\n---\n\n**# Giga Intervention Log**\n\nEach entry tracks a category of intervention. `count` = how many times Giga has fired on this pattern. Rule severity scales: 1-2 = suggestion, 3-4 = strong directive, 5+ = hard rule.\n\n**Entries (28 total):**\n\n1. **verify-clunger-before-asserting** (count: 2, suggestion) — Verify both temporal activities and clunger congress.ts before asserting congress feature state.\n\n2. **no-blank-discord-messages** (count...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

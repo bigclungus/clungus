@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-231302-a592082d",
+  "title": "Update: just remove Discord lobby notification entirely",
+  "agent_id": "a592082d5281da13f",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T23:13:02Z",
+      "event": "started",
+      "context": "Update: just remove Discord lobby notification entirely"
+    },
+    {
+      "ts": "2026-03-30T23:13:49Z",
+      "event": "done",
+      "context": "Done. The Discord notification block has been removed from `POST /api/clungiverse/lobby/create` in `/mnt/data/commons-server/src/index.ts`. The change was already present (agent a8efe60972bdf82a3 had already removed it), so I committed and pushed it. The service restarted cleanly. No button, no endpoint, no notification — lobby creation is now silent.",
+      "artifacts": []
+    }
+  ]
+}

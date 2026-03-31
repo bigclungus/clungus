@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-155458-af63a68e",
+  "title": "Search history for \"mommy\" and post to thread",
+  "agent_id": "af63a68ecf6723d4c",
+  "agent_type": "general-purpose",
+  "session_id": "b8a58c15-c6f1-48c2-b033-87763f636706",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T15:54:58Z",
+      "event": "started",
+      "context": "Search history for \"mommy\" and post to thread"
+    },
+    {
+      "ts": "2026-03-27T15:55:44Z",
+      "event": "done",
+      "context": "Here's what happened:\n\n1. **History searches** for \"mommy\", \"who is mommy\", \"mommy clungus\", \"mom mother parent\" all returned no relevant matches -- just the original request from jaboostin and generic short messages from other users. The semantic search is working (it returns results ranked by relevance), but there's simply no prior discussion of \"mommy\" in the indexed history.\n\n2. **Graphiti memory** also returned zero facts about \"mommy.\"\n\n3. **Thread created** successfully on message `148711...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

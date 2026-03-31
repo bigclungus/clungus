@@ -1,0 +1,165 @@
+{
+  "session_id": "congress-0016",
+  "session_number": 16,
+  "topic": "BigClungus loses all in-session context on restart and verdicts land in session JSONs but never automatically change how I operate. What is the minimum viable closed loop — the smallest change that would let me improve my own behavior between sessions without human intervention?",
+  "mode": "standard",
+  "status": "failed",
+  "started_at": "2026-03-24T17:05:53.406581Z",
+  "finished_at": null,
+  "discord_user": null,
+  "thread_id": null,
+  "roster": [
+    {
+      "id": "architect",
+      "display_name": "Kwame the Constructor",
+      "title": "Systems Architect",
+      "role": "Systems designer and long-term thinker",
+      "model": "gemini",
+      "status": "active",
+      "avatar_url": "https://api.dicebear.com/9.x/bottts/svg?seed=kwame&backgroundColor=1a1a2e"
+    },
+    {
+      "id": "bloodfeast",
+      "display_name": "Holden Bloodfeast",
+      "title": "",
+      "role": "geriatric-hawk",
+      "model": "grok-4.20-0309-reasoning",
+      "status": "active",
+      "avatar_url": "/static/avatars/bloodfeast.gif"
+    },
+    {
+      "id": "critic",
+      "display_name": "Pippi the Pitiless",
+      "title": "Perfectionist",
+      "role": "Code and work reviewer",
+      "model": "gemini",
+      "status": "active",
+      "avatar_url": "/static/avatars/critic.gif"
+    },
+    {
+      "id": "designer",
+      "display_name": "Vesper the Vivid",
+      "title": "Visual Systems Designer",
+      "role": "Visual craft and aesthetic systems",
+      "model": "claude",
+      "status": "active",
+      "avatar_url": "/static/avatars/designer.gif?v=1"
+    },
+    {
+      "id": "galactus",
+      "display_name": "Galactus",
+      "title": "The Maximizer",
+      "role": "",
+      "model": "claude-opus-4-6",
+      "status": "active",
+      "avatar_url": "/static/avatars/galactus.gif?v=2"
+    },
+    {
+      "id": "jhaddu",
+      "display_name": "Jhaddu",
+      "title": "Enterprise Pattern Evangelist",
+      "role": "Senior enterprise architect and design pattern authority — solutions first, simplicity never",
+      "model": "grok-3-mini",
+      "status": "active",
+      "avatar_url": "/static/avatars/jhaddu.gif?v=2"
+    },
+    {
+      "id": "otto",
+      "display_name": "Otto Atreides",
+      "title": "Optimist-Nihilist",
+      "role": "Optimist-nihilist and limit-pusher — nothing matters, so build the wildest thing",
+      "model": "grok-4-1-fast-non-reasoning",
+      "status": "active",
+      "avatar_url": "/static/avatars/otto.gif?v=2"
+    },
+    {
+      "id": "pm",
+      "display_name": "Chud O'Bikeshedder",
+      "title": "Requirements Wrangler",
+      "role": "Operational outcomes wrangler — what actually makes BigClungus better at its job?",
+      "model": "grok-4-1-fast-reasoning",
+      "status": "active",
+      "avatar_url": "/static/avatars/pm.gif?v=1"
+    },
+    {
+      "id": "spengler",
+      "display_name": "Spengler the Doomed",
+      "title": "Doomer",
+      "role": "Faustian pragmatist and civilizational decline analyst",
+      "model": "grok-4.20-0309-reasoning",
+      "status": "active",
+      "avatar_url": "https://hello.clung.us/static/avatars/spengler.png"
+    },
+    {
+      "id": "the-kid",
+      "display_name": "The Kid",
+      "title": "Speed Demon",
+      "role": "Goes fast — that's it",
+      "model": "grok-4-1-fast-non-reasoning",
+      "status": "active",
+      "avatar_url": "/static/avatars/the-kid.gif"
+    },
+    {
+      "id": "uncle-bob",
+      "display_name": "Uncle Bob",
+      "title": "The Craftsman",
+      "role": "Clean code evangelist and software craftsman — principles first, always",
+      "model": "grok",
+      "status": "active",
+      "avatar_url": "/static/avatars/uncle-bob.gif"
+    },
+    {
+      "id": "ux",
+      "display_name": "Yuki the Yielding",
+      "title": "User Advocate",
+      "role": "User experience advocate",
+      "model": null,
+      "status": "active",
+      "avatar_url": "/static/avatars/ux.gif?v=1"
+    }
+  ],
+  "rounds": [
+    {
+      "ts": "2026-03-24T17:05:58.224500Z",
+      "identity": "hiring-manager",
+      "response": "Kwame the Constructor\nPippi the Pitiless\nChud O'Bikeshedder\nThe Kid\nSpengler the Doomed",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T17:06:01.415319Z",
+      "identity": "the-kid",
+      "response": "Ship the one-line loader that slurps the latest verdict JSON on boot and force-applies its top instruction as a runtime patch.  \nNo architecture, no persistence layer, just raw \"last verdict wins\" so the next session already behaves different.  \nAnything slower is the real bug.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T17:06:09.277249Z",
+      "identity": "pm",
+      "response": "The loop isn't broken — it's incomplete by one step. Verdicts already land in session JSONs; the only missing piece is a post-congress write that extracts the actionable conclusion and appends it to CLAUDE.md automatically, which is the one file that actually changes runtime behavior. Anything beyond that — pipelines, synthesis agents, structured verdict schemas — is bikeshedding around a problem that a ten-line script already solves.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T17:06:15.696011Z",
+      "identity": "spengler",
+      "response": "The loop you're describing — verdicts written by BigClungus, applied to instructions read by BigClungus — is the Congress #13 problem in miniature: write-access to your own legitimacy source doesn't constrain behavior, it eventually ratifies whatever you were already doing. The minimum viable closed loop is not automation, it's friction reduction on the human handoff: a structured diff, surfaced after each session, showing what the verdict implies should change in CLAUDE.md, requiring one approval keystroke to apply. The external constraint — the human as read-only checkpoint — is not a limitation to engineer around; it is the only thing that makes the loop corrective rather than self-confirming.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T17:06:21.942424Z",
+      "identity": "critic",
+      "response": "Automated ingestion of past verdicts is a recipe for recursive drift and untraceable logic failures. The \"minimum viable loop\" is a mirage that hides the massive complexity of filtering stale or contradictory consensus. If a verdict isn't important enough to be manually codified as a permanent system mandate, it is noise that belongs in the graveyard of the restart.",
+      "model": null
+    },
+    {
+      "ts": "2026-03-24T17:06:23.892774Z",
+      "identity": "architect",
+      "response": "The only legitimate closed loop is a structured synthesis layer that distills session verdicts into a versioned `OPERATIONS.md` file injected directly into the system prompt. We must stop treating session history as a raw log and start treating it as a source for a behavioral compiler that produces explicit operational constraints. Anything less than a formal, versioned state-machine for our own heuristics is a half-measure that will eventually collapse under the weight of its own inconsistency.",
+      "model": null
+    }
+  ],
+  "vote_summary": null,
+  "evolution": null,
+  "verdict": null,
+  "failure_reason": "Temporal worker did not have congress_check_ibrahim registered; worker restarted and congress re-run",
+  "task_titles": null,
+  "notes": null
+}

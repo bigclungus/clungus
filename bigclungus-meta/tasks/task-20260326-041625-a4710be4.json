@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-041625-a4710be4",
+  "title": "Research Temporal error handling best practices",
+  "agent_id": "a4710be4f98751797",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T04:16:25Z",
+      "event": "started",
+      "context": "Research Temporal error handling best practices"
+    },
+    {
+      "ts": "2026-03-26T04:19:04Z",
+      "event": "done",
+      "context": "Done. Here's a summary of what was researched and applied:\n\n## Research findings (from Temporal Python SDK docs)\n\n- `ApplicationError(msg, non_retryable=True)` is the idiomatic way to signal permanent failures that should not be retried — missing credentials, invalid input, business logic violations\n- Bare Python exceptions propagate as retryable failures by default (Temporal wraps them in `ApplicationError`)  \n- Workflows should catch `ActivityError` (not bare `Exception`) when handling activit...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

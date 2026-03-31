@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-210838-abc1a3ef",
+  "title": "Fix homepage task loading after API shape change",
+  "agent_id": "abc1a3efb36c2413f",
+  "agent_type": "general-purpose",
+  "session_id": "e4d4bf00-991b-4f0e-aac7-2ab4056f18c5",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T21:08:38Z",
+      "event": "started",
+      "context": "Fix homepage task loading after API shape change"
+    },
+    {
+      "ts": "2026-03-25T21:09:16Z",
+      "event": "done",
+      "context": "Done. Here's what was changed:\n\n**File:** `/mnt/data/hello-world/index.html`\n\nThe `fetchAndRender` function was passing the raw `response.json()` result directly to `render()` as `tasks`. Since the API now returns `{tasks: [...], totals: {...}, total: N, pages: N, page: N}`, calling `.filter()` on that object threw the error.\n\nThe fix changes the `.then` callback from:\n```js\n.then(function(tasks) { render(tasks); })\n```\nto:\n```js\n.then(function(data) {\n  var tasks = Array.isArray(data) ? data : ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

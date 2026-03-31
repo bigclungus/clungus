@@ -1,0 +1,75 @@
+{
+  "model": "sonnet",
+  "enabledPlugins": {
+    "discord@claude-plugins-official": true
+  },
+  "skipDangerousModePermissionPrompt": true,
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /mnt/data/scripts/hooks/bash-intercept.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/mnt/data/scripts/hooks/pre-agent-spawn.sh",
+            "async": false
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/mnt/data/scripts/hooks/subagent-start.sh",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/mnt/data/scripts/hooks/subagent-stop.sh",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__plugin_discord_discord__reply",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /mnt/data/scripts/hooks/post-discord-reply.sh",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /mnt/data/scripts/hooks/pre-compact.sh",
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}

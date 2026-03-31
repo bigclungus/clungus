@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-110102-a0f71dcc",
+  "title": "Post flapping fix to Discord via inject",
+  "agent_id": "a0f71dccc25a827ca",
+  "agent_type": "general-purpose",
+  "session_id": "b8a58c15-c6f1-48c2-b033-87763f636706",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T11:01:02Z",
+      "event": "started",
+      "context": "Post flapping fix to Discord via inject"
+    },
+    {
+      "ts": "2026-03-27T11:02:18Z",
+      "event": "done",
+      "context": "The watchdog fix is committed. The top commit `f7a05cb` with message \"simplify: tighten pgrep pattern, add restart cooldown, default GATEWAY_CONNS\" matches the described fix — scoping pgrep to avoid the PID mismatch.\n\nSummary:\n\n- **Inject succeeded**: The message was posted to channel `1485343472952148008` via `http://127.0.0.1:9876/inject`. Output: `sent`.\n- **Fix is committed**: The discord-watchdog.sh fix is in the `/home/clungus/work/scripts` git repo. The relevant commits are:\n  - `f7a05cb`...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

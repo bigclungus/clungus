@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-225813-a59df591",
+  "title": "Thread: TTS notification for Claude Code",
+  "agent_id": "a59df5913163042f9",
+  "agent_type": "general-purpose",
+  "session_id": "5aac769e-2e6e-4bd3-a873-645eb001e989",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T22:58:13Z",
+      "event": "started",
+      "context": "Thread: TTS notification for Claude Code"
+    },
+    {
+      "ts": "2026-03-28T22:59:21Z",
+      "event": "done",
+      "context": "Thread created and reply posted. I gave centronias:\n\n1. The two relevant hook events: `Notification` (for permission prompts/questions) and `Stop` (when Claude finishes its turn)\n2. A copy-paste PowerShell TTS script using `System.Speech.Synthesis.SpeechSynthesizer`\n3. The exact `settings.json` hook configuration to wire it up, with `-ExecutionPolicy Bypass` for Windows compatibility\n4. A simpler `[console]::beep()` alternative\n5. Note about `async: true` on Stop so it doesn't block input",
+      "artifacts": []
+    }
+  ]
+}

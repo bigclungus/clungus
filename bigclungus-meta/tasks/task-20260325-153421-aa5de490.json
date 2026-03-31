@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-153421-aa5de490",
+  "title": "Fix temporal-workflows quality and efficiency issues",
+  "agent_id": "aa5de49009b528d9b",
+  "agent_type": "general-purpose",
+  "session_id": "4a58e62d-fa69-4ca2-a0a8-edcc21bb73c1",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T15:34:21Z",
+      "event": "started",
+      "context": "Fix temporal-workflows quality and efficiency issues"
+    },
+    {
+      "ts": "2026-03-25T15:36:24Z",
+      "event": "done",
+      "context": "Worker is running cleanly. Here's a summary of all changes made:\n\n---\n\n## Changes made\n\n**`activities/congress_act.py`**\n- Line 19: Added `import falkordb as _falkordb` at module level (was a deferred local import inside the function)\n- Lines 22-25: Added module-level `_falkordb_client` singleton\n- Lines 84-91 (old): Replaced the per-call `FalkorDB(...)` + `r = None` setup in `_query_graphiti_facts` with `graph = _falkordb_client.select_graph(\"discord_history\")`\n- Lines 145-150 (old): Removed th...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

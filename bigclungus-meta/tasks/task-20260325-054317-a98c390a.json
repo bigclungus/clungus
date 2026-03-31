@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-054317-a98c390a",
+  "title": "Investigate BigClungus bot failure",
+  "agent_id": "a98c390a8080a78c7",
+  "agent_type": "general-purpose",
+  "session_id": "c0f8461e-cfb9-4c16-8c8a-a50e140e9e30",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T05:43:17Z",
+      "event": "started",
+      "context": "Investigate BigClungus bot failure"
+    },
+    {
+      "ts": "2026-03-25T05:44:41Z",
+      "event": "done",
+      "context": "The picture is complete. Here's a full summary of findings:\n\n---\n\n## Findings\n\n### Root Cause: Session JSONL bloat causing invalid JSON API requests\n\nThe bot is alive and running, but **every API call is failing** with:\n\n```\nAPI Error: 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"The request body is not valid JSON: no low surrogate in string: line 1 column 417388 (char 417387)\"}}\n```\n\n### What's happening\n\nThe start script (`/home/clungus/work/start-claude-bot.sh` line ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

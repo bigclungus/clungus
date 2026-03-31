@@ -1,0 +1,25 @@
+{
+  "id": "task-20260329-003414-a6972c05",
+  "title": "Phase B: Temporal mob workflow (retry)",
+  "agent_id": "a6972c05e6355cff3",
+  "agent_type": "general-purpose",
+  "session_id": "5aac769e-2e6e-4bd3-a873-645eb001e989",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-29T00:34:14Z",
+      "event": "started",
+      "context": "Phase B: Temporal mob workflow (retry)"
+    },
+    {
+      "ts": "2026-03-29T00:36:57Z",
+      "event": "done",
+      "context": "Worker is running. Here's what was built:\n\n**Files created:**\n\n1. `/mnt/data/temporal-workflows/activities/mob_gen_act.py` — Three activities:\n   - `select_entities_from_graph(count, exclude_names)` — Queries FalkorDB `discord_history` graph for entities ordered by edge count, takes top 50%, filters by name length >= 3 and blocklist, returns `count` random selections\n   - `check_mob_cache(entity_names)` — Looks up pre-generated stats in `clungiverse.db`'s `mob_cache` table (gracefully returns em...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

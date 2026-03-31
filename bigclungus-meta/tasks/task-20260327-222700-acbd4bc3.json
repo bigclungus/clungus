@@ -1,0 +1,25 @@
+{
+  "id": "task-20260327-222700-acbd4bc3",
+  "title": "Check trial matrix display",
+  "agent_id": "acbd4bc32c4fc345b",
+  "agent_type": "general-purpose",
+  "session_id": "083baee4-2f6f-4f81-8ced-0e9b97f43956",
+  "discord_message_id": "1487216352186994709",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-27T22:27:00Z",
+      "event": "started",
+      "context": "Check trial matrix display"
+    },
+    {
+      "ts": "2026-03-27T22:28:55Z",
+      "event": "done",
+      "context": "Everything is working. Here's a summary:\n\n**Problem:** Trial session files (`trial-*.json`) use a completely different schema than congress files. The matrix endpoint was reading congress-specific field names (`session_number`, `topic`, `status`, `roster`, `rounds`, `vote_summary`) and getting `null` for all of them when parsing trial files.\n\n**Trial schema differences:**\n- `trial_number` instead of `session_number`\n- `charges` instead of `topic`\n- `verdict` instead of `status`\n- `saved_at` inst...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

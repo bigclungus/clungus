@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-105347-a239711a",
+  "title": "Find voice channel ID",
+  "agent_id": "a239711a6687b99b0",
+  "agent_type": "general-purpose",
+  "session_id": "6f39db78-2fa2-4ae1-b73f-761ea988d046",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T10:53:47Z",
+      "event": "started",
+      "context": "Find voice channel ID"
+    },
+    {
+      "ts": "2026-03-28T10:54:03Z",
+      "event": "done",
+      "context": "The API call had a parsing issue, but the task data already contains the answer. From the existing task research in `task-20260328-102632-a8259dd5.json`:\n\n**Voice channels in the guild:**\n\n| Channel | ID |\n|---|---|\n| **General** | `1008814210618245225` |\n| **allies** | `1325567700029931560` |\n\nThe Discord plugin's auto-join target is hardcoded to `1325567700029931560` (the `#allies` voice channel). There's also a `#voice-transcripts` text channel at `1487240658568744980`.",
+      "artifacts": []
+    }
+  ]
+}

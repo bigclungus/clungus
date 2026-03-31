@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-021236-af8aafdf",
+  "title": "Add maintenance mode to healthcheck",
+  "agent_id": "af8aafdf08ce6f91d",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": "1485823529080590429",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T02:12:36Z",
+      "event": "started",
+      "context": "Add maintenance mode to healthcheck"
+    },
+    {
+      "ts": "2026-03-24T02:13:11Z",
+      "event": "done",
+      "context": "Done. Here's a summary of what was changed:\n\n**`/mnt/data/temporal-workflows/activities/healthcheck_act.py`**\nAt the end of `check_sites`, before returning, sets `results[\"__maintenance__\"] = os.path.exists(\"/tmp/bc-maintenance\")`.\n\n**`/mnt/data/temporal-workflows/workflows/healthcheck_wf.py`**\nAfter the activity returns, pops `__maintenance__` from the results dict into a `maintenance_mode` bool. For both `newly_down` and `recovered` loops, the `send_alert` activity call is wrapped in `if not m...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

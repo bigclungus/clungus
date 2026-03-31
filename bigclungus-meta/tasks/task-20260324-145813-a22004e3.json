@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-145813-a22004e3",
+  "title": "Get temporal-workflows git diff",
+  "agent_id": "a22004e33b741e50e",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T14:58:13Z",
+      "event": "started",
+      "context": "Get temporal-workflows git diff"
+    },
+    {
+      "ts": "2026-03-24T14:58:34Z",
+      "event": "done",
+      "context": "Here are the full outputs:\n\n---\n\n**`git log --oneline -10`**\n\n```\n158ff7c fix: strip style/script blocks before extracting email snippet\nbadbebd feat: email poller workflow — inject ProtonMail notifications\ne80139d Richer task creation logs: include congress number, topic, verdict snippet\n136a372 Add congress_frame_topic: Ibrahim provides pre-debate context brief to all debaters\n12873da Drop GitHub issue creation from congress_create_tasks; use local task JSON only\nf77a90 fix: guard HealthcheckW...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

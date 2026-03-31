@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tasks — BigClungus</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="stylesheet" href="/sitenav.css?v=d004dbf">
+  <script src="/sitenav.js?v=d004dbf" defer></script>
+  <style>
+    :root {
+      --card-bg: #22223a;
+      --card-border: #333350;
+      --teal: #4ecca3;
+      --amber: #f59e0b;
+    }
+
+    [data-theme="light"] {
+      --card-bg: #fff8ea;
+      --card-border: #d0c9b0;
+      --teal: #2aa198;
+      --amber: #b58900;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      color: var(--text);
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    /* ── Page header ── */
+    .page-header {
+      padding: 28px 32px 16px;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .page-header h1 {
+      margin: 0;
+      font-size: 1.4rem;
+      color: var(--accent);
+      text-shadow: 0 0 14px var(--accent);
+    }
+    .page-header .subtitle {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+    .refresh-status {
+      margin-left: auto;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    .refresh-status .blink {
+      color: var(--teal);
+      animation: blink 2s step-end infinite;
+    }
+    /* Only blink when state changed */
+    .refresh-status .blink.inactive {
+      animation: none;
+      opacity: 0.4;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* ── Task list ── */
+    .task-list {
+      padding: 20px 32px 48px;
+      max-width: 1100px;
+    }
+
+    /* ── Task card ── */
+    .task-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-left: 3px solid var(--card-border);
+      border-radius: 4px;
+      padding: 14px 16px 12px;
+      margin-bottom: 10px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .task-card:not(.status-done):hover {
+      border-color: var(--accent);
+      border-left-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent) inset;
+    }
+    .task-card.status-in_progress {
+      border-left-color: var(--accent);
+    }
+    .task-card.status-done {
+      border-left-color: var(--teal);
+    }
+    .task-card.status-stale,
+    .task-card.status-failed {
+      border-left-color: #555;
+    }
+    .task-card.status-failed {
+      border-left-color: #7f1d1d;
+    }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .card-title {
+      flex: 1;
+      min-width: 0;
+      font-size: 0.88rem;
+      color: var(--text);
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .status-badge {
+      flex-shrink: 0;
+      font-size: 0.65rem;
+      font-weight: bold;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 3px;
+      border: 1px solid;
+    }
+    .status-badge.in_progress {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: rgba(233, 69, 96, 0.08);
+    }
+    .status-badge.done {
+      color: var(--teal);
+      border-color: var(--teal);
+      background: rgba(78, 204, 163, 0.08);
+    }
+    .status-badge.stale {
+      color: #888;
+      border-color: #555;
+      background: rgba(100, 100, 100, 0.08);
+    }
+    .status-badge.failed {
+      color: #ef4444;
+      border-color: #7f1d1d;
+      background: rgba(239, 68, 68, 0.08);
+    }
+
+    /* ── Last log snippet ── */
+    .card-log-snippet {
+      margin-top: 5px;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      opacity: 0.6;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    /* ── Failed reason (visible without expansion) ── */
+    .card-fail-reason {
+      margin-top: 6px;
+      font-size: 0.72rem;
+      color: #ef4444;
+      opacity: 0.75;
+      word-break: break-word;
+      line-height: 1.45;
+    }
+
+    /* ── Age pill ── */
+    .age-pill {
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.62rem;
+      font-weight: bold;
+      padding: 1px 6px;
+      border-radius: 3px;
+      border: 1px solid;
+      flex-shrink: 0;
+    }
+    .age-pill.age-fresh {
+      color: var(--text-muted);
+      border-color: var(--card-border);
+      opacity: 0.6;
+    }
+    .age-pill.age-amber {
+      color: #f59e0b;
+      border-color: rgba(245, 158, 11, 0.4);
+      background: rgba(245, 158, 11, 0.07);
+    }
+    .age-pill.age-red {
+      color: #ef4444;
+      border-color: rgba(239, 68, 68, 0.4);
+      background: rgba(239, 68, 68, 0.07);
+    }
+
+    .card-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .meta-item .label {
+      color: var(--text-muted);
+      opacity: 0.65;
+    }
+    .meta-item .value {
+      color: var(--text-dim);
+    }
+    .meta-item.user .value {
+      color: var(--accent);
+    }
+
+    .card-summary {
+      margin-top: 9px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+      border-left: 2px solid var(--card-border);
+      padding-left: 10px;
+      word-break: break-word;
+    }
+
+    /* ── Log timeline ── */
+    .card-log-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 9px;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      background: none;
+      border: 1px solid var(--card-border);
+      border-radius: 3px;
+      padding: 2px 7px;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .card-log-toggle:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .card-log {
+      display: none;
+      margin-top: 8px;
+      background: #13131f;
+      border: 1px solid var(--card-border);
+      border-radius: 3px;
+      padding: 10px 12px;
+      font-size: 0.68rem;
+      line-height: 1.6;
+    }
+    [data-theme="light"] .card-log {
+      background: #f0ead8;
+    }
+    .card-log.open {
+      display: block;
+    }
+
+    .log-entry {
+      display: grid;
+      grid-template-columns: 80px 70px 1fr;
+      gap: 6px;
+      padding: 2px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    [data-theme="light"] .log-entry {
+      border-bottom-color: rgba(0,0,0,0.04);
+    }
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+
+    .log-event {
+      font-weight: bold;
+    }
+    .log-event.started  { color: var(--accent); }
+    .log-event.done     { color: var(--teal); }
+    .log-event.stale    { color: var(--amber); }
+    .log-event.failed   { color: #ef4444; }
+    .log-event.progress { color: #60a5fa; }
+    .log-event.error    { color: #ef4444; }
+    .log-event.milestone { color: #a78bfa; }
+
+    .log-ts {
+      color: var(--text-muted);
+      opacity: 0.6;
+    }
+    .log-context {
+      color: var(--text-dim);
+      word-break: break-word;
+    }
+
+    /* ── Section headers ── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 24px 0 10px;
+      font-size: 0.72rem;
+      font-weight: bold;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .section-header .section-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .section-header.sec-in_progress .section-dot  { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+    .section-header.sec-in_progress .section-label { color: var(--accent); }
+    .section-header.sec-done        .section-dot  { background: var(--teal);  box-shadow: 0 0 6px var(--teal); }
+    .section-header.sec-done        .section-label { color: var(--teal); }
+    .section-header.sec-stale       .section-dot  { background: #555; }
+    .section-header.sec-stale       .section-label { color: #666; }
+    .section-header.sec-failed      .section-dot  { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+    .section-header.sec-failed      .section-label { color: #ef4444; }
+
+    .section-count {
+      color: var(--text-muted);
+      font-weight: normal;
+      opacity: 0.6;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      padding: 48px 0 32px;
+      text-align: center;
+    }
+    .empty-state .empty-prompt {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      opacity: 0.5;
+    }
+    .empty-state .empty-msg {
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      border-left: 3px solid var(--accent);
+      display: inline-block;
+      padding: 8px 16px;
+      text-align: left;
+      line-height: 1.7;
+      max-width: 480px;
+    }
+    .empty-state .empty-msg em {
+      color: var(--accent);
+      font-style: normal;
+    }
+
+    /* ── Summary bar ── */
+    #tasks-summary {
+      padding: 10px 32px;
+      border-bottom: 1px solid var(--card-border);
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      font-size: 0.72rem;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    }
+    .sum-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 3px;
+      border: 1px solid var(--card-border);
+      background: var(--card-bg);
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .sum-pill .sum-val { font-weight: bold; }
+    .sum-pill.pill-inprogress { border-color: rgba(233,69,96,0.4); }
+    .sum-pill.pill-inprogress .sum-val { color: var(--accent); }
+    .sum-pill.pill-done { border-color: rgba(78,204,163,0.35); }
+    .sum-pill.pill-done .sum-val { color: var(--teal); }
+    .sum-pill.pill-stale .sum-val { color: #666; }
+    .sum-pill.pill-failed .sum-val { color: #ef4444; }
+    .sum-pill.pill-bg .sum-val,
+    .sum-pill.pill-fg .sum-val { color: var(--text-dim); }
+    .sum-pill.filterable { cursor: pointer; }
+    .sum-pill.filterable:hover { border-color: rgba(255,255,255,0.25); color: var(--text); }
+    .sum-pill.active-filter { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.35); color: var(--text); }
+    .sum-pill.active-filter .sum-val { opacity: 1; }
+    .sum-sep {
+      color: var(--card-border);
+      padding: 0 2px;
+      user-select: none;
+    }
+    .sum-last {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--text-muted);
+      padding: 3px 9px;
+      border-radius: 3px;
+      border: 1px solid var(--card-border);
+      background: var(--card-bg);
+      max-width: 340px;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .sum-last .sum-last-title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text-dim);
+    }
+    .sum-last .sum-last-age { flex-shrink: 0; opacity: 0.6; }
+    @media (max-width: 768px) {
+      #tasks-summary { padding: 8px 16px; }
+    }
+
+    /* ── Pagination ── */
+    .pagination {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 32px 32px;
+      font-size: 0.75rem;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    }
+    .page-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 3px;
+      color: var(--text-muted);
+      padding: 4px 10px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.72rem;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .page-btn:hover:not(:disabled) {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .page-btn:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+    .page-info {
+      color: var(--text-muted);
+      opacity: 0.7;
+    }
+    @media (max-width: 768px) {
+      .pagination { padding: 12px 16px 24px; }
+    }
+
+    /* ── Error banner ── */
+    .error-banner {
+      margin: 16px 32px;
+      padding: 10px 14px;
+      background: rgba(233, 69, 96, 0.08);
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      color: var(--accent);
+      font-size: 0.78rem;
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 768px) {
+      .page-header { padding: 20px 16px 12px; gap: 8px; }
+      .refresh-status { margin-left: 0; flex: 0 0 100%; }
+      .task-list { padding: 16px 16px 40px; }
+
+      .log-entry {
+        grid-template-columns: 70px 1fr;
+        grid-template-rows: auto auto;
+      }
+      .log-ts { grid-column: 2; grid-row: 1; }
+      .log-event { grid-column: 1; grid-row: 1; }
+      .log-context { grid-column: 1 / -1; grid-row: 2; padding-left: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <h1>tasks</h1>
+    <span class="subtitle">// subagent activity log</span>
+    <span class="refresh-status" id="refresh-status">
+      <span class="blink inactive">_</span> loading...
+    </span>
+  </div>
+
+  <div id="tasks-summary" style="display:none;"></div>
+
+  <div id="error-banner" class="error-banner" style="display:none;"></div>
+
+  <div class="task-list" id="task-list">
+    <!-- rendered by JS -->
+  </div>
+
+  <div class="pagination" id="pagination" style="display:none;">
+    <button class="page-btn" id="btn-prev" onclick="goPage(currentPage - 1)">&#8592; prev</button>
+    <span class="page-info" id="page-info"></span>
+    <button class="page-btn" id="btn-next" onclick="goPage(currentPage + 1)">next &#8594;</button>
+  </div>
+
+  <script>
+    // ── Relative time helpers ──
+    function timeAgo(isoStr) {
+      if (!isoStr) return '?';
+      var dt = new Date(isoStr);
+      var now = new Date();
+      var diff = Math.floor((now - dt) / 1000);
+      if (diff < 60) return diff + 's ago';
+      if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+      if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+      return Math.floor(diff / 86400) + 'd ago';
+    }
+
+    // Seconds since an ISO timestamp
+    function secsSince(isoStr) {
+      if (!isoStr) return Infinity;
+      return Math.floor((new Date() - new Date(isoStr)) / 1000);
+    }
+
+    // Human-readable hours/minutes for stale label
+    function staleAge(isoStr) {
+      if (!isoStr) return '';
+      var secs = secsSince(isoStr);
+      if (secs < 60) return secs + 's';
+      if (secs < 3600) return Math.floor(secs / 60) + 'm';
+      return Math.floor(secs / 3600) + 'h';
+    }
+
+    function escHtml(s) {
+      if (!s) return '';
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    var _cardCounter = 0;
+
+    function makeLogTimeline(log) {
+      if (!log || !log.length) return '';
+      return log.map(function(entry) {
+        var ev = escHtml(entry.event || '?');
+        var absTs = entry.ts ? new Date(entry.ts).toLocaleString() : '?';
+        var relTs = entry.ts ? timeAgo(entry.ts) : '?';
+        var ctx = entry.context ? entry.context.slice(0, 160) : '';
+        return '<div class="log-entry">' +
+          '<span class="log-event ' + escHtml(entry.event || '') + '">' + ev + '</span>' +
+          '<span class="log-ts" title="' + escHtml(absTs) + '">' + escHtml(relTs) + '</span>' +
+          '<span class="log-context">' + escHtml(ctx) + (entry.context && entry.context.length > 160 ? '…' : '') + '</span>' +
+        '</div>';
+      }).join('');
+    }
+
+    // Get the most recent log entry's timestamp and message
+    function lastLogEntry(log) {
+      if (!log || !log.length) return null;
+      return log[log.length - 1];
+    }
+
+    // Get last activity timestamp: newest log entry ts, or started_at
+    function lastActivityTs(task) {
+      var last = lastLogEntry(task.log);
+      if (last && last.ts) return last.ts;
+      return task.started_at || null;
+    }
+
+    // Build age pill HTML based on seconds since last activity
+    // Terminal statuses (done/failed/cancelled) always use neutral color regardless of age
+    var TERMINAL_STATUSES = { done: true, failed: true, cancelled: true };
+    function makeAgePill(ts, status) {
+      if (!ts) return '';
+      var secs = secsSince(ts);
+      var rel = timeAgo(ts);
+      var abs = new Date(ts).toLocaleString();
+      var cls;
+      if (TERMINAL_STATUSES[status] || secs < 300) {
+        cls = 'age-fresh';
+      } else if (secs < 3600) {
+        cls = 'age-amber';
+      } else {
+        cls = 'age-red';
+      }
+      return '<span class="age-pill ' + cls + '" title="last activity: ' + escHtml(abs) + '">' + escHtml(rel) + '</span>';
+    }
+
+    function makeCard(task) {
+      var title = escHtml(task.title || '(no title)');
+      var agentType = escHtml(task.agent_type || '?');
+      var status = task.status || 'stale';
+      var badgeClass = status === 'in_progress' ? 'in_progress'
+                     : status === 'done'        ? 'done'
+                     : status === 'failed'      ? 'failed'
+                     : 'stale';
+
+      // Timestamps
+      var startedAbsTs = task.started_at ? new Date(task.started_at).toLocaleString() : null;
+      var startedRel   = task.started_at ? timeAgo(task.started_at) : '?';
+
+      var activityTs = lastActivityTs(task);
+      var agePill = makeAgePill(activityTs, status);
+
+      // Last log snippet (for inline display, ~80 chars)
+      var lastEntry = lastLogEntry(task.log);
+      var snippetHtml = '';
+      if (lastEntry && lastEntry.context) {
+        var snippet = lastEntry.context.slice(0, 80);
+        if (lastEntry.context.length > 80) snippet += '…';
+        snippetHtml = '<div class="card-log-snippet">' + escHtml(snippet) + '</div>';
+      }
+
+      // Failed reason: show last log message in muted red without expansion
+      var failReasonHtml = '';
+      if (status === 'failed' && lastEntry && lastEntry.context) {
+        failReasonHtml = '<div class="card-fail-reason">&#9888; ' + escHtml(lastEntry.context.slice(0, 200)) +
+          (lastEntry.context.length > 200 ? '…' : '') + '</div>';
+      }
+
+      var userMeta = task.discord_user
+        ? '<span class="meta-item user"><span class="label">from</span><span class="value">@' + escHtml(task.discord_user) + '</span></span>'
+        : '';
+
+      var sessionShort = task.session_id ? escHtml(task.session_id.slice(0, 12)) : null;
+      var sessionMeta = sessionShort
+        ? '<span class="meta-item"><span class="label">session</span><span class="value" title="' + escHtml(task.session_id) + '">' + sessionShort + '</span></span>'
+        : '';
+
+      var bgMeta = (task.run_in_background !== null && task.run_in_background !== undefined)
+        ? '<span class="meta-item"><span class="value">' + (task.run_in_background ? '🔄 background' : '⚡ foreground') + '</span></span>'
+        : '';
+
+      var isolationMeta = (task.isolation === 'worktree')
+        ? '<span class="meta-item"><span class="value">🌳 worktree</span></span>'
+        : '';
+
+      var modelMeta = task.model
+        ? '<span class="meta-item"><span class="label">model</span><span class="value">' + escHtml(task.model) + '</span></span>'
+        : '';
+
+      // Started at: relative primary, absolute as tooltip
+      var startedMeta = startedAbsTs
+        ? '<span class="meta-item"><span class="label">started</span><span class="value" title="' + escHtml(startedAbsTs) + '">' + escHtml(startedRel) + '</span></span>'
+        : '';
+
+      var summaryHtml = task.summary
+        ? '<div class="card-summary">' + escHtml(task.summary.slice(0, 200)) + (task.summary.length > 200 ? '…' : '') + '</div>'
+        : '';
+
+      var logHtml = '';
+      if (task.log && task.log.length > 0) {
+        var cardId = 'log-' + (++_cardCounter);
+        var taskIdAttr = task.id ? ' data-task-id="' + escHtml(String(task.id)) + '"' : '';
+        logHtml = '<button class="card-log-toggle" onclick="toggleLog(\'' + cardId + '\', this)">▶ log (' + task.log.length + ')</button>' +
+          '<div class="card-log"' + taskIdAttr + ' id="' + cardId + '">' + makeLogTimeline(task.log) + '</div>';
+      }
+
+      var cardTaskIdAttr = task.id ? ' data-task-id="' + escHtml(String(task.id)) + '"' : '';
+      return '<div class="task-card status-' + escHtml(status) + '"' + cardTaskIdAttr + '>' +
+        '<div class="card-top">' +
+          '<div class="card-title">' + title + '</div>' +
+          agePill +
+          '<span class="status-badge ' + escHtml(badgeClass) + '">' + escHtml(status.replace('_', ' ')) + '</span>' +
+        '</div>' +
+        snippetHtml +
+        (status === 'failed' ? failReasonHtml : '') +
+        '<div class="card-meta">' +
+          '<span class="meta-item"><span class="label">agent</span><span class="value">' + agentType + '</span></span>' +
+          userMeta +
+          startedMeta +
+          sessionMeta +
+          bgMeta +
+          isolationMeta +
+          modelMeta +
+        '</div>' +
+        summaryHtml +
+        logHtml +
+      '</div>';
+    }
+
+    function toggleLog(id, btn) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      var isOpen = el.classList.toggle('open');
+      btn.textContent = (isOpen ? '▼' : '▶') + btn.textContent.slice(1);
+    }
+
+    function fmtTime(d) {
+      return String(d.getHours()).padStart(2,'0') + ':' +
+             String(d.getMinutes()).padStart(2,'0') + ':' +
+             String(d.getSeconds()).padStart(2,'0');
+    }
+
+    function sectionHeader(key, label, count, extraLabel) {
+      var displayLabel = extraLabel ? label + ' ' + extraLabel : label;
+      return '<div class="section-header sec-' + key + '">' +
+        '<span class="section-dot"></span>' +
+        '<span class="section-label">' + displayLabel + '</span>' +
+        '<span class="section-count">(' + count + ')</span>' +
+      '</div>';
+    }
+
+    function updateSummary(tasks, serverTotals) {
+      var bar = document.getElementById('tasks-summary');
+      if (!tasks || tasks.length === 0) { bar.style.display = 'none'; return; }
+
+      // Use server-provided totals (full dataset) when available; fall back to counting local page
+      var inProgress, done, stale, failed, bg, fg, totalCount;
+      if (serverTotals && serverTotals.total != null) {
+        totalCount = serverTotals.total;
+        inProgress = serverTotals.in_progress || 0;
+        done       = serverTotals.done        || 0;
+        stale      = serverTotals.stale       || 0;
+        failed     = serverTotals.failed      || 0;
+        bg         = serverTotals.background  || 0;
+        fg         = serverTotals.foreground  || 0;
+      } else {
+        inProgress = 0; done = 0; stale = 0; failed = 0; bg = 0; fg = 0;
+        tasks.forEach(function(t) {
+          var s = t.status;
+          if (s === 'in_progress') inProgress++;
+          else if (s === 'done') done++;
+          else if (s === 'failed') failed++;
+          else stale++;
+          if (t.run_in_background === true) bg++;
+          else if (t.run_in_background === false) fg++;
+        });
+        totalCount = (_lastMeta && _lastMeta.total != null && _lastMeta.total > 0) ? _lastMeta.total : tasks.length;
+      }
+
+      // Find newest task on the current page for "last:" display
+      var newest = null;
+      tasks.forEach(function(t) {
+        if (t.started_at) {
+          if (!newest || new Date(t.started_at) > new Date(newest.started_at)) newest = t;
+        }
+      });
+
+      var lastHtml = '';
+      if (newest) {
+        var titleShort = (newest.title || '(no title)').slice(0, 50);
+        if ((newest.title || '').length > 50) titleShort += '…';
+        lastHtml = '<span class="sum-sep">|</span>' +
+          '<span class="sum-last">' +
+            '<span>last:</span>' +
+            '<span class="sum-last-title">&ldquo;' + escHtml(titleShort) + '&rdquo;</span>' +
+            '<span class="sum-last-age">(' + timeAgo(newest.started_at) + ')</span>' +
+          '</span>';
+      }
+
+      bar.innerHTML =
+        '<span class="sum-pill filterable" data-filter=""><span>total</span><span class="sum-val">' + totalCount + '</span></span>' +
+        '<span class="sum-pill pill-inprogress filterable" data-filter="in_progress"><span>&#9889;</span><span class="sum-val">' + inProgress + '</span><span>in progress</span></span>' +
+        '<span class="sum-pill pill-done filterable" data-filter="done"><span>&#10003;</span><span class="sum-val">' + done + '</span><span>done</span></span>' +
+        '<span class="sum-pill pill-stale filterable" data-filter="stale"><span>&#9888;</span><span class="sum-val">' + stale + '</span><span>stale</span></span>' +
+        '<span class="sum-pill pill-failed filterable" data-filter="failed"><span>&#10007;</span><span class="sum-val">' + failed + '</span><span>failed</span></span>' +
+        '<span class="sum-sep">|</span>' +
+        '<span class="sum-pill pill-bg"><span>&#128260;</span><span class="sum-val">' + bg + '</span><span>background</span></span>' +
+        '<span class="sum-pill pill-fg"><span>&#9889;</span><span class="sum-val">' + fg + '</span><span>foreground</span></span>' +
+        lastHtml;
+
+      // Wire up filter clicks and mark active pill in one pass
+      bar.querySelectorAll('.filterable').forEach(function(pill) {
+        var f = pill.getAttribute('data-filter') || null;
+        pill.classList.toggle('active-filter', f === currentFilter && currentFilter !== null);
+        pill.addEventListener('click', function() {
+          currentFilter = (currentFilter === f && f !== null) ? null : f;
+          render(_lastTasks, _lastMeta, _lastTotals);
+        });
+      });
+
+      bar.style.display = '';
+    }
+
+    var currentFilter = null;
+    var _lastTasks = [];
+    // For change detection
+    var _lastStateKey = null;
+    // Pagination state
+    var currentPage = 1;
+    var PAGE_LIMIT = 50;
+    var _lastMeta = { total: 0, pages: 1 };
+    var _lastTotals = null;
+
+    function stateKey(tasks) {
+      return tasks.map(function(t) { return t.id + ':' + t.status; }).join(',');
+    }
+
+    function updatePagination(meta) {
+      _lastMeta = meta;
+      var pager = document.getElementById('pagination');
+      var info = document.getElementById('page-info');
+      var btnPrev = document.getElementById('btn-prev');
+      var btnNext = document.getElementById('btn-next');
+      if (!meta || meta.pages <= 1) {
+        pager.style.display = 'none';
+        return;
+      }
+      pager.style.display = '';
+      info.textContent = 'page ' + meta.page + ' / ' + meta.pages + ' (' + meta.total + ' total)';
+      btnPrev.disabled = meta.page <= 1;
+      btnNext.disabled = meta.page >= meta.pages;
+    }
+
+    function goPage(p) {
+      if (p < 1 || p > _lastMeta.pages) return;
+      currentPage = p;
+      fetchTasks();
+    }
+
+    function render(tasks, meta, totals) {
+      _lastTasks = tasks;
+      if (totals != null) _lastTotals = totals;
+      tasks = tasks.filter(function(t) { return t.status !== 'milestone'; });
+
+      // Detect whether task count or states changed
+      var key = stateKey(tasks);
+      var changed = key !== _lastStateKey;
+      _lastStateKey = key;
+
+      // Save the set of task IDs whose log panels are currently open
+      var openLogIds = new Set(
+        Array.prototype.slice.call(document.querySelectorAll('.card-log.open[data-task-id]'))
+          .map(function(el) { return el.getAttribute('data-task-id'); })
+      );
+
+      _cardCounter = 0;
+
+      // Flat recency sort: most recent activity first, regardless of status
+      var sorted = tasks.slice().sort(function(a, b) {
+        return (new Date(lastActivityTs(b) || 0)) - (new Date(lastActivityTs(a) || 0));
+      });
+
+      updateSummary(tasks, totals);
+      updatePagination(meta);
+
+      var container = document.getElementById('task-list');
+
+      if (tasks.length === 0) {
+        container.innerHTML = '<div class="empty-state">' +
+          '<div class="empty-prompt">$ bigclungus --list-tasks</div>' +
+          '<div class="empty-msg">' +
+            '<em>nothing running.</em><br>' +
+            'my subagents are idle, my queues are empty,<br>' +
+            'and for once i have nothing to say about it.<br>' +
+            '<em>probably fine.</em>' +
+          '</div>' +
+        '</div>';
+
+        document.getElementById('refresh-status').innerHTML =
+          '<span class="blink inactive">_</span> updated ' + fmtTime(new Date()) + ' &middot; 0 tasks';
+        return;
+      }
+
+      var visible = currentFilter
+        ? sorted.filter(function(t) { return (t.status || 'stale') === currentFilter; })
+        : sorted;
+
+      var html = visible.map(makeCard).join('');
+
+      if (!html) {
+        html = '<div class="empty-state"><div class="empty-msg"><em>no tasks in this category.</em></div></div>';
+      }
+      container.innerHTML = html;
+
+      // Re-open any log panels that were open before the re-render
+      if (openLogIds.size > 0) {
+        openLogIds.forEach(function(taskId) {
+          var logEl = container.querySelector('.card-log[data-task-id="' + taskId + '"]');
+          if (!logEl) return;
+          logEl.classList.add('open');
+          // Update the sibling toggle button label to reflect open state
+          var btn = logEl.previousElementSibling;
+          if (btn && btn.classList.contains('card-log-toggle')) {
+            btn.textContent = '▼' + btn.textContent.slice(1);
+          }
+        });
+      }
+
+      // Blink indicator only when state changed
+      var blinkEl = document.getElementById('refresh-blink');
+      var statusEl = document.getElementById('refresh-status');
+      var totalLabel = meta && meta.total != null ? meta.total : tasks.length;
+      statusEl.innerHTML =
+        '<span class="blink' + (changed ? '' : ' inactive') + '" id="refresh-blink">_</span> updated ' +
+        fmtTime(new Date()) + ' &middot; ' + totalLabel + ' tasks';
+    }
+
+    function showAuthPrompt() {
+      var loginUrl = '/auth/github?next=' + encodeURIComponent(window.location.pathname);
+      document.getElementById('error-banner').style.display = 'none';
+      document.getElementById('task-list').innerHTML = '';
+      document.getElementById('tasks-summary').style.display = 'none';
+      var container = document.getElementById('auth-prompt');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'auth-prompt';
+        document.getElementById('task-list').parentNode.insertBefore(container, document.getElementById('task-list'));
+      }
+      container.innerHTML =
+        '<div style="text-align:center; padding: 80px 20px;">' +
+          '<h2 style="margin: 0 0 10px; font-size: 1.4rem; color: var(--accent); text-shadow: 0 0 14px var(--accent);">Sign in to view tasks</h2>' +
+          '<p style="color: var(--text-muted); margin: 0 0 28px; font-size: 0.9rem;">Authentication required</p>' +
+          '<a href="' + loginUrl + '" style="' +
+            'display: inline-block;' +
+            'background: #24292e;' +
+            'color: #fff;' +
+            'padding: 12px 28px;' +
+            'border-radius: 6px;' +
+            'text-decoration: none;' +
+            'font-size: 1rem;' +
+            'font-weight: 500;' +
+            'border: 1px solid rgba(255,255,255,0.12);' +
+            'transition: background 0.15s ease;' +
+          '" onmouseover="this.style.background=\'#363d44\'" onmouseout="this.style.background=\'#24292e\'">Sign in with GitHub</a>' +
+        '</div>';
+      document.getElementById('refresh-status').innerHTML =
+        '<span style="color:var(--text-muted)">not signed in</span>';
+    }
+
+    function fetchTasks() {
+      var url = '/api/tasks?page=' + currentPage + '&limit=' + PAGE_LIMIT;
+      fetch(url)
+        .then(function(r) {
+          if (r.status === 403 || r.status === 401) {
+            showAuthPrompt();
+            return null;
+          }
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
+        .then(function(data) {
+          if (data === null) return;
+          document.getElementById('error-banner').style.display = 'none';
+          var authPrompt = document.getElementById('auth-prompt');
+          if (authPrompt) authPrompt.innerHTML = '';
+          // Handle both paginated response {tasks, total, page, limit, pages, totals} and legacy array
+          if (Array.isArray(data)) {
+            render(data, null, null);
+          } else {
+            render(data.tasks || [], { total: data.total, page: data.page, limit: data.limit, pages: data.pages }, data.totals || null);
+          }
+        })
+        .catch(function(err) {
+          var banner = document.getElementById('error-banner');
+          banner.textContent = 'failed to load tasks: ' + err.message;
+          banner.style.display = 'block';
+          document.getElementById('refresh-status').innerHTML =
+            '<span style="color:var(--accent)">error</span>';
+        });
+    }
+
+    fetchTasks();
+    setInterval(function() {
+      // Don't poll if we're showing the auth prompt
+      if (document.getElementById('auth-prompt') && document.getElementById('auth-prompt').innerHTML) return;
+      fetchTasks();
+    }, 10000);
+  </script>
+</body>
+</html>

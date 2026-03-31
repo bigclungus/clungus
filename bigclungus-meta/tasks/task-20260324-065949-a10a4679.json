@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-065949-a10a4679",
+  "title": "Fix Yuki avatar not showing in congress UI",
+  "agent_id": "a10a46796f8d00044",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T06:59:49Z",
+      "event": "started",
+      "context": "Fix Yuki avatar not showing in congress UI"
+    },
+    {
+      "ts": "2026-03-24T07:03:40Z",
+      "event": "done",
+      "context": "Done. Here's what was found and fixed:\n\n**Root cause:** The `avatar_url` in `ux.md` was `/static/avatars/ux.gif` with no cache-buster. This is the same issue that previously affected otto (whose URL was fixed to `/static/avatars/otto.gif?v=2`). Cloudflare and/or browsers had cached either a 404 or an earlier empty response for that exact URL path before the file was created today at 05:34. Even after the file existed, the cached bad response prevented it from loading.\n\n**Fix:** Added `?v=1` to t...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

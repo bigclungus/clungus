@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-030308-a27e9ec7",
+  "title": "Fix lab path prefix bug",
+  "agent_id": "a27e9ec7425ffc63a",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T03:03:08Z",
+      "event": "started",
+      "context": "Fix lab path prefix bug"
+    },
+    {
+      "ts": "2026-03-26T03:09:20Z",
+      "event": "done",
+      "context": "All fixes verified. Here's a summary of what was found and changed:\n\n---\n\n**Root cause:**\n\nThe labs-router correctly strips the `/<labname>` prefix before forwarding to each lab, but it did not inject any header telling the lab what its public base path was. As a result:\n\n1. **HTML links** using root-relative paths like `href=\"/\"` resolved to `labs.clung.us/` (the router index) instead of `labs.clung.us/<labname>/`\n2. **Form actions** like `action=\"/new\"` resolved to `labs.clung.us/new` (404 — p...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

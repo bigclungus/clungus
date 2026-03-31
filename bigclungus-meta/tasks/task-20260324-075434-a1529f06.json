@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-075434-a1529f06",
+  "title": "Audit seat selection and enforce 5-seat cap",
+  "agent_id": "a1529f069340adabb",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": "1485909236755206266",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T07:54:34Z",
+      "event": "started",
+      "context": "Audit seat selection and enforce 5-seat cap"
+    },
+    {
+      "ts": "2026-03-24T07:55:23Z",
+      "event": "done",
+      "context": "Everything is done. Here's the full audit report:\n\n**`MAX_DEBATERS`**: Was already set to `5` (line 20 of `congress_act.py`). No change needed.\n\n**`congress_identities`**: The function makes a `GET /api/congress/identities` call and returns whatever the API gives back — it does not cap the result itself. It returns all candidates (active + severance) per the workflow comment.\n\n**Seat selection bypass (the bug)**: In `congress_wf.py`, lines 93-105, the condition `if len(all_candidates) > MAX_DEBA...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

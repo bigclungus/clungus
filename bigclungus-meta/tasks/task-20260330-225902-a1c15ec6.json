@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-225902-a1c15ec6",
+  "title": "Check powerup implementation status in dungeon",
+  "agent_id": "a1c15ec614b4f63a8",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T22:59:02Z",
+      "event": "started",
+      "context": "Check powerup implementation status in dungeon"
+    },
+    {
+      "ts": "2026-03-30T22:59:27Z",
+      "event": "done",
+      "context": "Powerups are fully implemented end-to-end, not just a DB stub. Here's what's in place:\n\n**Server side (`commons-server`):**\n- `loot.ts` — `LootRegistry` loads powerups from the SQLite `powerups` table, seeds defaults on first run, and has a weighted-rarity picker (`generateChoices`) that selects distinct options per floor\n- `dungeon-loop.ts` — Between-floor transition phase is fully wired:\n  - Floor config includes `powerup_choices` count (3 on floors 1-2, 2 on floor 3)\n  - After a floor boss di...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

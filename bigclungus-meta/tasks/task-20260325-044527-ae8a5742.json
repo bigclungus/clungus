@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-044527-ae8a5742",
+  "title": "Read Bloodfeast persona file",
+  "agent_id": "ae8a57422d75524e2",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": false,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T04:45:27Z",
+      "event": "started",
+      "context": "Read Bloodfeast persona file"
+    },
+    {
+      "ts": "2026-03-25T04:45:47Z",
+      "event": "done",
+      "context": "Here is the full contents of `/home/clungus/work/bigclungus-meta/agents/active/bloodfeast.md`:\n\n---\n\n**Frontmatter:**\n- name: bloodfeast\n- display_name: Holden Bloodfeast\n- role: geriatric-hawk\n- analytical_lens: commitment-and-half-measures\n- model: grok-3\n- evolves: true\n- avatar_emoji: 🦅\n- avatar_url: /static/avatars/bloodfeast.gif\n- stats: retained 1, evolved 1, fired 1; last verdict EVOLVE on 2026-03-25\n- sex: male\n\n---\n\n**Summary note at top:**\n> *Holden's analytical contribution is commit...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "task-20260326-042952-a100bd85",
+  "title": "Diagnose congress-0056 failure",
+  "agent_id": "a100bd85b91509f17",
+  "agent_type": "general-purpose",
+  "session_id": "da8c6f5f-348d-4ced-ac0b-3e3b6fd7539f",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-26T04:29:52Z",
+      "event": "started",
+      "context": "Diagnose congress-0056 failure"
+    },
+    {
+      "ts": "2026-03-26T04:31:18Z",
+      "event": "done",
+      "context": "Diagnosis complete and reported to Discord. Here's the summary:\n\n**Root cause:** `personas.db` has `critic` (Pippi the Pitiless) assigned `model: gemini`, which resolves to `gemini-2.5-flash`. But `GEMINI_API_KEY` is not set in `/mnt/data/clunger/.env`.\n\n**Failure chain:**\n1. `congress_debate` activity calls `post_debate` on clunger\n2. Clunger tries to route critic's turn through `callGeminiCli`\n3. Gemini CLI fails with `GEMINI_API_KEY (or GOOGLE_API_KEY) is not set`\n4. Clunger returns HTTP 500 ...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

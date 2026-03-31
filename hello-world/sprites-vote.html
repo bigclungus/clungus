@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Persona Sprite Vote</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="stylesheet" href="/sitenav.css?v=d004dbf">
+  <script src="/sitenav.js?v=d004dbf" defer></script>
+  <script src="/sprites-batch1.js"></script>
+  <script src="/sprites-batch2.js"></script>
+  <script src="/sprites-batch3.js"></script>
+  <script src="/sprites-batch4.js"></script>
+  <script src="/sprites-batch5.js"></script>
+  <style>
+    body {
+      margin: 0;
+      background: #0d0d1a;
+      color: #e0e0ff;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .page-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 12px 60px;
+      flex: 1;
+    }
+    .page-title {
+      font-size: 22px;
+      letter-spacing: 0.18em;
+      color: #4ecca3;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+    .page-subtitle {
+      font-size: 11px;
+      color: #666688;
+      margin-bottom: 6px;
+      letter-spacing: 0.08em;
+    }
+    .page-note {
+      font-size: 11px;
+      color: #886688;
+      margin-bottom: 36px;
+      letter-spacing: 0.05em;
+      font-style: italic;
+    }
+    .persona-section {
+      width: 100%;
+      max-width: 780px;
+      margin-bottom: 48px;
+    }
+    .persona-header {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #1e1e3a;
+      padding-bottom: 8px;
+    }
+    .persona-name {
+      font-size: 15px;
+      font-weight: bold;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .persona-title {
+      font-size: 11px;
+      color: #888;
+      letter-spacing: 0.06em;
+    }
+    .persona-role {
+      font-size: 10px;
+      color: #555577;
+      letter-spacing: 0.04em;
+      margin-left: auto;
+    }
+    .variants {
+      display: flex;
+      gap: 28px;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+    }
+    .variant {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    canvas {
+      border: 1px solid #2a2a4a;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      background: #0d0d1a;
+    }
+    .variant-label {
+      font-size: 22px;
+      font-weight: bold;
+      color: #4ecca3;
+      letter-spacing: 0.08em;
+    }
+    .variant-desc {
+      font-size: 10px;
+      color: #9090b8;
+      text-align: center;
+      max-width: 90px;
+      line-height: 1.5;
+      letter-spacing: 0.03em;
+    }
+    .vote-btn {
+      background: #4ecca3;
+      color: #0d0d1a;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      font-weight: bold;
+      padding: 6px 18px;
+      cursor: pointer;
+      transition: opacity 0.15s, box-shadow 0.2s, border-color 0.2s;
+      letter-spacing: 0.05em;
+    }
+    .vote-btn:hover { opacity: 0.82; }
+    .vote-btn.voted { background: #2aa884; }
+    .vote-btn.winner-glow {
+      border-color: #4ecca3;
+      box-shadow: 0 0 10px 2px #4ecca3aa;
+    }
+    .vote-count {
+      font-size: 10px;
+      color: #5a8a78;
+      letter-spacing: 0.05em;
+      min-height: 14px;
+    }
+    .divider {
+      width: 100%;
+      max-width: 780px;
+      height: 1px;
+      background: #1e1e3a;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+    <div class="page-title">Persona Sprite Vote</div>
+    <div class="page-subtitle">vote for the sprite variant that best captures each persona</div>
+    <div class="page-note">Sprites shown are placeholders. Winner will replace NPC in clung.us/grazing.</div>
+
+    <div id="personas-container"></div>
+  </div>
+
+  <script>
+  // ─── Persona registry ──────────────────────────────────────────────────────
+  // Each entry: id (matches drawSprite_<id>_A/B/C), display name, title, role color, variant descriptions
+  const PERSONAS = [
+    {
+      id: 'chairman',
+      name: 'Ibrahim the Immovable',
+      slug: 'chairman',
+      title: 'Chairman',
+      role: 'Moderator',
+      color: '#8B1A1A',
+      variants: [
+        { label: 'A', desc: 'Classic Judge' },
+        { label: 'B', desc: 'The Senator' },
+        { label: 'C', desc: 'War Council' },
+      ]
+    },
+    {
+      id: 'critic',
+      name: 'Pippi the Pitiless',
+      slug: 'critic',
+      title: 'Perfectionist',
+      role: 'Code & Work Reviewer',
+      color: '#dc2626',
+      variants: [
+        { label: 'A', desc: 'Redliner' },
+        { label: 'B', desc: 'The Auditor' },
+        { label: 'C', desc: 'Fury Mode' },
+      ]
+    },
+    {
+      id: 'ux',
+      name: 'Yuki the Yielding',
+      slug: 'ux',
+      title: 'User Advocate',
+      role: 'UX Champion',
+      color: '#7c3aed',
+      variants: [
+        { label: 'A', desc: 'Field Researcher' },
+        { label: 'B', desc: 'Wireframer' },
+        { label: 'C', desc: 'Empathy Mode' },
+      ]
+    },
+    {
+      id: 'architect',
+      name: 'Kwame the Constructor',
+      slug: 'architect',
+      title: 'Systems Architect',
+      role: 'Systems Designer',
+      color: '#059669',
+      variants: [
+        { label: 'A', desc: 'Blueprint Mode' },
+        { label: 'B', desc: 'Load-Bearing' },
+        { label: 'C', desc: 'Megastructure' },
+      ]
+    },
+    {
+      id: 'designer',
+      name: 'The Designer',
+      slug: 'designer',
+      title: 'Visual Designer',
+      role: 'Visual Craft & Aesthetics',
+      color: '#db2777',
+      variants: [
+        { label: 'A', desc: 'Artisan' },
+        { label: 'B', desc: 'Minimalist' },
+        { label: 'C', desc: 'Maximalist' },
+      ]
+    },
+    {
+      id: 'galactus',
+      name: 'Galactus',
+      slug: 'galactus',
+      title: 'The Maximizer',
+      role: 'Scale & Ambition',
+      color: '#9333ea',
+      variants: [
+        { label: 'A', desc: 'Cosmic Form' },
+        { label: 'B', desc: 'Herald Mode' },
+        { label: 'C', desc: 'Planet Eater' },
+      ]
+    },
+    {
+      id: 'hume',
+      name: 'Hume',
+      slug: 'hume',
+      title: 'The Skeptic',
+      role: 'Empiricist',
+      color: '#0284c7',
+      variants: [
+        { label: 'A', desc: 'The Scholar' },
+        { label: 'B', desc: 'Doubting Mode' },
+        { label: 'C', desc: 'Philosopher' },
+      ]
+    },
+    {
+      id: 'otto',
+      name: 'Otto',
+      slug: 'otto',
+      title: 'Optimist-Nihilist',
+      role: 'Limit-Pusher',
+      color: '#0891b2',
+      variants: [
+        { label: 'A', desc: 'Sunny Side' },
+        { label: 'B', desc: 'Void Stare' },
+        { label: 'C', desc: 'Coin Flip' },
+      ]
+    },
+    {
+      id: 'pm',
+      name: 'The PM',
+      slug: 'pm',
+      title: 'Requirements Wrangler',
+      role: 'Operational Outcomes',
+      color: '#d97706',
+      variants: [
+        { label: 'A', desc: 'Sprint Mode' },
+        { label: 'B', desc: 'Roadmap' },
+        { label: 'C', desc: 'Stakeholder' },
+      ]
+    },
+    {
+      id: 'spengler',
+      name: 'Spengler the Doomed',
+      slug: 'spengler',
+      title: 'Doomer',
+      role: 'Civilizational Decline',
+      color: '#64748b',
+      variants: [
+        { label: 'A', desc: 'The Historian' },
+        { label: 'B', desc: 'Decline Mode' },
+        { label: 'C', desc: 'Twilight Pose' },
+      ]
+    },
+    {
+      id: 'trump',
+      name: 'Trump',
+      slug: 'trump',
+      title: 'The Closer',
+      role: 'Deal-Closer',
+      color: '#f97316',
+      variants: [
+        { label: 'A', desc: 'The Deal' },
+        { label: 'B', desc: 'Podium Mode' },
+        { label: 'C', desc: 'Winner' },
+      ]
+    },
+    {
+      id: 'unclebob',
+      name: 'Uncle Bob',
+      slug: 'uncle-bob',
+      title: 'The Craftsman',
+      role: 'Clean Code Evangelist',
+      color: '#16a34a',
+      variants: [
+        { label: 'A', desc: 'Clean Coder' },
+        { label: 'B', desc: 'On Principle' },
+        { label: 'C', desc: 'Refactor Mode' },
+      ]
+    },
+    {
+      id: 'bloodfeast',
+      name: 'Holden Bloodfeast',
+      slug: 'bloodfeast',
+      title: 'Geriatric Hawk',
+      role: 'War & Escalation',
+      color: '#dc2626',
+      variants: [
+        { label: 'A', desc: 'Geriatric Hawk' },
+        { label: 'B', desc: 'Cold War Hawk' },
+        { label: 'C', desc: 'Committeeman' },
+      ]
+    },
+    {
+      id: 'adelbert',
+      name: 'Adelbert Hominem',
+      slug: 'adelbert',
+      title: 'Ad Hominem Artist',
+      role: 'Personal Attack Specialist',
+      color: '#94a3b8',
+      variants: [
+        { label: 'A', desc: 'Internet Troll' },
+        { label: 'B', desc: 'Armchair Phil.' },
+        { label: 'C', desc: "Devil's Advocate" },
+      ]
+    },
+    {
+      id: 'jhaddu',
+      name: 'Jhaddu',
+      slug: 'jhaddu',
+      title: 'Enterprise Pattern Evangelist',
+      role: 'Senior Enterprise Architect',
+      color: '#fb923c',
+      variants: [
+        { label: 'A', desc: 'Enterprise Consultant' },
+        { label: 'B', desc: 'Pattern Evangelist' },
+        { label: 'C', desc: 'Conference Speaker' },
+      ]
+    },
+    {
+      id: 'morgan',
+      name: 'Morgan (they/them)',
+      slug: 'morgan',
+      title: 'Content & Wellness Advocate',
+      role: 'Community Standards',
+      color: '#d946ef',
+      variants: [
+        { label: 'A', desc: 'Wellness Coach' },
+        { label: 'B', desc: 'Reddit Therapist' },
+        { label: 'C', desc: 'Conflict-Averse' },
+      ]
+    },
+    {
+      id: 'the_kid',
+      name: 'The Kid',
+      slug: 'the-kid',
+      title: 'Speed Demon',
+      role: 'Goes Fast',
+      color: '#facc15',
+      variants: [
+        { label: 'A', desc: 'Speed Demon' },
+        { label: 'B', desc: 'Racer' },
+        { label: 'C', desc: 'Chaos Kid' },
+      ]
+    },
+  ];
+
+  // ─── Canvas sizing ─────────────────────────────────────────────────────────
+  const CANVAS_W = 80;
+  const CANVAS_H = 120;
+
+  // ─── Build DOM ─────────────────────────────────────────────────────────────
+  function buildPersonaSection(persona) {
+    const section = document.createElement('div');
+    section.className = 'persona-section';
+    section.id = 'section-' + persona.slug;
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'persona-header';
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'persona-name';
+    nameEl.style.color = persona.color;
+    nameEl.textContent = persona.name;
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'persona-title';
+    titleEl.textContent = persona.title;
+
+    const roleEl = document.createElement('div');
+    roleEl.className = 'persona-role';
+    roleEl.textContent = persona.role;
+
+    header.appendChild(nameEl);
+    header.appendChild(titleEl);
+    header.appendChild(roleEl);
+    section.appendChild(header);
+
+    // Variants row
+    const variantsEl = document.createElement('div');
+    variantsEl.className = 'variants';
+
+    ['A', 'B', 'C'].forEach((letter, idx) => {
+      const varData = persona.variants[idx];
+      const variantEl = document.createElement('div');
+      variantEl.className = 'variant';
+
+      const canvas = document.createElement('canvas');
+      canvas.width = CANVAS_W;
+      canvas.height = CANVAS_H;
+      canvas.id = 'canvas-' + persona.slug + '-' + letter;
+
+      const labelEl = document.createElement('div');
+      labelEl.className = 'variant-label';
+      labelEl.textContent = letter;
+
+      const descEl = document.createElement('div');
+      descEl.className = 'variant-desc';
+      descEl.textContent = varData ? varData.desc : '';
+
+      const btn = document.createElement('button');
+      btn.className = 'vote-btn';
+      btn.id = 'btn-' + persona.slug + '-' + letter;
+      btn.textContent = 'Vote ' + letter;
+      btn.onclick = () => castVote(persona.slug, letter);
+
+      const countEl = document.createElement('div');
+      countEl.className = 'vote-count';
+      countEl.id = 'count-' + persona.slug + '-' + letter;
+      countEl.textContent = '— votes';
+
+      variantEl.appendChild(canvas);
+      variantEl.appendChild(labelEl);
+      variantEl.appendChild(descEl);
+      variantEl.appendChild(btn);
+      variantEl.appendChild(countEl);
+      variantsEl.appendChild(variantEl);
+    });
+
+    section.appendChild(variantsEl);
+    return section;
+  }
+
+  // ─── Render all personas into container ───────────────────────────────────
+  const container = document.getElementById('personas-container');
+  PERSONAS.forEach(p => {
+    container.appendChild(buildPersonaSection(p));
+  });
+
+  // ─── Draw sprites after DOM + scripts loaded ──────────────────────────────
+  function drawAllSprites() {
+    PERSONAS.forEach(persona => {
+      ['A', 'B', 'C'].forEach(letter => {
+        const canvasId = 'canvas-' + persona.slug + '-' + letter;
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#0d0d1a';
+        ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+        // Function name: drawSprite_<id>_<letter>
+        const fnName = 'drawSprite_' + persona.id + '_' + letter;
+        const fn = window[fnName];
+        if (typeof fn === 'function') {
+          const cx = CANVAS_W / 2;
+          const cy = CANVAS_H - 4;
+          fn(ctx, cx, cy);
+        } else {
+          // fallback: draw placeholder
+          ctx.fillStyle = persona.color;
+          ctx.globalAlpha = 0.15;
+          ctx.fillRect(4, 4, CANVAS_W - 8, CANVAS_H - 8);
+          ctx.globalAlpha = 1.0;
+          ctx.fillStyle = persona.color;
+          ctx.fillRect(CANVAS_W / 2 - 8, CANVAS_H / 2 - 16, 16, 28);
+          ctx.fillRect(CANVAS_W / 2 - 5, CANVAS_H / 2 - 24, 10, 10);
+          ctx.fillStyle = '#2a2a4a';
+          ctx.fillRect(CANVAS_W / 2 - 2, CANVAS_H / 2 - 20, 2, 2);
+          ctx.fillRect(CANVAS_W / 2 + 1, CANVAS_H / 2 - 20, 2, 2);
+          ctx.fillStyle = '#e0e0ff';
+          ctx.font = '8px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(letter, CANVAS_W / 2, CANVAS_H - 10);
+        }
+      });
+    });
+  }
+
+  // ─── Voting logic ─────────────────────────────────────────────────────────
+  const userVotes = {};
+
+  async function castVote(slug, letter) {
+    const pollId = 'sprite-' + slug;
+    const body = { poll_id: pollId, option: letter };
+
+    const res = await fetch('/api/vote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) return;
+
+    userVotes[slug] = letter;
+    ['A', 'B', 'C'].forEach(l => {
+      const btn = document.getElementById('btn-' + slug + '-' + l);
+      if (btn) {
+        btn.classList.remove('voted', 'winner-glow');
+        if (l === letter) btn.classList.add('voted');
+      }
+    });
+    await loadCounts(slug);
+  }
+
+  async function loadCounts(slug) {
+    const pollId = 'sprite-' + slug;
+    const res = await fetch('/api/vote/results?poll_id=' + encodeURIComponent(pollId));
+    if (!res.ok) return;
+    const data = await res.json();
+    const counts = data.counts || {};
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    const maxVotes = Math.max(0, ...Object.values(counts));
+
+    ['A', 'B', 'C'].forEach(l => {
+      const countEl = document.getElementById('count-' + slug + '-' + l);
+      const btn = document.getElementById('btn-' + slug + '-' + l);
+      const v = counts[l] || 0;
+      if (countEl) countEl.textContent = v + (v === 1 ? ' vote' : ' votes');
+      if (btn && v === maxVotes && v > 0) {
+        btn.classList.add('winner-glow');
+      } else if (btn) {
+        btn.classList.remove('winner-glow');
+      }
+    });
+  }
+
+  async function loadAllCounts() {
+    await Promise.all(PERSONAS.map(p => loadCounts(p.slug)));
+  }
+
+  // ─── Init ─────────────────────────────────────────────────────────────────
+  window.addEventListener('load', () => {
+    drawAllSprites();
+    loadAllCounts();
+  });
+  </script>
+</body>
+</html>

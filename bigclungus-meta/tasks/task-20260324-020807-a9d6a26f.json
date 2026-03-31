@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-020807-a9d6a26f",
+  "title": "Run improve workflow",
+  "agent_id": "a9d6a26f37f18aa51",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": "1485822331979960371",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T02:08:07Z",
+      "event": "started",
+      "context": "Run improve workflow"
+    },
+    {
+      "ts": "2026-03-24T02:08:13Z",
+      "event": "done",
+      "context": "The workflow started successfully. Workflow ID: `improve-manual-1774318090`, running on the `listings-queue` task queue.",
+      "artifacts": []
+    }
+  ]
+}

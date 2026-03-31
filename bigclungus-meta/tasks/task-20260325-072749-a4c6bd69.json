@@ -1,0 +1,25 @@
+{
+  "id": "task-20260325-072749-a4c6bd69",
+  "title": "Add custom seat selection to congress workflow",
+  "agent_id": "a4c6bd69fa9c21b1a",
+  "agent_type": "general-purpose",
+  "session_id": "a73508af-b739-48f4-b9cb-a7829a4a15c0",
+  "discord_message_id": "1486265207713169510",
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-25T07:27:49Z",
+      "event": "started",
+      "context": "Add custom seat selection to congress workflow"
+    },
+    {
+      "ts": "2026-03-25T07:30:07Z",
+      "event": "done",
+      "context": "Done. Here's what was done:\n\n**Changes made:**\n\n`/mnt/data/temporal-workflows/workflows/congress_wf.py` — added optional `\"personas\"` key support:\n- Reads `custom_personas = input.get(\"personas\") or []` from workflow input\n- If non-empty, builds a `name → identity` lookup from `all_candidates` (which already includes both active and fired personas via `congress_identities`) and filters to the requested IDs\n- Falls back to full candidate list if none match; logs warnings for unmatched IDs\n- If em...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

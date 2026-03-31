@@ -1,0 +1,25 @@
+{
+  "id": "task-20260330-025543-a0dbf15a",
+  "title": "Debug mob imageOnly filter issue",
+  "agent_id": "a0dbf15ab667baa33",
+  "agent_type": "general-purpose",
+  "session_id": "cd5c6ab2-9176-47d3-b93e-4e96320e5feb",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-30T02:55:43Z",
+      "event": "started",
+      "context": "Debug mob imageOnly filter issue"
+    },
+    {
+      "ts": "2026-03-30T02:57:28Z",
+      "event": "done",
+      "context": "Here's the full diagnosis:\n\n**Files examined:**\n- `/mnt/data/hello-world/static/mob-images/` — listing\n- `/mnt/data/commons-server/src/dungeon/mob-registry.ts` — `selectForRun` / `imageOnly` filter\n- `/mnt/data/commons-server/src/dungeon/dungeon-manager.ts` — `startRun` / `skipGen`\n- `/mnt/data/commons-server/src/dungeon/dungeon-loop.ts` — how `instance.skipGen` is passed to `selectForRun`\n- `/mnt/data/commons-server/src/index.ts` — WebSocket `d_start` handler\n- `/mnt/data/clungiverse-client/src...(truncated)",
+      "artifacts": []
+    }
+  ]
+}

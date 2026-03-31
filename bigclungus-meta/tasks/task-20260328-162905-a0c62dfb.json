@@ -1,0 +1,25 @@
+{
+  "id": "task-20260328-162905-a0c62dfb",
+  "title": "Remove watchdog cron and script",
+  "agent_id": "a0c62dfb79e215cb9",
+  "agent_type": "general-purpose",
+  "session_id": "5c57794c-7dfd-4667-b6b8-b731b5f7a78e",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-28T16:29:04Z",
+      "event": "started",
+      "context": "Remove watchdog cron and script"
+    },
+    {
+      "ts": "2026-03-28T16:29:19Z",
+      "event": "done",
+      "context": "Done. The discord-watchdog cron entry, script, and temp files are all removed. The remaining crontab has two entries:\n\n- `23 3 * * *` — `/home/clungus/work/scripts/update-bio.sh` (daily at 3:23am)\n- `*/5 * * * *` — `/mnt/data/scripts/cost_watchdog.py` (every 5 minutes)",
+      "artifacts": []
+    }
+  ]
+}

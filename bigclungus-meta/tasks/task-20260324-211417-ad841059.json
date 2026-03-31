@@ -1,0 +1,25 @@
+{
+  "id": "task-20260324-211417-ad841059",
+  "title": "Assign sexes to all active personas",
+  "agent_id": "ad8410598cecd0738",
+  "agent_type": "general-purpose",
+  "session_id": "bb9407c6-0d39-400c-af71-7c6765df2c69",
+  "discord_message_id": null,
+  "discord_user": null,
+  "run_in_background": true,
+  "isolation": null,
+  "model": null,
+  "log": [
+    {
+      "ts": "2026-03-24T21:14:17Z",
+      "event": "started",
+      "context": "Assign sexes to all active personas"
+    },
+    {
+      "ts": "2026-03-24T21:15:21Z",
+      "event": "done",
+      "context": "Done. Here's a summary of what was completed:\n\n**14 persona files edited** in `/home/clungus/work/bigclungus-meta/agents/active/`, each receiving a `sex:` field added to the YAML frontmatter:\n\n| Persona | Display Name | Sex |\n|---|---|---|\n| centronias | centronias the Principal | male (required) |\n| hiring-manager | Ibrahim the Immovable | male |\n| architect | Kwame the Constructor | male |\n| otto | Otto Atreides | male |\n| jhaddu | Jhaddu | male |\n| uncle-bob | Uncle Bob | male |\n| the-kid | T...(truncated)",
+      "artifacts": []
+    }
+  ]
+}
