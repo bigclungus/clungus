@@ -102,6 +102,9 @@ const config = [
       // Prefer const over let when never reassigned
       "prefer-const": "error",
 
+      // Limit cyclomatic complexity
+      complexity: ["error", 8],
+
       // ── import plugin ─────────────────────────────────────────────────────
       "import/no-duplicates": "error",
       "import/no-cycle": "warn",
