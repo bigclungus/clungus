@@ -1053,13 +1053,13 @@ async def congress_select_seats(topic: str, debaters: list, session_id: str) -> 
                                 break
         # Top up from remaining candidates if we're under MAX_DEBATERS
         if len(selected) < MAX_DEBATERS:
-            selected_names = {d.get("name") for d in selected}
+            seated_names = {d.get("name") for d in selected}
             for d in debaters:
                 if len(selected) >= MAX_DEBATERS:
                     break
-                if d.get("name") not in selected_names:
+                if d.get("name") not in seated_names:
                     selected.append(d)
-                    selected_names.add(d.get("name"))
+                    seated_names.add(d.get("name"))
         if len(selected) < 3:
             activity.logger.warning("congress_select_seats: too few matches (minimum is 3), using full roster")
             return debaters
@@ -1269,6 +1269,7 @@ def _codebase_search(topic_text: str) -> str:
 
     # Search only specific code directories to keep it fast and relevant
     SEARCH_DIRS = [
+        "/mnt/data/clunger",
         "/mnt/data/hello-world",
         "/mnt/data/temporal-workflows",
         "/mnt/data/scripts",
