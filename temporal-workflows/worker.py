@@ -47,7 +47,6 @@ from activities.congress_act import (
     congress_vote,
 )
 from activities.bokoen1_ingest_act import run_bokoen1_ingest
-from activities.cost_watchdog_act import run_cost_watchdog
 from activities.discord_act import post_discord_message, post_listings_summary
 from activities.discord_ingest_act import run_discord_ingest
 from activities.drift_scan_act import run_drift_scan
@@ -93,7 +92,6 @@ from activities.trial_act import (
 from workflows.audit_wf import CongressAuditWorkflow
 from workflows.bokoen1_ingest_wf import Bokoen1IngestWorkflow
 from workflows.congress_wf import CongressWorkflow
-from workflows.cost_watchdog_wf import CostWatchdogWorkflow
 from workflows.discord_ingest_wf import DiscordIngestWorkflow
 from workflows.drift_scan_wf import DriftScanWorkflow
 from workflows.email_wf import EmailPollerWorkflow
@@ -279,21 +277,6 @@ async def main() -> None:
     except Exception as exc:
         logger.info("Drift scan cron already exists or scheduling skipped: %s", exc)
 
-    # Schedule cost watchdog — runs every 5 minutes
-    try:
-        handle = await client.start_workflow(
-            CostWatchdogWorkflow.run,
-            id="cost-watchdog-cron",
-            task_queue=TASK_QUEUE,
-            cron_schedule="*/5 * * * *",
-        )
-        logger.info(
-            "Cost watchdog cron scheduled: id=cost-watchdog-cron run_id=%s",
-            handle.result_run_id,
-        )
-    except Exception as exc:
-        logger.info("Cost watchdog cron already exists or scheduling skipped: %s", exc)
-
     # Schedule daily Discord → Graphiti ingestion — runs at 02:00 UTC
     try:
         handle = await client.start_workflow(
@@ -333,7 +316,6 @@ async def main() -> None:
             DriftScanWorkflow,
             HistoryIngestWorkflow,
             MobGenerationWorkflow,
-            CostWatchdogWorkflow,
             DiscordIngestWorkflow,
             Bokoen1IngestWorkflow,
             PersonaPollsWorkflow,
@@ -390,7 +372,6 @@ async def main() -> None:
             post_audit_results,
             run_drift_scan,
             run_history_ingest,
-            run_cost_watchdog,
             run_discord_ingest,
             run_bokoen1_ingest,
             run_create_persona_polls,
