@@ -31,6 +31,7 @@ Trial-specific input keys:
 import asyncio
 import re
 from datetime import timedelta
+from typing import Any
 
 from temporalio import workflow
 from temporalio.common import RetryPolicy
@@ -152,7 +153,11 @@ class SessionWorkflow:
     # ====================================================================== #
 
     @workflow.run
-    async def run(self, input: dict) -> dict:
+    async def run(self, input: Any) -> dict:
+        # Coerce a bare string into a dict (guards against CLI invocations that
+        # pass the topic as a plain JSON string instead of an object).
+        if isinstance(input, str):
+            input = {"topic": input}
         flavor = _resolve_flavor(input)
         _session_tracker: list = ["unknown"]  # mutable container for error handler
 
@@ -1121,7 +1126,9 @@ class CongressWorkflow:
     """Backward-compatible alias for SessionWorkflow (congress/meme flavor)."""
 
     @workflow.run
-    async def run(self, input: dict) -> dict:
+    async def run(self, input: Any) -> dict:
+        if isinstance(input, str):
+            input = {"topic": input}
         # Ensure flavor is set for congress (mode may already be set for meme)
         if "flavor" not in input and "defendant" not in input:
             input["flavor"] = "meme" if input.get("mode") == "meme" else "congress"
@@ -1134,7 +1141,9 @@ class TrialWorkflow:
     """Backward-compatible alias for SessionWorkflow (trial flavor)."""
 
     @workflow.run
-    async def run(self, input: dict) -> dict:
+    async def run(self, input: Any) -> dict:
+        if isinstance(input, str):
+            input = {"charges": input}
         input["flavor"] = "trial"
         impl = SessionWorkflow()
         return await impl.run(input)
