@@ -6,15 +6,8 @@ import * as childProcess from "child_process";
 
 const PORT = parseInt(process.env.PORT || "8110", 10);
 const AGENTS_DIR = "/mnt/data/bigclungus-meta/agents";
-const DISCORD_INJECT_URL = "http://127.0.0.1:9876/inject";
-const DISCORD_CHANNEL_ID = "1485343472952148008";
+const DISCORD_INJECT_URL = "http://127.0.0.1:8085/webhooks/bigclungus-main";
 const CLAUDE_CLI = "/home/clungus/.local/bin/claude";
-
-function getInjectSecret(): string {
-  const s = process.env.DISCORD_INJECT_SECRET;
-  if (!s) throw new Error("DISCORD_INJECT_SECRET not set");
-  return s;
-}
 
 interface Walker {
   id: string;
@@ -233,18 +226,15 @@ Discovered via the persona audition system on ${today}. Requires a Congress sess
 
 // ── Discord notify ─────────────────────────────────────────────────────────────
 async function notifyDiscord(walker: Walker): Promise<void> {
-  const secret = getInjectSecret();
   const message = `🌟 New persona candidate kept: **${walker.name}** ("${walker.title}") — saved to agents roster. Requires a Congress session to activate.`;
 
   const response = await fetch(DISCORD_INJECT_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-inject-secret": secret,
     },
     body: JSON.stringify({
       content: message,
-      chat_id: DISCORD_CHANNEL_ID,
       user: "persona-audition",
     }),
   });
