@@ -75,6 +75,7 @@ async function callClaude(existingNames: string[]): Promise<GeneratedPersona> {
         max_tokens: 200,
         messages: [{ role: "user", content: prompt }],
       }),
+      signal: AbortSignal.timeout(30_000),
     });
 
     if (!response.ok) {
@@ -360,6 +361,7 @@ async function notifyDiscord(meta: AuditionWalkerMeta): Promise<void> {
       chat_id: DISCORD_CHANNEL_ID,
       user: "persona-audition",
     }),
+    signal: AbortSignal.timeout(8_000),
   });
 
   if (!response.ok) {
