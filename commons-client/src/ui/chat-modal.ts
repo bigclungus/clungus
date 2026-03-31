@@ -2,7 +2,7 @@
 // Click an NPC on the canvas to open a chat prompt. Sends to /api/invoke-persona.
 
 import { WorldState, NPC } from "../state.ts";
-import { getSpriteId, getWinner, NPC_DISPLAY_NAMES } from "../sprites.ts";
+import { getSpriteId, getWinner, getSpriteFn, NPC_DISPLAY_NAMES } from "../sprites.ts";
 
 const NPC_HIT_RADIUS = 14; // px — half-width of NPC hitbox for click detection
 
@@ -53,8 +53,7 @@ function drawPortrait(npc: NPC): void {
 
   const spriteId = getSpriteId(npc.name);
   const winner = spriteId ? getWinner(npc.name) : null;
-  const spriteFn: ((ctx: CanvasRenderingContext2D, x: number, y: number) => void) | null =
-    winner && spriteId ? ((window as any)[`drawSprite_${spriteId}_${winner}`] ?? null) : null;
+  const spriteFn = winner && spriteId ? getSpriteFn(spriteId, winner) : null;
 
   const scale = 4;
   const cx = Math.round(pw / 2);
@@ -69,7 +68,7 @@ function drawPortrait(npc: NPC): void {
     // Fallback: colored box at 4x
     const hash = npc.name.split("").reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 0);
     const hue = Math.abs(hash) % 360;
-    pctx.fillStyle = `hsl(${hue},60%,45%)`;
+    pctx.fillStyle = `hsl(${String(hue)},60%,45%)`;
     const bw = 16 * scale;
     const bh = 16 * scale;
     pctx.fillRect(cx - bw / 2, cy_feet - bh, bw, bh);
@@ -252,15 +251,15 @@ function openModal(npc: NPC): void {
   if (!overlay || !titleEl || !inputEl || !bubbleEl) return;
   activeNPC = npc;
 
-  const meta = NPC_META[npc.name];
-  if (meta) {
+  if (npc.name in NPC_META) {
+    const meta = NPC_META[npc.name];
     titleEl.textContent = `${meta.displayName}, ${meta.role} (${npc.name})`;
   } else {
     titleEl.textContent = NPC_DISPLAY_NAMES[npc.name] ?? npc.name;
   }
 
   // Draw portrait after a short delay to allow sprite scripts to be present
-  setTimeout(() => drawPortrait(npc), 10);
+  setTimeout(() => { drawPortrait(npc); }, 10);
 
   inputEl.value = "";
   bubbleEl.style.display = "none";
@@ -295,7 +294,6 @@ function submitChat(): void {
   const abortController = currentAbortController;
 
   // Keep modal open, show loading state
-  if (!inputEl || !bubbleEl || !submitBtnEl) return;
   inputEl.disabled = true;
   submitBtnEl.disabled = true;
   bubbleEl.style.display = "block";
@@ -309,7 +307,7 @@ function submitChat(): void {
     signal: abortController.signal,
   })
     .then((r) => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      if (!r.ok) throw new Error(`HTTP ${String(r.status)}`);
       return r.json();
     })
     .then((data: { response?: string; error?: string }) => {
@@ -321,10 +319,10 @@ function submitChat(): void {
       currentAbortController = null;
       setTimeout(() => inputEl?.focus(), 50);
     })
-    .catch((err: Error) => {
-      if (err.name === "AbortError") return; // modal closed or new request started — ignore silently
+    .catch((err: unknown) => {
+      if (err instanceof Error && err.name === "AbortError") return; // modal closed or new request started — ignore silently
       if (!bubbleEl || !inputEl || !submitBtnEl) return;
-      bubbleEl.textContent = `(error: ${err.message.slice(0, 60)})`;
+      bubbleEl.textContent = `(error: ${(err instanceof Error ? err.message : String(err)).slice(0, 60)})`;
       bubbleEl.style.color = "#f87171";
       inputEl.disabled = false;
       submitBtnEl.disabled = false;

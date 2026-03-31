@@ -42,14 +42,14 @@ const TILE_COLORS_DIM: Record<number, string> = {
 
 /** Check whether a tile at (col, row) has been explored. */
 export function isTileExplored(state: DungeonClientState, col: number, row: number): boolean {
-  if (!state.exploredTiles || state.exploredTiles.length === 0) return true;
+  if (state.exploredTiles.length === 0) return true;
   const idx = row * state.gridWidth + col;
   return state.exploredTiles[idx] > 0;
 }
 
 /** Check whether a tile at (col, row) is currently visible (within player radius). */
 export function isTileVisible(state: DungeonClientState, col: number, row: number): boolean {
-  if (!state.exploredTiles || state.exploredTiles.length === 0) return true;
+  if (state.exploredTiles.length === 0) return true;
   const idx = row * state.gridWidth + col;
   return state.exploredTiles[idx] === 2;
 }
@@ -65,7 +65,7 @@ export function renderDungeon(
   const h = state.gridHeight;
   const cam = getCamera();
   const explored = state.exploredTiles;
-  const hasExplored = explored && explored.length === w * h;
+  const hasExplored = explored.length === w * h;
 
   // Compute visible tile range (with 1-tile margin)
   const startCol = Math.max(0, Math.floor(cam.x / TILE_SIZE) - 1);
@@ -114,8 +114,7 @@ export function renderDungeon(
   }
 
   // Cleared room tint (only for visible tiles)
-  for (let i = 0; i < state.rooms.length; i++) {
-    const room = state.rooms[i];
+  for (const room of state.rooms) {
     if (!room.cleared) continue;
     const rx = room.x * TILE_SIZE;
     const ry = room.y * TILE_SIZE;
@@ -135,8 +134,9 @@ export function renderDungeon(
     if (!isVisible(pickup.x - 20, pickup.y - 20, 40, 40)) continue;
 
     const isHealth = pickup.type === 'health';
-    const color = isHealth ? '#ff2244' : (TEMP_POWERUP_META[pickup.templateId]?.color ?? '#ffffff');
-    const emoji = isHealth ? '❤️' : (TEMP_POWERUP_META[pickup.templateId]?.emoji ?? '✨');
+    const meta = TEMP_POWERUP_META[pickup.templateId];
+    const color = isHealth ? '#ff2244' : (meta?.color ?? '#ffffff');
+    const emoji = isHealth ? '❤️' : (meta?.emoji ?? '✨');
     drawPickupGlow(ctx, pickup.x, pickup.y, color, emoji, pulseFactor);
   }
 }
@@ -164,7 +164,7 @@ function drawPickupGlow(
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.font = `${Math.round(10 * pulseFactor)}px sans-serif`;
+  ctx.font = `${String(Math.round(10 * pulseFactor))}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(emoji, x, y);

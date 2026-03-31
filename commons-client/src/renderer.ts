@@ -1,13 +1,12 @@
 // renderer.ts — Pure render(state, ctx, frame) — no mutation, no globals
 // This module has zero side effects. It only reads state and draws to the passed-in ctx.
 
-import { WorldState, LocalPlayer, RemotePlayer, NPC, Facing, TILE, CANVAS_W, CANVAS_H, NPC_HIT_RADIUS,
+import { WorldState, NPC, Facing, TILE, CANVAS_W, CANVAS_H, NPC_HIT_RADIUS,
   CONGRESS_BUILDING_COL, CONGRESS_BUILDING_LABEL_ROW,
   DUNGEON_BUILDING_COL, DUNGEON_BUILDING_LABEL_ROW,
-  DUNGEON_BUILDING_COL_MIN, DUNGEON_BUILDING_COL_MAX,
   LEADERBOARD_COL, LEADERBOARD_ROW } from "./state.ts";
 import { getOrBuildTileCache, getSeason, getTileColors, drawTallSprites } from "./map/renderer.ts";
-import { getWinner, getSpriteId, NPC_DISPLAY_NAMES } from "./sprites.ts";
+import { getWinner, getSpriteId, getSpriteFn, NPC_DISPLAY_NAMES } from "./sprites.ts";
 import { drawWarthog } from "./entities/warthog.ts";
 import { drawWalkers } from "./entities/walker.ts";
 import { drawWornPaths } from "./map/worn-paths.ts";
@@ -15,21 +14,6 @@ import { drawFountainAnimation } from "./map/fountain-anim.ts";
 
 const HOP_FRAMES = 12;
 const PLAYER_SIZE = 12;
-
-// -- Color utils ------------------------------------------------------------
-
-function hexToRgb(hex: string): [number, number, number] {
-  const h = hex.replace("#", "");
-  const v = parseInt(h.length === 3
-    ? h.split("").map(c => c + c).join("")
-    : h, 16);
-  return [(v >> 16) & 0xff, (v >> 8) & 0xff, v & 0xff];
-}
-
-function withAlpha(hex: string, alpha: number): string {
-  const [r, g, b] = hexToRgb(hex);
-  return `rgba(${r},${g},${b},${alpha})`;
-}
 
 // -- Night tint -------------------------------------------------------------
 
@@ -187,8 +171,7 @@ function drawNPC(
 
   const spriteId = getSpriteId(npc.name);
   const winner = spriteId ? getWinner(npc.name) : null;
-  const spriteFn: ((ctx: CanvasRenderingContext2D, x: number, y: number) => void) | null =
-    winner && spriteId ? ((window as any)[`drawSprite_${spriteId}_${winner}`] ?? null) : null;
+  const spriteFn = winner && spriteId ? getSpriteFn(spriteId, winner) : null;
 
   ctx.save();
 
@@ -216,7 +199,7 @@ function drawNPC(
     const hash = npc.name.split("").reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 0);
     const hue = Math.abs(hash) % 360;
     const lightness = hovered ? 58 : 45;
-    const color = `hsl(${hue},60%,${lightness}%)`;
+    const color = `hsl(${String(hue)},60%,${String(lightness)}%)`;
 
     ctx.fillStyle = color;
     ctx.fillRect(x - 8, y - 8 + hopOff, 16, 16);
@@ -304,13 +287,13 @@ function drawHUD(ctx: CanvasRenderingContext2D, state: WorldState): void {
   ctx.textAlign = "left";
 
   const lines = [
-    `CommonsV2 [${player ? `(${Math.round(player.x)},${Math.round(player.y)})` : "no player"}]`,
-    `chunk: (${player?.chunkX ?? 0}, ${player?.chunkY ?? 0})`,
-    `players: ${totalPlayers}  npcs: ${state.npcs.size}`,
-    `frame: ${state.frame}  ${state.connected ? "● connected" : "○ offline"}`,
+    `CommonsV2 [${player ? `(${String(Math.round(player.x))},${String(Math.round(player.y))})` : "no player"}]`,
+    `chunk: (${String(player?.chunkX ?? 0)}, ${String(player?.chunkY ?? 0)})`,
+    `players: ${String(totalPlayers)}  npcs: ${String(state.npcs.size)}`,
+    `frame: ${String(state.frame)}  ${state.connected ? "● connected" : "○ offline"}`,
   ];
 
-  lines.forEach((line, i) => ctx.fillText(line, 8, 17 + i * 12));
+  lines.forEach((line, i) => { ctx.fillText(line, 8, 17 + i * 12); });
   ctx.restore();
 }
 
@@ -359,7 +342,7 @@ export function render(state: WorldState, ctx: CanvasRenderingContext2D, frame: 
     if (player.chunkX !== localChunkX || player.chunkY !== localChunkY) continue;
     // Skip remote players seated in the warthog — they're rendered as heads on the vehicle
     if (warthogSeatedIds.has(player.socketId)) continue;
-    drawPlayerBody(ctx, player.displayX, player.displayY, player.color, player.facing as Facing, player.hopFrame, player.isAway, false);
+    drawPlayerBody(ctx, player.displayX, player.displayY, player.color, player.facing, player.hopFrame, player.isAway, false);
     drawPlayerLabel(ctx, player.displayX, player.displayY, player.name, player.hopFrame);
   }
 
@@ -378,7 +361,7 @@ export function render(state: WorldState, ctx: CanvasRenderingContext2D, frame: 
   // Local player (drawn on top) — hidden when seated in warthog (rendered as head on vehicle)
   if (state.localPlayer && !state.seatedInWarthog) {
     const p = state.localPlayer;
-    drawPlayerBody(ctx, p.x, p.y, p.color, p.facing as Facing, p.hopFrame, p.isAway, true);
+    drawPlayerBody(ctx, p.x, p.y, p.color, p.facing, p.hopFrame, p.isAway, true);
     drawPlayerLabel(ctx, p.x, p.y, p.name, p.hopFrame);
   }
 

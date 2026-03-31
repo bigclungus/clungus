@@ -37,7 +37,7 @@ export const NPC_DISPLAY_NAMES: Record<string, string> = Object.fromEntries(
 const SPRITE_SLUG_MAP: Record<string, { id: string; pollSlug: string }> = Object.fromEntries(
   Object.entries(NPC_REGISTRY)
     .filter(([, { sprite }]) => sprite !== undefined)
-    .map(([slug, { sprite }]) => [slug, sprite!])
+    .map(([slug, { sprite }]) => [slug, sprite as { id: string; pollSlug: string }])
 );
 
 // Current winners: npcName → "A"|"B"|"C"
@@ -49,12 +49,12 @@ function fetchSpriteWinners(): void {
     const info = SPRITE_SLUG_MAP[name];
     fetch('/api/vote/sprite-' + encodeURIComponent(info.pollSlug))
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d && d.winner) {
+      .then((d: { winner?: string } | null) => {
+        if (d?.winner) {
           SPRITE_WINNERS[name] = d.winner;
         }
       })
-      .catch(() => {});
+      .catch((err: unknown) => { throw err instanceof Error ? err : new Error(String(err)); });
   }
 }
 
@@ -75,7 +75,18 @@ export function getWinner(npcName: string): string | null {
  * or null if the NPC has no sprite entry.
  */
 export function getSpriteId(npcName: string): string | null {
-  return SPRITE_SLUG_MAP[npcName]?.id ?? null;
+  if (!(npcName in SPRITE_SLUG_MAP)) return null;
+  return SPRITE_SLUG_MAP[npcName].id;
+}
+
+export type SpriteFn = (ctx: CanvasRenderingContext2D, x: number, y: number) => void;
+
+/**
+ * Returns the sprite draw function for a given sprite ID + winner variant,
+ * or null if the function isn't loaded on window yet.
+ */
+export function getSpriteFn(spriteId: string, winner: string): SpriteFn | null {
+  return (window as Record<string, SpriteFn | undefined>)[`drawSprite_${spriteId}_${winner}`] ?? null;
 }
 
 // All expected sprite function names, derived from SPRITE_SLUG_MAP ids × variants A/B/C
@@ -94,7 +105,7 @@ const SPRITE_FUNCTION_NAMES: string[] = Object.values(SPRITE_SLUG_MAP).flatMap((
 export function validateSprites(): void {
   const missing: string[] = [];
   for (const name of SPRITE_FUNCTION_NAMES) {
-    if (typeof (window as any)[name] !== 'function') {
+    if (typeof (window as Record<string, unknown>)[name] !== 'function') {
       missing.push(name);
     }
   }

@@ -844,77 +844,83 @@ setInterval(() => {
   lastCpuStat = t2;
 }, 500);
 
-// ── Cockpit: GET /api/cockpit/metrics ────────────────────────────────────────
-function restCockpitMetrics(res: http.ServerResponse): void {
-  const cpu_pct = cachedCpuPct;
-
-  // RAM: parse /proc/meminfo
-  const memInfo: Record<string, number> = {};
-  for (const line of readFileSync("/proc/meminfo", "utf-8").split("\n")) {
-    const m = line.match(/^(\w+):\s+(\d+)/);
-    if (m) memInfo[m[1]] = parseInt(m[2], 10);
-  }
-  const ram_total_mb = Math.round((memInfo["MemTotal"] ?? 0) / 1024);
-  const ram_available_mb = Math.round((memInfo["MemAvailable"] ?? 0) / 1024);
-  const ram_used_mb = ram_total_mb - ram_available_mb;
-  const ram_free_mb = Math.round((memInfo["MemFree"] ?? 0) / 1024);
-
-  // Disk: df -h
-  const dfR = spawnSync("df", ["-h", "/", "/mnt/data"], { encoding: "utf-8", timeout: 5000 });
-  const disks: { path: string; used: string; total: string; pct: number }[] = [];
-  const dfLines = (dfR.stdout ?? "").split("\n").slice(1);
-  for (const line of dfLines) {
-    if (!line.trim()) continue;
-    const parts = line.trim().split(/\s+/);
-    if (parts.length < 6) continue;
-    const [, total, used, , pctStr, path] = parts;
-    const pct = parseInt(pctStr, 10) || 0;
-    disks.push({ path, used, total, pct });
-  }
-
-  // Network: parse /proc/net/dev
-  let rx_bytes = 0;
-  let tx_bytes = 0;
-  for (const line of readFileSync("/proc/net/dev", "utf-8").split("\n")) {
-    const trimmed = line.trim();
-    if (trimmed.startsWith("eth0:") || trimmed.startsWith("ens3:") || trimmed.startsWith("ens4:")) {
-      const parts = trimmed.split(/\s+/);
-      rx_bytes = parseInt(parts[1], 10) || 0;
-      tx_bytes = parseInt(parts[9], 10) || 0;
-      break;
-    }
-  }
-
-  jsonResponse(res, { cpu_pct, ram_total_mb, ram_used_mb, ram_free_mb, disks, net: { rx_bytes, tx_bytes } });
+// Mem / disk / net — cached every 5 s (slow enough to not thrash, fast enough for cockpit)
+interface CachedSysMetrics {
+  ram_total_mb: number;
+  ram_used_mb: number;
+  ram_free_mb: number;
+  disks: { path: string; used: string; total: string; pct: number }[];
+  net: { rx_bytes: number; tx_bytes: number };
 }
+let cachedSysMetrics: CachedSysMetrics = { ram_total_mb: 0, ram_used_mb: 0, ram_free_mb: 0, disks: [], net: { rx_bytes: 0, tx_bytes: 0 } };
+function refreshSysMetrics(): void {
+  try {
+    const memInfo: Record<string, number> = {};
+    for (const line of readFileSync("/proc/meminfo", "utf-8").split("\n")) {
+      const m = line.match(/^(\w+):\s+(\d+)/);
+      if (m) memInfo[m[1]] = parseInt(m[2], 10);
+    }
+    const ram_total_mb = Math.round((memInfo["MemTotal"] ?? 0) / 1024);
+    const ram_available_mb = Math.round((memInfo["MemAvailable"] ?? 0) / 1024);
+    const disks: CachedSysMetrics["disks"] = [];
+    const dfR = spawnSync("df", ["-h", "/", "/mnt/data"], { encoding: "utf-8", timeout: 5000 });
+    for (const line of (dfR.stdout ?? "").split("\n").slice(1)) {
+      if (!line.trim()) continue;
+      const parts = line.trim().split(/\s+/);
+      if (parts.length < 6) continue;
+      const [, total, used, , pctStr, path] = parts;
+      disks.push({ path, used, total, pct: parseInt(pctStr, 10) || 0 });
+    }
+    let rx_bytes = 0, tx_bytes = 0;
+    for (const line of readFileSync("/proc/net/dev", "utf-8").split("\n")) {
+      const t = line.trim();
+      if (t.startsWith("eth0:") || t.startsWith("ens3:") || t.startsWith("ens4:")) {
+        const parts = t.split(/\s+/);
+        rx_bytes = parseInt(parts[1], 10) || 0;
+        tx_bytes = parseInt(parts[9], 10) || 0;
+        break;
+      }
+    }
+    cachedSysMetrics = { ram_total_mb, ram_used_mb: ram_total_mb - ram_available_mb, ram_free_mb: Math.round((memInfo["MemFree"] ?? 0) / 1024), disks, net: { rx_bytes, tx_bytes } };
+  } catch { /* keep stale cache */ }
+}
+refreshSysMetrics();
+setInterval(refreshSysMetrics, 5000);
 
-// ── Cockpit: GET /api/cockpit/containers ──────────────────────────────────────
-function restCockpitContainers(res: http.ServerResponse): void {
-  const r = spawnSync("docker", ["ps", "-a", "--format", "{{json .}}"], {
-    encoding: "utf-8",
-    timeout: 10000,
-  });
-  if (r.error) {
-    jsonResponse(res, { error: String(r.error) }, 500);
-    return;
-  }
-  const containers: { id: string; name: string; image: string; status: string; state: string }[] = [];
+// Containers — cached every 60 s (docker ps is slow; containers rarely change)
+interface CachedContainer { id: string; name: string; image: string; status: string; state: string }
+let cachedContainers: CachedContainer[] | null = null;
+let cachedContainersError: string | null = null;
+function refreshContainers(): void {
+  const r = spawnSync("docker", ["ps", "-a", "--format", "{{json .}}"], { encoding: "utf-8", timeout: 10000 });
+  if (r.error) { cachedContainersError = String(r.error); return; }
+  cachedContainersError = null;
+  const containers: CachedContainer[] = [];
   for (const line of (r.stdout ?? "").split("\n")) {
     if (!line.trim()) continue;
     try {
       const obj = JSON.parse(line) as Record<string, string>;
-      containers.push({
-        id: obj["ID"] ?? obj["Id"] ?? "",
-        name: obj["Names"] ?? obj["Name"] ?? "",
-        image: obj["Image"] ?? "",
-        status: obj["Status"] ?? "",
-        state: obj["State"] ?? "",
-      });
-    } catch {
-      // skip malformed lines
-    }
+      containers.push({ id: obj["ID"] ?? obj["Id"] ?? "", name: obj["Names"] ?? obj["Name"] ?? "", image: obj["Image"] ?? "", status: obj["Status"] ?? "", state: obj["State"] ?? "" });
+    } catch { /* skip malformed lines */ }
   }
-  jsonResponse(res, containers);
+  cachedContainers = containers;
+}
+refreshContainers();
+setInterval(refreshContainers, 60000);
+
+// ── Cockpit: GET /api/cockpit/metrics ────────────────────────────────────────
+function restCockpitMetrics(res: http.ServerResponse): void {
+  const { ram_total_mb, ram_used_mb, ram_free_mb, disks, net } = cachedSysMetrics;
+  jsonResponse(res, { cpu_pct: cachedCpuPct, ram_total_mb, ram_used_mb, ram_free_mb, disks, net });
+}
+
+// ── Cockpit: GET /api/cockpit/containers ──────────────────────────────────────
+function restCockpitContainers(res: http.ServerResponse): void {
+  if (cachedContainersError !== null) {
+    jsonResponse(res, { error: cachedContainersError }, 500);
+    return;
+  }
+  jsonResponse(res, cachedContainers ?? []);
 }
 
 function restServeAgents(res: http.ServerResponse): void {

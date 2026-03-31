@@ -1,9 +1,9 @@
 [Unit]
-Description=Run Discord → Graphiti ingestion every 6 hours
+Description=Run Discord → Graphiti ingestion every hour
 
 [Timer]
-# Run every 6 hours
-OnCalendar=*-*-* 00,06,12,18:30:00
+# Run every hour — keeps Graphiti context fresh for heartbeat ideation
+OnCalendar=*-*-* *:30:00
 # Run once on boot if the timer was missed (e.g. during downtime)
 Persistent=true
 # Randomize start within 5 minutes to avoid thundering herd
