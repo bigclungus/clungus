@@ -33,7 +33,7 @@ for lab_path in sorted(glob.glob(os.path.join(LABS_DIR, "*/"))):
             if age_days >= STALE_DAYS:
                 findings.append(f"🧪 lab `{lab_name}`: no commits in {age_days}d (last: {last_commit.strftime('%Y-%m-%d')})")
     except Exception as e:
-        pass
+        findings.append(f"⚠️ lab `{lab_name}`: git check failed: {e}")
 
 # 2. Stale GitHub issues (open, no update in 14+ days)
 try:

@@ -18,6 +18,7 @@ SITES = [
     {"url": "https://labs.clung.us", "ok_codes": {200}},
     {"url": "https://terminal.clung.us", "ok_codes": {200, 302}},
     {"url": "https://temporal.clung.us", "ok_codes": {200, 302}},
+    {"url": "https://clung.us/cockpit", "ok_codes": {200, 302}},
 ]
 
 
