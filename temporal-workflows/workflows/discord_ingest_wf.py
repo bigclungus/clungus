@@ -22,6 +22,7 @@ class DiscordIngestWorkflow:
             run_discord_ingest,
             days,
             start_to_close_timeout=timedelta(hours=2),
+            heartbeat_timeout=timedelta(minutes=5),
             retry_policy=RetryPolicy(
                 maximum_attempts=2,
                 initial_interval=timedelta(minutes=5),

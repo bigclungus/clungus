@@ -218,6 +218,7 @@ async def _ingest_into_graphiti(groups: dict, openai_api_key: str) -> int:
     logger.info("Ingesting %d user-week groups...", total)
 
     for i, ((user_id, username, week_key), messages) in enumerate(groups.items(), 1):
+        activity.heartbeat(f"ingested {ingested} episodes, processing {i}/{total}: {username} {week_key}")
         episode_name = f"Discord {week_key} - {username}"
         episode_body = _build_episode_body(username, messages)
 

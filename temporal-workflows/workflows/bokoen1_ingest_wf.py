@@ -32,6 +32,7 @@ class Bokoen1IngestWorkflow:
             run_bokoen1_ingest,
             args=[params.download, params.download_limit, params.ingest_limit],
             start_to_close_timeout=timedelta(hours=4),
+            heartbeat_timeout=timedelta(minutes=5),
             retry_policy=RetryPolicy(
                 maximum_attempts=2,
                 initial_interval=timedelta(minutes=10),

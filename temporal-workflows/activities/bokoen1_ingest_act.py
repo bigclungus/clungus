@@ -242,6 +242,7 @@ async def _ingest_transcripts(limit: int = 0) -> int:
     failed_count = 0
 
     for i, (filepath, name) in enumerate(to_ingest):
+        activity.heartbeat(f"processed {i}/{len(to_ingest)}: {name}")
         logger.info("[%d/%d] Ingesting: %s", i + 1, len(to_ingest), name)
 
         try:
