@@ -2479,8 +2479,9 @@
           .filter(p => p.status === 'active' || p.status === 'eligible')
           .map(normalizeRosterEntry);
         // Also rebuild retiredPool from the snapshot for accurate lookups
+        // 'ineligible' was used transiently between 'active'/'severance' and 'eligible'/'meme' eras
         retiredPool = session.roster
-          .filter(p => p.status === 'severance' || p.status === 'meme')
+          .filter(p => p.status === 'severance' || p.status === 'meme' || p.status === 'ineligible')
           .map(normalizeRosterEntry);
         // Reset seats from the snapshot active personas
         for (let i = 0; i < SEAT_COUNT; i++) seats[i] = allActivePersonas[i] || null;
