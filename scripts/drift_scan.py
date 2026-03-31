@@ -7,7 +7,7 @@ import subprocess, json, os, datetime, glob
 
 LABS_DIR = "/mnt/data/labs"
 STALE_DAYS = 14
-now = datetime.datetime.utcnow()
+now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
 
 findings = []
 
@@ -28,7 +28,7 @@ for lab_path in sorted(glob.glob(os.path.join(LABS_DIR, "*/"))):
             )
         if result.stdout.strip():
             last_commit_ts = int(result.stdout.strip())
-            last_commit = datetime.datetime.utcfromtimestamp(last_commit_ts)
+            last_commit = datetime.datetime.fromtimestamp(last_commit_ts, datetime.timezone.utc).replace(tzinfo=None)
             age_days = (now - last_commit).days
             if age_days >= STALE_DAYS:
                 findings.append(f"🧪 lab `{lab_name}`: no commits in {age_days}d (last: {last_commit.strftime('%Y-%m-%d')})")
