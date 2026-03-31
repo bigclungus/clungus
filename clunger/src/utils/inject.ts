@@ -8,6 +8,7 @@ export async function injectDiscord(content: string, chatId = MAIN_CHANNEL, user
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ content, chat_id: chatId, user }),
+    signal: AbortSignal.timeout(10_000),
   })
   if (!resp.ok) {
     throw new Error(`injectDiscord failed: HTTP ${resp.status.toString()}`)

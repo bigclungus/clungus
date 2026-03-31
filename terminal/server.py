@@ -2613,17 +2613,20 @@ app.router.add_post('/edit-claude-md', edit_claude_md_post)
 _JSONL_DIR = '/home/clungus/.claude/projects/-mnt-data'
 
 
-def _requester_from_jsonl(task_ctime: float) -> str:
-    """Scan session JSONLs for the most recent Discord message sent before task_ctime."""
+def _build_discord_event_index() -> list[tuple[float, str]]:
+    """Read the two most-recent session JSONLs and return a sorted list of (ts, user) pairs.
+
+    Called once per auto_meta_loop iteration so the expensive file reads happen
+    only once, not once per task file.
+    """
+    import bisect as _bisect
     jsonl_files = sorted(glob.glob(f'{_JSONL_DIR}/*.jsonl'), key=os.path.getmtime, reverse=True)
-    best_user, best_ts = '', 0.0
+    events: list[tuple[float, str]] = []
     for jsonl_path in jsonl_files[:2]:
         try:
             content = open(jsonl_path).read()
         except OSError:
             continue
-        # Discord channel tags are stored char-by-char in JSONL; in the raw file they
-        # appear with escaped quotes: user=\\"username\\" ... ts=\\"2026-...Z\\"
         for m in re.finditer(
             r'user=\\"([^\\"]+)\\"[^>]*ts=\\"(\d{4}-\d{2}-\d{2}T[\d:.]+Z)\\"',
             content
@@ -2632,44 +2635,71 @@ def _requester_from_jsonl(task_ctime: float) -> str:
                 ts = datetime.fromisoformat(m.group(2).replace('Z', '+00:00')).timestamp()
             except ValueError:
                 continue
-            if ts < task_ctime and ts > best_ts:
-                best_ts, best_user = ts, m.group(1)
-    return best_user
+            events.append((ts, m.group(1)))
+    events.sort(key=lambda x: x[0])
+    return events
+
+
+def _requester_from_index(events: list[tuple[float, str]], task_ctime: float) -> str:
+    """Given the pre-built event index, find the most recent Discord user before task_ctime."""
+    import bisect as _bisect
+    if not events:
+        return ''
+    # Find rightmost event with ts < task_ctime
+    idx = _bisect.bisect_left(events, (task_ctime,)) - 1
+    if idx < 0:
+        return ''
+    return events[idx][1]
+
+
+def _auto_meta_work() -> None:
+    """Synchronous body of _auto_meta_loop — runs in a thread via run_in_executor."""
+    # Build the Discord event index once for this entire pass.
+    events = _build_discord_event_index()
+
+    for task_dir in _all_task_dirs():
+        try:
+            entries = os.listdir(task_dir)
+        except OSError:
+            continue
+        for fname in entries:
+            if not fname.endswith('.output'):
+                continue
+            agent_id = fname[:-7]
+            meta_path = os.path.join(task_dir, agent_id + '.meta.json')
+            if os.path.exists(meta_path):
+                try:
+                    data = json.load(open(meta_path))
+                    if data.get('requester'):
+                        continue  # Already has a requester
+                except (OSError, json.JSONDecodeError):
+                    pass
+            try:
+                ctime = os.path.getctime(os.path.join(task_dir, fname))
+            except OSError:
+                continue
+            requester = _requester_from_index(events, ctime)
+            if not requester:
+                continue
+            existing_desc = ''
+            try:
+                existing_desc = json.load(open(meta_path)).get('description', '')
+            except (OSError, json.JSONDecodeError):
+                pass
+            try:
+                with open(meta_path, 'w') as f:
+                    json.dump({'description': existing_desc, 'requester': requester}, f)
+            except OSError:
+                pass
 
 
 async def _auto_meta_loop():
     """Background task: auto-create .meta.json for tasks that lack a requester."""
     await asyncio.sleep(10)  # Let the server start first
+    loop = asyncio.get_event_loop()
     while True:
         try:
-            for task_dir in _all_task_dirs():
-                try:
-                    entries = os.listdir(task_dir)
-                except OSError:
-                    continue
-                for fname in entries:
-                    if not fname.endswith('.output'):
-                        continue
-                    agent_id = fname[:-7]
-                    meta_path = os.path.join(task_dir, agent_id + '.meta.json')
-                    if os.path.exists(meta_path):
-                        try:
-                            data = json.load(open(meta_path))
-                            if data.get('requester'):
-                                continue  # Already has a requester
-                        except (OSError, json.JSONDecodeError):
-                            pass
-                    ctime = os.path.getctime(os.path.join(task_dir, fname))
-                    requester = _requester_from_jsonl(ctime)
-                    if not requester:
-                        continue
-                    existing_desc = ''
-                    try:
-                        existing_desc = json.load(open(meta_path)).get('description', '')
-                    except (OSError, json.JSONDecodeError):
-                        pass
-                    with open(meta_path, 'w') as f:
-                        json.dump({'description': existing_desc, 'requester': requester}, f)
+            await loop.run_in_executor(None, _auto_meta_work)
         except Exception as exc:
             print(f'[auto_meta] error: {exc}')
         await asyncio.sleep(30)

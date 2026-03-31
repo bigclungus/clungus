@@ -38,6 +38,7 @@ async function fetchEthBalance(address: string): Promise<string> {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body,
+    signal: AbortSignal.timeout(10_000),
   });
 
   if (!res.ok) {

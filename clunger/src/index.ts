@@ -2205,6 +2205,7 @@ async function notifySpriteTie(pollId: string): Promise<void> {
         chat_id: "1485343472952148008",
         user: "vote-system",
       }),
+      signal: AbortSignal.timeout(10_000),
     });
     if (!alertResp.ok) console.error("[vote] notifySpriteTie alert failed:", alertResp.status);
     // Spawn regen script directly — no Discord trigger parsing needed
@@ -2229,6 +2230,7 @@ async function notifySpriteTie(pollId: string): Promise<void> {
             chat_id: "1485343472952148008",
             user: "vote-system",
           }),
+          signal: AbortSignal.timeout(10_000),
         }).catch((e) => console.error("[vote] regen failure notify error:", e));
       } else {
         console.log(`[vote] regen-sprites done for ${persona}:\n${out}`);
@@ -2240,6 +2242,7 @@ async function notifySpriteTie(pollId: string): Promise<void> {
             chat_id: "1485343472952148008",
             user: "vote-system",
           }),
+          signal: AbortSignal.timeout(10_000),
         }).catch((e) => console.error("[vote] regen success notify error:", e));
       }
     });
@@ -2258,6 +2261,7 @@ async function notifyVoteWinner(pollId: string, option: string, count: number): 
         chat_id: "1485343472952148008",
         user: "vote-system",
       }),
+      signal: AbortSignal.timeout(10_000),
     });
     if (!resp.ok) console.error("[vote] notifyVoteWinner failed:", resp.status);
   } catch (e) {
@@ -2632,6 +2636,7 @@ async function handleInject(req: http.IncomingMessage, res: http.ServerResponse)
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(omniPayload),
+        signal: AbortSignal.timeout(10_000),
       });
       if (omniRes.ok) break;
       lastErr = `omni responded ${omniRes.status}`;
@@ -2695,6 +2700,7 @@ async function handleTemporalProxy(req: http.IncomingMessage, res: http.ServerRe
       headers: forwardHeaders,
       body: body.length > 0 ? body : undefined,
       redirect: "manual",
+      signal: AbortSignal.timeout(30_000),
     } as RequestInit);
 
     const respHeaders: Record<string, string> = {};
@@ -2864,6 +2870,7 @@ async function handleLabsRequest(req: http.IncomingMessage, res: http.ServerResp
       method: req.method ?? "GET",
       headers,
       body: reqBody,
+      signal: AbortSignal.timeout(30_000),
     });
 
     const contentType = upstream.headers.get("content-type") ?? "";

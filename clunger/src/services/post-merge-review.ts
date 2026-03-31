@@ -23,7 +23,7 @@ async function fetchCommitDiff(repo: string, sha: string): Promise<string> {
   if (token) headers["Authorization"] = `token ${token}`;
 
   const url = `https://api.github.com/repos/${repo}/commits/${sha}`;
-  const resp = await fetch(url, { headers });
+  const resp = await fetch(url, { headers, signal: AbortSignal.timeout(30_000) });
   if (!resp.ok) {
     throw new Error(`GitHub commits API returned ${resp.status} for ${repo}@${sha}`);
   }
@@ -50,6 +50,7 @@ async function postCommitComment(repo: string, sha: string, body: string): Promi
     method: "POST",
     headers,
     body: JSON.stringify({ body }),
+    signal: AbortSignal.timeout(30_000),
   });
   if (!resp.ok) {
     throw new Error(`GitHub commit comment API returned ${resp.status} for ${repo}@${sha}: ${await resp.text()}`);
