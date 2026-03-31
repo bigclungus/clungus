@@ -10,6 +10,8 @@ from typing import Any
 import aiohttp
 from temporalio import activity
 
+from .inject_act import _do_inject
+
 SITES = [
     {"url": "https://clung.us", "ok_codes": {200}},
     {"url": "https://labs.clung.us", "ok_codes": {200}},
@@ -61,18 +63,6 @@ async def check_sites() -> dict[str, Any]:
 @activity.defn
 async def send_alert(message: str) -> str:
     """Send an alert message via the omni inject endpoint so it arrives as a BigClungus message."""
-    inject_url = "http://127.0.0.1:8085/webhooks/bigclungus-main"
-    timeout = aiohttp.ClientTimeout(total=10)
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                inject_url,
-                json={"content": message, "user": "healthcheck"},
-                timeout=timeout,
-            ) as resp:
-                if resp.status not in (200, 201, 204):
-                    body = await resp.text()
-                    raise RuntimeError(f"Omni inject error {resp.status}: {body}")
-                return "injected"
-    except aiohttp.ClientConnectionError as e:
-        raise RuntimeError(f"Omni inject endpoint unreachable: {e}") from e
+    from .constants import MAIN_CHANNEL_ID
+    await _do_inject(message, MAIN_CHANNEL_ID, user="healthcheck")
+    return "injected"

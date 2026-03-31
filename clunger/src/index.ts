@@ -100,22 +100,31 @@ function isSafeRedirect(url: string): boolean {
   }
 }
 
-const MAX_BODY_BYTES = 1 * 1024 * 1024; // 1MB limit
+const MAX_BODY_BYTES = 1 * 1024 * 1024;
 
 async function readBody(req: http.IncomingMessage): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
     let total = 0;
+    let tooLarge = false;
     req.on("data", (c: Buffer) => {
       total += c.length;
       if (total > MAX_BODY_BYTES) {
-        req.destroy();
-        reject(new Error(`Request body too large (>${MAX_BODY_BYTES} bytes)`));
+        tooLarge = true;
+        // Drain remaining data without storing; let the stream finish cleanly
         return;
       }
       chunks.push(c);
     });
-    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("end", () => {
+      if (tooLarge) {
+        const err = new Error(`Request body too large (>${MAX_BODY_BYTES} bytes)`) as NodeJS.ErrnoException;
+        err.code = "BODY_TOO_LARGE";
+        reject(err);
+        return;
+      }
+      resolve(Buffer.concat(chunks));
+    });
     req.on("error", reject);
   });
 }
@@ -260,10 +269,18 @@ async function handleGithubWebhook(
   req: http.IncomingMessage,
   res: http.ServerResponse
 ): Promise<void> {
-  // 1. Read body
-  const body = await readBody(req);
+  let body: Buffer;
+  try {
+    body = await readBody(req);
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "BODY_TOO_LARGE") {
+      res.writeHead(413, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "request body too large" }));
+      return;
+    }
+    throw e;
+  }
 
-  // 2. Verify HMAC-SHA256 signature
   const secret = process.env.GITHUB_WEBHOOK_SECRET ?? "";
   const sigHeader = (req.headers["x-hub-signature-256"] as string) ?? "";
   const expected =
@@ -525,7 +542,8 @@ async function restHandleDiscordPersona(req: http.IncomingMessage, res: http.Ser
     const body = await readBody(req);
     data = body.length ? (JSON.parse(body.toString("utf-8")) as Record<string, unknown>) : {};
   } catch (e) {
-    jsonResponse(res, { error: `Invalid JSON: ${e}` }, 400);
+    const status = (e as NodeJS.ErrnoException).code === "BODY_TOO_LARGE" ? 413 : 400;
+    jsonResponse(res, { error: status === 413 ? "request body too large" : `Invalid JSON: ${e}` }, status);
     return;
   }
   const identity = String(data.identity ?? "").trim();
@@ -600,7 +618,8 @@ async function restInvokePersona(req: http.IncomingMessage, res: http.ServerResp
     const body = await readBody(req);
     data = body.length ? (JSON.parse(body.toString("utf-8")) as Record<string, unknown>) : {};
   } catch (e) {
-    jsonResponse(res, { error: `Invalid JSON: ${e}` }, 400);
+    const status = (e as NodeJS.ErrnoException).code === "BODY_TOO_LARGE" ? 413 : 400;
+    jsonResponse(res, { error: status === 413 ? "request body too large" : `Invalid JSON: ${e}` }, status);
     return;
   }
   const name = String(data.name ?? "").trim();
@@ -1340,7 +1359,8 @@ async function restPatchCongressSession(
   try {
     updates = body.length ? (JSON.parse(body.toString("utf-8")) as Record<string, unknown>) : {};
   } catch (e) {
-    jsonResponse(res, { error: `Invalid JSON: ${e}` }, 400);
+    const status = (e as NodeJS.ErrnoException).code === "BODY_TOO_LARGE" ? 413 : 400;
+    jsonResponse(res, { error: status === 413 ? "request body too large" : `Invalid JSON: ${e}` }, status);
     return;
   }
   const ALLOWED = new Set(["verdict", "status", "finished_at", "evolution", "thread_id", "task_titles", "vote_summary", "mode", "requires_ack", "defendant", "charges", "flavor"]);
@@ -1454,7 +1474,8 @@ async function restPostCongressTrackingRecord(
     const body = await readBody(req);
     data = body.length ? (JSON.parse(body.toString("utf-8")) as Record<string, unknown>) : {};
   } catch (e) {
-    jsonResponse(res, { error: `Invalid JSON: ${e}` }, 400);
+    const status = (e as NodeJS.ErrnoException).code === "BODY_TOO_LARGE" ? 413 : 400;
+    jsonResponse(res, { error: status === 413 ? "request body too large" : `Invalid JSON: ${e}` }, status);
     return;
   }
 
@@ -1508,7 +1529,8 @@ async function restPatchCongressTracking(
     const body = await readBody(req);
     data = body.length ? (JSON.parse(body.toString("utf-8")) as Record<string, unknown>) : {};
   } catch (e) {
-    jsonResponse(res, { error: `Invalid JSON: ${e}` }, 400);
+    const status = (e as NodeJS.ErrnoException).code === "BODY_TOO_LARGE" ? 413 : 400;
+    jsonResponse(res, { error: status === 413 ? "request body too large" : `Invalid JSON: ${e}` }, status);
     return;
   }
 
@@ -1570,7 +1592,8 @@ async function restPostCongress(req: http.IncomingMessage, res: http.ServerRespo
     const body = await readBody(req);
     data = body.length ? (JSON.parse(body.toString("utf-8")) as Record<string, unknown>) : {};
   } catch (e) {
-    jsonResponse(res, { error: `Invalid JSON: ${e}` }, 400);
+    const status = (e as NodeJS.ErrnoException).code === "BODY_TOO_LARGE" ? 413 : 400;
+    jsonResponse(res, { error: status === 413 ? "request body too large" : `Invalid JSON: ${e}` }, status);
     return;
   }
   try {

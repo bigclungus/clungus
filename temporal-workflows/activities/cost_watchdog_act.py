@@ -89,7 +89,8 @@ async def run_cost_watchdog() -> str:
     state = _load_state()
     delta = _calc_incremental_cost(state)
     state["total"] = state.get("total", 0.0) + delta
-    _save_state(state)
+    if delta > 0:
+        _save_state(state)
 
     cost = state["total"]
     msg = f"Session cost: ${cost:.2f} (limit: ${LIMIT_USD:.2f}, +${delta:.2f} this run)"

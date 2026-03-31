@@ -20,6 +20,9 @@ from datetime import datetime
 
 from temporalio import activity
 
+from .constants import DISCORD_API
+from .utils import get_openai_key, get_discord_token
+
 # ---- Constants ---------------------------------------------------------------
 
 DB_PATH = "/mnt/data/data/discord-history.db"
@@ -36,29 +39,6 @@ _UPSERT_STATE = (
     "INSERT INTO ingest_state (filepath, byte_offset, last_size) VALUES (?, ?, ?) "
     "ON CONFLICT(filepath) DO UPDATE SET byte_offset=excluded.byte_offset, last_size=excluded.last_size"
 )
-
-
-def _get_openai_key() -> str:
-    key = os.environ.get("OPENAI_API_KEY")
-    if key:
-        return key
-    env_paths = [
-        "/mnt/data/temporal-workflows/.env",
-        "/mnt/data/.env",
-        os.path.expanduser("~/.claude/channels/discord/.env"),
-    ]
-    for path in env_paths:
-        try:
-            with open(path) as f:
-                for line in f:
-                    if line.startswith("OPENAI_API_KEY="):
-                        return line.split("=", 1)[1].strip()
-        except FileNotFoundError:
-            continue
-    raise RuntimeError(
-        "OPENAI_API_KEY not found in environment or any .env file\n"
-        f"Checked: {env_paths}"
-    )
 
 
 # ---- Database ----------------------------------------------------------------
@@ -256,16 +236,6 @@ def extract_messages_from_jsonl(filepath: str, start_offset: int) -> tuple[list[
 
 # ---- Attachment description --------------------------------------------------
 
-def _get_discord_token() -> str:
-    env_path = os.path.expanduser("~/.claude/channels/discord/.env")
-    try:
-        with open(env_path) as f:
-            for line in f:
-                if line.startswith("DISCORD_BOT_TOKEN="):
-                    return line.split("=", 1)[1].strip()
-    except FileNotFoundError:
-        pass
-    raise RuntimeError(f"DISCORD_BOT_TOKEN not found in {env_path}")
 
 
 def _parse_attachment_meta(meta: str) -> list[dict]:
@@ -287,7 +257,7 @@ def _parse_attachment_meta(meta: str) -> list[dict]:
 
 
 def _fetch_attachment_urls(channel_id: str, message_id: str, token: str) -> list[dict]:
-    url = f"https://discord.com/api/v10/channels/{channel_id}/messages/{message_id}"
+    url = f"{DISCORD_API}/channels/{channel_id}/messages/{message_id}"
     req = urllib.request.Request(
         url,
         headers={
@@ -397,14 +367,14 @@ def embed_batch(client, texts: list[str]) -> list[list[float]]:
 def _run_history_ingest_sync() -> str:
     import sqlite_vec
 
-    api_key = _get_openai_key()
+    api_key = get_openai_key()
     from openai import OpenAI
     client = OpenAI(api_key=api_key)
     conn = open_db()
 
     discord_token = None
     try:
-        discord_token = _get_discord_token()
+        discord_token = get_discord_token()
     except RuntimeError as e:
         activity.logger.warning("%s - attachment descriptions disabled", e)
 

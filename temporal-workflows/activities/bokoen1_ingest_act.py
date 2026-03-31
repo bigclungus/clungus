@@ -16,33 +16,14 @@ from pathlib import Path
 
 from temporalio import activity
 
+from .utils import get_openai_key
+
 logger = logging.getLogger(__name__)
 
 TRANSCRIPTS_DIR = Path("/mnt/data/data/bokoen1-transcripts")
 STATUS_FILE = Path("/mnt/data/data/bokoen1-ingestion-status.json")
 DATABASE_NAME = "bokoen1_transcripts"
-GROUP_ID = "bokoen1_transcripts"
 YT_DLP = os.path.expanduser("~/.local/bin/yt-dlp")
-
-
-def _get_openai_key() -> str:
-    key = os.environ.get("OPENAI_API_KEY")
-    if key:
-        return key
-    env_paths = [
-        "/mnt/data/temporal-workflows/.env",
-        "/mnt/data/.env",
-        os.path.expanduser("~/.claude/channels/discord/.env"),
-    ]
-    for path in env_paths:
-        try:
-            with open(path) as f:
-                for line in f:
-                    if line.startswith("OPENAI_API_KEY="):
-                        return line.split("=", 1)[1].strip()
-        except FileNotFoundError:
-            continue
-    raise RuntimeError("OPENAI_API_KEY not found in environment or any .env file")
 
 
 def _load_status() -> dict:
@@ -188,7 +169,7 @@ async def _ingest_transcripts(limit: int = 0) -> int:
     from graphiti_core.embedder.openai import OpenAIEmbedderConfig
     from graphiti_core.nodes import EpisodeType
 
-    api_key = _get_openai_key()
+    api_key = get_openai_key()
 
     ingested_names = _get_ingested_episode_names()
     logger.info("Already ingested: %d episodes", len(ingested_names))
@@ -259,17 +240,12 @@ async def _ingest_transcripts(limit: int = 0) -> int:
                 episode_body=content,
                 source=EpisodeType.text,
                 source_description="Bokoen1 YouTube HoI4 MP In A Nutshell transcript",
-                group_id=GROUP_ID,
+                group_id=DATABASE_NAME,
                 reference_time=datetime.now(timezone.utc),
             )
 
             ingested_count += 1
             logger.info("  Done (%d total)", ingested_count)
-
-            # Update status periodically
-            if ingested_count % 10 == 0:
-                status["ingested"] = status.get("ingested", 0) + 10
-                _save_status(status)
 
         except Exception as e:
             failed_count += 1
@@ -283,10 +259,9 @@ async def _ingest_transcripts(limit: int = 0) -> int:
     await client.close()
 
     # Update final status
-    total_ingested = status.get("ingested", 0) + ingested_count
     status.update({
         "status": "done" if failed_count == 0 else "partial",
-        "ingested": total_ingested,
+        "ingested": ingested_count,
         "failed": failed_count,
         "finished_at": datetime.now(timezone.utc).isoformat(),
     })

@@ -5,7 +5,6 @@ Fetches recent messages from the Discord channel and ingests new user-week
 episodes into the Graphiti knowledge graph. Handles OpenAI rate limits with
 backoff between episodes.
 """
-import asyncio
 import json
 import logging
 import os
@@ -17,51 +16,17 @@ import requests
 
 from temporalio import activity
 
+from .constants import MAIN_MAIN_CHANNEL_ID, DISCORD_API
+from .utils import get_discord_token, get_openai_key
+
 logger = logging.getLogger(__name__)
 
-CHANNEL_ID = "1485343472952148008"
 GROUP_ID = "discord_history"
-DISCORD_API_BASE = "https://discord.com/api/v10"
 DEFAULT_DAYS = 7
 
 
-def _get_discord_token() -> str:
-    env_file = "/home/clungus/.claude/channels/discord/.env"
-    env_vars: dict[str, str] = {}
-    if os.path.exists(env_file):
-        for line in open(env_file):
-            line = line.strip()
-            if "=" in line and not line.startswith("#"):
-                k, v = line.split("=", 1)
-                env_vars[k.strip()] = v.strip()
-    token = os.environ.get("DISCORD_BOT_TOKEN") or env_vars.get("DISCORD_BOT_TOKEN", "")
-    if not token:
-        raise RuntimeError("DISCORD_BOT_TOKEN not available")
-    return token
-
-
-def _get_openai_key() -> str:
-    key = os.environ.get("OPENAI_API_KEY")
-    if key:
-        return key
-    env_paths = [
-        "/mnt/data/temporal-workflows/.env",
-        "/mnt/data/.env",
-        os.path.expanduser("~/.claude/channels/discord/.env"),
-    ]
-    for path in env_paths:
-        try:
-            with open(path) as f:
-                for line in f:
-                    if line.startswith("OPENAI_API_KEY="):
-                        return line.split("=", 1)[1].strip()
-        except FileNotFoundError:
-            continue
-    raise RuntimeError("OPENAI_API_KEY not found in environment or any .env file")
-
-
 def _fetch_messages_page(headers: dict, before: str | None = None, limit: int = 100) -> list:
-    url = f"{DISCORD_API_BASE}/channels/{CHANNEL_ID}/messages"
+    url = f"{DISCORD_API}/channels/{MAIN_CHANNEL_ID}/messages"
     params: dict = {"limit": limit}
     if before:
         params["before"] = before
@@ -78,7 +43,7 @@ def _fetch_messages_page(headers: dict, before: str | None = None, limit: int = 
             logger.error("Discord API error %s: %s", resp.status_code, resp.text)
             resp.raise_for_status()
         return resp.json()
-    raise RuntimeError(f"Discord API rate-limited after {max_retries} retries for channel {CHANNEL_ID}")
+    raise RuntimeError(f"Discord API rate-limited after {max_retries} retries for channel {MAIN_CHANNEL_ID}")
 
 
 def _fetch_recent_messages(token: str, cutoff: datetime) -> list:
@@ -246,7 +211,7 @@ async def _ingest_into_graphiti(groups: dict, openai_api_key: str) -> int:
                 episode_body=full_body,
                 group_id=GROUP_ID,
                 source=EpisodeType.text,
-                source_description=f"Discord channel {CHANNEL_ID} messages",
+                source_description=f"Discord channel {MAIN_CHANNEL_ID} messages",
                 reference_time=first_ts,
             )
             ingested += 1
@@ -270,14 +235,12 @@ async def _ingest_into_graphiti(groups: dict, openai_api_key: str) -> int:
                         episode_body=entity_body,
                         group_id=GROUP_ID,
                         source=EpisodeType.text,
-                        source_description=f"Entity extraction from Discord channel {CHANNEL_ID}",
+                        source_description=f"Entity extraction from Discord channel {MAIN_CHANNEL_ID}",
                         reference_time=first_ts,
                     )
                     logger.info("[%d/%d] Entity extraction: %d entities for %s", i, total, len(entities), username)
         except Exception as e:
             logger.warning("[%d/%d] Entity extraction pass failed for %s: %s", i, total, username, e)
-
-        await asyncio.sleep(3)
 
     await graphiti.close()
     return ingested
@@ -286,8 +249,8 @@ async def _ingest_into_graphiti(groups: dict, openai_api_key: str) -> int:
 @activity.defn
 async def run_discord_ingest(days: int = DEFAULT_DAYS) -> str:
     """Fetch recent Discord messages and ingest new episodes into Graphiti."""
-    token = _get_discord_token()
-    openai_api_key = _get_openai_key()
+    token = get_discord_token()
+    openai_api_key = get_openai_key()
 
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
     logger.info("=== Discord Ingest: last %d days (cutoff %s) ===", days, cutoff.isoformat())

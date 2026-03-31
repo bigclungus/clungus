@@ -15,9 +15,7 @@ from pathlib import Path
 from temporalio import activity
 
 from .inject_act import _do_inject
-from .constants import MAIN_CHANNEL_ID
-
-AGENTS_DIR = "/home/clungus/work/bigclungus-meta/agents"
+from .constants import MAIN_CHANNEL_ID, AGENTS_DIR
 POLLS_DIR = "/mnt/data/hello-world/polls"
 AVATARS_DIR = "/mnt/data/hello-world/static/avatars"
 SPRITES_DIR = "/mnt/data/hello-world"
