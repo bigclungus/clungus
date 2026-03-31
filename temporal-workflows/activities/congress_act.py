@@ -13,6 +13,7 @@ import hashlib
 import json
 import logging
 import os
+import random
 import re
 import subprocess
 import sys
@@ -1077,6 +1078,67 @@ async def congress_select_seats(topic: str, debaters: list, session_id: str) -> 
         if len(selected) < 3:
             activity.logger.warning("congress_select_seats: too few matches (minimum is 3), using full roster")
             return debaters
+
+        # --- Provider diversity enforcement ---
+        # For each non-Anthropic provider (grok, gemini) that has at least one
+        # eligible persona in the *full* debaters pool, guarantee at least one seat.
+        # If the LLM already picked one, nothing changes. If not, swap in a random
+        # representative from the full pool at the cost of the last Claude seat(s).
+        #
+        # Edge case: if seats < number of underrepresented providers, fill as many
+        # provider slots as seats allow (non-Anthropic first).
+
+        # Build per-provider pools from the full eligible roster
+        provider_pools: dict[str, list] = {}
+        for d in debaters:
+            provider = _classify_model(d.get("model") or "")
+            if provider != "claude":
+                provider_pools.setdefault(provider, []).append(d)
+
+        # Determine which non-Anthropic providers are missing from the current selection
+        selected_names_set = {d.get("name") for d in selected}
+        missing_providers: list[tuple[str, list]] = []
+        for provider, pool in provider_pools.items():
+            pool_names = {d.get("name") for d in pool}
+            if not pool_names & selected_names_set:
+                missing_providers.append((provider, pool))
+
+        if missing_providers:
+            activity.logger.info(
+                f"congress_select_seats: enforcing provider diversity — "
+                f"missing providers: {[p for p, _ in missing_providers]}"
+            )
+            # Work on a mutable copy; trim Claude seats from the tail to make room
+            enforced = list(selected)
+            for provider, pool in missing_providers:
+                if not enforced:
+                    break
+                # Pick a random representative from this provider's pool
+                representative = random.choice(pool)
+                rep_name = representative.get("name")
+                if rep_name in {d.get("name") for d in enforced}:
+                    # Already seated (shouldn't happen, but guard it)
+                    continue
+                # Remove the last Claude-model seat to make room
+                removed = False
+                for i in range(len(enforced) - 1, -1, -1):
+                    if _classify_model(enforced[i].get("model") or "") == "claude":
+                        enforced.pop(i)
+                        removed = True
+                        break
+                if not removed:
+                    # No Claude seat to evict — stop trying to enforce further
+                    activity.logger.warning(
+                        f"congress_select_seats: no Claude seat available to evict for provider '{provider}'; skipping"
+                    )
+                    break
+                enforced.append(representative)
+                activity.logger.info(
+                    f"congress_select_seats: seated {rep_name} to represent provider '{provider}'"
+                )
+
+            selected = enforced
+
         return selected
     except Exception as e:
         activity.logger.warning(f"congress_select_seats failed ({e}), using full roster")
