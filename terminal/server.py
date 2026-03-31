@@ -1321,23 +1321,29 @@ async def giga_websocket_handler(request):
                     async for msg in server_ws:
                         if client_ws.closed:
                             break
-                        if msg.type == 0x2:  # WSMsgType.BINARY
-                            await client_ws.send_bytes(msg.data)
-                        elif msg.type == 0x1:  # WSMsgType.TEXT
-                            await client_ws.send_str(msg.data)
-                        else:
-                            break
+                        try:
+                            if msg.type == 0x2:  # WSMsgType.BINARY
+                                await client_ws.send_bytes(msg.data)
+                            elif msg.type == 0x1:  # WSMsgType.TEXT
+                                await client_ws.send_str(msg.data)
+                            else:
+                                break
+                        except (ConnectionResetError, aiohttp.ClientConnectionResetError, aiohttp.ServerConnectionError):
+                            break  # client disconnected
 
                 async def relay_to_server():
                     async for msg in client_ws:
                         if server_ws.closed:
                             break
-                        if msg.type == 0x2:
-                            await server_ws.send_bytes(msg.data)
-                        elif msg.type == 0x1:
-                            await server_ws.send_str(msg.data)
-                        else:
-                            break
+                        try:
+                            if msg.type == 0x2:
+                                await server_ws.send_bytes(msg.data)
+                            elif msg.type == 0x1:
+                                await server_ws.send_str(msg.data)
+                            else:
+                                break
+                        except (ConnectionResetError, aiohttp.ClientConnectionResetError, aiohttp.ServerConnectionError):
+                            break  # server disconnected
 
                 done, pending = await asyncio.wait(
                     [asyncio.ensure_future(relay_to_client()),
@@ -1384,7 +1390,10 @@ async def websocket_handler(request):
             f.seek(max(0, size - MAX_INITIAL_BYTES))
             existing = f.read()
         if existing:
-            await ws.send_bytes(existing)
+            try:
+                await ws.send_bytes(existing)
+            except (ConnectionResetError, aiohttp.ClientConnectionResetError, aiohttp.ServerConnectionError):
+                return ws  # client already gone
     except FileNotFoundError:
         pass
 
@@ -1394,7 +1403,10 @@ async def websocket_handler(request):
         while not ws.closed:
             chunk = f.read(4096)
             if chunk:
-                await ws.send_bytes(chunk)
+                try:
+                    await ws.send_bytes(chunk)
+                except (ConnectionResetError, aiohttp.ClientConnectionResetError, aiohttp.ServerConnectionError):
+                    break  # client disconnected, stop sending
             else:
                 await asyncio.sleep(0.05)
 

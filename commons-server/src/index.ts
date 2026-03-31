@@ -180,7 +180,13 @@ setInterval(() => {
 
 function sendToLobby(lobbyId: string, msg: DungeonServerMessage): void {
   for (const [_sid, sock] of dungeonSockets) {
-    if (sock.data.lobbyId === lobbyId) sock.send(JSON.stringify(msg));
+    if (sock.data.lobbyId === lobbyId) {
+      try {
+        sock.send(JSON.stringify(msg));
+      } catch (err: unknown) {
+        console.error(`[dungeon] Failed to send to lobby ${lobbyId}:`, err);
+      }
+    }
   }
 }
 
@@ -229,7 +235,14 @@ function handleDungeonStart(lobbyId: string, userId: string, skipGen: boolean): 
 function makeSendToPlayer(): (targetId: string, serverMsg: DungeonServerMessage) => void {
   return (targetId: string, serverMsg: DungeonServerMessage): void => {
     for (const [_sid, sock] of dungeonSockets) {
-      if (sock.data.userId === targetId) { sock.send(JSON.stringify(serverMsg)); break; }
+      if (sock.data.userId === targetId) {
+        try {
+          sock.send(JSON.stringify(serverMsg));
+        } catch (err: unknown) {
+          console.error(`[dungeon] Failed to send to player ${targetId}:`, err);
+        }
+        break;
+      }
     }
   };
 }
