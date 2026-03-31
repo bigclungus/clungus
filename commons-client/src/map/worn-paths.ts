@@ -25,8 +25,14 @@ function loadStore(): WornStore {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object' && typeof parsed.counts === 'object' && parsed.counts !== null) {
+      const parsed: unknown = JSON.parse(raw);
+      if (
+        parsed !== null &&
+        typeof parsed === 'object' &&
+        'counts' in parsed &&
+        typeof (parsed as WornStore).counts === 'object' &&
+        (parsed as WornStore).counts !== null
+      ) {
         return parsed as WornStore;
       }
     }
@@ -36,7 +42,7 @@ function loadStore(): WornStore {
   return { counts: {} };
 }
 
-let store: WornStore = loadStore();
+const store: WornStore = loadStore();
 
 function saveStore(): void {
   try {

@@ -15,7 +15,7 @@ export function drawFountainAnimation(
   ctx: CanvasRenderingContext2D,
   map: Uint8Array[] | null,
   frame: number,
-  fountainWaterColor: string
+  _fountainWaterColor: string
 ): void {
   if (!map) return;
 

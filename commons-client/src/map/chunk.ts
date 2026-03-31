@@ -29,54 +29,38 @@ function seededRand(seed: number): () => number {
   };
 }
 
+function fillRect00(m: Uint8Array[], rMin: number, rMax: number, cMin: number, cMax: number, tile: number): void {
+  for (let r = rMin; r <= rMax; r++) {
+    for (let c = cMin; c <= cMax; c++) {
+      if (r < ROWS && c < COLS) m[r][c] = tile;
+    }
+  }
+}
+
+function placeSprites00(m: Uint8Array[], positions: [number, number][], tile: number): void {
+  for (const [r, c] of positions) {
+    if (r < ROWS && c < COLS) m[r][c] = tile;
+  }
+}
+
+function addPaths00(m: Uint8Array[]): void {
+  for (let c = 0; c < COLS; c++) { m[17][c] = TILE_PATH; m[18][c] = TILE_PATH; }
+  for (let r = 0; r < ROWS; r++) { m[r][24] = TILE_PATH; m[r][25] = TILE_PATH; }
+  m[7][43] = TILE_PATH;
+}
+
 // Hand-crafted chunk (0,0) — matches V1 grazing.html buildChunk00 exactly
 function generateChunk00(): Uint8Array[] {
   const m: Uint8Array[] = [];
   for (let r = 0; r < ROWS; r++) m.push(new Uint8Array(COLS));
 
-  // Horizontal path across middle (rows 17-18)
-  for (let c = 0; c < COLS; c++) {
-    m[17][c] = TILE_PATH;
-    m[18][c] = TILE_PATH;
-  }
-  // Vertical path down center (cols 24-25)
-  for (let r = 0; r < ROWS; r++) {
-    m[r][24] = TILE_PATH;
-    m[r][25] = TILE_PATH;
-  }
+  addPaths00(m);
+  fillRect00(m, 22, 27, 4, 10, TILE_WATER);
+  fillRect00(m, 2, 6, 2, 8, TILE_BUILDING);
+  fillRect00(m, 2, 6, 40, 47, TILE_BUILDING);
+  fillRect00(m, 26, 31, 38, 46, TILE_BUILDING);
 
-  // Pond bottom-left area (rows 22-27, cols 4-10)
-  for (let r = 22; r <= 27; r++) {
-    for (let c = 4; c <= 10; c++) {
-      m[r][c] = TILE_WATER;
-    }
-  }
-
-  // Congress building top-left (rows 2-6, cols 2-8)
-  for (let r = 2; r <= 6; r++) {
-    for (let c = 2; c <= 8; c++) {
-      m[r][c] = TILE_BUILDING;
-    }
-  }
-
-  // Building top-right (rows 2-6, cols 40-47) — dungeon entrance
-  for (let r = 2; r <= 6; r++) {
-    for (let c = 40; c <= 47; c++) {
-      if (c < COLS) m[r][c] = TILE_BUILDING;
-    }
-  }
-  // Dungeon doorway path approach: row 7, col 43
-  m[7][43] = TILE_PATH;
-
-  // Building bottom-right (rows 26-31, cols 38-46)
-  for (let r = 26; r <= 31; r++) {
-    for (let c = 38; c <= 46; c++) {
-      if (r < ROWS && c < COLS) m[r][c] = TILE_BUILDING;
-    }
-  }
-
-  // Trees scattered (matching V1 exactly)
-  const trees: [number, number][] = [
+  placeSprites00(m, [
     [1,1],[1,12],[1,35],[1,48],
     [8,3],[8,14],[8,38],[8,47],
     [10,10],[10,30],[10,45],
@@ -87,49 +71,27 @@ function generateChunk00(): Uint8Array[] {
     [32,8],[32,30],[32,46],
     [33,1],[33,48],
     [34,14],[34,35],
-  ];
-  for (const [tr, tc] of trees) {
-    if (tr < ROWS && tc < COLS) m[tr][tc] = TILE_TREE;
-  }
+  ], TILE_TREE);
 
-  // Rocks (matching V1 exactly)
-  const rocks: [number, number][] = [
+  placeSprites00(m, [
     [9,22],[11,40],[15,12],[16,32],[21,27],[25,14],[29,35],[31,12],[33,40],
-  ];
-  for (const [rr, rc] of rocks) {
-    if (rr < ROWS && rc < COLS) m[rr][rc] = TILE_ROCK;
-  }
+  ], TILE_ROCK);
 
-  // Fountain — 3×3 near path intersection (rows 13-15, cols 19-21)
-  for (let r = 13; r <= 15; r++) {
-    for (let c = 19; c <= 21; c++) {
-      m[r][c] = TILE_FOUNTAIN;
-    }
-  }
+  fillRect00(m, 13, 15, 19, 21, TILE_FOUNTAIN);
 
   return m;
 }
 
-// Procedural chunk generation — matches grazing.html generateChunk exactly
-export function generateChunk(cx: number, cy: number): Uint8Array[] {
-  if (cx === 0 && cy === 0) return generateChunk00();
-
-  const m: Uint8Array[] = [];
-  for (let r = 0; r < ROWS; r++) m.push(new Uint8Array(COLS));
-
-  const rng = seededRand(chunkSeed(cx, cy));
-
-  // Scatter trees (~10%) — keep 2-tile border clear
+function scatterTrees(m: Uint8Array[], rng: () => number): void {
   for (let r = 2; r < ROWS - 2; r++) {
     for (let c = 2; c < COLS - 2; c++) {
-      // Keep center 20x12 area mostly clear for NPCs
       const inCenter = (c >= 15 && c <= 35 && r >= 12 && r <= 23);
-      if (inCenter) continue;
-      if (rng() < 0.10) m[r][c] = TILE_TREE;
+      if (!inCenter && rng() < 0.10) m[r][c] = TILE_TREE;
     }
   }
+}
 
-  // Scatter water clusters (~5%)
+function scatterWater(m: Uint8Array[], rng: () => number): void {
   const numPonds = 1 + Math.floor(rng() * 3);
   for (let p = 0; p < numPonds; p++) {
     const pr = 5 + Math.floor(rng() * (ROWS - 12));
@@ -142,44 +104,76 @@ export function generateChunk(cx: number, cy: number): Uint8Array[] {
       }
     }
   }
+}
 
-  // Scatter rocks
+function scatterRocks(m: Uint8Array[], rng: () => number): void {
   const numRocks = 3 + Math.floor(rng() * 6);
   for (let k = 0; k < numRocks; k++) {
     const rr = 2 + Math.floor(rng() * (ROWS - 4));
     const rc = 2 + Math.floor(rng() * (COLS - 4));
     if (m[rr][rc] === 0) m[rr][rc] = TILE_ROCK;
   }
+}
 
-  // Add 1-2 path corridors
+function isObstacle(tile: number): boolean {
+  return tile === TILE_TREE || tile === TILE_ROCK;
+}
+
+function clearCells(m: Uint8Array[], positions: [number, number][]): void {
+  for (const [r, c] of positions) {
+    if (r >= 0 && r < ROWS && c >= 0 && c < COLS && m[r][c] !== 0) m[r][c] = 0;
+  }
+}
+
+function addHorizontalPath(m: Uint8Array[], rng: () => number): void {
+  const pathRow = 3 + Math.floor(rng() * (ROWS - 6));
+  for (let c = 0; c < COLS; c++) {
+    if (isObstacle(m[pathRow][c])) m[pathRow][c] = TILE_PATH;
+  }
+}
+
+function addVerticalPath(m: Uint8Array[], rng: () => number): void {
+  const pathCol = 3 + Math.floor(rng() * (COLS - 6));
+  for (let r = 0; r < ROWS; r++) {
+    if (isObstacle(m[r][pathCol])) m[r][pathCol] = TILE_PATH;
+  }
+}
+
+function addPathCorridors(m: Uint8Array[], rng: () => number): void {
   const numPaths = 1 + Math.floor(rng() * 2);
   for (let pp = 0; pp < numPaths; pp++) {
-    if (rng() < 0.5) {
-      const pathRow = 3 + Math.floor(rng() * (ROWS - 6));
-      for (let pc2 = 0; pc2 < COLS; pc2++) {
-        if (m[pathRow][pc2] === TILE_TREE || m[pathRow][pc2] === TILE_ROCK) m[pathRow][pc2] = TILE_PATH;
-      }
-    } else {
-      const pathCol = 3 + Math.floor(rng() * (COLS - 6));
-      for (let pr2 = 0; pr2 < ROWS; pr2++) {
-        if (m[pr2][pathCol] === TILE_TREE || m[pr2][pathCol] === TILE_ROCK) m[pr2][pathCol] = TILE_PATH;
-      }
-    }
+    if (rng() < 0.5) addHorizontalPath(m, rng);
+    else addVerticalPath(m, rng);
   }
+}
 
-  // Always clear entry/exit corridors at each edge (middle 10 tiles)
+function clearEdgeCorridors(m: Uint8Array[]): void {
   const midC = Math.floor(COLS / 2);
   const midR = Math.floor(ROWS / 2);
+  const topBottom: [number, number][] = [];
+  const leftRight: [number, number][] = [];
   for (let i = -5; i <= 5; i++) {
-    if (m[0][midC + i] !== 0) m[0][midC + i] = 0;
-    if (m[1][midC + i] !== 0) m[1][midC + i] = 0;
-    if (m[ROWS - 1][midC + i] !== 0) m[ROWS - 1][midC + i] = 0;
-    if (m[ROWS - 2][midC + i] !== 0) m[ROWS - 2][midC + i] = 0;
-    if (m[midR + i][0] !== 0) m[midR + i][0] = 0;
-    if (m[midR + i][1] !== 0) m[midR + i][1] = 0;
-    if (m[midR + i][COLS - 1] !== 0) m[midR + i][COLS - 1] = 0;
-    if (m[midR + i][COLS - 2] !== 0) m[midR + i][COLS - 2] = 0;
+    topBottom.push([0, midC + i], [1, midC + i], [ROWS - 1, midC + i], [ROWS - 2, midC + i]);
+    leftRight.push([midR + i, 0], [midR + i, 1], [midR + i, COLS - 1], [midR + i, COLS - 2]);
   }
+  clearCells(m, topBottom);
+  clearCells(m, leftRight);
+}
+
+// Procedural chunk generation — matches grazing.html generateChunk exactly
+export function generateChunk(cx: number, cy: number): Uint8Array[] {
+  if (cx === 0 && cy === 0) return generateChunk00();
+
+  const m: Uint8Array[] = [];
+  for (let r = 0; r < ROWS; r++) m.push(new Uint8Array(COLS));
+
+  const rng = seededRand(chunkSeed(cx, cy));
+
+  scatterTrees(m, rng);
+  scatterWater(m, rng);
+  scatterRocks(m, rng);
+  addPathCorridors(m, rng);
+  clearEdgeCorridors(m);
 
   return m;
 }
@@ -204,8 +198,8 @@ export function getChunk(cx: number, cy: number): Uint8Array[] {
   cacheOrder.push(key);
   // Evict oldest entry if over cap
   if (cacheOrder.length > MAX_CACHE_SIZE) {
-    const oldest = cacheOrder.shift()!;
-    chunkCache.delete(oldest);
+    const oldest = cacheOrder.shift();
+    if (oldest) chunkCache.delete(oldest);
   }
   return chunk;
 }

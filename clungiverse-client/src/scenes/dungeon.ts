@@ -2,6 +2,7 @@
 // Main gameplay: input -> network -> render
 
 import type { DungeonClientState } from '../state';
+import { TILE_DOOR_CLOSED, TILE_DOOR_OPEN } from '../state';
 import type { DungeonNetwork } from '../network/dungeon-network';
 import { pollInput } from '../input/input';
 import { applyLocalInput, getLocalPlayer } from '../entities/local-player';
@@ -40,23 +41,9 @@ function triggerFlash(): void {
   flashAlpha = 0.3;
 }
 
-/**
- * Update fog-of-war tiles around a world position.
- * Demotes previously-visible tiles (2) to explored-not-visible (1),
- * then marks tiles within FOG_RADIUS as currently visible (2).
- */
-function updateFogOfWar(state: DungeonClientState, wx: number, wy: number): void {
-  const explored = state.exploredTiles;
-  const gw = state.gridWidth;
-  const gh = state.gridHeight;
-  if (!explored || explored.length !== gw * gh || gw === 0) return;
+const FOG_RADIUS = 9;
 
-  const FOG_RADIUS = 9;
-  const col = Math.floor(wx / FOG_TILE_SIZE);
-  const row = Math.floor(wy / FOG_TILE_SIZE);
-  const rSq = FOG_RADIUS * FOG_RADIUS;
-
-  // Demote visible tiles in the scan window to explored-not-visible
+function demoteFogTiles(explored: Uint8Array, gw: number, gh: number, col: number, row: number): void {
   const minR = Math.max(0, row - FOG_RADIUS - 2);
   const maxR = Math.min(gh - 1, row + FOG_RADIUS + 2);
   const minC = Math.max(0, col - FOG_RADIUS - 2);
@@ -67,8 +54,10 @@ function updateFogOfWar(state: DungeonClientState, wx: number, wy: number): void
       if (explored[idx] === 2) explored[idx] = 1;
     }
   }
+}
 
-  // Mark tiles within radius as currently visible
+function markVisibleTiles(explored: Uint8Array, gw: number, gh: number, col: number, row: number): void {
+  const rSq = FOG_RADIUS * FOG_RADIUS;
   const minRow = Math.max(0, row - FOG_RADIUS);
   const maxRow = Math.min(gh - 1, row + FOG_RADIUS);
   const minCol = Math.max(0, col - FOG_RADIUS);
@@ -84,115 +73,183 @@ function updateFogOfWar(state: DungeonClientState, wx: number, wy: number): void
   }
 }
 
+/**
+ * Update fog-of-war tiles around a world position.
+ * Demotes previously-visible tiles (2) to explored-not-visible (1),
+ * then marks tiles within FOG_RADIUS as currently visible (2).
+ */
+function updateFogOfWar(state: DungeonClientState, wx: number, wy: number): void {
+  const explored = state.exploredTiles;
+  const gw = state.gridWidth;
+  const gh = state.gridHeight;
+  if (explored?.length !== gw * gh || gw === 0) return;
+
+  const col = Math.floor(wx / FOG_TILE_SIZE);
+  const row = Math.floor(wy / FOG_TILE_SIZE);
+  demoteFogTiles(explored, gw, gh, col, row);
+  markVisibleTiles(explored, gw, gh, col, row);
+}
+
+type TickPayload = Record<string, unknown>;
+
+function handleDamageEvent(state: DungeonClientState, payload: TickPayload): void {
+  const targetId = payload.targetId as string;
+  const damage = payload.damage as number;
+  const isCrit = (payload.isCrit as boolean) ?? false;
+  const enemy = state.enemies.get(targetId);
+  if (enemy) {
+    spawnHitSparks(enemy.x, enemy.y);
+    if (damage) spawnDamageText(enemy.x, enemy.y, damage, isCrit);
+    return;
+  }
+  const player = state.players.get(targetId);
+  if (player) {
+    spawnHitSparks(player.x, player.y);
+    if (damage) spawnDamageText(player.x, player.y, damage, isCrit);
+  }
+}
+
+function handleKillEvent(state: DungeonClientState, payload: TickPayload): void {
+  const enemy = state.enemies.get(payload.enemyId as string);
+  if (enemy) spawnDeathPoof(enemy.x, enemy.y);
+}
+
+function handlePowerActivateEvent(state: DungeonClientState, payload: TickPayload): void {
+  const player = state.players.get(payload.playerId as string);
+  if (!player) return;
+  spawnPowerActivation(player.x, player.y);
+  if (payload.power === 'nervous_scramble') {
+    player.scramblingUntil = Date.now() + 2000;
+  }
+}
+
+function handlePlayerDeathEvent(state: DungeonClientState, payload: TickPayload): void {
+  const player = state.players.get(payload.playerId as string);
+  if (player) spawnDeathPoof(player.x, player.y);
+  triggerShake(4, 300);
+}
+
+function openDoorTiles(state: DungeonClientState, roomIndex: number): void {
+  const room = state.rooms[roomIndex];
+  const grid = state.tileGrid;
+  const gw = state.gridWidth;
+  if (!grid || gw === 0) return;
+  for (let ry = room.y - 1; ry <= room.y + room.h; ry++) {
+    for (let rx = room.x - 1; rx <= room.x + room.w; rx++) {
+      if (rx < 0 || rx >= gw || ry < 0 || ry >= state.gridHeight) continue;
+      const idx = ry * gw + rx;
+      if (grid[idx] === TILE_DOOR_CLOSED) grid[idx] = TILE_DOOR_OPEN;
+    }
+  }
+}
+
+function handleDoorOpenEvent(state: DungeonClientState, payload: TickPayload): void {
+  const roomIndex = payload.roomIndex as number;
+  if (roomIndex >= 0 && roomIndex < state.rooms.length) {
+    state.rooms[roomIndex].cleared = true;
+    openDoorTiles(state, roomIndex);
+  }
+  triggerShake(2, 150);
+}
+
+function handlePickupEvent(state: DungeonClientState, payload: TickPayload): void {
+  const templateId = payload.templateId as string;
+  const healAmount = payload.healAmount as number | undefined;
+  if (templateId !== 'health' || !healAmount || healAmount <= 0) return;
+  const player = state.players.get(payload.playerId as string);
+  if (player) spawnHealText(player.x, player.y, healAmount);
+}
+
+function tickSpectateNext(state: DungeonClientState, spectateNext: boolean): void {
+  if (!spectateNext) return;
+  const aliveOthers = Array.from(state.players.values()).filter(
+    (p) => !p.isLocal && p.alive && !p.spectating
+  );
+  if (aliveOthers.length > 1 && state.spectatorTargetId !== null) {
+    const currentIdx = aliveOthers.findIndex((p) => p.id === state.spectatorTargetId);
+    state.spectatorTargetId = aliveOthers[(currentIdx + 1) % aliveOthers.length].id;
+  }
+}
+
+function trackVisitedRooms(state: DungeonClientState, x: number, y: number): void {
+  const ptx = x / FOG_TILE_SIZE;
+  const pty = y / FOG_TILE_SIZE;
+  for (let i = 0; i < state.rooms.length; i++) {
+    if (state.visitedRooms.has(i)) continue;
+    const r = state.rooms[i];
+    if (ptx >= r.x && ptx < r.x + r.w && pty >= r.y && pty < r.y + r.h) {
+      state.visitedRooms.add(i);
+    }
+  }
+}
+
+function tickSpectate(
+  state: DungeonClientState,
+  input: { spectateNext: boolean; power: boolean },
+): void {
+  if (!state.isSpectating) return;
+  tickSpectateNext(state, input.spectateNext);
+  if (state.spectatorTargetId !== null) {
+    const target = state.players.get(state.spectatorTargetId);
+    if (target) updateFogOfWar(state, target.x, target.y);
+  }
+}
+
+function tickLocalMovement(
+  state: DungeonClientState,
+  network: DungeonNetwork,
+  input: { dx: number; dy: number; facingX: number; facingY: number; power: boolean; spectateNext: boolean },
+  dt: number,
+): void {
+  if (state.isSpectating) return;
+  if (input.dx !== 0 || input.dy !== 0) {
+    applyLocalInput(state, input.dx, input.dy, input.facingX, input.facingY, dt);
+  }
+  const local = getLocalPlayer(state);
+  if (local) {
+    network.sendMove(local.x, local.y, local.facingX, local.facingY, state.inputSeq);
+    updateFogOfWar(state, local.x, local.y);
+    trackVisitedRooms(state, local.x, local.y);
+  }
+  if (input.power) network.sendPower();
+}
+
+function tickShakeAndFlash(dt: number): void {
+  if (shakeDuration > 0) {
+    shakeDuration -= dt * 1000;
+    shakeX = (Math.random() - 0.5) * 2 * shakeIntensity;
+    shakeY = (Math.random() - 0.5) * 2 * shakeIntensity;
+    if (shakeDuration <= 0) { shakeX = 0; shakeY = 0; }
+  }
+  if (flashAlpha > 0) {
+    flashAlpha -= dt * 0.5;
+    if (flashAlpha < 0) flashAlpha = 0;
+  }
+}
+
+type EventHandler = (state: DungeonClientState, payload: TickPayload) => void;
+const TICK_EVENT_HANDLERS: Record<string, EventHandler> = {
+  damage: handleDamageEvent,
+  kill: handleKillEvent,
+  power_activate: handlePowerActivateEvent,
+  player_death: handlePlayerDeathEvent,
+  door_open: handleDoorOpenEvent,
+  pickup: handlePickupEvent,
+};
+
 export function createDungeonScene(network: DungeonNetwork): DungeonScene {
   // Reference to state for event handler (set in enter())
   let sceneState: DungeonClientState | null = null;
 
-  // Tick event handler for VFX — maps server event types to client VFX
   function onTickEvent(data: unknown): void {
-    const ev = data as { type: string; payload: Record<string, unknown> };
-    switch (ev.type) {
-      // Server sends "damage" events for both enemy and player hits
-      case 'damage': {
-        // Attempt to render at target position
-        const targetId = ev.payload.targetId as string;
-        const damage = ev.payload.damage as number;
-        const isCrit = ev.payload.isCrit as boolean;
-        // Find target position from enemies or players
-        if (sceneState) {
-          const enemy = sceneState.enemies.get(targetId);
-          if (enemy) {
-            spawnHitSparks(enemy.x, enemy.y);
-            if (damage) spawnDamageText(enemy.x, enemy.y, damage, isCrit ?? false);
-          } else {
-            const player = sceneState.players.get(targetId);
-            if (player) {
-              spawnHitSparks(player.x, player.y);
-              if (damage) spawnDamageText(player.x, player.y, damage, isCrit ?? false);
-            }
-          }
-        }
-        break;
-      }
-      case 'kill': {
-        // Enemy killed — spawn death effect at enemy position
-        const enemyId = ev.payload.enemyId as string;
-        if (sceneState) {
-          const enemy = sceneState.enemies.get(enemyId);
-          if (enemy) {
-            spawnDeathPoof(enemy.x, enemy.y);
-          }
-        }
-        break;
-      }
-      case 'power_activate': {
-        const playerId = ev.payload.playerId as string;
-        if (sceneState) {
-          const player = sceneState.players.get(playerId);
-          if (player) {
-            spawnPowerActivation(player.x, player.y);
-            // Crundle: set scramble window on client immediately for responsive speed
-            if (ev.payload.power === 'nervous_scramble') {
-              player.scramblingUntil = Date.now() + 2000;
-            }
-          }
-        }
-        break;
-      }
-      case 'player_death': {
-        const playerId = ev.payload.playerId as string;
-        if (sceneState) {
-          const player = sceneState.players.get(playerId);
-          if (player) {
-            spawnDeathPoof(player.x, player.y);
-          }
-        }
-        triggerShake(4, 300);
-        break;
-      }
-      case 'door_open': {
-        // Mark room as cleared and update tile grid
-        const roomIndex = ev.payload.roomIndex as number;
-        if (sceneState && roomIndex >= 0 && roomIndex < sceneState.rooms.length) {
-          sceneState.rooms[roomIndex].cleared = true;
-          // Open door tiles: scan room border for door_closed tiles (value 2) -> door_open (3)
-          const room = sceneState.rooms[roomIndex];
-          const grid = sceneState.tileGrid;
-          const gw = sceneState.gridWidth;
-          if (grid && gw > 0) {
-            for (let ry = room.y - 1; ry <= room.y + room.h; ry++) {
-              for (let rx = room.x - 1; rx <= room.x + room.w; rx++) {
-                if (rx < 0 || rx >= gw || ry < 0 || ry >= sceneState.gridHeight) continue;
-                const idx = ry * gw + rx;
-                if (grid[idx] === 2) { // TILE_DOOR_CLOSED
-                  grid[idx] = 3; // TILE_DOOR_OPEN
-                }
-              }
-            }
-          }
-        }
-        triggerShake(2, 150);
-        break;
-      }
-      case 'boss_phase': {
-        triggerShake(6, 500);
-        triggerFlash();
-        break;
-      }
-      case 'pickup': {
-        // Show floating heal text for health pickups
-        const pickupPlayerId = ev.payload.playerId as string;
-        const templateId = ev.payload.templateId as string;
-        const healAmount = ev.payload.healAmount as number | undefined;
-        if (templateId === 'health' && healAmount && healAmount > 0 && sceneState) {
-          const pickupPlayer = sceneState.players.get(pickupPlayerId);
-          if (pickupPlayer) {
-            spawnHealText(pickupPlayer.x, pickupPlayer.y, healAmount);
-          }
-        }
-        break;
-      }
+    const ev = data as { type: string; payload: TickPayload };
+    if (ev.type === 'boss_phase') {
+      triggerShake(6, 500);
+      triggerFlash();
+      return;
     }
+    const handler = TICK_EVENT_HANDLERS[ev.type];
+    if (handler && sceneState) handler(sceneState, ev.payload);
   }
 
   return {
@@ -207,76 +264,11 @@ export function createDungeonScene(network: DungeonNetwork): DungeonScene {
     },
 
     update(state: DungeonClientState, dt: number): void {
-      // 1. Apply input immediately (client prediction — renders this frame)
       const input = pollInput();
-
-      // Handle spectate-next (Tab) if we're spectating
-      if (state.isSpectating && input.spectateNext) {
-        const aliveOthers = Array.from(state.players.values()).filter(
-          (p) => !p.isLocal && p.alive && !p.spectating
-        );
-        if (aliveOthers.length > 1 && state.spectatorTargetId !== null) {
-          const currentIdx = aliveOthers.findIndex((p) => p.id === state.spectatorTargetId);
-          const nextIdx = (currentIdx + 1) % aliveOthers.length;
-          state.spectatorTargetId = aliveOthers[nextIdx].id;
-        }
-      }
-
-      if (!state.isSpectating && (input.dx !== 0 || input.dy !== 0)) {
-        applyLocalInput(state, input.dx, input.dy, input.facingX, input.facingY, dt);
-      }
-
-      // Send absolute position to server every frame (client-authoritative)
-      const local = getLocalPlayer(state);
-      if (local && !state.isSpectating) {
-        network.sendMove(local.x, local.y, local.facingX, local.facingY, state.inputSeq);
-
-        // Update fog of war around local player
-        updateFogOfWar(state, local.x, local.y);
-
-        // Track visited rooms for cleared-room tint
-        const ptx = local.x / FOG_TILE_SIZE;
-        const pty = local.y / FOG_TILE_SIZE;
-        for (let i = 0; i < state.rooms.length; i++) {
-          if (state.visitedRooms.has(i)) continue;
-          const r = state.rooms[i];
-          if (ptx >= r.x && ptx < r.x + r.w && pty >= r.y && pty < r.y + r.h) {
-            state.visitedRooms.add(i);
-          }
-        }
-      }
-
-      // Spectator fog of war: reveal tiles around the spectated player's position
-      if (state.isSpectating && state.spectatorTargetId !== null) {
-        const spectatedPlayer = state.players.get(state.spectatorTargetId);
-        if (spectatedPlayer) {
-          updateFogOfWar(state, spectatedPlayer.x, spectatedPlayer.y);
-        }
-      }
-
-      if (input.power && !state.isSpectating) {
-        network.sendPower();
-      }
-
-      // Update particles
+      tickSpectate(state, input);
+      tickLocalMovement(state, network, input, dt);
+      tickShakeAndFlash(dt);
       updateParticles(dt);
-
-      // Update screen shake
-      if (shakeDuration > 0) {
-        shakeDuration -= dt * 1000;
-        shakeX = (Math.random() - 0.5) * 2 * shakeIntensity;
-        shakeY = (Math.random() - 0.5) * 2 * shakeIntensity;
-        if (shakeDuration <= 0) {
-          shakeX = 0;
-          shakeY = 0;
-        }
-      }
-
-      // Fade flash
-      if (flashAlpha > 0) {
-        flashAlpha -= dt * 0.5;
-        if (flashAlpha < 0) flashAlpha = 0;
-      }
     },
 
     render(state: DungeonClientState, ctx: CanvasRenderingContext2D): void {
