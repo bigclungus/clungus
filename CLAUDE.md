@@ -200,8 +200,7 @@ Bots cannot read their own Discord API messages, so this webhook ingress is the 
   docker exec docker-falkordb-1 redis-cli CONFIG SET stop-writes-on-bgsave-error no
   docker exec docker-falkordb-1 redis-cli GRAPH.CONFIG SET timeout 30000
   ```
-- **Graphiti ingestion**: Use `scrape_discord_worker.py` with `--start`/`--end`/`--worker` args.
-  Run from `/mnt/data/graphiti/repo/mcp_server` with `uv run`.
+- **Graphiti ingestion**: Use `discord_ingest_incremental.py` for incremental Discord history ingestion.
 - **Temporal task queue**: `listings-queue`
 - **Discord bot token**: in `/home/clungus/.claude/channels/discord/.env`
 

@@ -2459,7 +2459,7 @@ async def ingestion_status_handler(request):
     total_episodes = episodes
     try:
         result = subprocess.run(
-            'ps aux | grep scrape_discord | grep -v grep | wc -l',
+            'ps aux | grep discord_ingest_incremental | grep -v grep | wc -l',
             shell=True, capture_output=True, text=True, timeout=5,
         )
         workers_running = int(result.stdout.strip())
