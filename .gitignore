@@ -39,3 +39,9 @@ tmp/
 # System files
 swapfile*
 lost+found/
+
+# Large binaries / model files
+bin/temporal
+kokoro-models/
+*.onnx
+*.jsonl
