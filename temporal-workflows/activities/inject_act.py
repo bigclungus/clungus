@@ -7,6 +7,7 @@ API (bots cannot read their own messages). No secret header required — the
 endpoint is localhost-only.
 """
 
+import logging
 import aiohttp
 import time
 from temporalio import activity
@@ -56,5 +57,4 @@ async def inject_message(content: str, user: str, chat_id: str) -> None:
             with open(HEARTBEAT_TIMESTAMP_FILE, "w") as f:
                 f.write(str(time.time()))
         except Exception as e:
-            import logging
             logging.warning("[inject] failed to write heartbeat timestamp: %s", e)
