@@ -3725,7 +3725,19 @@ server.listen(PORT, () => {
   if (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY) providers.push("gemini(key)");
   if (existsSync("/usr/local/bin/gemini")) providers.push("gemini(cli)");
   console.log(`[clunger] LLM providers available: ${providers.join(", ")}`);
-  if (!process.env.XAI_API_KEY) console.warn("[clunger] WARNING: XAI_API_KEY not set — grok personas will fail");
-  if (!existsSync("/usr/local/bin/gemini")) console.warn("[clunger] WARNING: gemini CLI not found at /usr/local/bin/gemini — gemini personas will fail");
-  else if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) console.warn("[clunger] WARNING: GEMINI_API_KEY not set — gemini personas will fail");
+  const missingProviders: string[] = [];
+  if (!process.env.XAI_API_KEY) {
+    console.warn("[clunger] WARNING: XAI_API_KEY not set — grok personas will fail");
+    missingProviders.push("grok (XAI_API_KEY missing)");
+  }
+  if (!existsSync("/usr/local/bin/gemini")) {
+    console.warn("[clunger] WARNING: gemini CLI not found at /usr/local/bin/gemini — gemini personas will fail");
+    missingProviders.push("gemini (CLI not found at /usr/local/bin/gemini)");
+  } else if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
+    console.warn("[clunger] WARNING: GEMINI_API_KEY not set — gemini personas will fail");
+    missingProviders.push("gemini (GEMINI_API_KEY missing)");
+  }
+  if (missingProviders.length > 0) {
+    injectAlert(`clunger startup: unavailable LLM providers — ${missingProviders.join(", ")}. Personas using these models will fail.`).catch(() => {});
+  }
 });
