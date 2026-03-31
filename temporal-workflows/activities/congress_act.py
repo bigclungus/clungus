@@ -299,6 +299,31 @@ async def congress_start(params) -> dict:
 
 
 @activity.defn
+async def congress_load_session(session_number: int) -> dict:
+    """Read an existing session JSON file and return its contents.
+
+    Returns the parsed session dict if the file exists, or an empty dict if not found.
+    Used for idempotency: callers check ``result.get("status") == "done"`` to skip
+    re-running a debate that already completed.
+    """
+    num_str = str(session_number).zfill(4)
+    session_file = Path(HELLO_WORLD_SESSIONS_DIR) / f"congress-{num_str}.json"
+    if not session_file.exists():
+        activity.logger.info(f"congress_load_session: no file at {session_file} — returning empty")
+        return {}
+    try:
+        with open(session_file) as f:
+            data = json.load(f)
+        activity.logger.info(
+            f"congress_load_session: loaded {session_file} — status={data.get('status')!r}"
+        )
+        return data
+    except Exception as e:
+        activity.logger.warning(f"congress_load_session: failed to read {session_file}: {e}")
+        return {}
+
+
+@activity.defn
 async def congress_identities(mode: str = "standard") -> list:
     """List eligible personas via CongressService.ListIdentities.
 

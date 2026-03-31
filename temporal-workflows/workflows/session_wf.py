@@ -29,6 +29,7 @@ Trial-specific input keys:
   charges          – charge string
 """
 import asyncio
+import json
 import re
 from datetime import timedelta
 from typing import Any
@@ -52,6 +53,7 @@ with workflow.unsafe.imports_passed_through():
         congress_frame_topic,
         congress_graphiti_context,
         congress_identities,
+        congress_load_session,
         congress_post_separator,
         congress_preflight_check,
         congress_report,
@@ -298,6 +300,48 @@ class SessionWorkflow:
         session_id: str = session_info["session_id"]
         session_number: int = session_info.get("session_number", 0)
         _session_tracker[0] = session_id
+
+        # ------------------------------------------------------------------ #
+        # 1b. Idempotency check — skip debate if session already completed
+        # ------------------------------------------------------------------ #
+        if session_number:
+            existing: dict = await workflow.execute_activity(
+                congress_load_session,
+                session_number,
+                start_to_close_timeout=_SHORT_TIMEOUT,
+                schedule_to_start_timeout=timedelta(minutes=3),
+                retry_policy=RetryPolicy(maximum_attempts=1),
+            )
+            if existing.get("status") == "done":
+                workflow.logger.info(
+                    f"congress idempotency: session {session_id} already has status=done — "
+                    "skipping debate and jumping to congress_report"
+                )
+                existing_verdict: str = existing.get("verdict") or "NO VERDICT"
+                existing_thread_id = existing.get("thread_id")
+                existing_evolution: dict = existing.get("evolution") or {}
+                if isinstance(existing_evolution, str):
+                    try:
+                        existing_evolution = json.loads(existing_evolution)
+                    except Exception:
+                        existing_evolution = {}
+                existing_vote_summary: dict = existing.get("vote_summary") or {}
+                existing_mode: str = existing.get("mode") or mode
+                existing_task_urls: list = []  # tasks already created; don't recreate
+
+                await workflow.execute_activity(
+                    congress_report,
+                    args=[
+                        chat_id, session_id, session_number, existing_verdict, topic,
+                        [], existing_thread_id, MAIN_CHANNEL_ID,
+                        existing_evolution, existing_task_urls,
+                        existing_vote_summary, existing_mode,
+                    ],
+                    start_to_close_timeout=_SHORT_TIMEOUT,
+                    schedule_to_start_timeout=timedelta(minutes=3),
+                    retry_policy=RetryPolicy(maximum_attempts=1),
+                )
+                return {"session_id": session_id, "verdict": existing_verdict}
 
         # ------------------------------------------------------------------ #
         # 2. Get identities
