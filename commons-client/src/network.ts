@@ -123,11 +123,6 @@ export function sendMove(state: WorldState): void {
   }));
 }
 
-export function sendHop(): void {
-  if (ws?.readyState !== WebSocket.OPEN) return;
-  ws.send(JSON.stringify({ type: "hop" }));
-}
-
 export function sendStatus(away: boolean): void {
   if (ws?.readyState !== WebSocket.OPEN) return;
   ws.send(JSON.stringify({ type: "status", away }));

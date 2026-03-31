@@ -1,11 +1,10 @@
 // main.ts — Init, rAF game loop
 // Entry point for CommonsV2. Owns the canvas, runs the loop.
 
-import { createWorldState, TILE } from "./state.ts";
+import { createWorldState, TILE , NPC_HIT_RADIUS } from "./state.ts";
 import { initInput, getInput, getLastInputAt } from "./input.ts";
-import { initNetwork, sendMove, sendHop, sendChunk, sendStatus, sendWarthog, sendWornPath } from "./network.ts";
+import { initNetwork, sendMove, sendChunk, sendStatus, sendWarthog, sendWornPath } from "./network.ts";
 import { tickLocalPlayer } from "./entities/local-player.ts";
-import { NPC_HIT_RADIUS } from "./state.ts";
 import { tickRemotePlayers } from "./entities/remote-player.ts";
 import { tickNPCs } from "./entities/npc.ts";
 import { tickWarthog, initWarthogInput } from "./entities/warthog.ts";
@@ -21,7 +20,9 @@ import { initLeaderboardModal, tickLeaderboardModal } from "./ui/leaderboard-mod
 import { validateSprites } from "./sprites.ts";
 
 const canvas = document.getElementById("game-canvas") as HTMLCanvasElement;
-const ctx = canvas.getContext("2d")!;
+const canvasEl = canvas.getContext("2d");
+if (!canvasEl) throw new Error("Could not get 2d canvas context");
+const ctx = canvasEl;
 
 const state = createWorldState();
 
@@ -81,48 +82,49 @@ canvas.addEventListener("mousedown", (e: MouseEvent) => {
   }
 });
 
+function tryStartDrag(mx: number, my: number): void {
+  if (!mousedownNPC || draggingNPC) return;
+  if (performance.now() - mousedownAt <= DRAG_THRESHOLD_MS) return;
+  const npc = state.npcs.get(mousedownNPC);
+  if (npc) {
+    draggingNPC = mousedownNPC;
+    dragOffsetX = npc.displayX - mx;
+    dragOffsetY = npc.displayY - my;
+  }
+  mousedownNPC = null;
+}
+
+function applyDrag(mx: number, my: number): boolean {
+  if (!draggingNPC) return false;
+  const npc = state.npcs.get(draggingNPC);
+  if (npc) {
+    npc.displayX = mx + dragOffsetX;
+    npc.displayY = my + dragOffsetY;
+  }
+  canvas.style.cursor = "grabbing";
+  return true;
+}
+
+function isOverNPC(mx: number, my: number): boolean {
+  for (const npc of state.npcs.values()) {
+    const dx = mx - npc.displayX;
+    const dy = my - (npc.displayY - 8);
+    if (Math.abs(dx) < NPC_HIT_RADIUS && Math.abs(dy) < NPC_HIT_RADIUS + 4) return true;
+  }
+  return false;
+}
+
 // mousemove — begin drag if held long enough
 canvas.addEventListener("mousemove", (e: MouseEvent) => {
   const { mx, my } = canvasCoords(e);
   state.mouseX = mx;
   state.mouseY = my;
 
-  // Start drag if threshold exceeded
-  if (mousedownNPC && !draggingNPC && performance.now() - mousedownAt > DRAG_THRESHOLD_MS) {
-    const npc = state.npcs.get(mousedownNPC);
-    if (npc) {
-      draggingNPC = mousedownNPC;
-      dragOffsetX = npc.displayX - mx;
-      dragOffsetY = npc.displayY - my;
-    }
-    mousedownNPC = null;
-  }
+  tryStartDrag(mx, my);
+  if (applyDrag(mx, my)) return;
 
-  // Apply drag
-  if (draggingNPC) {
-    const npc = state.npcs.get(draggingNPC);
-    if (npc) {
-      npc.displayX = mx + dragOffsetX;
-      npc.displayY = my + dragOffsetY;
-    }
-    canvas.style.cursor = "grabbing";
-    return;
-  }
-
-  // Walker hover
   updateWalkerHover(state, mx, my);
-
-  // Cursor feedback: pointer when hovering over any NPC
-  let overNPC = false;
-  for (const npc of state.npcs.values()) {
-    const dx = mx - npc.displayX;
-    const dy = my - (npc.displayY - 8);
-    if (Math.abs(dx) < NPC_HIT_RADIUS && Math.abs(dy) < NPC_HIT_RADIUS + 4) {
-      overNPC = true;
-      break;
-    }
-  }
-  canvas.style.cursor = overNPC ? "pointer" : "default";
+  canvas.style.cursor = isOverNPC(mx, my) ? "pointer" : "default";
 });
 
 // mouseup — either end drag or fire click
@@ -171,20 +173,12 @@ let lastWornTileX = -1;
 let lastWornTileY = -1;
 // Throttle WS worn_path messages (send at most once per tile visit, not every frame)
 
-function loop(now: number): void {
-  const dtMs = now - lastFrameTime;
-  lastFrameTime = now;
-  const dt = dtMs / 1000; // convert to seconds for frame-rate-independent movement
-  state.frame++;
-
+function tickMovement(now: number, dt: number): boolean {
   const input = getInput();
-
-  // Tick local player (suppress movement when seated in warthog — server controls position)
-  const { dx, dy, chunkChanged, moved } = state.seatedInWarthog
-    ? { dx: 0, dy: 0, chunkChanged: false, moved: false }
+  const { chunkChanged, moved } = state.seatedInWarthog
+    ? { chunkChanged: false, moved: false }
     : tickLocalPlayer(state, input, dt);
 
-  // Send movement to server at most 20Hz (50ms intervals) to avoid flooding server
   if (moved && state.localPlayer && state.localPlayer.inputSeq !== lastMoveSeq) {
     if (now - lastMoveSent >= MOVE_SEND_INTERVAL_MS) {
       lastMoveSeq = state.localPlayer.inputSeq;
@@ -193,70 +187,74 @@ function loop(now: number): void {
     }
   }
 
-  // Record worn path tile visits
-  if (state.localPlayer && state.map) {
-    const tileX = Math.floor(state.localPlayer.x / TILE);
-    const tileY = Math.floor(state.localPlayer.y / TILE);
-    if (tileX !== lastWornTileX || tileY !== lastWornTileY) {
-      lastWornTileX = tileX;
-      lastWornTileY = tileY;
-      recordTileVisit(tileX, tileY);
-      // Also notify server (fire-and-forget)
-      sendWornPath(state.localPlayer.chunkX, state.localPlayer.chunkY, tileX, tileY);
-    }
-  }
+  return chunkChanged;
+}
 
-  // Handle chunk crossing
-  if (chunkChanged && state.localPlayer) {
-    const { chunkX, chunkY } = state.localPlayer;
-    sendChunk(chunkX, chunkY);
-    // Load new chunk map
-    state.map = getChunk(chunkX, chunkY);
-    state.mapChunkX = chunkX;
-    state.mapChunkY = chunkY;
-    invalidateTileCache();
-    // Reset worn tile tracking on chunk change
-    lastWornTileX = -1;
-    lastWornTileY = -1;
+function tickWornPaths(): void {
+  if (!state.localPlayer || !state.map) return;
+  const tileX = Math.floor(state.localPlayer.x / TILE);
+  const tileY = Math.floor(state.localPlayer.y / TILE);
+  if (tileX !== lastWornTileX || tileY !== lastWornTileY) {
+    lastWornTileX = tileX;
+    lastWornTileY = tileY;
+    recordTileVisit(tileX, tileY);
+    sendWornPath(state.localPlayer.chunkX, state.localPlayer.chunkY, tileX, tileY);
   }
+}
 
-  // Interpolate remote entities
+function handleChunkChange(): void {
+  if (!state.localPlayer) return;
+  const { chunkX, chunkY } = state.localPlayer;
+  sendChunk(chunkX, chunkY);
+  state.map = getChunk(chunkX, chunkY);
+  state.mapChunkX = chunkX;
+  state.mapChunkY = chunkY;
+  invalidateTileCache();
+  lastWornTileX = -1;
+  lastWornTileY = -1;
+}
+
+function loop(now: number): void {
+  const dtMs = now - lastFrameTime;
+  lastFrameTime = now;
+  const dt = dtMs / 1000;
+  state.frame++;
+
+  const chunkChanged = tickMovement(now, dt);
+  tickWornPaths();
+  if (chunkChanged) handleChunkChange();
+
   tickRemotePlayers(state.remotePlayers, now);
   tickNPCs(state.npcs, now);
-
-  // Warthog tick (E-key join/leave, WASD driving)
-  tickWarthog(state, (type, payload) => sendWarthog(type, payload));
-
-  // Congress building entry check
+  tickWarthog(state, sendWarthog);
   tickCongressModal(state);
-
-  // Dungeon entrance entry check
   tickDungeonModal(state);
-
-  // Leaderboard proximity check
   tickLeaderboardModal(state);
 
-  // Render
   render(state, ctx, state.frame);
-
   requestAnimationFrame(loop);
+}
+
+interface MeResponse {
+  username?: string;
+  login?: string;
+  name?: string;
+  color?: string;
+}
+
+async function fetchPlayerInfo(): Promise<void> {
+  const res = await fetch("/api/me");
+  if (!res.ok) return;
+  const data = await res.json() as MeResponse;
+  const name = data.username ?? data.login ?? data.name ?? null;
+  if (name) state.playerName = name;
+  if (data.color) state.playerColor = data.color;
 }
 
 // Fetch player name/color from /api/me before connecting — so WS sends correct name
 async function fetchAndConnect(): Promise<void> {
   try {
-    const res = await fetch("/api/me");
-    if (res.ok) {
-      const data = await res.json();
-      // /api/me returns { username: string|null }
-      const name = data?.username ?? data?.login ?? data?.name ?? null;
-      if (name) {
-        state.playerName = name;
-      }
-      if (data?.color) {
-        state.playerColor = data.color;
-      }
-    }
+    await fetchPlayerInfo();
   } catch {
     // /api/me not available — keep random name
   }
@@ -264,7 +262,7 @@ async function fetchAndConnect(): Promise<void> {
   requestAnimationFrame(loop);
 }
 
-fetchAndConnect();
+void fetchAndConnect();
 
 // Item 9: Idle timer for away detection (additive to visibilitychange handler in network.ts)
 const IDLE_THRESHOLD_MS = 60_000;

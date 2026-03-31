@@ -2,7 +2,7 @@
 // Mutates state.localPlayer. Reads map for collision.
 
 import {
-  WorldState, LocalPlayer, PendingInput, Facing,
+  WorldState, LocalPlayer, PendingInput,
   TILE, COLS, ROWS, PLAYER_SPEED, PENDING_INPUT_CAP,
   CANVAS_W, CANVAS_H, BLOCKING_TILES,
 } from "../state.ts";
@@ -12,7 +12,7 @@ const HOP_FRAMES = 12;
 
 export function initLocalPlayer(state: WorldState): void {
   state.localPlayer = {
-    socketId: state.socketId || "",
+    socketId: state.socketId ?? "",
     name: state.playerName,
     color: state.playerColor,
     x: CANVAS_W / 2,
@@ -68,53 +68,38 @@ export function applyMovement(player: LocalPlayer, dx: number, dy: number, map: 
   // Blocked in both — no move
 }
 
-export function tickLocalPlayer(state: WorldState, input: Readonly<InputState>, dt: number): {
-  dx: number; dy: number; chunkChanged: boolean; moved: boolean;
-} {
-  const player = state.localPlayer;
-  if (!player || !state.map) return { dx: 0, dy: 0, chunkChanged: false, moved: false };
-
-  // dt is seconds per frame. PLAYER_SPEED is px/second — multiply to get px this frame.
-  // Clamp dt to 100ms (0.1s) to prevent huge jumps after tab-unfocus or missed frames.
-  const dtClamped = Math.min(dt, 0.1);
-  const speed = PLAYER_SPEED * dtClamped;
-
+function computeVelocity(input: Readonly<InputState>, speed: number): { dx: number; dy: number } {
   let dx = 0, dy = 0;
   if (input.left)  dx -= speed;
   if (input.right) dx += speed;
   if (input.up)    dy -= speed;
   if (input.down)  dy += speed;
-
-  // Normalize diagonal
   if (dx !== 0 && dy !== 0) {
     const norm = 1 / Math.sqrt(2);
     dx *= norm;
     dy *= norm;
   }
+  return { dx, dy };
+}
 
-  const moved = dx !== 0 || dy !== 0;
-
-  if (moved) {
-    if (dx > 0) player.facing = "right";
-    else if (dx < 0) player.facing = "left";
-
-    // Record pending input for reconciliation
-    player.inputSeq++;
-    const pending: PendingInput = {
-      seq: player.inputSeq,
-      dx,
-      dy,
-      timestamp: performance.now(),
-    };
-    player.pendingInputs.push(pending);
-    if (player.pendingInputs.length > PENDING_INPUT_CAP) {
-      player.pendingInputs.shift();
-    }
-
-    applyMovement(player, dx, dy, state.map);
+function applyPendingInput(player: LocalPlayer, dx: number, dy: number, map: Uint8Array[]): void {
+  if (dx > 0) player.facing = "right";
+  else if (dx < 0) player.facing = "left";
+  player.inputSeq++;
+  const pending: PendingInput = {
+    seq: player.inputSeq,
+    dx,
+    dy,
+    timestamp: performance.now(),
+  };
+  player.pendingInputs.push(pending);
+  if (player.pendingInputs.length > PENDING_INPUT_CAP) {
+    player.pendingInputs.shift();
   }
+  applyMovement(player, dx, dy, map);
+}
 
-  // Hop
+function tickHop(player: LocalPlayer): void {
   if (consumeHop() && player.hopFrame === 0) {
     player.hopFrame = 1;
   }
@@ -122,36 +107,61 @@ export function tickLocalPlayer(state: WorldState, input: Readonly<InputState>, 
     player.hopFrame++;
     if (player.hopFrame > HOP_FRAMES) player.hopFrame = 0;
   }
+}
 
-  // Chunk crossing — clamp to canvas, detect exit
-  let chunkChanged = false;
+function detectChunkCrossing(player: LocalPlayer): boolean {
   const EDGE_BUFFER = 2;
+  let crossed = false;
 
   if (player.x < EDGE_BUFFER) {
     player.chunkX--;
     player.x = CANVAS_W - EDGE_BUFFER - 1;
-    chunkChanged = true;
+    crossed = true;
   } else if (player.x > CANVAS_W - EDGE_BUFFER) {
     player.chunkX++;
     player.x = EDGE_BUFFER + 1;
-    chunkChanged = true;
+    crossed = true;
   }
 
   if (player.y < EDGE_BUFFER) {
     player.chunkY--;
     player.y = CANVAS_H - EDGE_BUFFER - 1;
-    chunkChanged = true;
+    crossed = true;
   } else if (player.y > CANVAS_H - EDGE_BUFFER) {
     player.chunkY++;
     player.y = EDGE_BUFFER + 1;
-    chunkChanged = true;
+    crossed = true;
   }
 
+  return crossed;
+}
+
+export function tickLocalPlayer(state: WorldState, input: Readonly<InputState>, dt: number): {
+  chunkChanged: boolean; moved: boolean;
+} {
+  const player = state.localPlayer;
+  if (!player || !state.map) return { chunkChanged: false, moved: false };
+
+  // dt is seconds per frame. PLAYER_SPEED is px/second — multiply to get px this frame.
+  // Clamp dt to 100ms (0.1s) to prevent huge jumps after tab-unfocus or missed frames.
+  const dtClamped = Math.min(dt, 0.1);
+  const speed = PLAYER_SPEED * dtClamped;
+
+  const { dx, dy } = computeVelocity(input, speed);
+  const moved = dx !== 0 || dy !== 0;
+
+  if (moved) {
+    applyPendingInput(player, dx, dy, state.map);
+  }
+
+  tickHop(player);
+
+  const chunkChanged = detectChunkCrossing(player);
   if (chunkChanged) {
     player.chunkTransitionAt = Date.now();
   }
 
-  return { dx, dy, chunkChanged, moved };
+  return { chunkChanged, moved };
 }
 
 export function reconcile(
