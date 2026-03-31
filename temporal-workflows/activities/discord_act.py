@@ -28,6 +28,53 @@ async def post_discord_message(channel_id: str, content: str) -> str:
             return data["id"]
 
 
+def _format_price(price: float) -> str:
+    """Format a price as $X.XXM or $XXXk."""
+    if price >= 1_000_000:
+        return f"${price / 1_000_000:.2f}M"
+    elif price >= 1_000:
+        return f"${price / 1_000:.0f}k"
+    return f"${price:,.0f}"
+
+
+def _extract_neighborhood(address: str) -> str:
+    """Pull neighborhood or city from a formatted address string.
+
+    Formatted addresses are typically: '123 Main St, Berkeley, CA 94710'
+    We want the city portion (second comma-delimited segment).
+    """
+    parts = [p.strip() for p in address.split(",")]
+    if len(parts) >= 2:
+        # parts[1] is typically the city
+        return parts[1]
+    return parts[0] if parts else address
+
+
+def _price_per_sqft_tier(ppsf: float) -> tuple[str, int]:
+    """Return (emoji, embed_color) for a price-per-sqft value."""
+    if ppsf < 600:
+        return "✅", 0x2ECC71   # green
+    elif ppsf <= 750:
+        return "🟡", 0xF1C40F  # gold
+    else:
+        return "💸", 0xE74C3C  # red
+
+
+def _days_on_market(list_date_str: str) -> int | None:
+    """Return integer days on market, or None if list_date is unparseable."""
+    if not list_date_str:
+        return None
+    from datetime import date
+    import datetime as _dt
+    for fmt in ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M:%S"):
+        try:
+            listed = _dt.datetime.strptime(list_date_str, fmt).date()
+            return (date.today() - listed).days
+        except ValueError:
+            continue
+    return None
+
+
 @activity.defn
 async def post_listings_summary(channel_id: str, listings: list) -> str:
     """Post a single Discord message summarising up to 3 listings.
@@ -49,25 +96,49 @@ async def post_listings_summary(channel_id: str, listings: list) -> str:
 
     # Discord allows up to 10 embeds per message; we cap at 3.
     embeds = []
+    content_parts = []
     for listing in listings[:3]:
-        price = f"${listing['price']:,.0f}"
+        raw_price = listing.get("price", 0) or 0
         beds = listing.get("beds", "?")
         baths = listing.get("baths", "?")
-        sqft = f"{listing.get('sqft', 0):,}" if listing.get("sqft") else "?"
+        sqft_val = listing.get("sqft") or 0
+        sqft_display = f"{sqft_val:,}" if sqft_val else "?"
         address = listing.get("address", "Unknown address")
         listing_url = listing.get("url", "")
         photo = listing.get("photo", "")
+        list_date_str = listing.get("list_date", "") or ""
 
-        description_lines = [
-            f"**{beds} bed / {baths} bath  |  {sqft} sqft  |  {price}**",
-        ]
+        price_str = _format_price(raw_price) if raw_price else "?"
+        neighborhood = _extract_neighborhood(address)
+
+        # Days on market
+        dom = _days_on_market(list_date_str)
+        dom_display = f"📅 Day {dom}" if dom is not None else ""
+
+        # Stats bar: 🛏 X  🛁 Y  📐 Z sqft  🏷 $X.XXM  📅 Day N
+        stats_parts = [f"🛏 {beds}", f"🛁 {baths}", f"📐 {sqft_display} sqft", f"🏷 {price_str}"]
+        if dom_display:
+            stats_parts.append(dom_display)
+        stats_bar = "  ".join(stats_parts)
+
+        # Price-per-sqft verdict
+        ppsf_line = ""
+        embed_color = 0x2ECC71  # default green
+        if raw_price and sqft_val:
+            ppsf = raw_price / sqft_val
+            tier_emoji, embed_color = _price_per_sqft_tier(ppsf)
+            ppsf_line = f"${ppsf:,.0f}/sqft {tier_emoji}"
+
+        description_lines = [f"**{stats_bar}**"]
+        if ppsf_line:
+            description_lines.append(ppsf_line)
         if listing_url:
             description_lines.append(f"[View listing]({listing_url})")
 
-        embed = {
+        embed: dict = {
             "title": address,
             "description": "\n".join(description_lines),
-            "color": 0x2ECC71,  # green
+            "color": embed_color,
         }
         if listing_url:
             embed["url"] = listing_url
@@ -75,9 +146,9 @@ async def post_listings_summary(channel_id: str, listings: list) -> str:
             embed["image"] = {"url": photo}
 
         embeds.append(embed)
+        content_parts.append(f"🏡 New listing · {price_str} · {neighborhood}")
 
-    count = len(embeds)
-    content = f"**{count} new listing{'s' if count != 1 else ''} found**"
+    content = "\n".join(content_parts)
 
     payload = {"content": content, "embeds": embeds}
 
