@@ -50,6 +50,9 @@ kokoro-models/
 *.jsonl
 bigclungus-meta/
 
+# Separate projects (not part of this repo)
+yucla/
+
 # Pruned stale directories
 irc-bridge/
 1998/
