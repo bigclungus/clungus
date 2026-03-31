@@ -62,12 +62,17 @@ async def check_sites() -> dict[str, Any]:
 async def send_alert(message: str) -> str:
     """Send an alert message via the omni inject endpoint so it arrives as a BigClungus message."""
     inject_url = "http://127.0.0.1:8085/webhooks/bigclungus-main"
-    async with aiohttp.ClientSession() as session:
-        async with session.post(
-            inject_url,
-            json={"content": message, "user": "healthcheck"},
-        ) as resp:
-            if resp.status not in (200, 201, 204):
-                body = await resp.text()
-                raise RuntimeError(f"Omni inject error {resp.status}: {body}")
-            return "injected"
+    timeout = aiohttp.ClientTimeout(total=10)
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                inject_url,
+                json={"content": message, "user": "healthcheck"},
+                timeout=timeout,
+            ) as resp:
+                if resp.status not in (200, 201, 204):
+                    body = await resp.text()
+                    raise RuntimeError(f"Omni inject error {resp.status}: {body}")
+                return "injected"
+    except aiohttp.ClientConnectionError as e:
+        raise RuntimeError(f"Omni inject endpoint unreachable: {e}") from e

@@ -617,7 +617,12 @@ const bunServer = serve<AnySocketData>({
       console.log(`[ws] Player ${name} (${userId}) connected — socketId=${socketId}`);
 
       // Send welcome message first so client knows its own socketId
-      ws.send(JSON.stringify({ type: "welcome", socket_id: socketId }));
+      try {
+        ws.send(JSON.stringify({ type: "welcome", socket_id: socketId }));
+      } catch (e) {
+        console.warn(`[ws] welcome send failed for ${socketId}:`, e);
+        return;
+      }
 
       // Send immediate full state to new player
       const chunkPlayers = Array.from(world.players.values()).filter(
@@ -631,7 +636,11 @@ const bunServer = serve<AnySocketData>({
       // Include server-side worn path data so all clients see the shared world state
       const wornPaths = loadWornPathsForChunk(chunkX, chunkY);
       if (wornPaths.length > 0) initialTick.wornPaths = wornPaths;
-      ws.send(JSON.stringify(initialTick));
+      try {
+        ws.send(JSON.stringify(initialTick));
+      } catch (e) {
+        console.warn(`[ws] initialTick send failed for ${socketId}:`, e);
+      }
     },
 
     message(ws: import("bun").ServerWebSocket<AnySocketData>, rawMessage) {
