@@ -348,15 +348,17 @@ def _git_commit_and_push() -> None:
          "sprites-vote.html", "grazing.html", "refinery.html"],
         cwd=hw_dir,
         check=False,
+        timeout=30,
     )
-    result = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=hw_dir)
+    result = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=hw_dir, timeout=10)
     if result.returncode != 0:
         subprocess.run(
             ["git", "commit", "-m", "auto: new persona avatar + sprite polls"],
             cwd=hw_dir,
             check=True,
+            timeout=30,
         )
-        subprocess.run(["git", "push"], cwd=hw_dir, check=True)
+        subprocess.run(["git", "push"], cwd=hw_dir, check=True, timeout=60)
         activity.logger.info("hello-world committed and pushed")
     else:
         activity.logger.info("hello-world: nothing to commit")
