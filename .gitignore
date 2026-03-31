@@ -45,3 +45,4 @@ bin/temporal
 kokoro-models/
 *.onnx
 *.jsonl
+bigclungus-meta/
