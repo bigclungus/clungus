@@ -142,14 +142,17 @@ state.playerName = userName;
 switchScene('lobby');
 
 network.on('connected', () => {
+  // eslint-disable-next-line no-console
   console.log('[clungiverse] Connected to dungeon server');
 });
 
 network.on('disconnected', () => {
+  // eslint-disable-next-line no-console
   console.log('[clungiverse] Disconnected from dungeon server');
 });
 
 network.on('error', (msg) => {
+  // eslint-disable-next-line no-console
   console.error('[clungiverse] Server error:', msg);
 });
 
@@ -159,6 +162,7 @@ const joinLobbyId = urlParams.get('lobby');
 
 async function joinExistingLobby(id: string): Promise<string | null> {
   state.lobbyStatus = 'joining';
+  // eslint-disable-next-line no-console
   console.log('[clungiverse] Joining lobby from invite:', id);
   try {
     const joinRes = await fetch(`/api/clungiverse/lobby/${id}/join`, {
@@ -170,10 +174,12 @@ async function joinExistingLobby(id: string): Promise<string | null> {
       const err = await joinRes.json().catch(() => ({})) as { error?: string };
       throw new Error(err.error ?? `HTTP ${String(joinRes.status)}`);
     }
+    // eslint-disable-next-line no-console
     console.log('[clungiverse] Joined lobby:', id);
     return id;
   } catch (joinErr) {
     // Lobby doesn't exist or join failed — clear stale URL param and create fresh
+    // eslint-disable-next-line no-console
     console.warn('[clungiverse] Failed to join lobby from URL, creating new one:', joinErr);
     clearLobbyParam();
     return null;
@@ -193,6 +199,7 @@ async function createAndJoinLobby(): Promise<string> {
   }
   const createData = await createRes.json() as { lobbyId: string };
   const lobbyId = createData.lobbyId;
+  // eslint-disable-next-line no-console
   console.log('[clungiverse] Created lobby:', lobbyId);
 
   state.lobbyStatus = 'joining';
@@ -205,6 +212,7 @@ async function createAndJoinLobby(): Promise<string> {
     const err = await joinRes.json().catch(() => ({})) as { error?: string };
     throw new Error(err.error ?? `HTTP ${String(joinRes.status)}`);
   }
+  // eslint-disable-next-line no-console
   console.log('[clungiverse] Joined lobby:', lobbyId);
   return lobbyId;
 }
@@ -222,9 +230,7 @@ async function initLobby(): Promise<void> {
       lobbyId = await joinExistingLobby(joinLobbyId);
     }
 
-    if (!lobbyId) {
-      lobbyId = await createAndJoinLobby();
-    }
+    lobbyId ??= await createAndJoinLobby();
 
     state.lobbyId = lobbyId;
     state.lobbyStatus = 'connected';
@@ -236,6 +242,7 @@ async function initLobby(): Promise<void> {
 
     network.connect(lobbyId, userId, userName);
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.error('[clungiverse] Lobby init failed:', err);
     state.lobbyStatus = 'error';
     state.lobbyError = String(err);
@@ -247,4 +254,5 @@ void initLobby();
 // Start game loop
 requestAnimationFrame(gameLoop);
 
+// eslint-disable-next-line no-console
 console.log('[clungiverse] Client initialized');

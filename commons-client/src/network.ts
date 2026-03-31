@@ -148,6 +148,7 @@ export function sendWornPath(chunkX: number, chunkY: number, tileX: number, tile
 function handleWelcome(msg: ServerWelcomeMessage): void {
   state.socketId = msg.socket_id ?? msg.socketId ?? null;
   state.connected = true;
+  // eslint-disable-next-line no-console
   console.log("[network] welcome, socketId:", state.socketId);
 
   // Initialize local player if not done yet
@@ -436,6 +437,7 @@ function parseServerMessage(e: MessageEvent): ServerMessage | null {
       : (e.data as string);
     return JSON.parse(raw) as ServerMessage;
   } catch {
+    // eslint-disable-next-line no-console
     console.warn("[network] failed to parse message:", e.data);
     return null;
   }
@@ -476,12 +478,14 @@ function connect(worldState: WorldState): void {
   const wsBase = (window as unknown as Record<string, string>)["__COMMONS_WS_BASE"] ?? `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}`;
   const url = `${wsBase}/commons-ws?${params}`;
 
+  // eslint-disable-next-line no-console
   console.log("[network] connecting to", url);
   ws = new WebSocket(url);
 
   ws.binaryType = "arraybuffer";
 
   ws.onopen = () => {
+    // eslint-disable-next-line no-console
     console.log("[network] connected");
     state.connected = true;
   };
@@ -489,6 +493,7 @@ function connect(worldState: WorldState): void {
   ws.onmessage = onMessage;
 
   ws.onclose = () => {
+    // eslint-disable-next-line no-console
     console.log("[network] disconnected, reconnecting in", RECONNECT_DELAY_MS, "ms");
     state.connected = false;
     ws = null;
@@ -496,6 +501,7 @@ function connect(worldState: WorldState): void {
   };
 
   ws.onerror = (err) => {
+    // eslint-disable-next-line no-console
     console.error("[network] WS error", err);
     // onclose will fire after onerror
   };

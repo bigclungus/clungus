@@ -280,6 +280,7 @@ function openModal(): void {
   overlay.style.display = "flex";
   // Fetch fresh data each time the leaderboard is opened
   fetchLeaderboard().catch((err: unknown) => {
+    // eslint-disable-next-line no-console
     console.error("[leaderboard] fetchLeaderboard failed:", err);
   });
 }

@@ -21,8 +21,8 @@ function renderPlayerBreakdown(
   startY: number,
 ): number {
   let sy = startY;
-  const results = state.results!;
-  if (results.players.length === 0) return sy;
+  const results = state.results;
+  if (!results || results.players.length === 0) return sy;
 
   ctx.fillStyle = '#aaaaaa';
   ctx.font = 'bold 12px monospace';

@@ -33,6 +33,7 @@ function pollWalkers(state: WorldState): void {
       state.walkers = data;
     })
     .catch((err: unknown) => {
+      // eslint-disable-next-line no-console
       console.warn("[walkers] fetch failed:", err instanceof Error ? err.message : String(err));
     });
 }
@@ -134,7 +135,10 @@ function keepWalker(id: string): void {
     body: JSON.stringify({ id }),
   })
     .then((r) => { if (!r.ok) throw new Error(`HTTP ${String(r.status)}`); })
-    .catch((err: unknown) => { console.error("[walkers] keep failed:", err instanceof Error ? err.message : String(err)); });
+    .catch((err: unknown) => {
+      // eslint-disable-next-line no-console
+      console.error("[walkers] keep failed:", err instanceof Error ? err.message : String(err));
+    });
 }
 
 function dismissWalker(id: string): void {
@@ -145,7 +149,10 @@ function dismissWalker(id: string): void {
     body: JSON.stringify({ id }),
   })
     .then((r) => { if (!r.ok) throw new Error(`HTTP ${String(r.status)}`); })
-    .catch((err: unknown) => { console.error("[walkers] dismiss failed:", err instanceof Error ? err.message : String(err)); });
+    .catch((err: unknown) => {
+      // eslint-disable-next-line no-console
+      console.error("[walkers] dismiss failed:", err instanceof Error ? err.message : String(err));
+    });
 }
 
 function pauseWalker(id: string): void {
@@ -155,7 +162,10 @@ function pauseWalker(id: string): void {
     body: JSON.stringify({ id }),
   })
     .then((r) => { if (!r.ok) throw new Error(`HTTP ${String(r.status)}`); })
-    .catch((err: unknown) => { console.error("[walkers] pause failed:", err instanceof Error ? err.message : String(err)); });
+    .catch((err: unknown) => {
+      // eslint-disable-next-line no-console
+      console.error("[walkers] pause failed:", err instanceof Error ? err.message : String(err));
+    });
 }
 
 function resumeWalker(id: string): void {
@@ -165,7 +175,10 @@ function resumeWalker(id: string): void {
     body: JSON.stringify({ id }),
   })
     .then((r) => { if (!r.ok) throw new Error(`HTTP ${String(r.status)}`); })
-    .catch((err: unknown) => { console.error("[walkers] resume failed:", err instanceof Error ? err.message : String(err)); });
+    .catch((err: unknown) => {
+      // eslint-disable-next-line no-console
+      console.error("[walkers] resume failed:", err instanceof Error ? err.message : String(err));
+    });
 }
 
 // ── Teardown ──────────────────────────────────────────────────────────────────

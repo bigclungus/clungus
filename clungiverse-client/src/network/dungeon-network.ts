@@ -289,6 +289,7 @@ export class DungeonNetwork extends Emitter {
     try {
       msg = JSON.parse(raw) as ServerMessage;
     } catch {
+      // eslint-disable-next-line no-console
       console.error('[net] bad json:', raw);
       return;
     }
@@ -315,6 +316,7 @@ export class DungeonNetwork extends Emitter {
       case 'd_mob_sprites': this.onMobSprites(msg); break;
       case 'd_mob_roster': this.onMobRoster(msg); break;
       case 'd_error':
+        // eslint-disable-next-line no-console
         console.error('[net] server error:', (msg).message);
         this.emit('error', (msg).message);
         break;
@@ -625,6 +627,7 @@ export class DungeonNetwork extends Emitter {
     const s = this.gameState;
     s.playerId = msg.playerId;
     s.lobbyId = msg.lobbyId;
+    // eslint-disable-next-line no-console
     console.log('[net] Welcome: playerId =', msg.playerId, 'lobbyId =', msg.lobbyId);
   }
 

@@ -317,7 +317,8 @@ function renderMobGenOverlay(
   w: number,
   h: number,
 ): void {
-  const prog = state.mobGenProgress!;
+  const prog = state.mobGenProgress;
+  if (!prog) return;
 
   ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
   ctx.fillRect(0, 0, w, h);

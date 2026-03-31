@@ -127,8 +127,8 @@ function getPickupVisuals(pickup: DungeonClientState['floorPickups'] extends Map
   const isHealth = pickup.type === 'health';
   const meta = TEMP_POWERUP_META[pickup.templateId];
   return {
-    color: isHealth ? '#ff2244' : (meta?.color ?? '#ffffff'),
-    emoji: isHealth ? '❤️' : (meta?.emoji ?? '✨'),
+    color: isHealth ? '#ff2244' : (meta.color),
+    emoji: isHealth ? '❤️' : (meta.emoji),
   };
 }
 

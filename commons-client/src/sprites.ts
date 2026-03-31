@@ -110,9 +110,11 @@ export function validateSprites(): void {
     }
   }
   if (missing.length > 0) {
+    // eslint-disable-next-line no-console
     console.warn('[sprites] missing sprite functions:', missing);
     // Missing sprites will fall back to colored boxes — expected if scripts haven't loaded yet
   } else {
+    // eslint-disable-next-line no-console
     console.log('[sprites] all', SPRITE_FUNCTION_NAMES.length, 'sprite functions validated OK');
   }
 }
