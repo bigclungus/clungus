@@ -61,7 +61,8 @@ def main():
             import json as _json
             try:
                 evolution = _json.loads(evolution)
-            except Exception:
+            except Exception as e:
+                print(f"Warning: failed to parse evolution JSON for {session_id}: {e}")
                 evolution = {}
         evolved = evolution.get("evolved", [])
         evolution_notes = ""

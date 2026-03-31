@@ -2339,8 +2339,8 @@ async def system_status_handler(request):
                     "status": "active" if "Up" in status else "down",
                     "type": "docker"
                 })
-    except Exception:
-        pass
+    except Exception as exc:
+        print(f'[cockpit] docker ps failed: {exc}')
 
     # Add Discord MCP Plugin as a virtual node (not a systemd service)
     nodes.append({"id": "discord-mcp-plugin", "status": "active"})
