@@ -2870,6 +2870,7 @@ async function handleLabsRequest(req: http.IncomingMessage, res: http.ServerResp
 }
 
 const server = http.createServer(async (req, res) => {
+  try {
   const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
   const pathname = url.pathname;
   const host = (req.headers["host"] ?? "").split(":")[0].toLowerCase();
@@ -3351,6 +3352,14 @@ const server = http.createServer(async (req, res) => {
 
   res.writeHead(404, { "Content-Type": "text/plain" });
   res.end("Not found");
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[clunger] unhandled error in request handler:", msg);
+    if (!res.headersSent) {
+      res.writeHead(500, { "Content-Type": "text/plain" });
+      res.end("Internal Server Error");
+    }
+  }
 });
 
 // ── Commons multiplayer WebSocket ─────────────────────────────────────────────

@@ -8,6 +8,7 @@ WorkingDirectory=/mnt/data/commons-server
 ExecStart=/home/clungus/.bun/bin/bun run src/index.ts
 Restart=always
 RestartSec=10
+ExecStopPost=/mnt/data/scripts/service-crash-alert.sh %n
 SyslogIdentifier=commons-server
 EnvironmentFile=/mnt/data/temporal-workflows/.env
 Environment=NODE_ENV=production
