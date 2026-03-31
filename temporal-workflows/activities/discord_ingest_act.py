@@ -66,16 +66,19 @@ def _fetch_messages_page(headers: dict, before: str | None = None, limit: int = 
     if before:
         params["before"] = before
 
-    resp = requests.get(url, headers=headers, params=params)
-    if resp.status_code == 429:
-        retry_after = resp.json().get("retry_after", 5)
-        logger.warning("Rate limited, sleeping %ss", retry_after)
-        time.sleep(retry_after + 0.5)
-        return _fetch_messages_page(headers, before, limit)
-    if resp.status_code != 200:
-        logger.error("Discord API error %s: %s", resp.status_code, resp.text)
-        resp.raise_for_status()
-    return resp.json()
+    max_retries = 5
+    for attempt in range(max_retries):
+        resp = requests.get(url, headers=headers, params=params)
+        if resp.status_code == 429:
+            retry_after = resp.json().get("retry_after", 5)
+            logger.warning("Rate limited, sleeping %ss (attempt %d/%d)", retry_after, attempt + 1, max_retries)
+            time.sleep(retry_after + 0.5)
+            continue
+        if resp.status_code != 200:
+            logger.error("Discord API error %s: %s", resp.status_code, resp.text)
+            resp.raise_for_status()
+        return resp.json()
+    raise RuntimeError(f"Discord API rate-limited after {max_retries} retries for channel {CHANNEL_ID}")
 
 
 def _fetch_recent_messages(token: str, cutoff: datetime) -> list:

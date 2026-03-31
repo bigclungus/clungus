@@ -100,10 +100,21 @@ function isSafeRedirect(url: string): boolean {
   }
 }
 
+const MAX_BODY_BYTES = 1 * 1024 * 1024; // 1MB limit
+
 async function readBody(req: http.IncomingMessage): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    req.on("data", (c: Buffer) => chunks.push(c));
+    let total = 0;
+    req.on("data", (c: Buffer) => {
+      total += c.length;
+      if (total > MAX_BODY_BYTES) {
+        req.destroy();
+        reject(new Error(`Request body too large (>${MAX_BODY_BYTES} bytes)`));
+        return;
+      }
+      chunks.push(c);
+    });
     req.on("end", () => resolve(Buffer.concat(chunks)));
     req.on("error", reject);
   });
