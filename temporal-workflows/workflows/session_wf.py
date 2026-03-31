@@ -53,6 +53,7 @@ with workflow.unsafe.imports_passed_through():
         congress_graphiti_context,
         congress_identities,
         congress_post_separator,
+        congress_preflight_check,
         congress_report,
         congress_select_seats,
         congress_start,
@@ -388,6 +389,16 @@ class SessionWorkflow:
                 f"Seated: {[d.get('name') for d in debaters]}. Topic: {topic}",
                 non_retryable=True,
             )
+
+        # ------------------------------------------------------------------ #
+        # 2c. Multimodel preflight — abort fast if non-Claude backends are down
+        # ------------------------------------------------------------------ #
+        await workflow.execute_activity(
+            congress_preflight_check,
+            args=[debaters],
+            start_to_close_timeout=timedelta(seconds=30),
+            retry_policy=RetryPolicy(maximum_attempts=1),
+        )
 
         # ------------------------------------------------------------------ #
         # 3. Create Discord thread (if message_id is available)

@@ -1526,3 +1526,157 @@ async def congress_alert_failure(topic: str, session_id: str, error_type: str, e
         await _do_inject(content, MAIN_CHANNEL_ID, user="temporal-monitor")
     except Exception as e:
         activity.logger.error(f"congress_alert_failure: inject failed: {e}")
+
+
+# ---------------------------------------------------------------------------
+# Preflight check — multimodal reachability
+# ---------------------------------------------------------------------------
+
+_GROK_PROXY_URL = "http://127.0.0.1:4100/v1/messages"
+_GEMINI_BIN = "/usr/local/bin/gemini"
+
+# Models that prefix-match as grok or gemini
+def _classify_model(model: str) -> str:
+    """Return 'grok', 'gemini', or 'claude' based on the model string."""
+    m = (model or "").lower().strip()
+    # Resolve common aliases
+    if m in ("grok",):
+        return "grok"
+    if m in ("gemini",):
+        return "gemini"
+    if m.startswith("grok-") or m.startswith("xai/"):
+        return "grok"
+    if m.startswith("gemini-") or m.startswith("google/"):
+        return "gemini"
+    return "claude"
+
+
+@activity.defn
+async def congress_preflight_check(debaters: list) -> None:
+    """Verify that every non-Claude model assigned to a seated debater is reachable.
+
+    Runs before any debate activity. Raises ApplicationError (non-retryable) if a
+    required external model is unreachable or out of credits, so the workflow aborts
+    fast before burning tokens on Claude-side activities.
+
+    Checks performed:
+    - grok-* / xai/* models: minimal POST to the local Grok proxy (127.0.0.1:4100).
+      Connection errors and 401s are fatal. A 403 "no credits" response is also fatal.
+    - gemini-* / google/* models: verifies the gemini binary exists and GEMINI_API_KEY
+      is set (no live API call — binary presence + key is sufficient gate).
+    """
+    need_grok = False
+    need_gemini = False
+    grok_personas: list[str] = []
+    gemini_personas: list[str] = []
+
+    for d in debaters:
+        model = (d.get("model") or "claude").strip()
+        kind = _classify_model(model)
+        name = d.get("display_name") or d.get("name") or str(d)
+        if kind == "grok":
+            need_grok = True
+            grok_personas.append(f"{name} ({model})")
+        elif kind == "gemini":
+            need_gemini = True
+            gemini_personas.append(f"{name} ({model})")
+
+    if not need_grok and not need_gemini:
+        activity.logger.info("congress_preflight_check: all debaters are Claude-only — skipping multimodel check")
+        return
+
+    errors: list[str] = []
+
+    # ------------------------------------------------------------------
+    # Grok proxy check
+    # ------------------------------------------------------------------
+    if need_grok:
+        xai_key = os.environ.get("XAI_API_KEY", "")
+        if not xai_key:
+            errors.append(
+                "Grok model required but XAI_API_KEY is not set in the worker environment. "
+                f"Grok personas: {', '.join(grok_personas)}"
+            )
+        else:
+            # Probe with a minimal request — we expect either a real completion response
+            # or a structured error JSON. A "no credits" 403 is fatal; connection error is fatal.
+            probe_payload = json.dumps({
+                "model": "grok-3-mini",
+                "max_tokens": 1,
+                "messages": [{"role": "user", "content": "ping"}],
+            }).encode()
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(
+                        _GROK_PROXY_URL,
+                        data=probe_payload,
+                        headers={
+                            "Content-Type": "application/json",
+                            "x-api-key": xai_key,
+                            "anthropic-version": "2023-06-01",
+                        },
+                        timeout=aiohttp.ClientTimeout(total=15),
+                    ) as resp:
+                        body = await resp.json(content_type=None)
+                        status = resp.status
+                        activity.logger.info(f"congress_preflight_check: Grok proxy returned HTTP {status}: {str(body)[:200]}")
+
+                        if status == 403:
+                            err_msg = (body.get("error") or body.get("code") or str(body))[:300]
+                            errors.append(
+                                f"Grok API unavailable — congress requires multimodel. "
+                                f"Response: {err_msg} "
+                                f"Top up credits at https://console.x.ai — "
+                                f"Grok personas: {', '.join(grok_personas)}"
+                            )
+                        elif status == 401:
+                            errors.append(
+                                f"Grok API rejected the API key (HTTP 401). "
+                                f"Check XAI_API_KEY in /mnt/data/temporal-workflows/.env — "
+                                f"Grok personas: {', '.join(grok_personas)}"
+                            )
+                        elif status not in (200, 400, 429):
+                            # 200 = success, 400 = bad request (proxy up), 429 = rate limit (key works)
+                            # Anything else unexpected — treat as reachable but log warning
+                            activity.logger.warning(
+                                f"congress_preflight_check: Grok proxy unexpected HTTP {status} — treating as reachable"
+                            )
+            except aiohttp.ClientConnectorError as e:
+                errors.append(
+                    f"Grok proxy at {_GROK_PROXY_URL} is unreachable (connection refused or no route). "
+                    f"Is the proxy service running? Error: {e} — "
+                    f"Grok personas: {', '.join(grok_personas)}"
+                )
+            except Exception as e:
+                errors.append(
+                    f"Grok proxy check failed with unexpected error: {type(e).__name__}: {e} — "
+                    f"Grok personas: {', '.join(grok_personas)}"
+                )
+
+    # ------------------------------------------------------------------
+    # Gemini check
+    # ------------------------------------------------------------------
+    if need_gemini:
+        gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or ""
+        missing: list[str] = []
+        if not gemini_key:
+            missing.append("GEMINI_API_KEY (or GOOGLE_API_KEY) is not set")
+        if not Path(_GEMINI_BIN).exists():
+            missing.append(f"gemini CLI not found at {_GEMINI_BIN}")
+        if missing:
+            errors.append(
+                f"Gemini model required but not configured: {'; '.join(missing)}. "
+                f"Gemini personas: {', '.join(gemini_personas)}"
+            )
+        else:
+            activity.logger.info(f"congress_preflight_check: Gemini key present and binary found — OK. Personas: {gemini_personas}")
+
+    # ------------------------------------------------------------------
+    # Fail fast if any check failed
+    # ------------------------------------------------------------------
+    if errors:
+        combined = " | ".join(errors)
+        raise ApplicationError(
+            f"Congress preflight failed — multimodel backend unavailable: {combined}",
+            non_retryable=True,
+        )
