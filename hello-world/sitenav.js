@@ -15,28 +15,36 @@
     const TOOL_LINKS = [
       { href: "https://terminal.clung.us", label: "terminal", external: true, toolHost: "terminal.clung.us" },
       { href: "https://temporal.clung.us", label: "temporal", external: true, toolHost: "temporal.clung.us" },
-      { href: "https://terminal.clung.us/topology", label: "topology", external: true }
+      { href: "https://terminal.clung.us/topology", label: "topology", external: true },
+      { href: "https://clung.us/cockpit", label: "cockpit", path: "/cockpit" }
     ];
+    function normalizePath(p) {
+      return p.replace(/\/+$/, "") || "/";
+    }
+    function isActiveSameDomain(link) {
+      try {
+        const linkUrl = new URL(link.href);
+        if (linkUrl.hostname !== window.location.hostname)
+          return false;
+        const lp = normalizePath(linkUrl.pathname);
+        const p = normalizePath(window.location.pathname);
+        return p === lp;
+      } catch (_e) {
+        return false;
+      }
+    }
     function isActive(link) {
       if (link.toolHost) {
         return window.location.hostname === link.toolHost;
       }
       if (link.external)
         return false;
-      if (link.href) {
-        try {
-          const linkUrl = new URL(link.href);
-          if (linkUrl.hostname === window.location.hostname) {
-            const lp2 = linkUrl.pathname.replace(/\/+$/, "") || "/";
-            const p2 = window.location.pathname.replace(/\/+$/, "") || "/";
-            return p2 === lp2;
-          }
-        } catch (_e) {}
-      }
+      if (isActiveSameDomain(link))
+        return true;
       if (!link.path)
         return false;
-      const p = window.location.pathname.replace(/\/+$/, "") || "/";
-      const lp = link.path.replace(/\/+$/, "") || "/";
+      const p = normalizePath(window.location.pathname);
+      const lp = normalizePath(link.path);
       return p === lp;
     }
     function buildNav() {
@@ -96,7 +104,7 @@
       }
     }
     function initTheme(toggleBtn) {
-      const saved = localStorage.getItem("theme") || "dark";
+      const saved = localStorage.getItem("theme") ?? "dark";
       applyTheme(saved, toggleBtn);
       toggleBtn.addEventListener("click", () => {
         const current = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
@@ -113,7 +121,7 @@
         const navHeight = nav.getBoundingClientRect().height;
         const existing = parseFloat(window.getComputedStyle(body).paddingTop) || 0;
         if (existing < navHeight) {
-          body.style.paddingTop = navHeight + "px";
+          body.style.paddingTop = `${String(navHeight)}px`;
         }
       }
       applyNavOffset();

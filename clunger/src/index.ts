@@ -730,6 +730,20 @@ const SERVICES_HEALTH = [
   "terminal-server", "temporal", "temporal-worker",
 ];
 
+// ── Cockpit: known service allowlist ──────────────────────────────────────────
+const COCKPIT_SERVICES = [
+  "claude-bot.service",
+  "clunger.service",
+  "cloudflared.service",
+  "omni-gateway.service",
+  "labs-router.service",
+  "terminal-server.service",
+  "temporal.service",
+  "temporal-proxy.service",
+  "temporal-worker.service",
+  "grok-proxy.service",
+];
+
 function restServeOpsHealth(res: http.ServerResponse): void {
   const results: unknown[] = [];
   for (const name of SERVICES_HEALTH) {
@@ -759,6 +773,84 @@ function restServeOpsHealth(res: http.ServerResponse): void {
     results.push({ name, state, sub, uptime_sec, restarts, memory_mb });
   }
   jsonResponse(res, results);
+}
+
+// ── Cockpit: GET /api/cockpit/status ─────────────────────────────────────────
+function restCockpitStatus(res: http.ServerResponse): void {
+  const results: unknown[] = [];
+  for (const fullName of COCKPIT_SERVICES) {
+    const r = spawnSync("systemctl", [
+      "--user", "show", fullName,
+      "--property=ActiveState,SubState,Description,NRestarts,ExecMainStartTimestamp,MemoryCurrent",
+    ], { encoding: "utf-8", timeout: 5000 });
+    const out = r.stdout ?? "";
+    const props: Record<string, string> = {};
+    for (const line of out.split("\n")) {
+      const eq = line.indexOf("=");
+      if (eq !== -1) props[line.slice(0, eq)] = line.slice(eq + 1).trim();
+    }
+    const state = props["ActiveState"] ?? "unknown";
+    const sub = props["SubState"] ?? "unknown";
+    const description = props["Description"] ?? "";
+    let uptime_sec: number | null = null;
+    const tsRaw = props["ExecMainStartTimestamp"] ?? "";
+    if (tsRaw && tsRaw !== "0" && !tsRaw.startsWith("n/a")) {
+      const started = new Date(tsRaw);
+      if (!isNaN(started.getTime())) {
+        uptime_sec = Math.floor((Date.now() - started.getTime()) / 1000);
+      }
+    }
+    const restarts = parseInt(props["NRestarts"] ?? "0", 10);
+    const memRaw = parseInt(props["MemoryCurrent"] ?? "0", 10);
+    const memory_mb = isNaN(memRaw) || memRaw <= 0 ? null : Math.round(memRaw / (1024 * 1024) * 10) / 10;
+    results.push({ name: fullName, state, sub, description, uptime_sec, restarts, memory_mb });
+  }
+  jsonResponse(res, results);
+}
+
+// ── Cockpit: GET /api/cockpit/logs/:service ───────────────────────────────────
+function restCockpitLogs(res: http.ServerResponse, service: string): void {
+  if (!COCKPIT_SERVICES.includes(service)) {
+    jsonResponse(res, { error: "service not in allowlist" }, 400);
+    return;
+  }
+  const r = spawnSync("journalctl", [
+    "--user", "-u", service, "-n", "50", "--no-pager", "--output=short-iso",
+  ], { encoding: "utf-8", timeout: 10000 });
+  if (r.error) {
+    jsonResponse(res, { error: String(r.error) }, 500);
+    return;
+  }
+  jsonResponse(res, { service, logs: r.stdout ?? "" });
+}
+
+// ── Cockpit: POST /api/cockpit/restart ────────────────────────────────────────
+async function restCockpitRestart(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  let body: { service?: string } = {};
+  try {
+    body = JSON.parse((await readBody(req)).toString("utf-8")) as { service?: string };
+  } catch {
+    jsonResponse(res, { error: "invalid JSON" }, 400);
+    return;
+  }
+  const service = (body.service ?? "").trim();
+  if (!service) {
+    jsonResponse(res, { error: "service is required" }, 400);
+    return;
+  }
+  if (!COCKPIT_SERVICES.includes(service)) {
+    jsonResponse(res, { error: "service not in allowlist" }, 403);
+    return;
+  }
+  const r = spawnSync("systemctl", ["--user", "restart", service], {
+    encoding: "utf-8",
+    timeout: 30000,
+  });
+  if (r.status !== 0) {
+    jsonResponse(res, { error: r.stderr || `exit code ${r.status ?? "?"}` }, 500);
+    return;
+  }
+  jsonResponse(res, { ok: true, service });
 }
 
 function restServeAgents(res: http.ServerResponse): void {
@@ -3051,6 +3143,36 @@ const server = http.createServer(async (req, res) => {
       jsonResponse(res, { ok: true, id });
       return;
     }
+  }
+
+  // ── Cockpit API ───────────────────────────────────────────────────────────
+  if (pathname === "/api/cockpit/status" && req.method === "GET") {
+    if (!restIsAuthed(req)) { jsonResponse(res, { error: "Forbidden: authentication required" }, 403); return; }
+    restCockpitStatus(res);
+    return;
+  }
+
+  const cockpitLogsMatch = pathname.match(/^\/api\/cockpit\/logs\/([^/]+)$/);
+  if (cockpitLogsMatch && req.method === "GET") {
+    if (!restIsAuthed(req)) { jsonResponse(res, { error: "Forbidden: authentication required" }, 403); return; }
+    restCockpitLogs(res, decodeURIComponent(cockpitLogsMatch[1]));
+    return;
+  }
+
+  if (pathname === "/api/cockpit/restart" && req.method === "POST") {
+    if (!restIsAuthed(req)) { jsonResponse(res, { error: "Forbidden: authentication required" }, 403); return; }
+    await restCockpitRestart(req, res);
+    return;
+  }
+
+  // ── Cockpit page — auth-gated HTML ────────────────────────────────────────
+  if ((pathname === "/cockpit" || pathname === "/cockpit/") && (req.method === "GET" || req.method === "HEAD")) {
+    if (!restIsAuthed(req)) {
+      res.writeHead(302, { Location: `/auth/github?next=${encodeURIComponent("https://clung.us/cockpit")}` });
+      res.end();
+      return;
+    }
+    if (serveStaticFile(res, "/mnt/data/hello-world/cockpit.html")) return;
   }
 
   // Redirect legacy /commons-vote → /refinery
