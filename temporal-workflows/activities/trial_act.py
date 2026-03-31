@@ -40,7 +40,7 @@ async def _post_to_thread(thread_id: str, content: str) -> None:
     """Post a message to a Discord thread. Raises on failure."""
     url = f"{DISCORD_API}/channels/{thread_id}/messages"
     truncated = content[:1990]
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
         async with session.post(url, headers=_discord_headers(), json={"content": truncated}) as resp:
             if resp.status not in (200, 201):
                 body = await resp.text()
@@ -79,7 +79,7 @@ async def trial_announce(
     patch_payload = {"flavor": "trial", "defendant": defendant_display, "charges": charges}
     if INTERNAL_TOKEN:
         rest_url = f"{CLUNGER_BASE_URL}/api/congress/sessions/{session_id}"
-        async with aiohttp.ClientSession() as http_session:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as http_session:
             async with http_session.patch(
                 rest_url,
                 json=patch_payload,
@@ -97,7 +97,7 @@ async def trial_announce(
     # If there is no message_id (bot-initiated, no triggering message), post an
     # announcement first so we have a message to attach the thread to.
     thread_id: str | None = None
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
         if not message_id:
             # Post an announcement to obtain a message_id we can thread from.
             announce_url = f"{DISCORD_API}/channels/{chat_id}/messages"
@@ -201,7 +201,7 @@ async def trial_phase_separator(thread_id: str, phase_title: str, subtitle: str 
     if subtitle:
         content += f"\n_{subtitle}_"
     url = f"{DISCORD_API}/channels/{thread_id}/messages"
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
         async with session.post(url, headers=_discord_headers(), json={"content": content}) as resp:
             if resp.status not in (200, 201):
                 body = await resp.text()
@@ -304,7 +304,7 @@ async def trial_generate_speech(
     post_content = f"{name_label} {label}: {response_text[:1800]}"
 
     url = f"{DISCORD_API}/channels/{thread_id}/messages"
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
         async with session.post(url, headers=_discord_headers(), json={"content": post_content}) as resp:
             if resp.status not in (200, 201):
                 body = await resp.text()
@@ -366,7 +366,7 @@ async def trial_verdict(
     # Post Scalia's verdict to thread
     scalia_post = f"**Justice Antonin Scalia** [Presiding]: {verdict_text[:1800]}"
     url = f"{DISCORD_API}/channels/{thread_id}/messages"
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
         async with session.post(url, headers=_discord_headers(), json={"content": scalia_post}) as resp:
             if resp.status not in (200, 201):
                 body = await resp.text()
@@ -414,7 +414,7 @@ async def trial_save_session(session_id: str, trial_data: dict) -> None:
 
     if INTERNAL_TOKEN:
         rest_url = f"{CLUNGER_BASE_URL}/api/congress/sessions/{session_id}"
-        async with aiohttp.ClientSession() as http_session:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as http_session:
             async with http_session.patch(
                 rest_url,
                 json=rest_payload,
@@ -447,7 +447,7 @@ async def _fetch_discord_messages_for_user(username: str, channel_id: str, limit
     """
     try:
         url = f"{DISCORD_API}/channels/{channel_id}/messages?limit={limit}"
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
             async with session.get(url, headers=_discord_headers()) as resp:
                 if resp.status != 200:
                     body = await resp.text()

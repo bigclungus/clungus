@@ -19,7 +19,7 @@ async def post_discord_message(channel_id: str, content: str) -> str:
     }
     payload = {"content": content}
 
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
         async with session.post(url, headers=headers, json=payload) as resp:
             if resp.status not in (200, 201):
                 body = await resp.text()
@@ -152,7 +152,7 @@ async def post_listings_summary(channel_id: str, listings: list) -> str:
 
     payload = {"content": content, "embeds": embeds}
 
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
         async with session.post(url, headers=headers, json=payload) as resp:
             if resp.status not in (200, 201):
                 body = await resp.text()

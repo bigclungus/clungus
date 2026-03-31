@@ -366,7 +366,7 @@ async def congress_create_thread(channel_id: str, message_id: str, session_numbe
     """
     thread_name = f"Congress #{session_number}: {topic[:80]}"
     url = f"{DISCORD_API}/channels/{channel_id}/messages/{message_id}/threads"
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
         async with session.post(
             url,
             headers=_discord_headers(),
@@ -402,7 +402,7 @@ async def congress_announce(chat_id: str, topic: str) -> str:
     """Post a congress announcement to Discord and return the message ID."""
     url = f"{DISCORD_API}/channels/{chat_id}/messages"
     data = {"content": f"⚖️ **I'm calling a congress on:** {topic}\n*verdict will follow when the panel deliberates*"}
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
         async with session.post(url, json=data, headers=_discord_headers()) as r:
             if r.status not in (200, 201):
                 body = await r.text()
@@ -474,7 +474,7 @@ async def congress_debate(
         prior_lines = []
         try:
             fetch_url = f"{DISCORD_API}/channels/{thread_id}/messages?limit=50"
-            async with aiohttp.ClientSession() as s:
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as s:
                 async with s.get(fetch_url, headers=_discord_headers()) as resp:
                     if resp.status == 200:
                         messages = await resp.json()
@@ -524,7 +524,7 @@ async def congress_debate(
         truncated = response_text[:1900]
         post_content = f"**{name}**: {truncated}"
         try:
-            async with aiohttp.ClientSession() as s:
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as s:
                 async with s.post(post_url, headers=_discord_headers(), json={"content": post_content}) as resp:
                     if resp.status not in (200, 201):
                         body = await resp.text()
@@ -546,7 +546,7 @@ async def congress_debate(
 async def congress_post_separator(thread_id: str, text: str) -> None:
     """Post a separator/announcement message to a Discord thread."""
     url = f"{DISCORD_API}/channels/{thread_id}/messages"
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
         async with session.post(url, headers=_discord_headers(), json={"content": text}) as resp:
             if resp.status not in (200, 201):
                 body = await resp.text()
@@ -587,7 +587,7 @@ async def congress_finalize(
     rest_payload["requires_ack"] = mode != "meme"
     if rest_payload and INTERNAL_TOKEN:
         rest_url = f"{CLUNGER_BASE_URL}/api/congress/sessions/{session_id}"
-        async with aiohttp.ClientSession() as http_session:
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as http_session:
             async with http_session.patch(
                 rest_url,
                 json=rest_payload,
@@ -1491,7 +1491,7 @@ async def congress_report(
         closing = closing[:1987] + "…"
 
     headers = _discord_headers()
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
         if thread_id:
             # Post full closing summary to the thread
             thread_url = f"{DISCORD_API}/channels/{thread_id}/messages"
