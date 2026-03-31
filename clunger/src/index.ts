@@ -725,55 +725,17 @@ function restServeTasks(res: http.ServerResponse, query: URLSearchParams): void 
   jsonResponse(res, { tasks: paginated, total, page: safePage, limit, pages, totals });
 }
 
-const SERVICES_HEALTH = [
-  "claude-bot", "clunger", "cloudflared",
-  "terminal-server", "temporal", "temporal-worker",
-];
-
 // ── Cockpit: known service allowlist ──────────────────────────────────────────
 const COCKPIT_SERVICES = [
   "claude-bot.service",
   "clunger.service",
   "cloudflared.service",
   "omni-gateway.service",
-  "labs-router.service",
   "terminal-server.service",
   "temporal.service",
-  "temporal-proxy.service",
   "temporal-worker.service",
   "grok-proxy.service",
 ];
-
-function restServeOpsHealth(res: http.ServerResponse): void {
-  const results: unknown[] = [];
-  for (const name of SERVICES_HEALTH) {
-    const r = spawnSync("systemctl", ["--user", "show", name,
-      "--property=ActiveState,SubState,MainPID,NRestarts,ExecMainStartTimestamp,MemoryCurrent"
-    ], { encoding: "utf-8", timeout: 5000 });
-    const out = r.stdout ?? "";
-    const props: Record<string, string> = {};
-    for (const line of out.split("\n")) {
-      const eq = line.indexOf("=");
-      if (eq !== -1) props[line.slice(0, eq)] = line.slice(eq + 1);
-    }
-    const state = props["ActiveState"] ?? "unknown";
-    const sub = props["SubState"] ?? "unknown";
-    // Uptime in seconds from ExecMainStartTimestamp
-    let uptime_sec: number | null = null;
-    const tsRaw = props["ExecMainStartTimestamp"] ?? "";
-    if (tsRaw && tsRaw !== "0" && !tsRaw.startsWith("n/a")) {
-      const started = new Date(tsRaw);
-      if (!isNaN(started.getTime())) {
-        uptime_sec = Math.floor((Date.now() - started.getTime()) / 1000);
-      }
-    }
-    const restarts = parseInt(props["NRestarts"] ?? "0", 10);
-    const memRaw = parseInt(props["MemoryCurrent"] ?? "0", 10);
-    const memory_mb = isNaN(memRaw) || memRaw <= 0 ? null : Math.round(memRaw / (1024 * 1024) * 10) / 10;
-    results.push({ name, state, sub, uptime_sec, restarts, memory_mb });
-  }
-  jsonResponse(res, results);
-}
 
 // ── Cockpit: GET /api/cockpit/status ─────────────────────────────────────────
 function restCockpitStatus(res: http.ServerResponse): void {
@@ -851,6 +813,108 @@ async function restCockpitRestart(req: http.IncomingMessage, res: http.ServerRes
     return;
   }
   jsonResponse(res, { ok: true, service });
+}
+
+// ── Cockpit: CPU background sampler ──────────────────────────────────────────
+// Reads /proc/stat twice 500ms apart without blocking the event loop.
+// The handler just reads the cached value.
+type CpuStat = { user: number; nice: number; system: number; idle: number; total: number };
+function parseCpuStat(): CpuStat | null {
+  try {
+    const raw = readFileSync("/proc/stat", "utf-8");
+    const line = raw.split("\n").find(l => l.startsWith("cpu "));
+    if (!line) return null;
+    const parts = line.trim().split(/\s+/).slice(1).map(Number);
+    const [user, nice, system, idle] = parts;
+    const total = parts.reduce((a, b) => a + b, 0);
+    return { user, nice, system, idle, total };
+  } catch {
+    return null;
+  }
+}
+let cachedCpuPct = 0;
+let lastCpuStat: CpuStat | null = parseCpuStat();
+setInterval(() => {
+  const t2 = parseCpuStat();
+  if (lastCpuStat && t2) {
+    const deltaTotal = t2.total - lastCpuStat.total;
+    const deltaIdle = t2.idle - lastCpuStat.idle;
+    if (deltaTotal > 0) cachedCpuPct = Math.round(((deltaTotal - deltaIdle) / deltaTotal) * 1000) / 10;
+  }
+  lastCpuStat = t2;
+}, 500);
+
+// ── Cockpit: GET /api/cockpit/metrics ────────────────────────────────────────
+function restCockpitMetrics(res: http.ServerResponse): void {
+  const cpu_pct = cachedCpuPct;
+
+  // RAM: parse /proc/meminfo
+  const memInfo: Record<string, number> = {};
+  for (const line of readFileSync("/proc/meminfo", "utf-8").split("\n")) {
+    const m = line.match(/^(\w+):\s+(\d+)/);
+    if (m) memInfo[m[1]] = parseInt(m[2], 10);
+  }
+  const ram_total_mb = Math.round((memInfo["MemTotal"] ?? 0) / 1024);
+  const ram_available_mb = Math.round((memInfo["MemAvailable"] ?? 0) / 1024);
+  const ram_used_mb = ram_total_mb - ram_available_mb;
+  const ram_free_mb = Math.round((memInfo["MemFree"] ?? 0) / 1024);
+
+  // Disk: df -h
+  const dfR = spawnSync("df", ["-h", "/", "/mnt/data"], { encoding: "utf-8", timeout: 5000 });
+  const disks: { path: string; used: string; total: string; pct: number }[] = [];
+  const dfLines = (dfR.stdout ?? "").split("\n").slice(1);
+  for (const line of dfLines) {
+    if (!line.trim()) continue;
+    const parts = line.trim().split(/\s+/);
+    if (parts.length < 6) continue;
+    const [, total, used, , pctStr, path] = parts;
+    const pct = parseInt(pctStr, 10) || 0;
+    disks.push({ path, used, total, pct });
+  }
+
+  // Network: parse /proc/net/dev
+  let rx_bytes = 0;
+  let tx_bytes = 0;
+  for (const line of readFileSync("/proc/net/dev", "utf-8").split("\n")) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("eth0:") || trimmed.startsWith("ens3:") || trimmed.startsWith("ens4:")) {
+      const parts = trimmed.split(/\s+/);
+      rx_bytes = parseInt(parts[1], 10) || 0;
+      tx_bytes = parseInt(parts[9], 10) || 0;
+      break;
+    }
+  }
+
+  jsonResponse(res, { cpu_pct, ram_total_mb, ram_used_mb, ram_free_mb, disks, net: { rx_bytes, tx_bytes } });
+}
+
+// ── Cockpit: GET /api/cockpit/containers ──────────────────────────────────────
+function restCockpitContainers(res: http.ServerResponse): void {
+  const r = spawnSync("docker", ["ps", "-a", "--format", "{{json .}}"], {
+    encoding: "utf-8",
+    timeout: 10000,
+  });
+  if (r.error) {
+    jsonResponse(res, { error: String(r.error) }, 500);
+    return;
+  }
+  const containers: { id: string; name: string; image: string; status: string; state: string }[] = [];
+  for (const line of (r.stdout ?? "").split("\n")) {
+    if (!line.trim()) continue;
+    try {
+      const obj = JSON.parse(line) as Record<string, string>;
+      containers.push({
+        id: obj["ID"] ?? obj["Id"] ?? "",
+        name: obj["Names"] ?? obj["Name"] ?? "",
+        image: obj["Image"] ?? "",
+        status: obj["Status"] ?? "",
+        state: obj["State"] ?? "",
+      });
+    } catch {
+      // skip malformed lines
+    }
+  }
+  jsonResponse(res, containers);
 }
 
 function restServeAgents(res: http.ServerResponse): void {
@@ -2845,13 +2909,6 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // GET /api/ops/health — auth required
-    if (pathname === "/api/ops/health" && req.method === "GET") {
-      if (!restIsAuthed(req)) { jsonResponse(res, { error: "Forbidden: authentication required" }, 403); return; }
-      restServeOpsHealth(res);
-      return;
-    }
-
     // GET /api/me — returns current authenticated GitHub username (401 if not authed)
     if (pathname === "/api/me" && req.method === "GET") {
       const user = getGithubUser(req);
@@ -3162,6 +3219,18 @@ const server = http.createServer(async (req, res) => {
   if (pathname === "/api/cockpit/restart" && req.method === "POST") {
     if (!restIsAuthed(req)) { jsonResponse(res, { error: "Forbidden: authentication required" }, 403); return; }
     await restCockpitRestart(req, res);
+    return;
+  }
+
+  if (pathname === "/api/cockpit/metrics" && req.method === "GET") {
+    if (!restIsAuthed(req)) { jsonResponse(res, { error: "Forbidden: authentication required" }, 403); return; }
+    restCockpitMetrics(res);
+    return;
+  }
+
+  if (pathname === "/api/cockpit/containers" && req.method === "GET") {
+    if (!restIsAuthed(req)) { jsonResponse(res, { error: "Forbidden: authentication required" }, 403); return; }
+    restCockpitContainers(res);
     return;
   }
 

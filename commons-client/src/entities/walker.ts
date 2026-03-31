@@ -26,14 +26,14 @@ const AUDITION_BASE = "";
 function pollWalkers(state: WorldState): void {
   fetch(`${AUDITION_BASE}/api/audition/walkers`)
     .then((r) => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      if (!r.ok) throw new Error(`HTTP ${r.status.toString()}`);
       return r.json();
     })
     .then((data: AuditionWalker[]) => {
       state.walkers = data;
     })
-    .catch((err: Error) => {
-      console.warn("[walkers] fetch failed:", err.message);
+    .catch((err: unknown) => {
+      console.warn("[walkers] fetch failed:", err instanceof Error ? err.message : String(err));
     });
 }
 
@@ -43,7 +43,7 @@ let _pollingInterval: ReturnType<typeof setInterval> | null = null;
 export function initWalkerPolling(state: WorldState): void {
   if (_pollingInterval !== null) return; // guard against double-init
   pollWalkers(state); // immediate first fetch
-  _pollingInterval = setInterval(() => pollWalkers(state), 2000);
+  _pollingInterval = setInterval(() => { pollWalkers(state); }, 2000);
 }
 
 // ── Concept card UI ──────────────────────────────────────────────────────────
@@ -75,7 +75,7 @@ function createCard(): HTMLDivElement {
 }
 
 function getCard(): HTMLDivElement {
-  if (!cardEl) cardEl = createCard();
+  cardEl ??= createCard();
   return cardEl;
 }
 
@@ -109,12 +109,12 @@ function showCard(walker: AuditionWalker, canvasX: number, canvasY: number): voi
   let top = canvasY - 60;
   if (left + cw > window.innerWidth - margin) left = canvasX - cw - margin;
   if (top < margin) top = margin;
-  card.style.left = `${left}px`;
-  card.style.top = `${top}px`;
+  card.style.left = `${left.toString()}px`;
+  card.style.top = `${top.toString()}px`;
   card.style.display = "block";
 
-  document.getElementById("cv2-walker-keep")?.addEventListener("click", () => keepWalker(walker.id));
-  document.getElementById("cv2-walker-dismiss")?.addEventListener("click", () => dismissWalker(walker.id));
+  document.getElementById("cv2-walker-keep")?.addEventListener("click", () => { keepWalker(walker.id); }, { once: true });
+  document.getElementById("cv2-walker-dismiss")?.addEventListener("click", () => { dismissWalker(walker.id); }, { once: true });
 }
 
 function hideCard(): void {
@@ -133,8 +133,8 @@ function keepWalker(id: string): void {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id }),
   })
-    .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); })
-    .catch((err: Error) => console.error("[walkers] keep failed:", err.message));
+    .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status.toString()}`); })
+    .catch((err: unknown) => { console.error("[walkers] keep failed:", err instanceof Error ? err.message : String(err)); });
 }
 
 function dismissWalker(id: string): void {
@@ -144,8 +144,8 @@ function dismissWalker(id: string): void {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id }),
   })
-    .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); })
-    .catch((err: Error) => console.error("[walkers] dismiss failed:", err.message));
+    .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status.toString()}`); })
+    .catch((err: unknown) => { console.error("[walkers] dismiss failed:", err instanceof Error ? err.message : String(err)); });
 }
 
 function pauseWalker(id: string): void {
@@ -154,8 +154,8 @@ function pauseWalker(id: string): void {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id }),
   })
-    .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); })
-    .catch((err: Error) => console.error("[walkers] pause failed:", err.message));
+    .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status.toString()}`); })
+    .catch((err: unknown) => { console.error("[walkers] pause failed:", err instanceof Error ? err.message : String(err)); });
 }
 
 function resumeWalker(id: string): void {
@@ -164,8 +164,8 @@ function resumeWalker(id: string): void {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id }),
   })
-    .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); })
-    .catch((err: Error) => console.error("[walkers] resume failed:", err.message));
+    .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status.toString()}`); })
+    .catch((err: unknown) => { console.error("[walkers] resume failed:", err instanceof Error ? err.message : String(err)); });
 }
 
 // ── Teardown ──────────────────────────────────────────────────────────────────
@@ -191,6 +191,18 @@ let _hoveredId: string | null = null;
 let _mouseCanvasX = -1;
 let _mouseCanvasY = -1;
 
+function findHoveredWalkerId(walkers: AuditionWalker[], canvasX: number, canvasY: number): string | null {
+  for (const w of walkers) {
+    if (w.x < 0) continue;
+    const dy = canvasY - WALKER_Y;
+    const dx = canvasX - w.x;
+    if (Math.abs(dx) <= WALKER_HIT_W && Math.abs(dy) <= WALKER_HIT_H) {
+      return w.id;
+    }
+  }
+  return null;
+}
+
 export function updateWalkerHover(
   state: WorldState,
   canvasX: number,
@@ -200,17 +212,7 @@ export function updateWalkerHover(
   _mouseCanvasY = canvasY;
 
   const prevHovered = _hoveredId;
-  _hoveredId = null;
-
-  for (const w of state.walkers) {
-    if (w.x < 0) continue;
-    const dy = canvasY - WALKER_Y;
-    const dx = canvasX - w.x;
-    if (Math.abs(dx) <= WALKER_HIT_W && Math.abs(dy) <= WALKER_HIT_H) {
-      _hoveredId = w.id;
-      break;
-    }
-  }
+  _hoveredId = findHoveredWalkerId(state.walkers, canvasX, canvasY);
 
   // Pausing/resuming on hover
   if (_hoveredId !== prevHovered) {
