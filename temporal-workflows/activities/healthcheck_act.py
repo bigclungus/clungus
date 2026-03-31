@@ -2,16 +2,13 @@
 Activities: check_sites, send_alert
 
 check_sites — HTTP-checks all public clung.us endpoints and returns a status dict.
-send_alert  — Sends an alert message to Discord via bot API.
+send_alert  — Sends an alert message via the omni inject endpoint.
 """
-import os
 import time
 from typing import Any
 
 import aiohttp
 from temporalio import activity
-
-from .constants import DISCORD_API, MAIN_CHANNEL_ID
 
 SITES = [
     {"url": "https://clung.us", "ok_codes": {200}},
@@ -63,18 +60,14 @@ async def check_sites() -> dict[str, Any]:
 
 @activity.defn
 async def send_alert(message: str) -> str:
-    """Send an alert message directly to Discord via bot API."""
+    """Send an alert message via the omni inject endpoint so it arrives as a BigClungus message."""
+    inject_url = "http://127.0.0.1:8085/webhooks/bigclungus-main"
     async with aiohttp.ClientSession() as session:
-        # Post directly via Discord bot API so humans see the alert
-        token = os.environ["DISCORD_BOT_TOKEN"]
-        api_url = f"{DISCORD_API}/channels/{MAIN_CHANNEL_ID}/messages"
-        headers = {
-            "Authorization": f"Bot {token}",
-            "Content-Type": "application/json",
-        }
-        async with session.post(api_url, headers=headers, json={"content": message}) as resp:
-            if resp.status not in (200, 201):
+        async with session.post(
+            inject_url,
+            json={"content": message, "user": "healthcheck"},
+        ) as resp:
+            if resp.status not in (200, 201, 204):
                 body = await resp.text()
-                raise RuntimeError(f"Discord API error {resp.status}: {body}")
-            data = await resp.json()
-            return data["id"]
+                raise RuntimeError(f"Omni inject error {resp.status}: {body}")
+            return "injected"
