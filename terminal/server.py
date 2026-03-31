@@ -18,6 +18,7 @@ import urllib.parse
 import urllib.request
 import falkordb as _fdb
 from datetime import datetime, timezone
+import aiohttp
 from aiohttp import web, ClientSession
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
@@ -140,7 +141,7 @@ async def github_callback_handler(request):
     if not code or not state or state != expected_state:
         raise web.HTTPForbidden(reason='OAuth state mismatch')
 
-    async with ClientSession() as session:
+    async with ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
         # Exchange code for access token
         token_resp = await session.post(
             'https://github.com/login/oauth/access_token',

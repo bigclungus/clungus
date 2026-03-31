@@ -392,7 +392,7 @@ class SessionWorkflow:
         # ------------------------------------------------------------------ #
         # 3. Create Discord thread (if message_id is available)
         # ------------------------------------------------------------------ #
-        thread_id: str = None
+        thread_id: str | None = None
         main_channel_id: str = MAIN_CHANNEL_ID
 
         if not message_id and chat_id:
