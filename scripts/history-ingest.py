@@ -76,6 +76,12 @@ _CHANNEL_RE = re.compile(
     re.DOTALL,
 )
 
+# Omni gateway format: source="omni" with JSON body
+_OMNI_CHANNEL_RE = re.compile(
+    r'<channel\s+source="omni"[^>]*received_at="([^"]+)"[^>]*>(.*?)</channel>',
+    re.DOTALL,
+)
+
 # Separate regex to extract attachment metadata from the opening tag
 _ATTACH_COUNT_RE = re.compile(r'attachment_count="(\d+)"')
 _ATTACH_META_RE = re.compile(r'attachments="([^"]*)"')
@@ -127,6 +133,37 @@ def extract_from_channel_tag(text: str) -> list[dict]:
     return messages
 
 
+def extract_from_omni_channel_tag(text: str) -> list[dict]:
+    """Extract Discord messages from omni-format <channel source="omni"> tags."""
+    messages = []
+    for m in _OMNI_CHANNEL_RE.finditer(text):
+        received_at, body = m.groups()
+        body = body.strip()
+        try:
+            data = json.loads(body)
+        except json.JSONDecodeError:
+            continue
+        # Skip bot messages
+        author_obj = data.get("author", {})
+        if author_obj.get("bot"):
+            continue
+        content = data.get("text", "").strip()
+        if not content or content.startswith("["):
+            continue
+        author = author_obj.get("username", "unknown")
+        message_id = data.get("messageId", "")
+        channel_id = data.get("channelId", data.get("omniChannelId", ""))
+        ts = received_at
+        messages.append({
+            "message_id": message_id,
+            "author": author,
+            "channel_id": channel_id,
+            "ts": ts,
+            "content": content,
+        })
+    return messages
+
+
 def extract_from_fetch_result(text: str) -> list[dict]:
     """Extract Discord messages from fetch_messages tool results."""
     messages = []
@@ -175,6 +212,7 @@ def extract_messages_from_jsonl(filepath: str, start_offset: int) -> tuple[list[
                 # Case 1: user message with <channel> XML tag (inbound Discord messages)
                 if isinstance(content, str) and "<channel source=" in content:
                     messages.extend(extract_from_channel_tag(content))
+                    messages.extend(extract_from_omni_channel_tag(content))
 
                 elif isinstance(content, list):
                     for item in content:
@@ -185,6 +223,7 @@ def extract_messages_from_jsonl(filepath: str, start_offset: int) -> tuple[list[
                         item_text = item.get("text", "") or item.get("content", "")
                         if isinstance(item_text, str) and "<channel source=" in item_text:
                             messages.extend(extract_from_channel_tag(item_text))
+                            messages.extend(extract_from_omni_channel_tag(item_text))
 
                         # Case 3: tool_result from fetch_messages
                         elif item.get("type") == "tool_result":
