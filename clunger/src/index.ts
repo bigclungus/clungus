@@ -1667,8 +1667,9 @@ function personaFindMdPath(name: string): { fpath: string; status: string } | nu
     const { meta } = personaParseFrontmatter(content);
     const status = String(meta["status"] ?? "eligible");
     return { fpath, status };
-  } catch {
-    return { fpath, status: "eligible" };
+  } catch (e) {
+    console.error(`personaFindMdPath: failed to parse frontmatter for ${name}: ${e}`);
+    return null;
   }
 }
 
