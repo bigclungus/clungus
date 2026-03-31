@@ -36,6 +36,51 @@ const RARITY_COLORS: Record<string, { bg: string; border: string; label: string 
   rare: { bg: '#1a1a3e', border: '#4488ff', label: '#4488ff' },
 };
 
+function renderPowerupCard(
+  ctx: CanvasRenderingContext2D,
+  choice: PowerupChoice,
+  cx: number,
+  cy: number,
+  isPicked: boolean,
+): void {
+  const rarity = RARITY_COLORS[choice.rarity] ?? RARITY_COLORS.common;
+
+  ctx.fillStyle = isPicked ? '#111111' : rarity.bg;
+  ctx.fillRect(cx, cy, CARD_W, CARD_H);
+
+  ctx.strokeStyle = rarity.border;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(cx, cy, CARD_W, CARD_H);
+
+  ctx.fillStyle = rarity.label;
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(choice.rarity.toUpperCase(), cx + CARD_W / 2, cy + 18);
+
+  ctx.fillStyle = '#eeeeee';
+  ctx.font = 'bold 13px monospace';
+  ctx.fillText(choice.name, cx + CARD_W / 2, cy + 45);
+
+  ctx.fillStyle = '#aaaaaa';
+  ctx.font = '10px monospace';
+  wrapText(ctx, choice.description, cx + CARD_W / 2, cy + 70, CARD_W - 20, 13);
+
+  let my = cy + 140;
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  for (const [stat, value] of Object.entries(choice.statModifier)) {
+    const sign = value > 0 ? '+' : '';
+    ctx.fillStyle = value > 0 ? '#44aa44' : '#aa4444';
+    ctx.fillText(`${stat.toUpperCase()} ${sign}${String(value)}`, cx + CARD_W / 2, my);
+    my += 14;
+  }
+
+  if (!isPicked) {
+    ctx.fillStyle = 'rgba(255,255,255,0.02)';
+    ctx.fillRect(cx, cy, CARD_W, CARD_H);
+  }
+}
+
 export function createTransitionScene(network: DungeonNetwork): TransitionScene {
   return {
     enter(_state: DungeonClientState): void {
@@ -94,7 +139,7 @@ export function createTransitionScene(network: DungeonNetwork): TransitionScene 
       const timerSec = Math.ceil(state.powerupTimer / 1000);
       ctx.fillStyle = timerSec <= 5 ? '#ff4444' : '#aaaaaa';
       ctx.font = '16px monospace';
-      ctx.fillText(`${timerSec}s`, w / 2, 75);
+      ctx.fillText(`${String(timerSec)}s`, w / 2, 75);
 
       // Cards
       const choices = state.powerupChoices;
@@ -108,53 +153,8 @@ export function createTransitionScene(network: DungeonNetwork): TransitionScene 
         const choice = choices[i];
         const cx = startX + i * (CARD_W + CARD_GAP);
         const cy = startY;
-
         cardRects.push({ choice, x: cx, y: cy, w: CARD_W, h: CARD_H });
-
-        const rarity = RARITY_COLORS[choice.rarity] ?? RARITY_COLORS.common;
-
-        // Card background
-        ctx.fillStyle = picked ? '#111111' : rarity.bg;
-        ctx.fillRect(cx, cy, CARD_W, CARD_H);
-
-        // Border
-        ctx.strokeStyle = rarity.border;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(cx, cy, CARD_W, CARD_H);
-
-        // Rarity label
-        ctx.fillStyle = rarity.label;
-        ctx.font = '9px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText(choice.rarity.toUpperCase(), cx + CARD_W / 2, cy + 18);
-
-        // Name
-        ctx.fillStyle = '#eeeeee';
-        ctx.font = 'bold 13px monospace';
-        ctx.fillText(choice.name, cx + CARD_W / 2, cy + 45);
-
-        // Description
-        ctx.fillStyle = '#aaaaaa';
-        ctx.font = '10px monospace';
-        wrapText(ctx, choice.description, cx + CARD_W / 2, cy + 70, CARD_W - 20, 13);
-
-        // Stat modifiers
-        const modY = cy + 140;
-        ctx.font = '10px monospace';
-        ctx.textAlign = 'center';
-        let my = modY;
-        for (const [stat, value] of Object.entries(choice.statModifier)) {
-          const sign = value > 0 ? '+' : '';
-          ctx.fillStyle = value > 0 ? '#44aa44' : '#aa4444';
-          ctx.fillText(`${stat.toUpperCase()} ${sign}${value}`, cx + CARD_W / 2, my);
-          my += 14;
-        }
-
-        // Hover highlight (cheap: just draw if not picked)
-        if (!picked) {
-          ctx.fillStyle = 'rgba(255,255,255,0.02)';
-          ctx.fillRect(cx, cy, CARD_W, CARD_H);
-        }
+        renderPowerupCard(ctx, choice, cx, cy, picked);
       }
 
       if (picked) {

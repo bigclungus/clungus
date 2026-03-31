@@ -6,47 +6,155 @@
   <title>cockpit — clung.us</title>
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="stylesheet" href="/sitenav.css">
+  <script>if (window.self !== window.top) { document.documentElement.classList.add('embedded'); }</script>
   <script src="/sitenav.js" defer></script>
+  <style>.embedded .sitenav { display: none !important; } .embedded body { padding-top: 0 !important; }</style>
   <style>
+    *, *::before, *::after { box-sizing: border-box; }
     body {
       font-family: 'Courier New', monospace;
       background: #0d0d14;
       color: #c8c8d8;
       margin: 0;
-      padding: 24px;
-    }
-    h1 {
-      font-size: 1.4rem;
-      color: #a0c4ff;
-      margin: 0 0 20px 0;
-      letter-spacing: 0.05em;
-    }
-    .service-table {
-      width: 100%;
-      border-collapse: collapse;
+      padding: 16px 20px 32px;
       font-size: 0.875rem;
     }
-    .service-table th {
+
+    /* ── Header ── */
+    .header-row {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: 1.3rem;
+      color: #a0c4ff;
+      margin: 0;
+      letter-spacing: 0.05em;
+    }
+    .last-updated {
+      font-size: 0.75rem;
+      color: #555;
+    }
+
+    /* ── Section divider ── */
+    .section {
+      margin-bottom: 20px;
+    }
+    .section-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      color: #4a4a6a;
+      text-transform: uppercase;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #1e1e2e;
+      margin-bottom: 10px;
+    }
+
+    /* ── Metrics row ── */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: 180px 220px 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .metric-box {
+      background: #0a0a12;
+      border: 1px solid #1e1e2e;
+      border-radius: 4px;
+      padding: 12px 14px;
+    }
+    .metric-box-label {
+      font-size: 0.65rem;
+      color: #4a4a6a;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .metric-big {
+      font-size: 1.6rem;
+      color: #4ecca3;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .metric-sub {
+      font-size: 0.7rem;
+      color: #666;
+    }
+    canvas.sparkline {
+      display: block;
+      margin-top: 8px;
+    }
+
+    /* ── Bar ── */
+    .bar-track {
+      height: 6px;
+      background: #1a1a2a;
+      border-radius: 3px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: #4ecca3;
+      transition: width 0.4s;
+    }
+    .bar-fill.warn { background: #f5a623; }
+    .bar-fill.crit { background: #f87171; }
+
+    /* ── Disk entries ── */
+    .disk-entry {
+      margin-bottom: 8px;
+    }
+    .disk-entry:last-child { margin-bottom: 0; }
+    .disk-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: #888;
+    }
+    .disk-path { color: #c8c8d8; }
+
+    /* ── Network ── */
+    .net-row {
+      display: flex;
+      gap: 16px;
+      font-size: 0.75rem;
+      color: #888;
+      margin-top: 4px;
+    }
+    .net-val { color: #c8c8d8; }
+
+    /* ── Tables ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+    th {
       text-align: left;
       color: #7eb8f7;
       font-weight: normal;
-      padding: 8px 12px;
-      border-bottom: 1px solid #2a2a40;
-      letter-spacing: 0.04em;
-    }
-    .service-table td {
-      padding: 8px 12px;
+      padding: 6px 10px;
       border-bottom: 1px solid #1e1e2e;
+      letter-spacing: 0.03em;
+      font-size: 0.75rem;
+    }
+    td {
+      padding: 7px 10px;
+      border-bottom: 1px solid #141420;
       vertical-align: middle;
     }
-    .service-table tr:hover td {
-      background: #141422;
-    }
+    tr:hover td { background: #0f0f1c; }
+
+    /* ── Badges ── */
     .badge {
       display: inline-block;
-      padding: 2px 8px;
+      padding: 2px 7px;
       border-radius: 3px;
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       font-weight: bold;
       letter-spacing: 0.03em;
     }
@@ -54,14 +162,17 @@
     .badge-stopped { background: #2a1a1a; color: #888; border: 1px solid #442a2a; }
     .badge-failed  { background: #3a1010; color: #f87171; border: 1px solid #6a2020; }
     .badge-unknown { background: #1e1e2e; color: #888; border: 1px solid #333; }
+    .badge-exited  { background: #2a2010; color: #f5a623; border: 1px solid #4a3a10; }
+
+    /* ── Buttons ── */
     .btn-restart {
       background: #1e1e38;
       color: #a0c4ff;
       border: 1px solid #444466;
-      padding: 4px 12px;
+      padding: 3px 10px;
       border-radius: 3px;
       cursor: pointer;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       font-family: inherit;
       transition: background 0.15s;
     }
@@ -71,37 +182,39 @@
       background: transparent;
       color: #7eb8f7;
       border: 1px solid #2a3a55;
-      padding: 4px 10px;
+      padding: 3px 8px;
       border-radius: 3px;
       cursor: pointer;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       font-family: inherit;
       transition: background 0.15s;
     }
     .btn-logs:hover { background: #141c2e; }
-    .uptime { color: #888; font-size: 0.8rem; }
+    .uptime { color: #888; font-size: 0.75rem; }
+
+    /* ── Log panel ── */
     .log-panel {
       display: none;
-      margin-top: 20px;
+      margin-top: 16px;
       background: #0a0a12;
       border: 1px solid #222238;
       border-radius: 4px;
-      padding: 16px;
+      padding: 14px;
     }
     .log-panel.visible { display: block; }
     .log-panel h3 {
-      margin: 0 0 12px 0;
-      font-size: 0.9rem;
+      margin: 0 0 10px 0;
+      font-size: 0.85rem;
       color: #7eb8f7;
     }
     .log-panel pre {
       margin: 0;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       line-height: 1.5;
       color: #b0b0c0;
       white-space: pre-wrap;
       word-break: break-all;
-      max-height: 400px;
+      max-height: 380px;
       overflow-y: auto;
     }
     .log-close {
@@ -115,21 +228,18 @@
       padding: 0;
     }
     .log-close:hover { color: #aaa; }
-    .status-bar {
-      font-size: 0.75rem;
-      color: #555;
-      margin-bottom: 16px;
-    }
+
+    /* ── Toast ── */
     .toast {
       position: fixed;
-      bottom: 24px;
-      right: 24px;
+      bottom: 20px;
+      right: 20px;
       background: #1e2a3a;
       border: 1px solid #3a5a7a;
       color: #a0c4ff;
-      padding: 10px 18px;
+      padding: 9px 16px;
       border-radius: 4px;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       opacity: 0;
       transition: opacity 0.2s;
       pointer-events: none;
@@ -137,49 +247,139 @@
     }
     .toast.show { opacity: 1; }
     .toast.error { background: #2a1010; border-color: #6a2020; color: #f87171; }
+
+    /* ── Containers table compact ── */
+    .container-name { color: #c8c8d8; font-size: 0.8rem; }
+    .container-image { color: #888; font-size: 0.72rem; }
+    .dim { color: #666; }
   </style>
 </head>
 <body>
-  <h1>cockpit</h1>
-  <div class="status-bar" id="status-bar">loading...</div>
-  <table class="service-table">
-    <thead>
-      <tr>
-        <th>service</th>
-        <th>status</th>
-        <th>uptime</th>
-        <th>mem</th>
-        <th>restarts</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody id="service-tbody">
-      <tr><td colspan="6" style="color:#555;padding:20px 12px">loading...</td></tr>
-    </tbody>
-  </table>
 
-  <div class="log-panel" id="log-panel">
-    <h3 id="log-title">logs <button class="log-close" id="log-close">✕</button></h3>
-    <pre id="log-content"></pre>
+  <!-- Header -->
+  <div class="header-row">
+    <h1>cockpit</h1>
+    <span class="last-updated" id="last-updated">loading…</span>
+  </div>
+
+  <!-- Metrics row -->
+  <div class="metrics-row" id="metrics-row">
+    <div class="metric-box" id="box-cpu">
+      <div class="metric-box-label">cpu</div>
+      <div class="metric-big" id="cpu-pct">—</div>
+      <div class="metric-sub" id="cpu-sub">waiting…</div>
+      <canvas class="sparkline" id="cpu-sparkline" width="152" height="30"></canvas>
+    </div>
+    <div class="metric-box" id="box-ram">
+      <div class="metric-box-label">memory</div>
+      <div class="metric-big" id="ram-used">—</div>
+      <div class="metric-sub" id="ram-sub">waiting…</div>
+      <div class="bar-track"><div class="bar-fill" id="ram-bar" style="width:0%"></div></div>
+    </div>
+    <div class="metric-box" id="box-disk">
+      <div class="metric-box-label">disk</div>
+      <div id="disk-entries"><span class="dim">loading…</span></div>
+      <div style="margin-top:10px" class="metric-box-label">network</div>
+      <div class="net-row" id="net-row"><span class="dim">loading…</span></div>
+    </div>
+  </div>
+
+  <!-- Services section -->
+  <div class="section">
+    <div class="section-label">services</div>
+    <table>
+      <thead>
+        <tr>
+          <th>service</th>
+          <th>description</th>
+          <th>status</th>
+          <th>uptime</th>
+          <th>mem</th>
+          <th>restarts</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="service-tbody">
+        <tr><td colspan="7" class="dim" style="padding:16px 10px">loading…</td></tr>
+      </tbody>
+    </table>
+    <div class="log-panel" id="log-panel">
+      <h3 id="log-title">logs <button class="log-close" id="log-close">✕</button></h3>
+      <pre id="log-content"></pre>
+    </div>
+  </div>
+
+  <!-- Containers section -->
+  <div class="section">
+    <div class="section-label">containers</div>
+    <table>
+      <thead>
+        <tr>
+          <th>name</th>
+          <th>image</th>
+          <th>status</th>
+          <th>state</th>
+        </tr>
+      </thead>
+      <tbody id="container-tbody">
+        <tr><td colspan="4" class="dim" style="padding:16px 10px">loading…</td></tr>
+      </tbody>
+    </table>
   </div>
 
   <div class="toast" id="toast"></div>
 
   <script>
-    const POLL_INTERVAL_MS = 10000;
-    let activeLogService = null;
-    let pollTimer = null;
+    const METRICS_INTERVAL = 5000;
+    const SERVICES_INTERVAL = 10000;
 
-    function formatUptime(seconds) {
-      if (seconds === null || seconds === undefined) return '—';
-      if (seconds < 60) return `${seconds}s`;
-      if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
-      const h = Math.floor(seconds / 3600);
-      const m = Math.floor((seconds % 3600) / 60);
+    // ── Sparkline ──
+    const CPU_HISTORY = [];
+    const MAX_SAMPLES = 20;
+
+    function drawSparkline(canvas, data, color) {
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width;
+      const H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+      if (data.length < 2) return;
+      const max = Math.max(...data, 10);
+      const step = W / (MAX_SAMPLES - 1);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      for (let i = 0; i < data.length; i++) {
+        const x = i * step;
+        const y = H - (data[i] / max) * H * 0.9;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      // fill
+      ctx.lineTo((data.length - 1) * step, H);
+      ctx.lineTo(0, H);
+      ctx.closePath();
+      ctx.fillStyle = color + '22';
+      ctx.fill();
+    }
+
+    // ── Formatters ──
+    function fmtBytes(b) {
+      if (b >= 1e9) return (b / 1e9).toFixed(2) + ' GB';
+      if (b >= 1e6) return (b / 1e6).toFixed(1) + ' MB';
+      if (b >= 1e3) return (b / 1e3).toFixed(0) + ' KB';
+      return b + ' B';
+    }
+
+    function fmtUptime(sec) {
+      if (sec === null || sec === undefined) return '—';
+      if (sec < 60) return `${sec}s`;
+      if (sec < 3600) return `${Math.floor(sec / 60)}m ${sec % 60}s`;
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
       return `${h}h ${m}m`;
     }
 
-    function formatMem(mb) {
+    function fmtMem(mb) {
       if (mb === null || mb === undefined) return '—';
       if (mb >= 1024) return `${(mb / 1024).toFixed(1)}G`;
       return `${mb}M`;
@@ -199,12 +399,96 @@
       return state || 'unknown';
     }
 
+    function containerBadgeClass(state) {
+      if (!state) return 'badge-unknown';
+      const s = state.toLowerCase();
+      if (s === 'running') return 'badge-running';
+      if (s === 'exited') return 'badge-exited';
+      if (s === 'paused') return 'badge-stopped';
+      return 'badge-unknown';
+    }
+
+    // ── Toast ──
     function showToast(msg, isError) {
       const t = document.getElementById('toast');
       t.textContent = msg;
       t.className = 'toast show' + (isError ? ' error' : '');
       setTimeout(() => { t.className = 'toast'; }, 3000);
     }
+
+    // ── Metrics ──
+    let prevNet = null;
+
+    async function fetchMetrics() {
+      try {
+        const res = await fetch('/api/cockpit/metrics');
+        if (!res.ok) {
+          if (res.status === 401 || res.status === 403) {
+            window.location.href = '/auth/github?next=' + encodeURIComponent(window.location.href);
+            return;
+          }
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const d = await res.json();
+
+        // CPU
+        CPU_HISTORY.push(d.cpu_pct);
+        if (CPU_HISTORY.length > MAX_SAMPLES) CPU_HISTORY.shift();
+        document.getElementById('cpu-pct').textContent = d.cpu_pct.toFixed(1) + '%';
+        document.getElementById('cpu-sub').textContent = `${CPU_HISTORY.length} samples`;
+        drawSparkline(document.getElementById('cpu-sparkline'), CPU_HISTORY, '#4ecca3');
+
+        // RAM
+        const ramPct = d.ram_total_mb > 0 ? Math.round((d.ram_used_mb / d.ram_total_mb) * 100) : 0;
+        const ramUsedG = (d.ram_used_mb / 1024).toFixed(1);
+        const ramTotalG = (d.ram_total_mb / 1024).toFixed(1);
+        document.getElementById('ram-used').textContent = ramUsedG + 'G';
+        document.getElementById('ram-sub').textContent = `of ${ramTotalG}G — ${ramPct}%`;
+        const ramBar = document.getElementById('ram-bar');
+        ramBar.style.width = ramPct + '%';
+        ramBar.className = 'bar-fill' + (ramPct >= 90 ? ' crit' : ramPct >= 75 ? ' warn' : '');
+
+        // Disk
+        const diskEl = document.getElementById('disk-entries');
+        diskEl.innerHTML = '';
+        for (const disk of (d.disks || [])) {
+          const div = document.createElement('div');
+          div.className = 'disk-entry';
+          const warnClass = disk.pct >= 90 ? ' crit' : disk.pct >= 75 ? ' warn' : '';
+          div.innerHTML = `
+            <div class="disk-row">
+              <span class="disk-path">${disk.path}</span>
+              <span>${disk.used} / ${disk.total} — ${disk.pct}%</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill${warnClass}" style="width:${disk.pct}%"></div></div>
+          `;
+          diskEl.appendChild(div);
+        }
+
+        // Network (show delta if we have previous reading)
+        const netEl = document.getElementById('net-row');
+        if (prevNet) {
+          const rxDelta = d.net.rx_bytes - prevNet.rx_bytes;
+          const txDelta = d.net.tx_bytes - prevNet.tx_bytes;
+          const interval = METRICS_INTERVAL / 1000;
+          netEl.innerHTML = `
+            <span>rx <span class="net-val">${fmtBytes(Math.max(0, rxDelta) / interval)}/s</span></span>
+            <span>tx <span class="net-val">${fmtBytes(Math.max(0, txDelta) / interval)}/s</span></span>
+            <span class="dim">total rx ${fmtBytes(d.net.rx_bytes)}</span>
+          `;
+        } else {
+          netEl.innerHTML = `<span class="dim">rx ${fmtBytes(d.net.rx_bytes)} / tx ${fmtBytes(d.net.tx_bytes)}</span>`;
+        }
+        prevNet = d.net;
+
+        updateTimestamp();
+      } catch (err) {
+        // silent on metrics — don't clobber status bar
+      }
+    }
+
+    // ── Services ──
+    let activeLogService = null;
 
     async function fetchStatus() {
       try {
@@ -218,10 +502,9 @@
         }
         const services = await res.json();
         renderServices(services);
-        document.getElementById('status-bar').textContent =
-          `last updated ${new Date().toLocaleTimeString()} — auto-refresh every 10s`;
+        updateTimestamp();
       } catch (err) {
-        document.getElementById('status-bar').textContent = `error: ${err.message}`;
+        // ignore
       }
     }
 
@@ -232,11 +515,13 @@
         const tr = document.createElement('tr');
         const bClass = badgeClass(svc.state);
         const bLabel = badgeLabel(svc.state, svc.sub);
+        const desc = svc.description ? svc.description.slice(0, 44) + (svc.description.length > 44 ? '…' : '') : '—';
         tr.innerHTML = `
-          <td><strong>${svc.name}</strong>${svc.description ? `<br><span style="color:#555;font-size:0.75rem">${svc.description}</span>` : ''}</td>
+          <td><strong>${svc.name}</strong></td>
+          <td style="color:#888;font-size:0.75rem">${desc}</td>
           <td><span class="badge ${bClass}">${bLabel}</span></td>
-          <td class="uptime">${formatUptime(svc.uptime_sec)}</td>
-          <td class="uptime">${formatMem(svc.memory_mb)}</td>
+          <td class="uptime">${fmtUptime(svc.uptime_sec)}</td>
+          <td class="uptime">${fmtMem(svc.memory_mb)}</td>
           <td class="uptime">${svc.restarts ?? 0}</td>
           <td style="white-space:nowrap">
             <button class="btn-logs" data-service="${svc.name}">logs</button>
@@ -245,7 +530,6 @@
         `;
         tbody.appendChild(tr);
       }
-
       tbody.querySelectorAll('.btn-logs').forEach(btn => {
         btn.addEventListener('click', () => loadLogs(btn.dataset.service));
       });
@@ -264,7 +548,7 @@
         panel.classList.remove('visible');
         activeLogService = null;
       });
-      content.textContent = 'loading...';
+      content.textContent = 'loading…';
       panel.classList.add('visible');
       panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       try {
@@ -281,7 +565,7 @@
     async function restartService(btn) {
       const service = btn.dataset.service;
       btn.disabled = true;
-      btn.textContent = 'restarting...';
+      btn.textContent = 'restarting…';
       try {
         const res = await fetch('/api/cockpit/restart', {
           method: 'POST',
@@ -303,9 +587,54 @@
       }
     }
 
+    // ── Containers ──
+    async function fetchContainers() {
+      try {
+        const res = await fetch('/api/cockpit/containers');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const containers = await res.json();
+        renderContainers(containers);
+      } catch (err) {
+        const tbody = document.getElementById('container-tbody');
+        tbody.innerHTML = `<tr><td colspan="4" class="dim" style="padding:12px 10px">error: ${err.message}</td></tr>`;
+      }
+    }
+
+    function renderContainers(containers) {
+      const tbody = document.getElementById('container-tbody');
+      if (!containers.length) {
+        tbody.innerHTML = `<tr><td colspan="4" class="dim" style="padding:12px 10px">no containers</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = '';
+      for (const c of containers) {
+        const tr = document.createElement('tr');
+        const bClass = containerBadgeClass(c.state);
+        const shortId = (c.id || '').slice(0, 12);
+        tr.innerHTML = `
+          <td><span class="container-name">${c.name || '—'}</span><br><span class="dim" style="font-size:0.68rem">${shortId}</span></td>
+          <td><span class="container-image">${c.image || '—'}</span></td>
+          <td style="font-size:0.72rem;color:#888">${c.status || '—'}</td>
+          <td><span class="badge ${bClass}">${c.state || 'unknown'}</span></td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    // ── Timestamp ──
+    function updateTimestamp() {
+      document.getElementById('last-updated').textContent =
+        'updated ' + new Date().toLocaleTimeString();
+    }
+
+    // ── Init ──
     document.addEventListener('DOMContentLoaded', () => {
+      fetchMetrics();
       fetchStatus();
-      pollTimer = setInterval(fetchStatus, POLL_INTERVAL_MS);
+      fetchContainers();
+      setInterval(fetchMetrics, METRICS_INTERVAL);
+      setInterval(fetchStatus, SERVICES_INTERVAL);
+      setInterval(fetchContainers, SERVICES_INTERVAL);
     });
   </script>
 </body>

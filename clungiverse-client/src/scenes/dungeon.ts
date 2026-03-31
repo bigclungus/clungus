@@ -82,7 +82,7 @@ function updateFogOfWar(state: DungeonClientState, wx: number, wy: number): void
   const explored = state.exploredTiles;
   const gw = state.gridWidth;
   const gh = state.gridHeight;
-  if (explored?.length !== gw * gh || gw === 0) return;
+  if (explored.length !== gw * gh || gw === 0) return;
 
   const col = Math.floor(wx / FOG_TILE_SIZE);
   const row = Math.floor(wy / FOG_TILE_SIZE);
@@ -95,7 +95,7 @@ type TickPayload = Record<string, unknown>;
 function handleDamageEvent(state: DungeonClientState, payload: TickPayload): void {
   const targetId = payload.targetId as string;
   const damage = payload.damage as number;
-  const isCrit = (payload.isCrit as boolean) ?? false;
+  const isCrit = (payload.isCrit as boolean | undefined) ?? false;
   const enemy = state.enemies.get(targetId);
   if (enemy) {
     spawnHitSparks(enemy.x, enemy.y);
@@ -129,6 +129,12 @@ function handlePlayerDeathEvent(state: DungeonClientState, payload: TickPayload)
   triggerShake(4, 300);
 }
 
+function openDoorTileAt(grid: number[], gw: number, gh: number, rx: number, ry: number): void {
+  if (rx < 0 || rx >= gw || ry < 0 || ry >= gh) return;
+  const idx = ry * gw + rx;
+  if (grid[idx] === TILE_DOOR_CLOSED) grid[idx] = TILE_DOOR_OPEN;
+}
+
 function openDoorTiles(state: DungeonClientState, roomIndex: number): void {
   const room = state.rooms[roomIndex];
   const grid = state.tileGrid;
@@ -136,9 +142,7 @@ function openDoorTiles(state: DungeonClientState, roomIndex: number): void {
   if (!grid || gw === 0) return;
   for (let ry = room.y - 1; ry <= room.y + room.h; ry++) {
     for (let rx = room.x - 1; rx <= room.x + room.w; rx++) {
-      if (rx < 0 || rx >= gw || ry < 0 || ry >= state.gridHeight) continue;
-      const idx = ry * gw + rx;
-      if (grid[idx] === TILE_DOOR_CLOSED) grid[idx] = TILE_DOOR_OPEN;
+      openDoorTileAt(grid, gw, state.gridHeight, rx, ry);
     }
   }
 }
@@ -248,8 +252,8 @@ export function createDungeonScene(network: DungeonNetwork): DungeonScene {
       triggerFlash();
       return;
     }
-    const handler = TICK_EVENT_HANDLERS[ev.type];
-    if (handler && sceneState) handler(sceneState, ev.payload);
+    const handler: EventHandler | undefined = (TICK_EVENT_HANDLERS as Record<string, EventHandler | undefined>)[ev.type];
+    if (handler !== undefined && sceneState !== null) handler(sceneState, ev.payload);
   }
 
   return {
@@ -312,7 +316,7 @@ export function createDungeonScene(network: DungeonNetwork): DungeonScene {
 
       // Flash overlay
       if (flashAlpha > 0) {
-        ctx.fillStyle = `rgba(255,255,255,${flashAlpha})`;
+        ctx.fillStyle = `rgba(255,255,255,${String(flashAlpha)})`;
         ctx.fillRect(0, 0, canvasW, canvasH);
       }
 

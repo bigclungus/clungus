@@ -9,6 +9,7 @@ with workflow.unsafe.imports_passed_through():
     from activities.inject_act import inject_message
     from activities.startup_act import (
         startup_check_disk,
+        startup_check_heartbeat,
         startup_check_services,
         startup_extract_directives,
         startup_fix_falkordb,
@@ -65,7 +66,16 @@ class StartupWorkflow:
         if "stale" in watchdog_output.lower() and "0 task" not in watchdog_output.lower():
             issues.append(f"Stale tasks: {watchdog_output}")
 
-        # 5. Extract directives (informational — failure worth reporting but doesn't block)
+        # 5. Heartbeat liveness check
+        heartbeat_result = await workflow.execute_activity(
+            startup_check_heartbeat,
+            schedule_to_close_timeout=TIMEOUT,
+            retry_policy=NO_RETRY,
+        )
+        if heartbeat_result != "ok":
+            issues.append(f"Heartbeat liveness: {heartbeat_result}")
+
+        # 6. Extract directives (informational — failure worth reporting but doesn't block)
         directives_result = await workflow.execute_activity(
             startup_extract_directives,
             schedule_to_close_timeout=TIMEOUT,

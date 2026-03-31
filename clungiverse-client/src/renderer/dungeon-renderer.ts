@@ -54,20 +54,37 @@ export function isTileVisible(state: DungeonClientState, col: number, row: numbe
   return state.exploredTiles[idx] === 2;
 }
 
-export function renderDungeon(
+function drawSingleTile(
   ctx: CanvasRenderingContext2D,
-  state: DungeonClientState,
+  tile: number,
+  px: number,
+  py: number,
+  exploreVal: number,
 ): void {
-  const grid = state.tileGrid;
-  if (!grid) return;
+  if (exploreVal === 1) {
+    ctx.fillStyle = TILE_COLORS_DIM[tile] ?? '#111111';
+    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+    return;
+  }
+  ctx.fillStyle = TILE_COLORS[tile] ?? '#000000';
+  ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+  if (tile !== TILE_WALL) {
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(px, py, TILE_SIZE, TILE_SIZE);
+  }
+}
 
-  const w = state.gridWidth;
-  const h = state.gridHeight;
+function renderTileGrid(
+  ctx: CanvasRenderingContext2D,
+  grid: number[],
+  w: number,
+  h: number,
+  explored: Uint8Array,
+): void {
   const cam = getCamera();
-  const explored = state.exploredTiles;
   const hasExplored = explored.length === w * h;
 
-  // Compute visible tile range (with 1-tile margin)
   const startCol = Math.max(0, Math.floor(cam.x / TILE_SIZE) - 1);
   const startRow = Math.max(0, Math.floor(cam.y / TILE_SIZE) - 1);
   const viewW = Math.ceil(window.innerWidth / (TILE_SIZE * cam.zoom));
@@ -81,40 +98,19 @@ export function renderDungeon(
       const tile = grid[tileIdx];
       const px = col * TILE_SIZE;
       const py = row * TILE_SIZE;
-
       if (!isVisible(px, py, TILE_SIZE, TILE_SIZE)) continue;
-
-      // Check fog state from exploredTiles
-      const exploreVal = hasExplored ? explored[tileIdx] : 2; // no array = fully visible
-
-      if (exploreVal === 0) {
-        // Unexplored: dark
-        // Unexplored: skip rendering entirely (background shows through as #0a0a0a)
-        continue;
-      }
-
-      if (exploreVal === 1) {
-        // Explored but not currently visible: dimmed
-        ctx.fillStyle = TILE_COLORS_DIM[tile] ?? '#111111';
-        ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-        continue;
-      }
-
-      // Currently visible (value 2)
-      ctx.fillStyle = TILE_COLORS[tile] ?? '#000000';
-      ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-
-      // Subtle grid lines on floor tiles
-      if (tile !== TILE_WALL) {
-        ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-        ctx.lineWidth = 0.5;
-        ctx.strokeRect(px, py, TILE_SIZE, TILE_SIZE);
-      }
+      const exploreVal = hasExplored ? explored[tileIdx] : 2;
+      if (exploreVal === 0) continue;
+      drawSingleTile(ctx, tile, px, py, exploreVal);
     }
   }
+}
 
-  // Cleared room tint (only for visible tiles)
-  for (const room of state.rooms) {
+function renderClearedRoomTints(
+  ctx: CanvasRenderingContext2D,
+  rooms: DungeonClientState['rooms'],
+): void {
+  for (const room of rooms) {
     if (!room.cleared) continue;
     const rx = room.x * TILE_SIZE;
     const ry = room.y * TILE_SIZE;
@@ -125,20 +121,41 @@ export function renderDungeon(
       ctx.fillRect(rx, ry, rw, rh);
     }
   }
+}
 
-  // Floor pickups — glowing colored circles with pulsing animation
-  const pulseT = (Date.now() % 1200) / 1200; // 0..1 over 1.2s
+function getPickupVisuals(pickup: DungeonClientState['floorPickups'] extends Map<string, infer V> ? V : never): { color: string; emoji: string } {
+  const isHealth = pickup.type === 'health';
+  const meta = TEMP_POWERUP_META[pickup.templateId];
+  return {
+    color: isHealth ? '#ff2244' : meta.color,
+    emoji: isHealth ? '❤️' : meta.emoji,
+  };
+}
+
+function renderFloorPickups(
+  ctx: CanvasRenderingContext2D,
+  state: DungeonClientState,
+): void {
+  const pulseT = (Date.now() % 1200) / 1200;
   const pulseFactor = 0.7 + 0.3 * Math.sin(pulseT * Math.PI * 2);
 
   for (const pickup of state.floorPickups.values()) {
     if (!isVisible(pickup.x - 20, pickup.y - 20, 40, 40)) continue;
-
-    const isHealth = pickup.type === 'health';
-    const meta = TEMP_POWERUP_META[pickup.templateId];
-    const color = isHealth ? '#ff2244' : (meta?.color ?? '#ffffff');
-    const emoji = isHealth ? '❤️' : (meta?.emoji ?? '✨');
+    const { color, emoji } = getPickupVisuals(pickup);
     drawPickupGlow(ctx, pickup.x, pickup.y, color, emoji, pulseFactor);
   }
+}
+
+export function renderDungeon(
+  ctx: CanvasRenderingContext2D,
+  state: DungeonClientState,
+): void {
+  const grid = state.tileGrid;
+  if (!grid) return;
+
+  renderTileGrid(ctx, grid, state.gridWidth, state.gridHeight, state.exploredTiles);
+  renderClearedRoomTints(ctx, state.rooms);
+  renderFloorPickups(ctx, state);
 }
 
 function drawPickupGlow(

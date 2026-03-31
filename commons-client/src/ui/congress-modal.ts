@@ -153,22 +153,20 @@ export function initCongressModal(): void {
 // Called from main.ts game loop each frame.
 // Congress doorway: chunk 0,0, tile column 5, rows 5/6/7.
 
+function checkDoorwayTrigger(tileX: number, tileY: number): void {
+  const inDoorway = tileX === CONGRESS_BUILDING_COL &&
+    tileY >= CONGRESS_BUILDING_ROW_MIN && tileY <= CONGRESS_BUILDING_ROW_MAX;
+  if (!inDoorway) return;
+  const key = `${String(tileX)},${String(tileY)}`;
+  if (!_open && key !== _lastTriggerTile) {
+    _lastTriggerTile = key;
+    openModal();
+  }
+}
+
 export function tickCongressModal(state: WorldState): void {
   const player = state.localPlayer;
   if (!player) return;
-  if (state.localPlayer!.chunkX !== 0 || state.localPlayer!.chunkY !== 0) return;
-
-  const tileX = Math.floor(player.x / TILE);
-  const tileY = Math.floor(player.y / TILE);
-
-  const inDoorway = tileX === CONGRESS_BUILDING_COL &&
-    tileY >= CONGRESS_BUILDING_ROW_MIN && tileY <= CONGRESS_BUILDING_ROW_MAX;
-
-  if (inDoorway) {
-    const key = `${tileX},${tileY}`;
-    if (!_open && key !== _lastTriggerTile) {
-      _lastTriggerTile = key;
-      openModal();
-    }
-  }
+  if (player.chunkX !== 0 || player.chunkY !== 0) return;
+  checkDoorwayTrigger(Math.floor(player.x / TILE), Math.floor(player.y / TILE));
 }

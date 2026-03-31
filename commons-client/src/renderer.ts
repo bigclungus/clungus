@@ -149,6 +149,85 @@ function drawSpeechBubble(
 
 // -- NPC drawing ------------------------------------------------------------
 
+function drawNPCSprite(
+  ctx: CanvasRenderingContext2D,
+  npc: NPC,
+  x: number,
+  cy_feet: number,
+  hopOff: number,
+  hovered: boolean,
+  spriteFn: ((ctx: CanvasRenderingContext2D, x: number, y: number) => void) | null,
+): void {
+  if (typeof spriteFn === "function") {
+    if (hovered) ctx.filter = "brightness(1.3)";
+    if (npc.facing === "left") {
+      ctx.translate(x * 2, 0);
+      ctx.scale(-1, 1);
+    }
+    spriteFn(ctx, x, cy_feet);
+  } else {
+    const hash = npc.name.split("").reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 0);
+    const hue = Math.abs(hash) % 360;
+    ctx.fillStyle = `hsl(${String(hue)},60%,${String(hovered ? 58 : 45)}%)`;
+    ctx.fillRect(x - 8, npc.displayY - 8 + hopOff, 16, 16);
+    ctx.fillStyle = "rgba(255,255,255,0.7)";
+    const eyeX = npc.facing === "right" ? x + 3 : x - 3;
+    ctx.fillRect(eyeX - 1, npc.displayY - 2 + hopOff, 2, 3);
+  }
+}
+
+function drawNPCHoverLabel(ctx: CanvasRenderingContext2D, npc: NPC, x: number, hopOff: number): void {
+  const displayName = NPC_DISPLAY_NAMES[npc.name] ?? npc.name;
+  ctx.save();
+  ctx.font = "bold 9px monospace";
+  ctx.textAlign = "center";
+  const tw = ctx.measureText(displayName).width;
+  const ly = npc.displayY - 14 + hopOff;
+  ctx.fillStyle = "rgba(20,20,40,0.82)";
+  ctx.beginPath();
+  ctx.roundRect(x - tw / 2 - 4, ly - 10, tw + 8, 13, 3);
+  ctx.fill();
+  ctx.fillStyle = "#e8e8ff";
+  ctx.fillText(displayName, x, ly);
+  ctx.restore();
+}
+
+function isNPCHovered(npc: NPC, mouseX: number, mouseY: number): boolean {
+  const mdx = mouseX - npc.displayX;
+  const mdy = mouseY - (npc.displayY - 8);
+  return Math.abs(mdx) < NPC_HIT_RADIUS && Math.abs(mdy) < NPC_HIT_RADIUS + 4;
+}
+
+function drawNPCBlurb(
+  ctx: CanvasRenderingContext2D,
+  npc: NPC,
+  x: number,
+  hopOff: number,
+  hovered: boolean,
+  now: number,
+): void {
+  if (!npc.blurb || npc.blurbExpiry === undefined || npc.blurbExpiry <= now) return;
+  const remaining = npc.blurbExpiry - now;
+  const fadeMs = 1200;
+  const alpha = remaining < fadeMs ? remaining / fadeMs : 1.0;
+  const bubbleY = y - 14 + hopOff - (hovered ? 12 : 0);
+  drawSpeechBubble(ctx, x, bubbleY, npc.blurb, alpha);
+}
+
+function drawNPCHoverGlow(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  hopOff: number,
+): void {
+  ctx.save();
+  ctx.shadowColor = "rgba(200,200,255,0.9)";
+  ctx.shadowBlur = 12;
+  ctx.fillStyle = "rgba(200,200,255,0.18)";
+  ctx.fillRect(x - 10, y - 10 + hopOff, 20, 20);
+  ctx.restore();
+}
+
 function drawNPC(
   ctx: CanvasRenderingContext2D,
   npc: NPC,
@@ -160,87 +239,22 @@ function drawNPC(
   const x = npc.displayX;
   const y = npc.displayY;
   const hopOff = -hopOffset(npc.hopFrame ?? 0);
-
-  // Sprite feet position: bottom of the 16px box + hop
   const cy_feet = y + 8 + hopOff;
-
-  // Hover detection
-  const mdx = mouseX - x;
-  const mdy = mouseY - (y - 8);
-  const hovered = Math.abs(mdx) < NPC_HIT_RADIUS && Math.abs(mdy) < NPC_HIT_RADIUS + 4;
+  const hovered = isNPCHovered(npc, mouseX, mouseY);
 
   const spriteId = getSpriteId(npc.name);
   const winner = spriteId ? getWinner(npc.name) : null;
   const spriteFn = winner && spriteId ? getSpriteFn(spriteId, winner) : null;
 
   ctx.save();
-
-  // Hover highlight: glow ring behind the sprite
-  if (hovered) {
-    ctx.save();
-    ctx.shadowColor = "rgba(200,200,255,0.9)";
-    ctx.shadowBlur = 12;
-    ctx.fillStyle = "rgba(200,200,255,0.18)";
-    ctx.fillRect(x - 10, y - 10 + hopOff, 20, 20);
-    ctx.restore();
-  }
-
-  if (typeof spriteFn === "function") {
-    // Brightness boost on hover
-    if (hovered) ctx.filter = "brightness(1.3)";
-    // Flip horizontally for left-facing NPCs
-    if (npc.facing === "left") {
-      ctx.translate(x * 2, 0);
-      ctx.scale(-1, 1);
-    }
-    spriteFn(ctx, x, cy_feet);
-  } else {
-    // Fallback: colored box with direction mark
-    const hash = npc.name.split("").reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 0);
-    const hue = Math.abs(hash) % 360;
-    const lightness = hovered ? 58 : 45;
-    const color = `hsl(${String(hue)},60%,${String(lightness)}%)`;
-
-    ctx.fillStyle = color;
-    ctx.fillRect(x - 8, y - 8 + hopOff, 16, 16);
-
-    ctx.fillStyle = "rgba(255,255,255,0.7)";
-    const eyeX = npc.facing === "right" ? x + 3 : x - 3;
-    ctx.fillRect(eyeX - 1, y - 2 + hopOff, 2, 3);
-  }
-
+  if (hovered) drawNPCHoverGlow(ctx, x, y, hopOff);
+  drawNPCSprite(ctx, npc, x, cy_feet, hopOff, hovered, spriteFn);
   ctx.restore();
 
-  // Label: only draw when hovered, using display name
-  if (hovered) {
-    const displayName = NPC_DISPLAY_NAMES[npc.name] ?? npc.name;
-    ctx.save();
-    ctx.font = "bold 9px monospace";
-    ctx.textAlign = "center";
-    // Measure text width for background pill
-    const tw = ctx.measureText(displayName).width;
-    const lx = x;
-    const ly = y - 14 + hopOff;
-    // Background pill
-    ctx.fillStyle = "rgba(20,20,40,0.82)";
-    ctx.beginPath();
-    ctx.roundRect(lx - tw / 2 - 4, ly - 10, tw + 8, 13, 3);
-    ctx.fill();
-    // Text
-    ctx.fillStyle = "#e8e8ff";
-    ctx.fillText(displayName, lx, ly);
-    ctx.restore();
-  }
+  if (hovered) drawNPCHoverLabel(ctx, npc, x, hopOff);
+  drawNPCBlurb(ctx, npc, x, hopOff, hovered, now);
 
-  // Speech bubble — draw above label (or above sprite if not hovered)
-  if (npc.blurb && npc.blurbExpiry !== undefined && npc.blurbExpiry > now) {
-    const remaining = npc.blurbExpiry - now;
-    const fadeMs = 1200; // fade out over last 1.2s
-    const alpha = remaining < fadeMs ? remaining / fadeMs : 1.0;
-    // Anchor above sprite — label is at y-14, bubble goes above that
-    const bubbleY = y - 14 + hopOff - (hovered ? 12 : 0);
-    drawSpeechBubble(ctx, x, bubbleY, npc.blurb, alpha);
-  }
+  void frame;
 }
 
 // -- Connection overlay -----------------------------------------------------
@@ -273,174 +287,170 @@ if (typeof window !== "undefined") {
   });
 }
 
+function buildHUDLines(state: WorldState): string[] {
+  const player = state.localPlayer;
+  const totalPlayers = state.remotePlayers.size + (player ? 1 : 0);
+  const posStr = player ? `(${String(Math.round(player.x))},${String(Math.round(player.y))})` : "no player";
+  return [
+    `CommonsV2 [${posStr}]`,
+    `chunk: (${String(player?.chunkX ?? 0)}, ${String(player?.chunkY ?? 0)})`,
+    `players: ${String(totalPlayers)}  npcs: ${String(state.npcs.size)}`,
+    `frame: ${String(state.frame)}  ${state.connected ? "● connected" : "○ offline"}`,
+  ];
+}
+
 function drawHUD(ctx: CanvasRenderingContext2D, state: WorldState): void {
   if (!debugVisible) return;
 
-  const player = state.localPlayer;
-  // Include local player in count — remotePlayers only tracks other players
-  const totalPlayers = state.remotePlayers.size + (state.localPlayer ? 1 : 0);
   ctx.save();
   ctx.font = "10px monospace";
   ctx.fillStyle = "rgba(0,0,0,0.5)";
   ctx.fillRect(4, 4, 200, 56);
   ctx.fillStyle = "#ccc";
   ctx.textAlign = "left";
-
-  const lines = [
-    `CommonsV2 [${player ? `(${String(Math.round(player.x))},${String(Math.round(player.y))})` : "no player"}]`,
-    `chunk: (${String(player?.chunkX ?? 0)}, ${String(player?.chunkY ?? 0)})`,
-    `players: ${String(totalPlayers)}  npcs: ${String(state.npcs.size)}`,
-    `frame: ${String(state.frame)}  ${state.connected ? "● connected" : "○ offline"}`,
-  ];
-
-  lines.forEach((line, i) => { ctx.fillText(line, 8, 17 + i * 12); });
+  buildHUDLines(state).forEach((line, i) => { ctx.fillText(line, 8, 17 + i * 12); });
   ctx.restore();
+}
+
+// -- Chunk (0,0) fixed overlays -----------------------------------------------
+
+function drawChunk00Overlays(ctx: CanvasRenderingContext2D, congressActive: boolean): void {
+  ctx.save();
+  ctx.font = "bold 8px monospace";
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(0,0,0,0.4)";
+  ctx.fillText("CONGRESS", CONGRESS_BUILDING_COL * TILE + TILE / 2 + 1, CONGRESS_BUILDING_LABEL_ROW * TILE - 2);
+  ctx.fillStyle = "#c8c8e8";
+  ctx.fillText("CONGRESS", CONGRESS_BUILDING_COL * TILE + TILE / 2, CONGRESS_BUILDING_LABEL_ROW * TILE - 3);
+  ctx.restore();
+
+  ctx.save();
+  ctx.font = "bold 8px monospace";
+  ctx.textAlign = "center";
+  ctx.fillStyle = "rgba(0,0,0,0.5)";
+  ctx.fillText("⚔ DUNGEON", DUNGEON_BUILDING_COL * TILE + TILE / 2 + 1, DUNGEON_BUILDING_LABEL_ROW * TILE - 2);
+  ctx.fillStyle = "#a0ffa0";
+  ctx.fillText("⚔ DUNGEON", DUNGEON_BUILDING_COL * TILE + TILE / 2, DUNGEON_BUILDING_LABEL_ROW * TILE - 3);
+  ctx.restore();
+
+  const bx = LEADERBOARD_COL * TILE;
+  const by = LEADERBOARD_ROW * TILE;
+  ctx.save();
+  ctx.fillStyle = "#6b4226";
+  ctx.fillRect(bx + 8, by - 4, 3, TILE + 4);
+  ctx.fillStyle = "#2a1a0a";
+  ctx.strokeStyle = "#8b6433";
+  ctx.lineWidth = 1.5;
+  ctx.fillRect(bx - 2, by - 12, TILE + 4, 12);
+  ctx.strokeRect(bx - 2, by - 12, TILE + 4, 12);
+  ctx.font = "6px monospace";
+  ctx.fillStyle = "#d4af37";
+  ctx.textAlign = "center";
+  ctx.fillText("🏆", bx + TILE / 2, by - 3);
+  ctx.font = "5px monospace";
+  ctx.fillStyle = "#a08040";
+  ctx.fillText("LEADERBOARD", bx + TILE / 2, by + 8);
+  ctx.restore();
+
+  if (congressActive) {
+    ctx.save();
+    const fx = CONGRESS_BUILDING_COL * TILE;
+    const fy = TILE;
+    ctx.fillStyle = "#222";
+    ctx.fillRect(fx, fy, 2, TILE);
+    ctx.fillStyle = "#f87171";
+    ctx.fillRect(fx + 2, fy, 12, 8);
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(fx + 4, fy + 2, 2, 4);
+    ctx.fillRect(fx + 8, fy + 2, 2, 4);
+    ctx.fillRect(fx + 6, fy + 1, 2, 2);
+    ctx.restore();
+  }
 }
 
 // -- Main render entry point ------------------------------------------------
 
-export function render(state: WorldState, ctx: CanvasRenderingContext2D, frame: number): void {
-  // Background
-  ctx.fillStyle = "#3a5a2a";
-  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-
-  // Use server-authoritative time for all time-of-day and season calculations.
-  // Fall back to Date.now() only before the first tick arrives (serverTime === 0).
-  const refTime = state.serverTime > 0 ? state.serverTime : Date.now();
-
-  // Tile map from cache
-  const season = getSeason(refTime);
+function drawMapLayers(
+  ctx: CanvasRenderingContext2D,
+  state: WorldState,
+  frame: number,
+  season: ReturnType<typeof getSeason>,
+  refTime: number,
+): void {
   if (state.map) {
     const tileCanvas = getOrBuildTileCache(state.map, state.mapChunkX, state.mapChunkY, season);
     ctx.drawImage(tileCanvas, 0, 0);
   }
-
-  // Worn path overlay (drawn on top of tile cache, below entities)
   drawWornPaths(ctx, state.map);
-
-  // Fountain animation overlay (above tile cache, below entities)
   if (state.map) {
     const tileColors = getTileColors(season);
     drawFountainAnimation(ctx, state.map, frame, tileColors.fountainWater);
   }
-
-  // Night tint overlay
   const tint = getNightTint(refTime);
   if (tint) {
     ctx.fillStyle = tint;
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
   }
+}
 
-  // Remote players (same chunk only)
-  const localChunkX = state.localPlayer?.chunkX ?? 0;
-  const localChunkY = state.localPlayer?.chunkY ?? 0;
-
-  // Build warthog seat set for quick lookup (hide seated remote players — they appear as heads on the warthog)
+function drawRemotePlayers(
+  ctx: CanvasRenderingContext2D,
+  state: WorldState,
+  localChunkX: number,
+  localChunkY: number,
+): void {
   const warthogSeatedIds = new Set(state.warthog?.seats.filter(Boolean) ?? []);
-
   for (const player of state.remotePlayers.values()) {
     if (player.chunkX !== localChunkX || player.chunkY !== localChunkY) continue;
-    // Skip remote players seated in the warthog — they're rendered as heads on the vehicle
     if (warthogSeatedIds.has(player.socketId)) continue;
     drawPlayerBody(ctx, player.displayX, player.displayY, player.color, player.facing, player.hopFrame, player.isAway, false);
     drawPlayerLabel(ctx, player.displayX, player.displayY, player.name, player.hopFrame);
   }
+}
 
-  // NPCs
+function drawNPCs(ctx: CanvasRenderingContext2D, state: WorldState, frame: number): void {
   const renderNow = performance.now();
   for (const npc of state.npcs.values()) {
     drawNPC(ctx, npc, frame, renderNow, state.mouseX, state.mouseY);
   }
+}
 
-  // Audition walkers (cross at row 18 — drawn before local player)
-  drawWalkers(ctx, state.walkers);
+function drawLocalPlayer(ctx: CanvasRenderingContext2D, state: WorldState): void {
+  if (!state.localPlayer || state.seatedInWarthog) return;
+  const p = state.localPlayer;
+  drawPlayerBody(ctx, p.x, p.y, p.color, p.facing, p.hopFrame, p.isAway, true);
+  drawPlayerLabel(ctx, p.x, p.y, p.name, p.hopFrame);
+}
 
-  // Warthog vehicle (drawn below local player so player appears inside)
-  drawWarthog(ctx, state);
-
-  // Local player (drawn on top) — hidden when seated in warthog (rendered as head on vehicle)
-  if (state.localPlayer && !state.seatedInWarthog) {
-    const p = state.localPlayer;
-    drawPlayerBody(ctx, p.x, p.y, p.color, p.facing, p.hopFrame, p.isAway, true);
-    drawPlayerLabel(ctx, p.x, p.y, p.name, p.hopFrame);
-  }
-
-  // Tall-sprite overlay: tree canopies and rock bodies drawn after entities so they occlude
-  // players/NPCs that pass behind them (painter's algorithm second pass)
-  if (state.map) {
-    drawTallSprites(ctx, state.map, season);
-  }
-
-  // Congress building label (chunk 0,0 only)
-  if (localChunkX === 0 && localChunkY === 0) {
-    ctx.save();
-    ctx.font = "bold 8px monospace";
-    ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(0,0,0,0.4)";
-    // Label above congress building (chunk 0,0 — column CONGRESS_BUILDING_COL)
-    ctx.fillText("CONGRESS", CONGRESS_BUILDING_COL * TILE + TILE / 2 + 1, CONGRESS_BUILDING_LABEL_ROW * TILE - 2);
-    ctx.fillStyle = "#c8c8e8";
-    ctx.fillText("CONGRESS", CONGRESS_BUILDING_COL * TILE + TILE / 2, CONGRESS_BUILDING_LABEL_ROW * TILE - 3);
-    ctx.restore();
-
-    // Dungeon entrance label (chunk 0,0 — top-right)
-    ctx.save();
-    ctx.font = "bold 8px monospace";
-    ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(0,0,0,0.5)";
-    ctx.fillText("⚔ DUNGEON", DUNGEON_BUILDING_COL * TILE + TILE / 2 + 1, DUNGEON_BUILDING_LABEL_ROW * TILE - 2);
-    ctx.fillStyle = "#a0ffa0";
-    ctx.fillText("⚔ DUNGEON", DUNGEON_BUILDING_COL * TILE + TILE / 2, DUNGEON_BUILDING_LABEL_ROW * TILE - 3);
-    ctx.restore();
-
-    // Leaderboard board object at (LEADERBOARD_COL, LEADERBOARD_ROW)
-    {
-      const bx = LEADERBOARD_COL * TILE;
-      const by = LEADERBOARD_ROW * TILE;
-      // Post
-      ctx.save();
-      ctx.fillStyle = "#6b4226";
-      ctx.fillRect(bx + 8, by - 4, 3, TILE + 4); // vertical post
-      // Board face
-      ctx.fillStyle = "#2a1a0a";
-      ctx.strokeStyle = "#8b6433";
-      ctx.lineWidth = 1.5;
-      ctx.fillRect(bx - 2, by - 12, TILE + 4, 12);
-      ctx.strokeRect(bx - 2, by - 12, TILE + 4, 12);
-      // Trophy icon
-      ctx.font = "6px monospace";
-      ctx.fillStyle = "#d4af37";
-      ctx.textAlign = "center";
-      ctx.fillText("🏆", bx + TILE / 2, by - 3);
-      // Label below
-      ctx.font = "5px monospace";
-      ctx.fillStyle = "#a08040";
-      ctx.fillText("LEADERBOARD", bx + TILE / 2, by + 8);
-      ctx.restore();
-    }
-
-    // Congress flag when session is active
-    if (state.congress.active) {
-      ctx.save();
-      const fx = CONGRESS_BUILDING_COL * TILE;
-      const fy = TILE;
-      ctx.fillStyle = "#222";
-      ctx.fillRect(fx, fy, 2, TILE); // pole
-      ctx.fillStyle = "#f87171";
-      ctx.fillRect(fx + 2, fy, 12, 8); // flag body
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(fx + 4, fy + 2, 2, 4); // scale icon — left arm
-      ctx.fillRect(fx + 8, fy + 2, 2, 4); // right arm
-      ctx.fillRect(fx + 6, fy + 1, 2, 2); // centre top
-      ctx.restore();
-    }
-  }
-
-  // HUD
+function drawConditionalOverlays(
+  ctx: CanvasRenderingContext2D,
+  state: WorldState,
+  localChunkX: number,
+  localChunkY: number,
+  season: string,
+): void {
+  if (state.map) drawTallSprites(ctx, state.map, season);
+  if (localChunkX === 0 && localChunkY === 0) drawChunk00Overlays(ctx, state.congress.active);
   drawHUD(ctx, state);
+  if (!state.connected) drawConnectingOverlay(ctx);
+}
 
-  // Connecting overlay
-  if (!state.connected) {
-    drawConnectingOverlay(ctx);
-  }
+export function render(state: WorldState, ctx: CanvasRenderingContext2D, frame: number): void {
+  ctx.fillStyle = "#3a5a2a";
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  const refTime = state.serverTime > 0 ? state.serverTime : Date.now();
+  const season = getSeason(refTime);
+
+  drawMapLayers(ctx, state, frame, season, refTime);
+
+  const localChunkX = state.localPlayer?.chunkX ?? 0;
+  const localChunkY = state.localPlayer?.chunkY ?? 0;
+
+  drawRemotePlayers(ctx, state, localChunkX, localChunkY);
+  drawNPCs(ctx, state, frame);
+  drawWalkers(ctx, state.walkers);
+  drawWarthog(ctx, state);
+  drawLocalPlayer(ctx, state);
+  drawConditionalOverlays(ctx, state, localChunkX, localChunkY, season);
 }

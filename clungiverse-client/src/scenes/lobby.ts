@@ -35,6 +35,423 @@ let linkCopiedFlash = 0; // timestamp when "Copied!" was triggered
 let skipGenCheckbox: HTMLInputElement | null = null;
 let skipGenLabel: HTMLLabelElement | null = null;
 
+interface CardLayout {
+  gridX: number;
+  gridY: number;
+  gridW: number;
+  gridH: number;
+  CARD_W: number;
+  CARD_H: number;
+  CARD_GAP: number;
+}
+
+function computeCardLayout(canvasH: number, canvasW: number): CardLayout {
+  const reservedH = 110 + 30 + 48 + 20;
+  const gridRows = Math.ceil(PERSONA_SLUGS.length / GRID_COLS);
+  const maxGridH = canvasH - reservedH;
+  const naturalGridH = gridRows * BASE_CARD_H + (gridRows - 1) * BASE_CARD_GAP;
+  const scale = naturalGridH > maxGridH ? maxGridH / naturalGridH : 1;
+  const CARD_W = Math.floor(BASE_CARD_W * scale);
+  const CARD_H = Math.floor(BASE_CARD_H * scale);
+  const CARD_GAP = Math.floor(BASE_CARD_GAP * scale);
+  const gridW = GRID_COLS * CARD_W + (GRID_COLS - 1) * CARD_GAP;
+  const gridH = gridRows * CARD_H + (gridRows - 1) * CARD_GAP;
+  const gridX = (canvasW - gridW) / 2;
+  return { gridX, gridY: 110, gridW, gridH, CARD_W, CARD_H, CARD_GAP };
+}
+
+function renderLobbyStatus(ctx: CanvasRenderingContext2D, state: DungeonClientState, w: number): void {
+  if (state.lobbyStatus === 'error') {
+    ctx.fillStyle = '#ff4444';
+    ctx.font = '14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`Error: ${state.lobbyError ?? 'Unknown'}`, w / 2, 98);
+  } else if (state.lobbyStatus === 'creating') {
+    ctx.fillStyle = '#ffcc44';
+    ctx.font = '14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Creating lobby...', w / 2, 98);
+  } else if (state.lobbyStatus === 'joining') {
+    ctx.fillStyle = '#ffcc44';
+    ctx.font = '14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Joining lobby...', w / 2, 98);
+  } else if (!state.connected) {
+    ctx.fillStyle = '#ff4444';
+    ctx.font = '14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Connecting...', w / 2, 98);
+  }
+}
+
+function renderPersonaStatBlock(
+  ctx: CanvasRenderingContext2D,
+  stats: { hp: number; atk: number; def: number; spd: number; lck: number },
+  cx: number,
+  cy: number,
+): void {
+  const statY = cy + 92;
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'left';
+  const sx = cx + 14;
+  ctx.fillStyle = '#ffcc66'; ctx.fillText('HP', sx, statY);
+  ctx.fillStyle = '#e0e0e0'; ctx.fillText(` ${String(stats.hp)}`, sx + ctx.measureText('HP').width, statY);
+  ctx.fillStyle = '#ff7766'; ctx.fillText('ATK', sx, statY + 16);
+  ctx.fillStyle = '#e0e0e0'; ctx.fillText(` ${String(stats.atk)}`, sx + ctx.measureText('ATK').width, statY + 16);
+  ctx.fillStyle = '#66bbff'; ctx.fillText('DEF', sx + 90, statY);
+  ctx.fillStyle = '#e0e0e0'; ctx.fillText(` ${String(stats.def)}`, sx + 90 + ctx.measureText('DEF').width, statY);
+  ctx.fillStyle = '#66ffaa'; ctx.fillText('SPD', sx + 90, statY + 16);
+  ctx.fillStyle = '#e0e0e0'; ctx.fillText(` ${String(stats.spd)}`, sx + 90 + ctx.measureText('SPD').width, statY + 16);
+  ctx.fillStyle = '#cc99ff'; ctx.fillText('LCK', sx + 45, statY + 32);
+  ctx.fillStyle = '#e0e0e0'; ctx.fillText(` ${String(stats.lck)}`, sx + 45 + ctx.measureText('LCK').width, statY + 32);
+}
+
+function cardBgColor(selected: boolean, taken: boolean): string {
+  if (taken) return '#1a1a1a';
+  return selected ? '#2a2a3e' : '#1e1e2e';
+}
+
+function cardBorderColor(persona: typeof PERSONAS[PersonaSlug], selected: boolean, taken: boolean): string {
+  if (selected) return persona.color;
+  return taken ? '#333333' : '#444444';
+}
+
+function renderPersonaCardHeader(
+  ctx: CanvasRenderingContext2D,
+  persona: typeof PERSONAS[PersonaSlug],
+  cx: number,
+  cy: number,
+  CARD_W: number,
+  CARD_H: number,
+  selected: boolean,
+  taken: boolean,
+): void {
+  ctx.fillStyle = cardBgColor(selected, taken);
+  ctx.fillRect(cx, cy, CARD_W, CARD_H);
+  ctx.strokeStyle = cardBorderColor(persona, selected, taken);
+  ctx.lineWidth = selected ? 2 : 1;
+  ctx.strokeRect(cx, cy, CARD_W, CARD_H);
+  ctx.fillStyle = taken ? '#444444' : persona.color;
+  ctx.beginPath();
+  ctx.arc(cx + CARD_W / 2, cy + 30, 18, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  drawRoleShape(ctx, cx + CARD_W / 2, cy + 30, 11, persona.role);
+  ctx.fillStyle = taken ? '#555555' : '#ffffff';
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(persona.name, cx + CARD_W / 2, cy + 62);
+  ctx.fillStyle = taken ? '#666666' : persona.color;
+  ctx.font = 'bold 11px monospace';
+  ctx.fillText(persona.role.toUpperCase(), cx + CARD_W / 2, cy + 76);
+}
+
+function renderPersonaCard(
+  ctx: CanvasRenderingContext2D,
+  state: DungeonClientState,
+  slug: PersonaSlug,
+  cx: number,
+  cy: number,
+  CARD_W: number,
+  CARD_H: number,
+): void {
+  const persona = PERSONAS[slug];
+  const selected = state.selectedPersona === slug;
+  const taken = state.lobbyPlayers.some(
+    (p) => p.personaSlug === slug && p.playerId !== state.playerId,
+  );
+
+  renderPersonaCardHeader(ctx, persona, cx, cy, CARD_W, CARD_H, selected, taken);
+  renderPersonaStatBlock(ctx, persona.baseStats, cx, cy);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#88bbff';
+  ctx.font = 'bold 14px monospace';
+  ctx.fillText(persona.powerName, cx + CARD_W / 2, cy + 170);
+
+  ctx.fillStyle = '#c0c0c0';
+  ctx.font = '12px monospace';
+  wrapText(ctx, persona.powerDescription, cx + CARD_W / 2, cy + 186, CARD_W - 20, 14);
+
+  if (taken) {
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(cx, cy, CARD_W, CARD_H);
+    ctx.fillStyle = '#999999';
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('TAKEN', cx + CARD_W / 2, cy + CARD_H / 2);
+  }
+}
+
+function renderPersonaGrid(
+  ctx: CanvasRenderingContext2D,
+  state: DungeonClientState,
+  gridX: number,
+  gridY: number,
+  CARD_W: number,
+  CARD_H: number,
+  CARD_GAP: number,
+): void {
+  cardHits = [];
+  for (let i = 0; i < PERSONA_SLUGS.length; i++) {
+    const slug = PERSONA_SLUGS[i];
+    const col = i % GRID_COLS;
+    const row = Math.floor(i / GRID_COLS);
+    const cx = gridX + col * (CARD_W + CARD_GAP);
+    const cy = gridY + row * (CARD_H + CARD_GAP);
+    cardHits.push({ slug, x: cx, y: cy, w: CARD_W, h: CARD_H });
+    renderPersonaCard(ctx, state, slug, cx, cy, CARD_W, CARD_H);
+  }
+}
+
+function renderPartyRoster(ctx: CanvasRenderingContext2D, state: DungeonClientState, w: number): void {
+  const rosterX = w - 200;
+  const rosterY = 110;
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('Party', rosterX, rosterY);
+
+  let ry = rosterY + 24;
+  for (const player of state.lobbyPlayers) {
+    const pColor = player.personaSlug ? PERSONAS[player.personaSlug].color : '#555555';
+
+    ctx.fillStyle = player.ready ? '#44cc44' : '#cc4444';
+    ctx.beginPath();
+    ctx.arc(rosterX + 7, ry + 3, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '14px monospace';
+    ctx.fillText(player.name, rosterX + 18, ry + 7);
+
+    if (player.personaSlug) {
+      ctx.fillStyle = pColor;
+      ctx.font = '12px monospace';
+      ctx.fillText(PERSONAS[player.personaSlug].name, rosterX + 18, ry + 22);
+    }
+
+    if (player.isHost) {
+      ctx.fillStyle = '#ffc640';
+      ctx.font = 'bold 10px monospace';
+      ctx.fillText('HOST', rosterX + 140, ry + 7);
+    }
+
+    ry += 36;
+  }
+}
+
+function renderHostStartButton(
+  ctx: CanvasRenderingContext2D,
+  state: DungeonClientState,
+  btnX: number,
+  btnY: number,
+  btnW: number,
+  btnH: number,
+): void {
+  const allReady = state.lobbyPlayers.length > 0 && state.lobbyPlayers.every((p) => p.ready);
+  const canStart = !!state.selectedPersona && state.connected && allReady;
+  startButtonHit = { x: btnX, y: btnY, w: btnW, h: btnH };
+  ctx.fillStyle = canStart ? '#2a6b2a' : '#222222';
+  ctx.fillRect(btnX, btnY, btnW, btnH);
+  ctx.strokeStyle = canStart ? '#44aa44' : '#444444';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(btnX, btnY, btnW, btnH);
+  ctx.fillStyle = canStart ? '#ffffff' : '#666666';
+  ctx.font = 'bold 20px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('START DUNGEON', btnX + btnW / 2, btnY + 32);
+  renderHostStartHint(ctx, state, allReady, btnX, btnY, btnW, btnH);
+}
+
+function renderHostStartHint(
+  ctx: CanvasRenderingContext2D,
+  state: DungeonClientState,
+  allReady: boolean,
+  btnX: number,
+  btnY: number,
+  btnW: number,
+  btnH: number,
+): void {
+  ctx.fillStyle = '#888888';
+  ctx.font = '12px monospace';
+  ctx.textAlign = 'center';
+  if (!state.selectedPersona) {
+    ctx.fillText('Select a persona to begin', btnX + btnW / 2, btnY + btnH + 18);
+  } else if (!allReady) {
+    ctx.fillText('Waiting for all players to pick...', btnX + btnW / 2, btnY + btnH + 18);
+  }
+}
+
+function renderStartOrWaitButton(
+  ctx: CanvasRenderingContext2D,
+  state: DungeonClientState,
+  w: number,
+  gridY: number,
+  gridH: number,
+): void {
+  const btnW = 220;
+  const btnH = 48;
+  const btnX = (w - btnW) / 2;
+  const btnY = gridY + gridH + 30;
+
+  if (state.isHost) {
+    renderHostStartButton(ctx, state, btnX, btnY, btnW, btnH);
+  } else {
+    startButtonHit = null;
+    ctx.fillStyle = '#888888';
+    ctx.font = '16px monospace';
+    ctx.textAlign = 'center';
+    if (!state.selectedPersona) {
+      ctx.fillText('Select a persona', btnX + btnW / 2, btnY + 28);
+    } else {
+      ctx.fillText('Waiting for host to start...', btnX + btnW / 2, btnY + 28);
+    }
+  }
+}
+
+function renderMobGenOverlay(
+  ctx: CanvasRenderingContext2D,
+  state: DungeonClientState,
+  w: number,
+  h: number,
+): void {
+  const prog = state.mobGenProgress!;
+
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 28px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('ENTERING THE DUNGEON', w / 2, h / 2 - 60);
+
+  const barW = 320;
+  const barH = 20;
+  const barX = (w - barW) / 2;
+  const barY = h / 2 - 10;
+  const ratio = prog.total > 0 ? prog.completed / prog.total : 0;
+
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(barX, barY, barW, barH);
+  ctx.strokeStyle = '#444466';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(barX, barY, barW, barH);
+
+  ctx.fillStyle = '#44aa66';
+  ctx.fillRect(barX, barY, barW * ratio, barH);
+
+  ctx.fillStyle = '#cccccc';
+  ctx.font = '14px monospace';
+  ctx.fillText(`${String(prog.completed)} / ${String(prog.total)}`, w / 2, barY + barH + 24);
+
+  if (prog.current) {
+    ctx.fillStyle = '#888899';
+    ctx.font = '13px monospace';
+    ctx.fillText(prog.current, w / 2, barY + barH + 48);
+  }
+
+  if (prog.status === 'error') {
+    ctx.fillStyle = '#ff4444';
+    ctx.font = '14px monospace';
+    ctx.fillText('Generation error - retrying...', w / 2, barY + barH + 72);
+  }
+}
+
+function renderCopyInviteButton(
+  ctx: CanvasRenderingContext2D,
+  state: DungeonClientState,
+  w: number,
+  gridY: number,
+  gridH: number,
+): void {
+  if (!state.lobbyId) return;
+
+  const linkBtnW = 200;
+  const linkBtnH = 32;
+  const linkBtnX = (w - linkBtnW) / 2;
+  const linkBtnY = gridY + gridH + 30 + 48 + 28;
+
+  copyLinkHit = { x: linkBtnX, y: linkBtnY, w: linkBtnW, h: linkBtnH };
+
+  const recentlyCopied = linkCopiedFlash > 0 && (performance.now() - linkCopiedFlash) < 2000;
+
+  ctx.fillStyle = recentlyCopied ? '#1a3a1a' : '#1a1a2e';
+  ctx.fillRect(linkBtnX, linkBtnY, linkBtnW, linkBtnH);
+  ctx.strokeStyle = recentlyCopied ? '#44aa44' : '#555577';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(linkBtnX, linkBtnY, linkBtnW, linkBtnH);
+
+  ctx.fillStyle = recentlyCopied ? '#88ff88' : '#aaaacc';
+  ctx.font = '14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(
+    recentlyCopied ? 'Copied!' : 'Copy Invite Link',
+    linkBtnX + linkBtnW / 2,
+    linkBtnY + 22,
+  );
+
+  ctx.fillStyle = '#555555';
+  ctx.font = '10px monospace';
+  ctx.fillText(`Lobby: ${state.lobbyId}`, linkBtnX + linkBtnW / 2, linkBtnY + linkBtnH + 14);
+}
+
+function copyInviteLink(lobbyId: string): void {
+  const inviteUrl = `${window.location.origin}/clungiverse.html?lobby=${lobbyId}`;
+  navigator.clipboard.writeText(inviteUrl).then(() => {
+    linkCopiedFlash = performance.now();
+  }).catch(() => {
+    const tmp = document.createElement('input');
+    tmp.value = inviteUrl;
+    document.body.appendChild(tmp);
+    tmp.select();
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
+    document.execCommand('copy');
+    document.body.removeChild(tmp);
+    linkCopiedFlash = performance.now();
+  });
+}
+
+interface HitBox { x: number; y: number; w: number; h: number; }
+
+function hitTest(mx: number, my: number, b: HitBox): boolean {
+  return mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h;
+}
+
+function handleCardClick(mx: number, my: number, state: DungeonClientState, network: DungeonNetwork): boolean {
+  for (const card of cardHits) {
+    if (hitTest(mx, my, card)) {
+      state.selectedPersona = card.slug;
+      if (state.connected) network.sendReady(card.slug);
+      return true;
+    }
+  }
+  return false;
+}
+
+function handleCopyLinkClick(mx: number, my: number, state: DungeonClientState): boolean {
+  if (!copyLinkHit || !state.lobbyId) return false;
+  if (!hitTest(mx, my, copyLinkHit)) return false;
+  copyInviteLink(state.lobbyId);
+  return true;
+}
+
+function handleStartButtonClick(mx: number, my: number, state: DungeonClientState, network: DungeonNetwork): void {
+  if (!startButtonHit || !state.isHost || !state.selectedPersona || !state.connected) return;
+  if (!hitTest(mx, my, startButtonHit)) return;
+  network.sendReady(state.selectedPersona);
+  network.sendStart(state.skipGen);
+}
+
+function handleLobbyClick(e: MouseEvent, state: DungeonClientState, network: DungeonNetwork): void {
+  const mx = e.clientX;
+  const my = e.clientY;
+  if (handleCardClick(mx, my, state, network)) return;
+  if (handleCopyLinkClick(mx, my, state)) return;
+  handleStartButtonClick(mx, my, state, network);
+}
+
 export function createLobbyScene(network: DungeonNetwork): LobbyScene {
   return {
     enter(state: DungeonClientState): void {
@@ -52,8 +469,9 @@ export function createLobbyScene(network: DungeonNetwork): LobbyScene {
       skipGenCheckbox.id = 'skip-gen-checkbox';
       skipGenCheckbox.checked = state.skipGen;
       skipGenCheckbox.style.cssText = 'accent-color:#44aa66;width:16px;height:16px;cursor:pointer;flex-shrink:0;';
-      skipGenCheckbox.addEventListener('change', () => {
-        state.skipGen = skipGenCheckbox!.checked;
+      const checkboxRef = skipGenCheckbox;
+      checkboxRef.addEventListener('change', () => {
+        state.skipGen = checkboxRef.checked;
       });
 
       skipGenLabel = document.createElement('label');
@@ -66,49 +484,7 @@ export function createLobbyScene(network: DungeonNetwork): LobbyScene {
       document.body.appendChild(skipGenWrapper);
 
       clickHandler = (e: MouseEvent) => {
-        const mx = e.clientX;
-        const my = e.clientY;
-
-        // Check persona cards
-        for (const card of cardHits) {
-          if (mx >= card.x && mx <= card.x + card.w && my >= card.y && my <= card.y + card.h) {
-            state.selectedPersona = card.slug;
-            if (state.connected) {
-              network.sendReady(card.slug);
-            }
-            return;
-          }
-        }
-
-        // Check copy invite link button
-        if (copyLinkHit && state.lobbyId) {
-          const b = copyLinkHit;
-          if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) {
-            const inviteUrl = `${window.location.origin}/clungiverse.html?lobby=${state.lobbyId}`;
-            navigator.clipboard.writeText(inviteUrl).then(() => {
-              linkCopiedFlash = performance.now();
-            }).catch(() => {
-              // Fallback: select from a temporary input
-              const tmp = document.createElement('input');
-              tmp.value = inviteUrl;
-              document.body.appendChild(tmp);
-              tmp.select();
-              document.execCommand('copy');
-              document.body.removeChild(tmp);
-              linkCopiedFlash = performance.now();
-            });
-            return;
-          }
-        }
-
-        // Check start button — host only, enabled when a persona is selected
-        if (startButtonHit && state.isHost && state.selectedPersona && state.connected) {
-          const b = startButtonHit;
-          if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) {
-            network.sendReady(state.selectedPersona);
-            network.sendStart(state.skipGen);
-          }
-        }
+        handleLobbyClick(e, state, network);
       };
 
       window.addEventListener('click', clickHandler);
@@ -122,14 +498,13 @@ export function createLobbyScene(network: DungeonNetwork): LobbyScene {
       const w = ctx.canvas.width;
       const h = ctx.canvas.height;
 
-      // Background: dark cave gradient
+      // Background
       const grad = ctx.createLinearGradient(0, 0, 0, h);
       grad.addColorStop(0, '#0d0d1a');
       grad.addColorStop(1, '#1a1a2e');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
 
-      // Title
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 32px monospace';
       ctx.textAlign = 'center';
@@ -139,315 +514,20 @@ export function createLobbyScene(network: DungeonNetwork): LobbyScene {
       ctx.fillStyle = '#bbbbbb';
       ctx.fillText('Select Your Persona', w / 2, 78);
 
-      // Connection status
-      if (state.lobbyStatus === 'error') {
-        ctx.fillStyle = '#ff4444';
-        ctx.font = '14px monospace';
-        ctx.fillText(`Error: ${state.lobbyError ?? 'Unknown'}`, w / 2, 98);
-      } else if (state.lobbyStatus === 'creating') {
-        ctx.fillStyle = '#ffcc44';
-        ctx.font = '14px monospace';
-        ctx.fillText('Creating lobby...', w / 2, 98);
-      } else if (state.lobbyStatus === 'joining') {
-        ctx.fillStyle = '#ffcc44';
-        ctx.font = '14px monospace';
-        ctx.fillText('Joining lobby...', w / 2, 98);
-      } else if (!state.connected) {
-        ctx.fillStyle = '#ff4444';
-        ctx.font = '14px monospace';
-        ctx.fillText('Connecting...', w / 2, 98);
-      }
+      renderLobbyStatus(ctx, state, w);
 
-      // === Persona Selection Grid (2x2) ===
-      // Scale cards to fit viewport: header(110) + grid + gap(30) + button(48) + margin(20)
-      const reservedH = 110 + 30 + 48 + 20;
-      const gridRows = Math.ceil(PERSONA_SLUGS.length / GRID_COLS);
-      const maxGridH = h - reservedH;
-      const naturalGridH = gridRows * BASE_CARD_H + (gridRows - 1) * BASE_CARD_GAP;
-      const scale = naturalGridH > maxGridH ? maxGridH / naturalGridH : 1;
-      const CARD_W = Math.floor(BASE_CARD_W * scale);
-      const CARD_H = Math.floor(BASE_CARD_H * scale);
-      const CARD_GAP = Math.floor(BASE_CARD_GAP * scale);
-
-      const gridW = GRID_COLS * CARD_W + (GRID_COLS - 1) * CARD_GAP;
-      const gridH = gridRows * CARD_H + (gridRows - 1) * CARD_GAP;
-      const gridX = (w - gridW) / 2;
-      const gridY = 110;
-
-      cardHits = [];
-
-      for (let i = 0; i < PERSONA_SLUGS.length; i++) {
-        const slug = PERSONA_SLUGS[i];
-        const persona = PERSONAS[slug];
-        const col = i % GRID_COLS;
-        const row = Math.floor(i / GRID_COLS);
-        const cx = gridX + col * (CARD_W + CARD_GAP);
-        const cy = gridY + row * (CARD_H + CARD_GAP);
-
-        cardHits.push({ slug, x: cx, y: cy, w: CARD_W, h: CARD_H });
-
-        const selected = state.selectedPersona === slug;
-        const taken = state.lobbyPlayers.some(
-          (p) => p.personaSlug === slug && p.playerId !== state.playerId,
-        );
-
-        // Card background
-        ctx.fillStyle = taken ? '#1a1a1a' : selected ? '#2a2a3e' : '#1e1e2e';
-        ctx.fillRect(cx, cy, CARD_W, CARD_H);
-
-        // Border
-        ctx.strokeStyle = selected ? persona.color : taken ? '#333333' : '#444444';
-        ctx.lineWidth = selected ? 2 : 1;
-        ctx.strokeRect(cx, cy, CARD_W, CARD_H);
-
-        // Persona color circle
-        ctx.fillStyle = taken ? '#444444' : persona.color;
-        ctx.beginPath();
-        ctx.arc(cx + CARD_W / 2, cy + 30, 18, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Role shape inside circle
-        ctx.fillStyle = 'rgba(255,255,255,0.6)';
-        drawRoleShape(ctx, cx + CARD_W / 2, cy + 30, 11, persona.role);
-
-        // Name
-        ctx.fillStyle = taken ? '#555555' : '#ffffff';
-        ctx.font = 'bold 16px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText(persona.name, cx + CARD_W / 2, cy + 62);
-
-        // Role — use persona color for visibility
-        ctx.fillStyle = taken ? '#666666' : persona.color;
-        ctx.font = 'bold 11px monospace';
-        ctx.fillText(persona.role.toUpperCase(), cx + CARD_W / 2, cy + 76);
-
-        // Stats
-        const stats = persona.baseStats;
-        const statY = cy + 92;
-        ctx.font = '12px monospace';
-        ctx.textAlign = 'left';
-        const sx = cx + 14;
-        ctx.fillStyle = '#ffcc66';
-        ctx.fillText('HP', sx, statY);
-        ctx.fillStyle = '#e0e0e0';
-        ctx.fillText(` ${stats.hp}`, sx + ctx.measureText('HP').width, statY);
-        ctx.fillStyle = '#ff7766';
-        ctx.fillText('ATK', sx, statY + 16);
-        ctx.fillStyle = '#e0e0e0';
-        ctx.fillText(` ${stats.atk}`, sx + ctx.measureText('ATK').width, statY + 16);
-        ctx.fillStyle = '#66bbff';
-        ctx.fillText('DEF', sx + 90, statY);
-        ctx.fillStyle = '#e0e0e0';
-        ctx.fillText(` ${stats.def}`, sx + 90 + ctx.measureText('DEF').width, statY);
-        ctx.fillStyle = '#66ffaa';
-        ctx.fillText('SPD', sx + 90, statY + 16);
-        ctx.fillStyle = '#e0e0e0';
-        ctx.fillText(` ${stats.spd}`, sx + 90 + ctx.measureText('SPD').width, statY + 16);
-        ctx.fillStyle = '#cc99ff';
-        ctx.fillText('LCK', sx + 45, statY + 32);
-        ctx.fillStyle = '#e0e0e0';
-        ctx.fillText(` ${stats.lck}`, sx + 45 + ctx.measureText('LCK').width, statY + 32);
-
-        // Power
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#88bbff';
-        ctx.font = 'bold 14px monospace';
-        ctx.fillText(persona.powerName, cx + CARD_W / 2, cy + 170);
-
-        ctx.fillStyle = '#c0c0c0';
-        ctx.font = '12px monospace';
-        wrapText(ctx, persona.powerDescription, cx + CARD_W / 2, cy + 186, CARD_W - 20, 14);
-
-        if (taken) {
-          ctx.fillStyle = 'rgba(0,0,0,0.5)';
-          ctx.fillRect(cx, cy, CARD_W, CARD_H);
-          ctx.fillStyle = '#999999';
-          ctx.font = 'bold 14px monospace';
-          ctx.textAlign = 'center';
-          ctx.fillText('TAKEN', cx + CARD_W / 2, cy + CARD_H / 2);
-        }
-      }
-
-      // === Party Roster ===
-      const rosterX = w - 200;
-      const rosterY = 110;
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 16px monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText('Party', rosterX, rosterY);
-
-      let ry = rosterY + 24;
-      for (const player of state.lobbyPlayers) {
-        const pColor = player.personaSlug
-          ? PERSONAS[player.personaSlug]?.color ?? '#888888'
-          : '#555555';
-
-        // Ready indicator
-        ctx.fillStyle = player.ready ? '#44cc44' : '#cc4444';
-        ctx.beginPath();
-        ctx.arc(rosterX + 7, ry + 3, 5, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Name
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '14px monospace';
-        ctx.fillText(player.name, rosterX + 18, ry + 7);
-
-        // Persona label
-        if (player.personaSlug) {
-          ctx.fillStyle = pColor;
-          ctx.font = '12px monospace';
-          ctx.fillText(
-            PERSONAS[player.personaSlug]?.name ?? player.personaSlug,
-            rosterX + 18,
-            ry + 22,
-          );
-        }
-
-        // Host badge
-        if (player.isHost) {
-          ctx.fillStyle = '#ffc640';
-          ctx.font = 'bold 10px monospace';
-          ctx.fillText('HOST', rosterX + 140, ry + 7);
-        }
-
-        ry += 36;
-      }
-
-      // === Start Button (host only) / Waiting text (non-host) ===
-      {
-        const btnW = 220;
-        const btnH = 48;
-        const btnX = (w - btnW) / 2;
-        const btnY = gridY + gridH + 30;
-
-        if (state.isHost) {
-          const allReady = state.lobbyPlayers.length > 0 &&
-            state.lobbyPlayers.every((p) => p.ready);
-          const canStart = !!state.selectedPersona && state.connected && allReady;
-
-          startButtonHit = { x: btnX, y: btnY, w: btnW, h: btnH };
-
-          ctx.fillStyle = canStart ? '#2a6b2a' : '#222222';
-          ctx.fillRect(btnX, btnY, btnW, btnH);
-          ctx.strokeStyle = canStart ? '#44aa44' : '#444444';
-          ctx.lineWidth = 2;
-          ctx.strokeRect(btnX, btnY, btnW, btnH);
-
-          ctx.fillStyle = canStart ? '#ffffff' : '#666666';
-          ctx.font = 'bold 20px monospace';
-          ctx.textAlign = 'center';
-          ctx.fillText('START DUNGEON', btnX + btnW / 2, btnY + 32);
-
-          if (!state.selectedPersona) {
-            ctx.fillStyle = '#888888';
-            ctx.font = '12px monospace';
-            ctx.fillText('Select a persona to begin', btnX + btnW / 2, btnY + btnH + 18);
-          } else if (!allReady) {
-            ctx.fillStyle = '#888888';
-            ctx.font = '12px monospace';
-            ctx.fillText('Waiting for all players to pick...', btnX + btnW / 2, btnY + btnH + 18);
-          }
-        } else {
-          startButtonHit = null;
-
-          ctx.fillStyle = '#888888';
-          ctx.font = '16px monospace';
-          ctx.textAlign = 'center';
-          if (!state.selectedPersona) {
-            ctx.fillText('Select a persona', btnX + btnW / 2, btnY + 28);
-          } else {
-            ctx.fillText('Waiting for host to start...', btnX + btnW / 2, btnY + 28);
-          }
-        }
-      }
-
-      // === Mob Generation Loading Overlay ===
+      // Mob generation loading overlay (shown over everything while floor is initializing)
       if (state.mobGenProgress) {
-        const prog = state.mobGenProgress;
-
-        // Dark overlay
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-        ctx.fillRect(0, 0, w, h);
-
-        // Title
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 28px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('ENTERING THE DUNGEON', w / 2, h / 2 - 60);
-
-        // Progress bar
-        const barW = 320;
-        const barH = 20;
-        const barX = (w - barW) / 2;
-        const barY = h / 2 - 10;
-        const ratio = prog.total > 0 ? prog.completed / prog.total : 0;
-
-        // Bar background
-        ctx.fillStyle = '#1a1a2e';
-        ctx.fillRect(barX, barY, barW, barH);
-        ctx.strokeStyle = '#444466';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(barX, barY, barW, barH);
-
-        // Bar fill
-        ctx.fillStyle = '#44aa66';
-        ctx.fillRect(barX, barY, barW * ratio, barH);
-
-        // Progress text
-        ctx.fillStyle = '#cccccc';
-        ctx.font = '14px monospace';
-        ctx.fillText(`${prog.completed} / ${prog.total}`, w / 2, barY + barH + 24);
-
-        // Current entity
-        if (prog.current) {
-          ctx.fillStyle = '#888899';
-          ctx.font = '13px monospace';
-          ctx.fillText(prog.current, w / 2, barY + barH + 48);
-        }
-
-        // Status indicator
-        if (prog.status === 'error') {
-          ctx.fillStyle = '#ff4444';
-          ctx.font = '14px monospace';
-          ctx.fillText('Generation error - retrying...', w / 2, barY + barH + 72);
-        }
-
-        return; // Don't render the rest of the lobby underneath
+        renderMobGenOverlay(ctx, state, w, h);
+        return;
       }
 
-      // === Copy Invite Link Button ===
-      if (state.lobbyId) {
-        const linkBtnW = 200;
-        const linkBtnH = 32;
-        const linkBtnX = (w - linkBtnW) / 2;
-        const linkBtnY = gridY + gridH + 30 + 48 + 28; // below start button
+      const { gridX, gridY, gridW: _gridW, gridH, CARD_W, CARD_H, CARD_GAP } = computeCardLayout(h, w);
 
-        copyLinkHit = { x: linkBtnX, y: linkBtnY, w: linkBtnW, h: linkBtnH };
-
-        const recentlyCopied = linkCopiedFlash > 0 && (performance.now() - linkCopiedFlash) < 2000;
-
-        ctx.fillStyle = recentlyCopied ? '#1a3a1a' : '#1a1a2e';
-        ctx.fillRect(linkBtnX, linkBtnY, linkBtnW, linkBtnH);
-        ctx.strokeStyle = recentlyCopied ? '#44aa44' : '#555577';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(linkBtnX, linkBtnY, linkBtnW, linkBtnH);
-
-        ctx.fillStyle = recentlyCopied ? '#88ff88' : '#aaaacc';
-        ctx.font = '14px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText(
-          recentlyCopied ? 'Copied!' : 'Copy Invite Link',
-          linkBtnX + linkBtnW / 2,
-          linkBtnY + 22,
-        );
-
-        // Show lobby ID below the button
-        ctx.fillStyle = '#555555';
-        ctx.font = '10px monospace';
-        ctx.fillText(`Lobby: ${state.lobbyId}`, linkBtnX + linkBtnW / 2, linkBtnY + linkBtnH + 14);
-      }
+      renderPersonaGrid(ctx, state, gridX, gridY, CARD_W, CARD_H, CARD_GAP);
+      renderPartyRoster(ctx, state, w);
+      renderStartOrWaitButton(ctx, state, w, gridY, gridH);
+      renderCopyInviteButton(ctx, state, w, gridY, gridH);
     },
 
     exit(_state: DungeonClientState): void {

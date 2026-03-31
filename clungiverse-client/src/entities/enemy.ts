@@ -40,7 +40,7 @@ export function getBossRenderInfo(
   state: DungeonClientState,
 ): EnemyRenderInfo | null {
   const boss = state.boss;
-  if (!boss || !boss.alive) return null;
+  if (!boss?.alive) return null;
 
   const { ix, iy } = getInterpolatedPos(boss.prevX, boss.prevY, boss.x, boss.y, state);
 

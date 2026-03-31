@@ -33,13 +33,13 @@ export function drawFountainAnimation(
 
       // Ripple overlay
       ctx.save();
-      ctx.fillStyle = `rgba(255,255,255,${Math.max(0, rippleAlpha)})`;
+      ctx.fillStyle = `rgba(255,255,255,${String(Math.max(0, rippleAlpha))})`;
       ctx.fillRect(x + 4, y + 4, TILE - 8, TILE - 8);
 
       // Sparkle dot (animated position within tile)
       const sparkX = x + 5 + Math.round(Math.sin(t * Math.PI * 2 + tx) * 3);
       const sparkY = y + 5 + Math.round(Math.cos(t * Math.PI * 2 + ty) * 3);
-      ctx.fillStyle = `rgba(255,255,255,${0.5 + Math.sin(t * Math.PI * 4) * 0.3})`;
+      ctx.fillStyle = `rgba(255,255,255,${String(0.5 + Math.sin(t * Math.PI * 4) * 0.3)})`;
       ctx.fillRect(sparkX, sparkY, 2, 2);
 
       ctx.restore();

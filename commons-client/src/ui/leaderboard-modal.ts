@@ -155,7 +155,68 @@ function formatDate(ts: number): string {
   const yr = d.getFullYear();
   const mo = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
-  return `${yr}-${mo}-${day}`;
+  return `${String(yr)}-${mo}-${day}`;
+}
+
+function getRankColor(rank: number): string {
+  if (rank === 1) return "#d4af37";
+  if (rank === 2) return "#aaa9ad";
+  if (rank === 3) return "#cd7f32";
+  return "#4a3a8a";
+}
+
+function buildEntryRow(entry: LeaderboardEntry): HTMLDivElement {
+  const isVictory = entry.outcome === "victory";
+  const rankColor = getRankColor(entry.rank);
+
+  const row = document.createElement("div");
+  row.style.cssText = "display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid #1e1830;";
+
+  const rankBadge = document.createElement("div");
+  rankBadge.style.cssText = `min-width: 28px; height: 28px; border-radius: 4px; background: ${rankColor}22; border: 1px solid ${rankColor}; color: ${rankColor}; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;`;
+  rankBadge.textContent = `#${String(entry.rank)}`;
+
+  const info = document.createElement("div");
+  info.style.cssText = "flex: 1; min-width: 0;";
+
+  const topLine = document.createElement("div");
+  topLine.style.cssText = "display: flex; align-items: center; gap: 8px; margin-bottom: 4px;";
+
+  const floorSpan = document.createElement("span");
+  floorSpan.style.cssText = `font-size: 13px; font-weight: 700; color: ${isVictory ? "#a0e0a0" : "#e0a0a0"};`;
+  floorSpan.textContent = `Floor ${String(entry.floorReached)}`;
+
+  const outcomeTag = document.createElement("span");
+  outcomeTag.style.cssText = `font-size: 9px; padding: 1px 5px; border-radius: 3px; background: ${isVictory ? "#0d2a0d" : "#2a0d0d"}; border: 1px solid ${isVictory ? "#3a7a3a" : "#7a3a3a"}; color: ${isVictory ? "#5aaa5a" : "#aa5a5a"};`;
+  outcomeTag.textContent = isVictory ? "VICTORY" : "DEFEATED";
+
+  const durationSpan = document.createElement("span");
+  durationSpan.style.cssText = "font-size: 10px; color: #5a4a7a; margin-left: auto;";
+  durationSpan.textContent = formatDuration(entry.durationMs);
+
+  topLine.appendChild(floorSpan);
+  topLine.appendChild(outcomeTag);
+  topLine.appendChild(durationSpan);
+
+  const partyLine = document.createElement("div");
+  partyLine.style.cssText = "display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 2px;";
+  for (const member of entry.party) {
+    const chip = document.createElement("span");
+    chip.style.cssText = "font-size: 10px; padding: 1px 6px; border-radius: 10px; background: #1a1430; border: 1px solid #3a2a5a; color: #9080b0;";
+    chip.textContent = `${member.name} (${member.personaSlug.replace(/_/g, " ")})`;
+    partyLine.appendChild(chip);
+  }
+
+  const dateLine = document.createElement("div");
+  dateLine.style.cssText = "font-size: 9px; color: #3a2a5a; margin-top: 2px;";
+  dateLine.textContent = formatDate(entry.runAt);
+
+  info.appendChild(topLine);
+  info.appendChild(partyLine);
+  info.appendChild(dateLine);
+  row.appendChild(rankBadge);
+  row.appendChild(info);
+  return row;
 }
 
 function renderEntries(entries: LeaderboardEntry[]): void {
@@ -173,99 +234,7 @@ function renderEntries(entries: LeaderboardEntry[]): void {
   }
 
   for (const entry of entries) {
-    const row = document.createElement("div");
-    const isVictory = entry.outcome === "victory";
-    row.style.cssText = `
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 10px 0;
-      border-bottom: 1px solid #1e1830;
-    `;
-
-    // Rank badge
-    const rankBadge = document.createElement("div");
-    let rankColor = "#4a3a8a";
-    if (entry.rank === 1) rankColor = "#d4af37";
-    else if (entry.rank === 2) rankColor = "#aaa9ad";
-    else if (entry.rank === 3) rankColor = "#cd7f32";
-    rankBadge.style.cssText = `
-      min-width: 28px;
-      height: 28px;
-      border-radius: 4px;
-      background: ${rankColor}22;
-      border: 1px solid ${rankColor};
-      color: ${rankColor};
-      font-size: 12px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    `;
-    rankBadge.textContent = `#${entry.rank}`;
-
-    // Main info
-    const info = document.createElement("div");
-    info.style.cssText = "flex: 1; min-width: 0;";
-
-    // Floor + outcome
-    const topLine = document.createElement("div");
-    topLine.style.cssText = "display: flex; align-items: center; gap: 8px; margin-bottom: 4px;";
-
-    const floorSpan = document.createElement("span");
-    floorSpan.style.cssText = `font-size: 13px; font-weight: 700; color: ${isVictory ? "#a0e0a0" : "#e0a0a0"};`;
-    floorSpan.textContent = `Floor ${entry.floorReached}`;
-
-    const outcomeTag = document.createElement("span");
-    outcomeTag.style.cssText = `
-      font-size: 9px;
-      padding: 1px 5px;
-      border-radius: 3px;
-      background: ${isVictory ? "#0d2a0d" : "#2a0d0d"};
-      border: 1px solid ${isVictory ? "#3a7a3a" : "#7a3a3a"};
-      color: ${isVictory ? "#5aaa5a" : "#aa5a5a"};
-    `;
-    outcomeTag.textContent = isVictory ? "VICTORY" : "DEFEATED";
-
-    const durationSpan = document.createElement("span");
-    durationSpan.style.cssText = "font-size: 10px; color: #5a4a7a; margin-left: auto;";
-    durationSpan.textContent = formatDuration(entry.durationMs);
-
-    topLine.appendChild(floorSpan);
-    topLine.appendChild(outcomeTag);
-    topLine.appendChild(durationSpan);
-
-    // Party members
-    const partyLine = document.createElement("div");
-    partyLine.style.cssText = "display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 2px;";
-
-    for (const member of entry.party) {
-      const chip = document.createElement("span");
-      chip.style.cssText = `
-        font-size: 10px;
-        padding: 1px 6px;
-        border-radius: 10px;
-        background: #1a1430;
-        border: 1px solid #3a2a5a;
-        color: #9080b0;
-      `;
-      chip.textContent = `${member.name} (${member.personaSlug.replace(/_/g, " ")})`;
-      partyLine.appendChild(chip);
-    }
-
-    // Date
-    const dateLine = document.createElement("div");
-    dateLine.style.cssText = "font-size: 9px; color: #3a2a5a; margin-top: 2px;";
-    dateLine.textContent = formatDate(entry.runAt);
-
-    info.appendChild(topLine);
-    info.appendChild(partyLine);
-    info.appendChild(dateLine);
-
-    row.appendChild(rankBadge);
-    row.appendChild(info);
-    entriesContainer.appendChild(row);
+    entriesContainer.appendChild(buildEntryRow(entry));
   }
 }
 
@@ -292,7 +261,7 @@ async function fetchLeaderboard(): Promise<void> {
   try {
     const res = await fetch("/api/clungiverse/leaderboard");
     if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
+      throw new Error(`HTTP ${String(res.status)}`);
     }
     const entries = await res.json() as LeaderboardEntry[];
     renderEntries(entries);
@@ -310,7 +279,7 @@ function openModal(): void {
   _open = true;
   overlay.style.display = "flex";
   // Fetch fresh data each time the leaderboard is opened
-  fetchLeaderboard().catch((err) => {
+  fetchLeaderboard().catch((err: unknown) => {
     console.error("[leaderboard] fetchLeaderboard failed:", err);
   });
 }
@@ -351,7 +320,7 @@ export function tickLeaderboardModal(state: WorldState): void {
   const inProximity = dx <= LEADERBOARD_PROXIMITY_TILES && dy <= LEADERBOARD_PROXIMITY_TILES;
 
   if (inProximity) {
-    const key = `${playerTileX},${playerTileY}`;
+    const key = `${String(playerTileX)},${String(playerTileY)}`;
     if (!_open && key !== _lastProximityKey) {
       _lastProximityKey = key;
       openModal();

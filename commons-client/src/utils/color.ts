@@ -13,5 +13,5 @@ export function lightenHex(hex: string, amount: number): string {
   const r = Math.min(255, ((num >> 16) & 0xff) + amount);
   const g = Math.min(255, ((num >> 8)  & 0xff) + amount);
   const b = Math.min(255, (num         & 0xff)  + amount);
-  return `rgb(${r},${g},${b})`;
+  return `rgb(${String(r)},${String(g)},${String(b)})`;
 }

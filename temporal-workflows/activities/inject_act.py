@@ -8,9 +8,12 @@ endpoint is localhost-only.
 """
 
 import aiohttp
+import time
 from temporalio import activity
 
 from .constants import INJECT_URL
+
+HEARTBEAT_TIMESTAMP_FILE = "/tmp/last-heartbeat.txt"
 
 
 async def _do_inject(
@@ -47,3 +50,10 @@ async def _do_inject(
 async def inject_message(content: str, user: str, chat_id: str) -> None:
     """Inject a message into the bot session via the inject endpoint."""
     await _do_inject(content, chat_id, user)
+    # Track heartbeat liveness: record timestamp whenever a heartbeat message is injected
+    if "[heartbeat]" in content:
+        try:
+            with open(HEARTBEAT_TIMESTAMP_FILE, "w") as f:
+                f.write(str(time.time()))
+        except Exception:
+            pass  # timestamp write failure must never break the heartbeat itself

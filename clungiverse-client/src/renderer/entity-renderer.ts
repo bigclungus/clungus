@@ -1,7 +1,7 @@
 // Clungiverse Entity Renderer
 // Procedural placeholder sprites for players, enemies, projectiles, bosses
 
-import type { DungeonClientState, ClientEnemy, PersonaSlug } from '../state';
+import type { DungeonClientState, ClientEnemy, ClientPlayer, PersonaSlug } from '../state';
 import { PERSONAS } from '../state';
 import { getInterpolationAlpha } from '../entities/remote-player';
 import { TILE_SIZE, isTileVisible } from './dungeon-renderer';
@@ -124,11 +124,115 @@ function drawHpBar(
   const ratio = Math.max(0, Math.min(1, hp / maxHp));
   const green = Math.round(ratio * 200);
   const red = Math.round((1 - ratio) * 200);
-  ctx.fillStyle = `rgb(${red},${green},40)`;
+  ctx.fillStyle = `rgb(${String(red)},${String(green)},40)`;
   ctx.fillRect(x - halfW, barY, w * ratio, 3);
 }
 
 // === Render Functions ===
+
+function renderGhostPlayer(ctx: CanvasRenderingContext2D, player: ClientPlayer, x: number, y: number): void {
+  const r = 10;
+
+  ctx.save();
+  ctx.globalAlpha = 0.35;
+
+  const color = PERSONA_COLORS[player.personaSlug];
+  const avatar = getAvatar(player.personaSlug);
+  if (avatar) {
+    const spriteSize = 28;
+    const half = spriteSize / 2;
+    ctx.beginPath();
+    ctx.arc(x, y, half, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(avatar, x - half, y - half, spriteSize, spriteSize);
+  } else {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+
+  ctx.save();
+  ctx.globalAlpha = 0.5;
+  ctx.strokeStyle = '#aaaacc';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.arc(x, y, r + 4, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = '#aaaacc';
+  ctx.font = '8px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`👻 ${player.name}`, x, y - r - 8);
+  ctx.restore();
+}
+
+function renderAlivePlayer(ctx: CanvasRenderingContext2D, player: ClientPlayer, x: number, y: number): void {
+  const r = 10;
+  const color = PERSONA_COLORS[player.personaSlug];
+  const persona = PERSONAS[player.personaSlug];
+
+  // I-frame flash: skip rendering every other frame
+  if (player.iframeTicks > 0 && Math.floor(performance.now() / 80) % 2 === 0) {
+    drawHpBar(ctx, x, y - r - 2, 20, player.hp, player.maxHp);
+    return;
+  }
+
+  // Crundle scramble: pulsing glow ring
+  if (player.scramblingUntil > Date.now()) {
+    const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 80);
+    ctx.strokeStyle = `rgba(125,143,105,${String(0.5 + pulse * 0.5)})`;
+    ctx.lineWidth = 3 + pulse * 2;
+    ctx.beginPath();
+    ctx.arc(x, y, r + 4, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  const avatar = getAvatar(player.personaSlug);
+  if (avatar) {
+    const spriteSize = 28;
+    const half = spriteSize / 2;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, half, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(avatar, x - half, y - half, spriteSize, spriteSize);
+    ctx.restore();
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x, y, half, 0, Math.PI * 2);
+    ctx.stroke();
+  } else {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    drawRoleOverlay(ctx, x, y, r, persona.role);
+  }
+
+  drawFacingIndicator(ctx, x, y, r, player.facingX, player.facingY);
+  drawHpBar(ctx, x, y - r - 2, 20, player.hp, player.maxHp);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '8px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(player.name, x, y - r - 8);
+}
+
+function interpolatedPosition(player: ClientPlayer, alpha: number): { x: number; y: number } {
+  return {
+    x: player.isLocal ? player.x : lerp(player.prevX, player.x, alpha),
+    y: player.isLocal ? player.y : lerp(player.prevY, player.y, alpha),
+  };
+}
 
 export function renderPlayers(
   ctx: CanvasRenderingContext2D,
@@ -139,122 +243,15 @@ export function renderPlayers(
   // First pass: render dead/spectating players as ghosts (behind alive players)
   for (const player of state.players.values()) {
     if (player.alive || !player.spectating) continue;
-
-    const x = player.isLocal ? player.x : lerp(player.prevX, player.x, alpha);
-    const y = player.isLocal ? player.y : lerp(player.prevY, player.y, alpha);
-    const r = 10;
-
-    ctx.save();
-    ctx.globalAlpha = 0.35;
-
-    const color = PERSONA_COLORS[player.personaSlug] ?? '#888888';
-    const avatar = getAvatar(player.personaSlug);
-    if (avatar) {
-      const spriteSize = 28;
-      const half = spriteSize / 2;
-      ctx.beginPath();
-      ctx.arc(x, y, half, 0, Math.PI * 2);
-      ctx.closePath();
-      ctx.clip();
-      ctx.drawImage(avatar, x - half, y - half, spriteSize, spriteSize);
-    } else {
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    ctx.restore();
-
-    // Ghost ring (always visible at slightly higher alpha)
-    ctx.save();
-    ctx.globalAlpha = 0.5;
-    ctx.strokeStyle = '#aaaacc';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([3, 3]);
-    ctx.beginPath();
-    ctx.arc(x, y, r + 4, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Ghost label
-    ctx.fillStyle = '#aaaacc';
-    ctx.font = '8px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(`👻 ${player.name}`, x, y - r - 8);
-    ctx.restore();
+    const { x, y } = interpolatedPosition(player, alpha);
+    renderGhostPlayer(ctx, player, x, y);
   }
 
   // Second pass: render alive players normally
   for (const player of state.players.values()) {
     if (!player.alive) continue;
-
-    const x = player.isLocal ? player.x : lerp(player.prevX, player.x, alpha);
-    const y = player.isLocal ? player.y : lerp(player.prevY, player.y, alpha);
-    const r = 10;
-
-    const color = PERSONA_COLORS[player.personaSlug] ?? '#888888';
-    const persona = PERSONAS[player.personaSlug];
-    const role = persona?.role ?? 'wildcard';
-
-    // I-frame flash: skip rendering every other frame
-    if (player.iframeTicks > 0 && Math.floor(performance.now() / 80) % 2 === 0) {
-      // Still draw HP bar
-      drawHpBar(ctx, x, y - r - 2, 20, player.hp, player.maxHp);
-      continue;
-    }
-
-    // Crundle scramble: pulsing glow ring
-    if ((player.scramblingUntil ?? 0) > Date.now()) {
-      const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 80);
-      ctx.strokeStyle = `rgba(125,143,105,${0.5 + pulse * 0.5})`;
-      ctx.lineWidth = 3 + pulse * 2;
-      ctx.beginPath();
-      ctx.arc(x, y, r + 4, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-
-    // Try avatar image first, fall back to procedural shapes
-    const avatar = getAvatar(player.personaSlug);
-    if (avatar) {
-      const spriteSize = 28;
-      const half = spriteSize / 2;
-
-      // Circular clip mask for portrait-token look
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(x, y, half, 0, Math.PI * 2);
-      ctx.closePath();
-      ctx.clip();
-      ctx.drawImage(avatar, x - half, y - half, spriteSize, spriteSize);
-      ctx.restore();
-
-      // Thin border ring in persona color
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(x, y, half, 0, Math.PI * 2);
-      ctx.stroke();
-    } else {
-      // Fallback: body circle + role overlay
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fill();
-      drawRoleOverlay(ctx, x, y, r, role);
-    }
-
-    // Facing indicator
-    drawFacingIndicator(ctx, x, y, r, player.facingX, player.facingY);
-
-    // HP bar
-    drawHpBar(ctx, x, y - r - 2, 20, player.hp, player.maxHp);
-
-    // Name label
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '8px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(player.name, x, y - r - 8);
+    const { x, y } = interpolatedPosition(player, alpha);
+    renderAlivePlayer(ctx, player, x, y);
   }
 }
 
@@ -281,13 +278,76 @@ export function renderEnemies(
     renderSingleEnemy(ctx, enemy, alpha, state);
   }
 
-  if (state.boss && state.boss.alive) {
+  if (state.boss?.alive) {
     const bx = lerp(state.boss.prevX, state.boss.x, alpha);
     const by = lerp(state.boss.prevY, state.boss.y, alpha);
     if (isPositionVisible(state, bx, by)) {
       renderBoss(ctx, state.boss, alpha);
     }
   }
+}
+
+function drawEnemyFallbackShape(ctx: CanvasRenderingContext2D, enemy: ClientEnemy, x: number, y: number): void {
+  ctx.fillStyle = '#cc3333';
+  switch (enemy.behavior) {
+    case 'melee_chase':
+      ctx.beginPath();
+      ctx.arc(x, y, 8, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    case 'ranged_pattern': {
+      const s = 10;
+      ctx.beginPath();
+      ctx.moveTo(x, y - s);
+      ctx.lineTo(x + s, y);
+      ctx.lineTo(x, y + s);
+      ctx.lineTo(x - s, y);
+      ctx.closePath();
+      ctx.fill();
+      if (enemy.aimDirX !== 0 || enemy.aimDirY !== 0) {
+        ctx.strokeStyle = 'rgba(255,100,100,0.4)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + enemy.aimDirX * 40, y + enemy.aimDirY * 40);
+        ctx.stroke();
+      }
+      break;
+    }
+    case 'slow_charge': {
+      const s = 14;
+      ctx.fillRect(x - s / 2, y - s / 2, s, s);
+      break;
+    }
+  }
+}
+
+function drawEnemySprite(
+  ctx: CanvasRenderingContext2D,
+  enemy: ClientEnemy,
+  x: number,
+  y: number,
+  state?: DungeonClientState,
+): void {
+  const drawFn = getMobSpriteDrawFn(enemy.type);
+  if (drawFn) {
+    drawFn(ctx, x, y);
+    return;
+  }
+
+  const pngImg = getMobPngImage(enemy.type);
+  if (pngImg) {
+    ctx.drawImage(pngImg, x - 16, y - 16, 32, 32);
+    return;
+  }
+
+  const mobImg = state?.mobSprites.get(enemy.type);
+  if (mobImg && mobImg.complete && mobImg.naturalWidth > 0) {
+    ctx.drawImage(mobImg, x - 16, y - 16, 32, 32);
+    return;
+  }
+
+  drawEnemyFallbackShape(ctx, enemy, x, y);
 }
 
 function renderSingleEnemy(
@@ -299,7 +359,6 @@ function renderSingleEnemy(
   const x = lerp(enemy.prevX, enemy.x, alpha);
   const y = lerp(enemy.prevY, enemy.y, alpha);
 
-  // Telegraph flash
   if (enemy.telegraphing) {
     ctx.fillStyle = 'rgba(255,50,50,0.3)';
     ctx.beginPath();
@@ -307,66 +366,7 @@ function renderSingleEnemy(
     ctx.fill();
   }
 
-  // Try canvas sprite function first (from mob-sprites.js globals)
-  const drawFn = getMobSpriteDrawFn(enemy.type);
-  if (drawFn) {
-    drawFn(ctx, x, y);
-  } else {
-    // Try static PNG from /mob-images/<slug>.png (rendered server-side)
-    const pngImg = getMobPngImage(enemy.type);
-    if (pngImg) {
-      ctx.drawImage(pngImg, x - 16, y - 16, 32, 32);
-    } else {
-      // Try image-based sprite from server (base64 via websocket)
-      const mobImg = state?.mobSprites.get(enemy.type);
-      if (mobImg && mobImg.complete && mobImg.naturalWidth > 0) {
-        ctx.drawImage(mobImg, x - 16, y - 16, 32, 32);
-      } else {
-        // Procedural shape fallback
-        ctx.fillStyle = '#cc3333';
-
-        switch (enemy.behavior) {
-          case 'melee_chase': {
-            // Crawler: small circle
-            ctx.beginPath();
-            ctx.arc(x, y, 8, 0, Math.PI * 2);
-            ctx.fill();
-            break;
-          }
-          case 'ranged_pattern': {
-            // Spitter: diamond
-            const s = 10;
-            ctx.beginPath();
-            ctx.moveTo(x, y - s);
-            ctx.lineTo(x + s, y);
-            ctx.lineTo(x, y + s);
-            ctx.lineTo(x - s, y);
-            ctx.closePath();
-            ctx.fill();
-
-            // Aiming line
-            if (enemy.aimDirX !== 0 || enemy.aimDirY !== 0) {
-              ctx.strokeStyle = 'rgba(255,100,100,0.4)';
-              ctx.lineWidth = 1;
-              ctx.beginPath();
-              ctx.moveTo(x, y);
-              ctx.lineTo(x + enemy.aimDirX * 40, y + enemy.aimDirY * 40);
-              ctx.stroke();
-            }
-            break;
-          }
-          case 'slow_charge': {
-            // Brute: large square
-            const s = 14;
-            ctx.fillRect(x - s / 2, y - s / 2, s, s);
-            break;
-          }
-        }
-      }
-    }
-  }
-
-  // HP bar
+  drawEnemySprite(ctx, enemy, x, y, state);
   drawHpBar(ctx, x, y - 12, 16, enemy.hp, enemy.maxHp);
 }
 
@@ -381,7 +381,7 @@ function renderBoss(
   // Pulsing glow
   const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 200);
   const glowR = 24 + pulse * 8;
-  ctx.fillStyle = `rgba(200,50,50,${0.15 + pulse * 0.1})`;
+  ctx.fillStyle = `rgba(200,50,50,${String(0.15 + pulse * 0.1)})`;
   ctx.beginPath();
   ctx.arc(x, y, glowR, 0, Math.PI * 2);
   ctx.fill();
@@ -412,7 +412,7 @@ function renderBoss(
 function getPlayerProjectileColor(state: DungeonClientState, ownerId: string): string {
   const player = state.players.get(ownerId);
   if (player) {
-    return PERSONA_COLORS[player.personaSlug] ?? '#ffffff';
+    return PERSONA_COLORS[player.personaSlug];
   }
   return '#ffffff';
 }

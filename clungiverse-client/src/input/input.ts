@@ -12,7 +12,7 @@ export interface InputSnapshot {
   spectateNext: boolean; // Tab to cycle spectate target
 }
 
-const held: Set<string> = new Set();
+const held = new Set<string>();
 let mouseX = 0;
 let mouseY = 0;
 let powerTriggered = false;
@@ -56,39 +56,53 @@ export function initInput(canvas: HTMLCanvasElement): void {
   });
 }
 
-export function pollInput(): InputSnapshot {
-  let dx = 0;
-  let dy = 0;
+const UP_KEYS = ['w', 'arrowup'] as const;
+const DOWN_KEYS = ['s', 'arrowdown'] as const;
+const LEFT_KEYS = ['a', 'arrowleft'] as const;
+const RIGHT_KEYS = ['d', 'arrowright'] as const;
 
-  if (held.has('w') || held.has('arrowup')) dy -= 1;
-  if (held.has('s') || held.has('arrowdown')) dy += 1;
-  if (held.has('a') || held.has('arrowleft')) dx -= 1;
-  if (held.has('d') || held.has('arrowright')) dx += 1;
+function anyHeld(keys: readonly string[]): boolean {
+  return keys.some((k) => held.has(k));
+}
 
-  // Normalize diagonals
+function normalizeDiagonal(dx: number, dy: number): { dx: number; dy: number } {
   if (dx !== 0 && dy !== 0) {
     const inv = 1 / Math.sqrt(2);
-    dx *= inv;
-    dy *= inv;
+    return { dx: dx * inv, dy: dy * inv };
   }
+  return { dx, dy };
+}
 
-  // Update facing from movement; keep last facing if idle
+function computeMovement(): { dx: number; dy: number } {
+  let dx = 0, dy = 0;
+  if (anyHeld(UP_KEYS)) dy -= 1;
+  if (anyHeld(DOWN_KEYS)) dy += 1;
+  if (anyHeld(LEFT_KEYS)) dx -= 1;
+  if (anyHeld(RIGHT_KEYS)) dx += 1;
+  return normalizeDiagonal(dx, dy);
+}
+
+function consumeOneShot(triggered: boolean, consumed: boolean): [boolean, boolean, boolean] {
+  const fired = triggered;
+  if (triggered) return [fired, false, true];
+  return [fired, triggered, consumed];
+}
+
+export function pollInput(): InputSnapshot {
+  const { dx, dy } = computeMovement();
+
   if (dx !== 0 || dy !== 0) {
     lastFacingX = dx;
     lastFacingY = dy;
   }
 
-  const power = powerTriggered;
-  if (powerTriggered) {
-    powerTriggered = false;
-    powerConsumed = true;
-  }
+  const [power, newPowerTriggered, newPowerConsumed] = consumeOneShot(powerTriggered, powerConsumed);
+  powerTriggered = newPowerTriggered;
+  powerConsumed = newPowerConsumed;
 
-  const spectateNext = spectateNextTriggered;
-  if (spectateNextTriggered) {
-    spectateNextTriggered = false;
-    spectateNextConsumed = true;
-  }
+  const [spectateNext, newSpectateTriggered, newSpectateConsumed] = consumeOneShot(spectateNextTriggered, spectateNextConsumed);
+  spectateNextTriggered = newSpectateTriggered;
+  spectateNextConsumed = newSpectateConsumed;
 
   return {
     dx,

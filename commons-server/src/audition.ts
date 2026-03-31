@@ -79,7 +79,7 @@ async function callClaude(existingNames: string[]): Promise<GeneratedPersona> {
 
     if (!response.ok) {
       const body = await response.text();
-      throw new Error(`Anthropic API error ${response.status}: ${body.slice(0, 300)}`);
+      throw new Error(`Anthropic API error ${String(response.status)}: ${body.slice(0, 300)}`);
     }
 
     const msg = (await response.json()) as { content: { type: string; text: string }[] };
@@ -101,7 +101,7 @@ async function callClaude(existingNames: string[]): Promise<GeneratedPersona> {
     proc.stdin.end();
     proc.on("close", (code) => {
       if (code !== 0) {
-        reject(new Error(`claude CLI exited ${code}: ${stderr.slice(0, 300)}`));
+        reject(new Error(`claude CLI exited ${String(code)}: ${stderr.slice(0, 300)}`));
       } else {
         resolve(stdout.trim());
       }
@@ -149,11 +149,11 @@ export async function spawnWalker(world: WorldState): Promise<AuditionWalker> {
       persona = candidate;
       break;
     }
-    console.log(`[audition] name collision on "${candidate.name}" (attempt ${attempt}/${MAX_ATTEMPTS}), regenerating`);
+    console.log(`[audition] name collision on "${candidate.name}" (attempt ${String(attempt)}/${String(MAX_ATTEMPTS)}), regenerating`);
   }
 
   if (!persona) {
-    throw new Error(`Could not generate a unique persona after ${MAX_ATTEMPTS} attempts`);
+    throw new Error(`Could not generate a unique persona after ${String(MAX_ATTEMPTS)} attempts`);
   }
 
   const id = crypto.randomUUID();
@@ -191,20 +191,22 @@ export function startSpawnSchedule(world: WorldState): void {
 
   function scheduleNext(): void {
     const delay = 45_000 + Math.random() * 45_000; // 45-90s
-    setTimeout(async () => {
-      try {
-        await spawnWalker(world);
-      } catch (err) {
-        console.error("[audition] spawn failed:", err);
-      }
-      scheduleNext();
+    setTimeout(() => {
+      void (async () => {
+        try {
+          await spawnWalker(world);
+        } catch (err: unknown) {
+          console.error("[audition] spawn failed:", err);
+        }
+        scheduleNext();
+      })();
     }, delay);
   }
 
   // Initial spawn
-  spawnWalker(world).catch((err) =>
-    { console.error("[audition] initial spawn failed:", err); }
-  );
+  spawnWalker(world).catch((err: unknown) => {
+    console.error("[audition] initial spawn failed:", err);
+  });
   scheduleNext();
 }
 
@@ -216,23 +218,46 @@ export function cleanupWalkerMeta(walkerId: string): void {
 
 // ── REST endpoint handlers ──────────────────────────────────────────────────
 
+function walkerMetaTextFields(meta: AuditionWalkerMeta | undefined): {
+  name: string; title: string; description: string;
+} {
+  return {
+    name: meta?.name ?? "Unknown",
+    title: meta?.title ?? "",
+    description: meta?.description ?? "",
+  };
+}
+
+function walkerMetaExtraFields(meta: AuditionWalkerMeta | undefined): {
+  traits: string[]; created_at: number; avatar_color: string;
+} {
+  return {
+    traits: meta?.traits ?? [],
+    created_at: meta?.createdAt ?? 0,
+    avatar_color: meta?.avatarColor ?? "#ffffff",
+  };
+}
+
+function walkerMetaFields(meta: AuditionWalkerMeta | undefined): {
+  name: string; title: string; traits: string[]; description: string;
+  created_at: number; avatar_color: string;
+} {
+  return { ...walkerMetaTextFields(meta), ...walkerMetaExtraFields(meta) };
+}
+
+function walkerToResponse(w: AuditionWalker): object {
+  const meta = walkerMeta.get(w.id);
+  return {
+    id: w.id,
+    ...walkerMetaFields(meta),
+    x: w.x,
+    speed: w.speed,
+    paused: w.isPaused,
+  };
+}
+
 export function getWalkersResponse(world: WorldState): Response {
-  const walkers = world.walkers.map((w) => {
-    const meta = walkerMeta.get(w.id);
-    return {
-      id: w.id,
-      name: meta?.name ?? "Unknown",
-      title: meta?.title ?? "",
-      traits: meta?.traits ?? [],
-      description: meta?.description ?? "",
-      x: w.x,
-      speed: w.speed,
-      paused: w.isPaused,
-      created_at: meta?.createdAt ?? 0,
-      avatar_color: meta?.avatarColor ?? "#ffffff",
-    };
-  });
-  return jsonRes(walkers);
+  return jsonRes(world.walkers.map(walkerToResponse));
 }
 
 export function pauseWalker(world: WorldState, id: string): Response {
@@ -338,7 +363,7 @@ async function notifyDiscord(meta: AuditionWalkerMeta): Promise<void> {
   });
 
   if (!response.ok) {
-    throw new Error(`Discord inject failed: ${response.status} ${await response.text()}`);
+    throw new Error(`Discord inject failed: ${String(response.status)} ${await response.text()}`);
   }
   console.log(`[audition] notified Discord about ${meta.name}`);
 }

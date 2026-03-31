@@ -10,8 +10,9 @@
   function init(): AudioContext | null {
     if (_ctx) return _ctx;
     try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      _ctx = new AudioCtx();
+      const winExt = window as Window & { webkitAudioContext?: typeof AudioContext };
+      const AudioCtxCtor: typeof AudioContext = winExt.webkitAudioContext ?? AudioContext;
+      _ctx = new AudioCtxCtor();
     } catch (e) {
       console.warn('[GCSounds] Web Audio unavailable:', e);
       return null;
@@ -47,12 +48,12 @@
     const ctx = init();
     if (!ctx) return;
     if (ctx.state !== 'running') {
-      ctx.resume().catch((e: Error) => { console.warn('[GCSounds] resume failed:', e); });
+      ctx.resume().catch((e: unknown) => { console.warn('[GCSounds] resume failed:', e); });
     }
     fn(ctx, ctx.currentTime + 0.05);
   }
 
-  (global as any).GCSounds = {
+  (global as Record<string, unknown>).GCSounds = {
     hover(): void {
       play((ctx, t) => { playTone(ctx, 700, t, 0.12, 0.5, 920); });
     },

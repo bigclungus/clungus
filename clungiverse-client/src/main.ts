@@ -14,8 +14,8 @@ import { preloadAvatars } from './renderer/entity-renderer';
 
 // === Canvas Setup ===
 
-const canvasEl = document.getElementById('game-canvas') as HTMLCanvasElement;
-if (!canvasEl) throw new Error('Missing #game-canvas element');
+const canvasEl = document.getElementById('game-canvas');
+if (!(canvasEl instanceof HTMLCanvasElement)) throw new Error('Missing #game-canvas element');
 
 const ctx = initCanvas(canvasEl);
 
@@ -133,7 +133,7 @@ async function fetchUsername(): Promise<string> {
   return 'Adventurer';
 }
 
-const userId = `player-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+const userId = `player-${String(Date.now())}-${Math.random().toString(36).slice(2, 7)}`;
 let userName = 'Adventurer';
 state.playerId = userId;
 state.playerName = userName;
@@ -157,6 +157,58 @@ network.on('error', (msg) => {
 const urlParams = new URLSearchParams(window.location.search);
 const joinLobbyId = urlParams.get('lobby');
 
+async function joinExistingLobby(id: string): Promise<string | null> {
+  state.lobbyStatus = 'joining';
+  console.log('[clungiverse] Joining lobby from invite:', id);
+  try {
+    const joinRes = await fetch(`/api/clungiverse/lobby/${id}/join`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, name: userName }),
+    });
+    if (!joinRes.ok) {
+      const err = await joinRes.json().catch(() => ({})) as { error?: string };
+      throw new Error(err.error ?? `HTTP ${String(joinRes.status)}`);
+    }
+    console.log('[clungiverse] Joined lobby:', id);
+    return id;
+  } catch (joinErr) {
+    // Lobby doesn't exist or join failed — clear stale URL param and create fresh
+    console.warn('[clungiverse] Failed to join lobby from URL, creating new one:', joinErr);
+    clearLobbyParam();
+    return null;
+  }
+}
+
+async function createAndJoinLobby(): Promise<string> {
+  state.lobbyStatus = 'creating';
+  const createRes = await fetch('/api/clungiverse/lobby/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, name: userName }),
+  });
+  if (!createRes.ok) {
+    const err = await createRes.json().catch(() => ({})) as { error?: string };
+    throw new Error(err.error ?? `HTTP ${String(createRes.status)}`);
+  }
+  const createData = await createRes.json() as { lobbyId: string };
+  const lobbyId = createData.lobbyId;
+  console.log('[clungiverse] Created lobby:', lobbyId);
+
+  state.lobbyStatus = 'joining';
+  const joinRes = await fetch(`/api/clungiverse/lobby/${lobbyId}/join`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, name: userName }),
+  });
+  if (!joinRes.ok) {
+    const err = await joinRes.json().catch(() => ({})) as { error?: string };
+    throw new Error(err.error ?? `HTTP ${String(joinRes.status)}`);
+  }
+  console.log('[clungiverse] Joined lobby:', lobbyId);
+  return lobbyId;
+}
+
 // Create or join lobby, then connect WebSocket
 async function initLobby(): Promise<void> {
   // Resolve GitHub username before creating/joining lobby
@@ -164,72 +216,25 @@ async function initLobby(): Promise<void> {
   state.playerName = userName;
 
   try {
-    let lobbyId: string;
-    let joinedExisting = false;
+    let lobbyId: string | null = null;
 
     if (joinLobbyId) {
-      // Try to join an existing lobby from invite/URL param
-      state.lobbyStatus = 'joining';
-      console.log('[clungiverse] Joining lobby from invite:', joinLobbyId);
-
-      try {
-        const joinRes = await fetch(`/api/clungiverse/lobby/${joinLobbyId}/join`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId, name: userName }),
-        });
-        if (!joinRes.ok) {
-          const err = await joinRes.json().catch(() => ({})) as { error?: string };
-          throw new Error(err.error ?? `HTTP ${joinRes.status}`);
-        }
-        lobbyId = joinLobbyId;
-        joinedExisting = true;
-        console.log('[clungiverse] Joined lobby:', lobbyId);
-      } catch (joinErr) {
-        // Lobby doesn't exist or join failed — clear stale URL param and create fresh
-        console.warn('[clungiverse] Failed to join lobby from URL, creating new one:', joinErr);
-        clearLobbyParam();
-      }
+      lobbyId = await joinExistingLobby(joinLobbyId);
     }
 
-    if (!joinedExisting) {
-      // Create a new lobby
-      state.lobbyStatus = 'creating';
-      const createRes = await fetch('/api/clungiverse/lobby/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, name: userName }),
-      });
-      if (!createRes.ok) {
-        const err = await createRes.json().catch(() => ({})) as { error?: string };
-        throw new Error(err.error ?? `HTTP ${createRes.status}`);
-      }
-      const createData = await createRes.json() as { lobbyId: string };
-      lobbyId = createData.lobbyId;
-      console.log('[clungiverse] Created lobby:', lobbyId);
-
-      state.lobbyStatus = 'joining';
-      const joinRes = await fetch(`/api/clungiverse/lobby/${lobbyId}/join`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, name: userName }),
-      });
-      if (!joinRes.ok) {
-        const err = await joinRes.json().catch(() => ({})) as { error?: string };
-        throw new Error(err.error ?? `HTTP ${joinRes.status}`);
-      }
-      console.log('[clungiverse] Joined lobby:', lobbyId);
+    if (!lobbyId) {
+      lobbyId = await createAndJoinLobby();
     }
 
-    state.lobbyId = lobbyId!;
+    state.lobbyId = lobbyId;
     state.lobbyStatus = 'connected';
 
     // Persist lobby ID in URL while game is active
     const newUrl = new URL(window.location.href);
-    newUrl.searchParams.set('lobby', lobbyId!);
+    newUrl.searchParams.set('lobby', lobbyId);
     window.history.replaceState(null, '', newUrl.toString());
 
-    network.connect(lobbyId!, userId, userName);
+    network.connect(lobbyId, userId, userName);
   } catch (err) {
     console.error('[clungiverse] Lobby init failed:', err);
     state.lobbyStatus = 'error';
@@ -237,7 +242,7 @@ async function initLobby(): Promise<void> {
   }
 }
 
-initLobby();
+void initLobby();
 
 // Start game loop
 requestAnimationFrame(gameLoop);

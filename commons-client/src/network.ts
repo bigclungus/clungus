@@ -2,7 +2,7 @@
 // Applies tick messages to WorldState. Mutates state.
 
 import {
-  WorldState, Facing, WarthogState,
+  WorldState, Facing, WarthogState, RemotePlayer, NPC,
 } from "./state.ts";
 import { initLocalPlayer, reconcile } from "./entities/local-player.ts";
 import { addRemotePlayerSnapshot } from "./entities/remote-player.ts";
@@ -197,37 +197,45 @@ function reconcileLocalPlayer(msg: ServerTickMessage, socketId: string, data: Se
   void socketId; void now;
 }
 
+function createRemotePlayer(socketId: string, data: ServerPlayerData): RemotePlayer {
+  return {
+    socketId,
+    name: data.name ?? "unknown",
+    color: data.color ?? "#888",
+    x: data.x, y: data.y,
+    facing: (data.facing ?? "right") as Facing,
+    hopFrame: data.hopFrame ?? 0,
+    isAway: data.isAway ?? false,
+    chunkX: data.chunkX ?? 0,
+    chunkY: data.chunkY ?? 0,
+    snapshots: [],
+    displayX: data.x,
+    displayY: data.y,
+  };
+}
+
+function updateRemotePlayerFields(player: RemotePlayer, data: ServerPlayerData): void {
+  player.name = data.name ?? player.name;
+  player.color = data.color ?? player.color;
+  player.facing = (data.facing ?? player.facing) as Facing;
+  player.hopFrame = data.hopFrame ?? player.hopFrame;
+  player.isAway = data.isAway ?? player.isAway;
+  player.chunkX = data.chunkX ?? player.chunkX;
+  player.chunkY = data.chunkY ?? player.chunkY;
+}
+
 function upsertRemotePlayer(socketId: string, data: ServerPlayerData, msg: ServerTickMessage, now: number): void {
   let player = state.remotePlayers.get(socketId);
   if (!player) {
-    player = {
-      socketId,
-      name: data.name ?? "unknown",
-      color: data.color ?? "#888",
-      x: data.x, y: data.y,
-      facing: (data.facing ?? "right") as Facing,
-      hopFrame: data.hopFrame ?? 0,
-      isAway: data.isAway ?? false,
-      chunkX: data.chunkX ?? 0,
-      chunkY: data.chunkY ?? 0,
-      snapshots: [],
-      displayX: data.x,
-      displayY: data.y,
-    };
+    player = createRemotePlayer(socketId, data);
     state.remotePlayers.set(socketId, player);
   } else {
-    player.name = data.name ?? player.name;
-    player.color = data.color ?? player.color;
-    player.facing = (data.facing ?? player.facing) as Facing;
-    player.hopFrame = data.hopFrame ?? player.hopFrame;
-    player.isAway = data.isAway ?? player.isAway;
-    player.chunkX = data.chunkX ?? player.chunkX;
-    player.chunkY = data.chunkY ?? player.chunkY;
+    updateRemotePlayerFields(player, data);
   }
 
   addRemotePlayerSnapshot(player, {
     seq: msg.seq ?? 0,
-    t: msg.t != null ? serverTsToClientTs(msg.t) : now,
+    t: msg.t !== undefined ? serverTsToClientTs(msg.t) : now,
     x: data.x,
     y: data.y,
     facing: (data.facing ?? "right") as Facing,
@@ -250,43 +258,48 @@ function updatePlayersFromTick(msg: ServerTickMessage, now: number): void {
   }
 }
 
+function updateNPCBlurb(npc: NPC, data: { blurb?: string | null }): void {
+  const BLURB_DISPLAY_MS = 7500;
+  if (data.blurb) {
+    if (npc.blurb !== data.blurb) {
+      npc.blurb = data.blurb;
+      npc.blurbExpiry = performance.now() + BLURB_DISPLAY_MS;
+    }
+  } else {
+    npc.blurb = undefined;
+    npc.blurbExpiry = undefined;
+  }
+}
+
+function upsertNPC(data: { name: string; x: number; y: number; facing?: string }): NPC {
+  let npc = state.npcs.get(data.name);
+  if (!npc) {
+    npc = {
+      name: data.name,
+      x: data.x, y: data.y,
+      facing: (data.facing ?? "right") as Facing,
+      snapshots: [],
+      displayX: data.x,
+      displayY: data.y,
+    };
+    state.npcs.set(data.name, npc);
+  } else {
+    npc.facing = (data.facing ?? npc.facing) as Facing;
+  }
+  return npc;
+}
+
 function updateNPCsFromTick(msg: ServerTickMessage, now: number): void {
   if (!msg.npcs) return;
-  const BLURB_DISPLAY_MS = 7500;
+  const snapT = msg.t !== undefined ? serverTsToClientTs(msg.t) : now;
+  const seq = msg.seq ?? 0;
+
   for (const data of msg.npcs) {
-    let npc = state.npcs.get(data.name);
-    if (!npc) {
-      npc = {
-        name: data.name,
-        x: data.x, y: data.y,
-        facing: (data.facing ?? "right") as Facing,
-        snapshots: [],
-        displayX: data.x,
-        displayY: data.y,
-      };
-      state.npcs.set(data.name, npc);
-    } else {
-      npc.facing = (data.facing ?? npc.facing) as Facing;
-    }
-
+    const npc = upsertNPC(data);
     if ("blurb" in data) {
-      if (data.blurb) {
-        if (npc.blurb !== data.blurb) {
-          npc.blurb = data.blurb;
-          npc.blurbExpiry = performance.now() + BLURB_DISPLAY_MS;
-        }
-      } else {
-        npc.blurb = undefined;
-        npc.blurbExpiry = undefined;
-      }
+      updateNPCBlurb(npc, data as { blurb?: string | null });
     }
-
-    addNPCSnapshot(npc, {
-      seq: msg.seq ?? 0,
-      t: msg.t != null ? serverTsToClientTs(msg.t) : now,
-      x: data.x,
-      y: data.y,
-    });
+    addNPCSnapshot(npc, { seq, t: snapT, x: data.x, y: data.y });
   }
 }
 
@@ -312,6 +325,38 @@ function handleTick(msg: ServerTickMessage): void {
   }
 }
 
+function legacyPlayerChunkCoords(data: ServerPlayerData): { chunkX: number; chunkY: number } {
+  return {
+    chunkX: data.chunk_x ?? data.chunkX ?? 0,
+    chunkY: data.chunk_y ?? data.chunkY ?? 0,
+  };
+}
+
+function createLegacyPlayer(socketId: string, data: ServerPlayerData): RemotePlayer {
+  const { chunkX, chunkY } = legacyPlayerChunkCoords(data);
+  return {
+    socketId,
+    name: data.name ?? "unknown",
+    color: data.color ?? "#888",
+    x: data.x, y: data.y,
+    facing: (data.facing ?? "right") as Facing,
+    hopFrame: 0,
+    isAway: data.isAway ?? false,
+    chunkX,
+    chunkY,
+    snapshots: [],
+    displayX: data.x,
+    displayY: data.y,
+  };
+}
+
+function updateLegacyPlayerFields(player: RemotePlayer, data: ServerPlayerData): void {
+  player.facing = (data.facing ?? player.facing) as Facing;
+  player.isAway = data.isAway ?? player.isAway;
+  player.chunkX = data.chunk_x ?? data.chunkX ?? player.chunkX;
+  player.chunkY = data.chunk_y ?? data.chunkY ?? player.chunkY;
+}
+
 function upsertLegacyPlayer(data: ServerPlayerData, snapT: number): void {
   const socketId = data.socket_id ?? data.socketId ?? data.id;
   if (!socketId) return;
@@ -319,26 +364,10 @@ function upsertLegacyPlayer(data: ServerPlayerData, snapT: number): void {
 
   let player = state.remotePlayers.get(socketId);
   if (!player) {
-    player = {
-      socketId,
-      name: data.name ?? "unknown",
-      color: data.color ?? "#888",
-      x: data.x, y: data.y,
-      facing: (data.facing ?? "right") as Facing,
-      hopFrame: 0,
-      isAway: data.isAway ?? false,
-      chunkX: data.chunk_x ?? data.chunkX ?? 0,
-      chunkY: data.chunk_y ?? data.chunkY ?? 0,
-      snapshots: [],
-      displayX: data.x,
-      displayY: data.y,
-    };
+    player = createLegacyPlayer(socketId, data);
     state.remotePlayers.set(socketId, player);
   } else {
-    player.facing = (data.facing ?? player.facing) as Facing;
-    player.isAway = data.isAway ?? player.isAway;
-    player.chunkX = data.chunk_x ?? data.chunkX ?? player.chunkX;
-    player.chunkY = data.chunk_y ?? data.chunkY ?? player.chunkY;
+    updateLegacyPlayerFields(player, data);
   }
 
   addRemotePlayerSnapshot(player, {
@@ -350,10 +379,16 @@ function upsertLegacyPlayer(data: ServerPlayerData, snapT: number): void {
   });
 }
 
+function removeUnseenPlayers(): void {
+  for (const id of state.remotePlayers.keys()) {
+    if (!_seenIds.has(id)) state.remotePlayers.delete(id);
+  }
+}
+
 function handleLegacyPlayers(msg: ServerLegacyPlayersMessage): void {
   // V1 protocol: { type: "players", players: [...] }
   const now = performance.now();
-  const snapT = msg.t != null ? serverTsToClientTs(msg.t) : now;
+  const snapT = msg.t !== undefined ? serverTsToClientTs(msg.t) : now;
   _seenIds.clear();
 
   for (const data of (msg.players ?? [])) {
@@ -362,15 +397,13 @@ function handleLegacyPlayers(msg: ServerLegacyPlayersMessage): void {
     upsertLegacyPlayer(data, snapT);
   }
 
-  for (const id of state.remotePlayers.keys()) {
-    if (!_seenIds.has(id)) state.remotePlayers.delete(id);
-  }
+  removeUnseenPlayers();
 }
 
 function handleNPCUpdate(msg: ServerNPCUpdateMessage): void {
   // V1 protocol: { type: "npc_update", npcs: [...] }
   const now = performance.now();
-  const snapT = msg.t != null ? serverTsToClientTs(msg.t) : now;
+  const snapT = msg.t !== undefined ? serverTsToClientTs(msg.t) : now;
   for (const data of (msg.npcs ?? [])) {
     let npc = state.npcs.get(data.name);
     if (!npc) {
@@ -396,32 +429,35 @@ function handleNPCUpdate(msg: ServerNPCUpdateMessage): void {
   }
 }
 
-function onMessage(e: MessageEvent): void {
-  let msg: ServerMessage;
+function parseServerMessage(e: MessageEvent): ServerMessage | null {
   try {
     const raw = e.data instanceof ArrayBuffer
       ? decoder.decode(e.data)
       : (e.data as string);
-    msg = JSON.parse(raw) as ServerMessage;
+    return JSON.parse(raw) as ServerMessage;
   } catch {
     console.warn("[network] failed to parse message:", e.data);
-    return;
+    return null;
   }
+}
+
+function handlePlayerHop(msg: ServerPlayerHopMessage): void {
+  const id = msg.socket_id ?? msg.socketId;
+  if (!id) return;
+  const p = state.remotePlayers.get(id);
+  if (p) p.hopFrame = 1;
+}
+
+function onMessage(e: MessageEvent): void {
+  const msg = parseServerMessage(e);
+  if (!msg) return;
 
   switch (msg.type) {
     case "welcome":    handleWelcome(msg as ServerWelcomeMessage); break;
     case "tick":       handleTick(msg as ServerTickMessage); break;
     case "players":    handleLegacyPlayers(msg as ServerLegacyPlayersMessage); break;
     case "npc_update": handleNPCUpdate(msg as ServerNPCUpdateMessage); break;
-    case "player_hop": {
-      const hopMsg = msg as ServerPlayerHopMessage;
-      const id = hopMsg.socket_id ?? hopMsg.socketId;
-      if (id) {
-        const p = state.remotePlayers.get(id);
-        if (p) p.hopFrame = 1;
-      }
-      break;
-    }
+    case "player_hop": handlePlayerHop(msg as ServerPlayerHopMessage); break;
     default:
       // Silently ignore unknown message types (warthog_state, etc.)
       break;

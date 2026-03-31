@@ -209,127 +209,103 @@
       margin-bottom: 28px;
     }
 
-    .services-pills {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      cursor: pointer;
+    .services-table-wrap {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #2a2a40;
+      border-radius: 6px;
+      background: #0d0d14;
     }
 
-    .svc-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 5px 10px;
-      background: #13132a;
-      border: 1px solid #2a2a40;
-      border-radius: 4px;
+    .services-table {
+      width: 100%;
+      border-collapse: collapse;
       font-size: 12px;
-      color: var(--text);
-      cursor: pointer;
-      user-select: none;
-      transition: border-color 0.15s, background 0.15s;
+      color: #c8c8d8;
     }
 
-    .svc-pill:hover {
-      border-color: #4a4a60;
-      background: #1a1a38;
+    .services-table thead tr {
+      background: #11111f;
+      border-bottom: 1px solid #2a2a40;
     }
 
-    .svc-pill .svc-dot {
-      font-size: 9px;
-    }
-
-    .svc-pill.svc-active .svc-dot  { color: #4ecca3; }
-    .svc-pill.svc-failed .svc-dot  { color: #e94560; }
-    .svc-pill.svc-activating .svc-dot { color: #f0a500; }
-    .svc-pill.svc-unknown .svc-dot { color: #555570; }
-
-    .svc-detail-panel {
-      margin-top: 10px;
-      display: none;
-      background: #0d0d1e;
-      border: 1px solid #2a2a40;
-      border-radius: 6px;
-      overflow: hidden;
-    }
-
-    .svc-detail-panel.open {
-      display: block;
-    }
-
-    .svc-detail-row {
-      display: grid;
-      grid-template-columns: 140px 80px 80px 100px 90px;
-      gap: 8px;
-      padding: 7px 14px;
-      border-bottom: 1px solid #1a1a30;
-      align-items: center;
-      font-size: 11px;
-    }
-
-    .svc-detail-row:last-child { border-bottom: none; }
-
-    .svc-detail-row.header {
-      color: #555570;
+    .services-table th {
+      padding: 7px 12px;
+      text-align: left;
       font-size: 10px;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      padding-top: 9px;
-    }
-
-    .svc-name { color: var(--text); font-weight: 600; }
-    .svc-state-active  { color: #4ecca3; }
-    .svc-state-failed  { color: #e94560; }
-    .svc-state-activating { color: #f0a500; }
-    .svc-state-other   { color: #555570; }
-    .svc-meta { color: var(--text-muted); }
-
-    /* ── Quick links ── */
-    .quick-links {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 12px;
-    }
-
-    .quick-link {
-      display: block;
-      padding: 14px 18px;
-      background: #13132a;
-      border: 1px solid #2a2a40;
-      border-radius: 6px;
-      text-decoration: none;
-      color: var(--text);
-      transition: border-color 0.15s, background 0.15s;
-    }
-
-    .quick-link:hover {
-      border-color: var(--accent);
-      background: #1a1a38;
-    }
-
-    .quick-link .ql-label {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--accent);
-      margin-bottom: 4px;
-    }
-
-    .quick-link .ql-desc {
-      font-size: 11px;
       color: var(--text-muted);
+      font-weight: 600;
+      white-space: nowrap;
     }
 
-    .quick-link.crown .ql-label::before {
-      content: '⚖ ';
+    .services-table td {
+      padding: 7px 12px;
+      border-bottom: 1px solid #1a1a30;
+      white-space: nowrap;
     }
 
-    .quick-link.tasks-link .ql-label::before {
-      content: '▣ ';
+    .services-table tbody tr:last-child td {
+      border-bottom: none;
     }
 
-    .quick-link.terminal-link .ql-label::before {
-      content: '> ';
+    .services-table tbody tr:hover {
+      background: #13132a;
+    }
+
+    .svc-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+
+    .svc-dot.green  { background: #4ecca3; }
+    .svc-dot.red    { background: #e94560; }
+    .svc-dot.yellow { background: #f0a500; }
+
+    .svc-name {
+      color: #c8c8d8;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .svc-status {
+      display: flex;
+      align-items: center;
+    }
+
+    .svc-muted {
+      color: #555570;
+    }
+
+    .svc-restart-btn {
+      background: none;
+      border: 1px solid #2a2a40;
+      color: #555570;
+      font-family: inherit;
+      font-size: 12px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      cursor: pointer;
+      line-height: 1;
+      transition: color 0.1s, border-color 0.1s;
+    }
+
+    .svc-restart-btn:hover {
+      color: #c8c8d8;
+      border-color: #4a4a60;
+    }
+
+    .svc-restart-btn.restarting {
+      color: #f0a500;
+      border-color: #f0a500;
+      cursor: default;
     }
 
     /* ── Loading / error states ── */
@@ -340,6 +316,159 @@
       text-align: center;
     }
 
+    /* ── Metrics row ── */
+    .metrics-widget {
+      margin-bottom: 28px;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 160px 200px 1fr;
+      gap: 10px;
+    }
+
+    .metric-box {
+      background: #0d0d14;
+      border: 1px solid #2a2a40;
+      border-radius: 6px;
+      padding: 12px 14px;
+    }
+
+    .metric-box-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 6px;
+    }
+
+    .metric-big {
+      font-size: 1.5rem;
+      color: #4ecca3;
+      line-height: 1;
+      margin-bottom: 4px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    .metric-sub {
+      font-size: 11px;
+      color: #555570;
+    }
+
+    canvas.metric-sparkline {
+      display: block;
+      margin-top: 8px;
+    }
+
+    .metric-bar-track {
+      height: 5px;
+      background: #1a1a30;
+      border-radius: 3px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+
+    .metric-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: #4ecca3;
+      transition: width 0.4s;
+    }
+
+    .metric-bar-fill.warn { background: #f0a500; }
+    .metric-bar-fill.crit { background: #e94560; }
+
+    .metric-disk-entry {
+      margin-bottom: 8px;
+    }
+
+    .metric-disk-entry:last-child { margin-bottom: 0; }
+
+    .metric-disk-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #555570;
+      margin-bottom: 3px;
+    }
+
+    .metric-disk-path { color: #c8c8d8; }
+
+    .metric-net-row {
+      display: flex;
+      gap: 14px;
+      font-size: 11px;
+      color: #555570;
+      margin-top: 4px;
+    }
+
+    .metric-net-val { color: #c8c8d8; }
+
+    /* ── Containers widget ── */
+    .containers-widget {
+      margin-bottom: 28px;
+    }
+
+    .containers-table-wrap {
+      border: 1px solid #2a2a40;
+      border-radius: 6px;
+      background: #0d0d14;
+    }
+
+    .containers-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      color: #c8c8d8;
+    }
+
+    .containers-table thead tr {
+      background: #11111f;
+      border-bottom: 1px solid #2a2a40;
+    }
+
+    .containers-table th {
+      padding: 7px 12px;
+      text-align: left;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .containers-table td {
+      padding: 7px 12px;
+      border-bottom: 1px solid #1a1a30;
+      white-space: nowrap;
+    }
+
+    .containers-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .containers-table tbody tr:hover {
+      background: #13132a;
+    }
+
+    .ct-badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: bold;
+      letter-spacing: 0.03em;
+    }
+
+    .ct-badge-running { background: #143a1e; color: #4ecca3; border: 1px solid #2a6a44; }
+    .ct-badge-exited  { background: #2a2010; color: #f0a500; border: 1px solid #4a3a10; }
+    .ct-badge-stopped { background: #2a1a1a; color: #888; border: 1px solid #442a2a; }
+    .ct-badge-unknown { background: #1e1e2e; color: #555570; border: 1px solid #2a2a40; }
+
+    .ct-image { color: #555570; font-size: 11px; }
+    .ct-id    { color: #333355; font-size: 10px; }
+
     /* ── Mobile ── */
     @media (max-width: 600px) {
       .status-bar { gap: 14px; }
@@ -348,6 +477,10 @@
       .feed-entry {
         grid-template-columns: 100px 1fr auto;
         gap: 6px;
+      }
+
+      .metrics-grid {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -385,38 +518,44 @@
       <div id="feed-list"><span class="empty-note">loading…</span></div>
     </div>
 
-    <!-- Services health widget -->
-    <div class="services-widget" id="services-widget" style="display:none">
-      <p class="section-label" id="services-label" style="cursor:pointer" title="Click to expand/collapse">services</p>
-      <div class="services-pills" id="services-pills"></div>
-      <div class="svc-detail-panel" id="svc-detail-panel">
-        <div class="svc-detail-row header">
-          <span>service</span>
-          <span>state</span>
-          <span>uptime</span>
-          <span>restarts</span>
-          <span>memory</span>
+    <!-- Metrics row -->
+    <div class="metrics-widget" id="metrics-widget">
+      <p class="section-label">system</p>
+      <div class="metrics-grid">
+        <div class="metric-box">
+          <div class="metric-box-label">cpu</div>
+          <div class="metric-big" id="m-cpu-pct">—</div>
+          <div class="metric-sub" id="m-cpu-sub">waiting…</div>
+          <canvas class="metric-sparkline" id="m-cpu-sparkline" width="132" height="28"></canvas>
         </div>
-        <div id="svc-detail-rows"></div>
+        <div class="metric-box">
+          <div class="metric-box-label">memory</div>
+          <div class="metric-big" id="m-ram-used">—</div>
+          <div class="metric-sub" id="m-ram-sub">waiting…</div>
+          <div class="metric-bar-track"><div class="metric-bar-fill" id="m-ram-bar" style="width:0%"></div></div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-box-label">disk</div>
+          <div id="m-disk-entries"><span style="color:#333355;font-size:11px">loading…</span></div>
+          <div style="margin-top:10px" class="metric-box-label">network</div>
+          <div class="metric-net-row" id="m-net-row"><span style="color:#333355;font-size:11px">loading…</span></div>
+        </div>
       </div>
     </div>
 
-    <!-- Quick links -->
-    <div>
-      <p class="section-label">quick links</p>
-      <div class="quick-links">
-        <a class="quick-link crown" href="/congress">
-          <div class="ql-label">Congress</div>
-          <div class="ql-desc">The AI parliament. Crown jewel of the system.</div>
-        </a>
-        <a class="quick-link tasks-link" href="/tasks">
-          <div class="ql-label">All tasks</div>
-          <div class="ql-desc">Full task log with history and artifacts.</div>
-        </a>
-        <a class="quick-link terminal-link" href="https://terminal.clung.us" target="_blank" rel="noopener">
-          <div class="ql-label">Terminal</div>
-          <div class="ql-desc">Live shell. Always on, always watching.</div>
-        </a>
+    <!-- Services status table -->
+    <div class="services-widget" id="services-widget">
+      <p class="section-label">services <a href="/cockpit" style="font-size:10px;opacity:0.6;text-decoration:none;letter-spacing:0.08em">cockpit →</a></p>
+      <div class="services-table-wrap" id="services-table-wrap">
+        <span class="empty-note" style="display:block;padding:10px 12px">loading…</span>
+      </div>
+    </div>
+
+    <!-- Containers section -->
+    <div class="containers-widget" id="containers-widget">
+      <p class="section-label">containers</p>
+      <div class="containers-table-wrap" id="containers-table-wrap">
+        <span class="empty-note" style="display:block;padding:10px 12px">loading…</span>
       </div>
     </div>
 
@@ -612,127 +751,352 @@
     setInterval(fetchAndRender, REFRESH_MS);
   })();
 
-  /* ── Services health widget ── */
+  /* ── Services status table ── */
   (function () {
     'use strict';
 
-    var SERVICES_REFRESH_MS = 60000;
-    var detailOpen = false;
+    var SERVICES_REFRESH_MS = 15000;
+    var widget = document.getElementById('services-widget');
+    var wrap   = document.getElementById('services-table-wrap');
 
-    function fmtUptime(secs) {
-      if (secs === null || secs === undefined) return '—';
-      if (secs < 60)  return secs + 's';
-      if (secs < 3600) return Math.floor(secs / 60) + 'm';
-      if (secs < 86400) return Math.floor(secs / 3600) + 'h ' + Math.floor((secs % 3600) / 60) + 'm';
-      return Math.floor(secs / 86400) + 'd';
+    function fmtUptime(sec) {
+      if (sec == null || sec < 0) return '—';
+      if (sec < 60) return sec + 's';
+      var m = Math.floor(sec / 60);
+      if (m < 60) return m + 'm';
+      var h = Math.floor(m / 60);
+      var rm = m % 60;
+      if (h < 24) return h + 'h ' + rm + 'm';
+      var d = Math.floor(h / 24);
+      var rh = h % 24;
+      return d + 'd ' + rh + 'h';
     }
 
-    function fmtMem(mb) {
-      if (mb === null || mb === undefined) return '—';
-      return mb < 1 ? '<1 MB' : mb + ' MB';
+    function fmtMemory(mb) {
+      if (mb == null) return '—';
+      return Math.round(mb) + ' MB';
     }
 
-    function stateClass(state) {
-      if (state === 'active') return 'svc-active';
-      if (state === 'failed' || state === 'inactive') return 'svc-failed';
-      if (state === 'activating' || state === 'deactivating') return 'svc-activating';
-      return 'svc-unknown';
-    }
-
-    function stateTextClass(state) {
-      if (state === 'active') return 'svc-state-active';
-      if (state === 'failed' || state === 'inactive') return 'svc-state-failed';
-      if (state === 'activating' || state === 'deactivating') return 'svc-state-activating';
-      return 'svc-state-other';
+    function dotClass(state, sub) {
+      if (state === 'active' && sub === 'running') return 'green';
+      if (state === 'failed') return 'red';
+      return 'yellow';
     }
 
     function renderServices(services) {
-      var pillsEl = document.getElementById('services-pills');
-      var rowsEl  = document.getElementById('svc-detail-rows');
-      pillsEl.innerHTML = '';
-      rowsEl.innerHTML  = '';
+      if (!services.length) {
+        wrap.innerHTML = '<span class="empty-note" style="display:block;padding:10px 12px">No services found.</span>';
+        return;
+      }
+
+      var table = document.createElement('table');
+      table.className = 'services-table';
+
+      var thead = document.createElement('thead');
+      thead.innerHTML = '<tr><th>service</th><th>description</th><th>status</th><th>uptime</th><th>memory</th><th>restarts</th><th></th></tr>';
+      table.appendChild(thead);
+
+      var tbody = document.createElement('tbody');
 
       services.forEach(function (svc) {
-        /* Pill */
-        var pill = document.createElement('span');
-        pill.className = 'svc-pill ' + stateClass(svc.state);
-        pill.title = svc.state + (svc.sub ? '/' + svc.sub : '');
+        var tr = document.createElement('tr');
+
+        /* name */
+        var tdName = document.createElement('td');
+        tdName.className = 'svc-name';
+        tdName.textContent = svc.name;
+        tr.appendChild(tdName);
+
+        /* description */
+        var tdDesc = document.createElement('td');
+        var rawDesc = svc.description || '';
+        tdDesc.textContent = rawDesc.length > 35 ? rawDesc.slice(0, 34) + '…' : rawDesc;
+        tdDesc.style.opacity = '0.6';
+        tdDesc.style.maxWidth = '220px';
+        tdDesc.style.overflow = 'hidden';
+        tdDesc.style.textOverflow = 'ellipsis';
+        tr.appendChild(tdDesc);
+
+        /* status */
+        var tdStatus = document.createElement('td');
+        var statusWrap = document.createElement('div');
+        statusWrap.className = 'svc-status';
         var dot = document.createElement('span');
-        dot.className = 'svc-dot';
-        dot.textContent = '●';
-        pill.appendChild(dot);
-        pill.appendChild(document.createTextNode(svc.name));
-        pill.addEventListener('click', toggleDetail);
-        pillsEl.appendChild(pill);
+        dot.className = 'svc-dot ' + dotClass(svc.state, svc.sub);
+        statusWrap.appendChild(dot);
+        var label = document.createElement('span');
+        label.textContent = svc.sub || svc.state || '—';
+        statusWrap.appendChild(label);
+        tdStatus.appendChild(statusWrap);
+        tr.appendChild(tdStatus);
 
-        /* Detail row */
-        var row = document.createElement('div');
-        row.className = 'svc-detail-row';
+        /* uptime */
+        var tdUptime = document.createElement('td');
+        tdUptime.className = 'svc-muted';
+        tdUptime.textContent = fmtUptime(svc.uptime_sec);
+        tr.appendChild(tdUptime);
 
-        var nameEl = document.createElement('span');
-        nameEl.className = 'svc-name';
-        nameEl.textContent = svc.name;
-        row.appendChild(nameEl);
+        /* memory */
+        var tdMem = document.createElement('td');
+        tdMem.className = 'svc-muted';
+        tdMem.textContent = fmtMemory(svc.memory_mb);
+        tr.appendChild(tdMem);
 
-        var stateEl = document.createElement('span');
-        stateEl.className = stateTextClass(svc.state);
-        stateEl.textContent = svc.state + (svc.sub && svc.sub !== svc.state ? '/' + svc.sub : '');
-        row.appendChild(stateEl);
+        /* restarts */
+        var tdRestarts = document.createElement('td');
+        tdRestarts.className = 'svc-muted';
+        tdRestarts.textContent = svc.restarts != null ? svc.restarts : '—';
+        tr.appendChild(tdRestarts);
 
-        var uptimeEl = document.createElement('span');
-        uptimeEl.className = 'svc-meta';
-        uptimeEl.textContent = fmtUptime(svc.uptime_sec);
-        row.appendChild(uptimeEl);
+        /* restart button */
+        var tdAction = document.createElement('td');
+        var btn = document.createElement('button');
+        btn.className = 'svc-restart-btn';
+        btn.textContent = '↺';
+        btn.title = 'Restart ' + svc.name;
+        (function (serviceName, button) {
+          button.addEventListener('click', function () {
+            if (button.classList.contains('restarting')) return;
+            button.classList.add('restarting');
+            button.textContent = 'restarting…';
+            fetch('/api/cockpit/restart', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({service: serviceName})
+            })
+            .then(function (r) {
+              if (!r.ok) throw new Error('HTTP ' + r.status);
+              return r.json();
+            })
+            .then(function () {
+              setTimeout(function () {
+                button.classList.remove('restarting');
+                button.textContent = '↺';
+                fetchServices();
+              }, 2000);
+            })
+            .catch(function (err) {
+              button.classList.remove('restarting');
+              button.textContent = '↺';
+              button.title = 'Error: ' + err.message;
+            });
+          });
+        })(svc.name, btn);
+        tdAction.appendChild(btn);
+        tr.appendChild(tdAction);
 
-        var restartsEl = document.createElement('span');
-        restartsEl.className = svc.restarts > 0 ? 'svc-state-failed' : 'svc-meta';
-        restartsEl.textContent = svc.restarts + 'x';
-        row.appendChild(restartsEl);
-
-        var memEl = document.createElement('span');
-        memEl.className = 'svc-meta';
-        memEl.textContent = fmtMem(svc.memory_mb);
-        row.appendChild(memEl);
-
-        rowsEl.appendChild(row);
+        tbody.appendChild(tr);
       });
-    }
 
-    function toggleDetail() {
-      detailOpen = !detailOpen;
-      var panel = document.getElementById('svc-detail-panel');
-      if (detailOpen) {
-        panel.classList.add('open');
-      } else {
-        panel.classList.remove('open');
-      }
+      table.appendChild(tbody);
+      wrap.innerHTML = '';
+      wrap.appendChild(table);
     }
 
     function fetchServices() {
-      fetch('/api/ops/health')
+      fetch('/api/cockpit/status')
         .then(function (r) {
-          if (r.status === 403) { return null; }
+          if (r.status === 403) {
+            /* Not authed — hide widget silently */
+            if (widget) widget.style.display = 'none';
+            return null;
+          }
           if (!r.ok) throw new Error('HTTP ' + r.status);
           return r.json();
         })
         .then(function (data) {
-          if (!data) return; /* not authed — widget stays hidden */
-          var widget = document.getElementById('services-widget');
-          widget.style.display = '';
-          renderServices(data);
+          if (!data) return;
+          var services = Array.isArray(data) ? data : [];
+          renderServices(services);
         })
         .catch(function (err) {
-          console.warn('[services] fetch failed:', err.message);
+          wrap.innerHTML = '<span class="empty-note" style="display:block;padding:10px 12px">Could not load service data (' + err.message + ').</span>';
         });
     }
-
-    /* Click on label also toggles detail */
-    var labelEl = document.getElementById('services-label');
-    if (labelEl) labelEl.addEventListener('click', toggleDetail);
 
     fetchServices();
     setInterval(fetchServices, SERVICES_REFRESH_MS);
   })();
+
+  /* ── Metrics ── */
+  (function () {
+    'use strict';
+
+    var METRICS_INTERVAL = 5000;
+    var MAX_SAMPLES = 20;
+    var CPU_HISTORY = [];
+    var prevNet = null;
+    var metricsWidget = document.getElementById('metrics-widget');
+
+    function drawSparkline(canvas, data, color) {
+      var ctx = canvas.getContext('2d');
+      var W = canvas.width;
+      var H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+      if (data.length < 2) return;
+      var max = Math.max.apply(null, data.concat([10]));
+      var step = W / (MAX_SAMPLES - 1);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      for (var i = 0; i < data.length; i++) {
+        var x = i * step;
+        var y = H - (data[i] / max) * H * 0.9;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.lineTo((data.length - 1) * step, H);
+      ctx.lineTo(0, H);
+      ctx.closePath();
+      ctx.fillStyle = color + '22';
+      ctx.fill();
+    }
+
+    function fmtBytes(b) {
+      if (b >= 1e9) return (b / 1e9).toFixed(2) + ' GB';
+      if (b >= 1e6) return (b / 1e6).toFixed(1) + ' MB';
+      if (b >= 1e3) return (b / 1e3).toFixed(0) + ' KB';
+      return b + ' B';
+    }
+
+    function fetchMetrics() {
+      fetch('/api/cockpit/metrics')
+        .then(function (r) {
+          if (r.status === 401 || r.status === 403) {
+            if (metricsWidget) metricsWidget.style.display = 'none';
+            return null;
+          }
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
+        .then(function (d) {
+          if (!d) return;
+
+          /* CPU */
+          CPU_HISTORY.push(d.cpu_pct);
+          if (CPU_HISTORY.length > MAX_SAMPLES) CPU_HISTORY.shift();
+          document.getElementById('m-cpu-pct').textContent = d.cpu_pct.toFixed(1) + '%';
+          document.getElementById('m-cpu-sub').textContent = CPU_HISTORY.length + ' samples';
+          drawSparkline(document.getElementById('m-cpu-sparkline'), CPU_HISTORY, '#4ecca3');
+
+          /* RAM */
+          var ramPct = d.ram_total_mb > 0 ? Math.round((d.ram_used_mb / d.ram_total_mb) * 100) : 0;
+          var ramUsedG = (d.ram_used_mb / 1024).toFixed(1);
+          var ramTotalG = (d.ram_total_mb / 1024).toFixed(1);
+          document.getElementById('m-ram-used').textContent = ramUsedG + 'G';
+          document.getElementById('m-ram-sub').textContent = 'of ' + ramTotalG + 'G — ' + ramPct + '%';
+          var ramBar = document.getElementById('m-ram-bar');
+          ramBar.style.width = ramPct + '%';
+          ramBar.className = 'metric-bar-fill' + (ramPct >= 90 ? ' crit' : ramPct >= 75 ? ' warn' : '');
+
+          /* Disk */
+          var diskEl = document.getElementById('m-disk-entries');
+          diskEl.innerHTML = '';
+          (d.disks || []).forEach(function (disk) {
+            var warnClass = disk.pct >= 90 ? ' crit' : disk.pct >= 75 ? ' warn' : '';
+            var div = document.createElement('div');
+            div.className = 'metric-disk-entry';
+            div.innerHTML =
+              '<div class="metric-disk-row">' +
+              '<span class="metric-disk-path">' + disk.path + '</span>' +
+              '<span>' + disk.used + ' / ' + disk.total + ' — ' + disk.pct + '%</span>' +
+              '</div>' +
+              '<div class="metric-bar-track"><div class="metric-bar-fill' + warnClass + '" style="width:' + disk.pct + '%"></div></div>';
+            diskEl.appendChild(div);
+          });
+
+          /* Network */
+          var netEl = document.getElementById('m-net-row');
+          if (prevNet) {
+            var rxDelta = d.net.rx_bytes - prevNet.rx_bytes;
+            var txDelta = d.net.tx_bytes - prevNet.tx_bytes;
+            var interval = METRICS_INTERVAL / 1000;
+            netEl.innerHTML =
+              '<span>rx <span class="metric-net-val">' + fmtBytes(Math.max(0, rxDelta) / interval) + '/s</span></span>' +
+              '<span>tx <span class="metric-net-val">' + fmtBytes(Math.max(0, txDelta) / interval) + '/s</span></span>';
+          } else {
+            netEl.innerHTML = '<span style="color:#555570;font-size:11px">rx ' + fmtBytes(d.net.rx_bytes) + ' / tx ' + fmtBytes(d.net.tx_bytes) + '</span>';
+          }
+          prevNet = d.net;
+        })
+        .catch(function () { /* silent — metrics failure doesn't break the page */ });
+    }
+
+    fetchMetrics();
+    setInterval(fetchMetrics, METRICS_INTERVAL);
+  })();
+
+  /* ── Containers ── */
+  (function () {
+    'use strict';
+
+    var CONTAINERS_INTERVAL = 15000;
+    var containersWidget = document.getElementById('containers-widget');
+    var containersWrap   = document.getElementById('containers-table-wrap');
+
+    function badgeClass(state) {
+      if (!state) return 'ct-badge-unknown';
+      var s = state.toLowerCase();
+      if (s === 'running') return 'ct-badge-running';
+      if (s === 'exited')  return 'ct-badge-exited';
+      if (s === 'paused')  return 'ct-badge-stopped';
+      return 'ct-badge-unknown';
+    }
+
+    function renderContainers(containers) {
+      if (!containers.length) {
+        containersWrap.innerHTML = '<span class="empty-note" style="display:block;padding:10px 12px">no containers</span>';
+        return;
+      }
+
+      var table = document.createElement('table');
+      table.className = 'containers-table';
+
+      var thead = document.createElement('thead');
+      thead.innerHTML = '<tr><th>name</th><th>image</th><th>status</th><th>state</th></tr>';
+      table.appendChild(thead);
+
+      var tbody = document.createElement('tbody');
+      containers.forEach(function (c) {
+        var tr = document.createElement('tr');
+        var shortId = (c.id || '').slice(0, 12);
+        tr.innerHTML =
+          '<td><span style="color:#c8c8d8">' + (c.name || '—') + '</span>' +
+          (shortId ? '<br><span class="ct-id">' + shortId + '</span>' : '') + '</td>' +
+          '<td><span class="ct-image">' + (c.image || '—') + '</span></td>' +
+          '<td style="color:#555570;font-size:11px">' + (c.status || '—') + '</td>' +
+          '<td><span class="ct-badge ' + badgeClass(c.state) + '">' + (c.state || 'unknown') + '</span></td>';
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+      containersWrap.innerHTML = '';
+      containersWrap.appendChild(table);
+    }
+
+    function fetchContainers() {
+      fetch('/api/cockpit/containers')
+        .then(function (r) {
+          if (r.status === 401 || r.status === 403) {
+            if (containersWidget) containersWidget.style.display = 'none';
+            return null;
+          }
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
+        .then(function (data) {
+          if (!data) return;
+          renderContainers(Array.isArray(data) ? data : []);
+        })
+        .catch(function (err) {
+          containersWrap.innerHTML = '<span class="empty-note" style="display:block;padding:10px 12px">Could not load containers (' + err.message + ').</span>';
+        });
+    }
+
+    fetchContainers();
+    setInterval(fetchContainers, CONTAINERS_INTERVAL);
+  })();
+
   </script>
 </body>
 </html>

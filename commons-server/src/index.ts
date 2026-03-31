@@ -6,7 +6,6 @@ import type {
   WorldState,
   PlayerState,
   ClientToServerMessage,
-  WornPathMessage,
 } from "./protocol.ts";
 import { buildChunk } from "./map.ts";
 import { initNpcs , resetNpcPositions } from "./npc-ai.ts";
@@ -19,7 +18,6 @@ import {
   type BroadcastFn,
 } from "./game-loop.ts";
 import { loadNpcPositions, recordWornPath, persistState, resetNpcPositionsInDb, loadWornPathsForChunk, getLeaderboard , db } from "./persistence.ts";
-import { handleWalkerInteraction } from "./game-loop.ts";
 import {
   startSpawnSchedule,
   getWalkersResponse,
@@ -149,7 +147,7 @@ async function updateLobbyDiscordMessage(lobbyId: string, content: string): Prom
   );
   if (!res.ok) {
     const errText = await res.text();
-    console.warn(`[clungiverse] Discord message PATCH failed: ${res.status} ${errText}`);
+    console.warn(`[clungiverse] Discord message PATCH failed: ${String(res.status)} ${errText}`);
   }
 }
 
@@ -165,18 +163,354 @@ async function pollCongressState(): Promise<void> {
       world.congress.active = !!data.active;
       congressPollFailures = 0;
     }
-  } catch (err) {
-    congressPollFailures = (congressPollFailures ?? 0) + 1;
+  } catch (err: unknown) {
+    congressPollFailures += 1;
     if (congressPollFailures === 1 || congressPollFailures % 10 === 0) {
-      console.warn(`[congress-poll] clunger unreachable (${congressPollFailures} failures):`, err);
+      console.warn(`[congress-poll] clunger unreachable (${String(congressPollFailures)} failures):`, err);
     }
   }
 }
 
 // Poll congress state every 10s
 setInterval(() => {
-  pollCongressState().catch((err) => { console.error("[congress-poll] Error:", err); });
+  pollCongressState().catch((err: unknown) => { console.error("[congress-poll] Error:", err); });
 }, 10_000);
+
+// ─── WebSocket message handlers ───────────────────────────────────────────────
+
+function sendToLobby(lobbyId: string, msg: DungeonServerMessage): void {
+  for (const [_sid, sock] of dungeonSockets) {
+    if (sock.data.lobbyId === lobbyId) sock.send(JSON.stringify(msg));
+  }
+}
+
+function handleDungeonStart(lobbyId: string, userId: string, skipGen: boolean): void {
+  const inst = getInstance(lobbyId);
+  if (inst?.status !== "lobby") return;
+  const hostId = inst.players.keys().next().value ?? "";
+  if (userId !== hostId) {
+    console.warn(`[dungeon-ws] Non-host ${userId} tried to start lobby ${lobbyId}`);
+    return;
+  }
+  const started = startRun(lobbyId, skipGen);
+  if (!started) return;
+
+  updateLobbyDiscordMessage(
+    lobbyId,
+    `~~⚔️ **Adventurer** created a Clungiverse lobby! Join here: https://clung.us/clungiverse?lobby=${lobbyId}~~ *(game in progress)*`
+  ).catch((err: unknown) => { console.warn(`[dungeon-ws] Failed to update lobby Discord message:`, err); });
+
+  const mobTotal = mobRegistry.size;
+  sendToLobby(lobbyId, { type: "d_mob_progress", completed: 0, total: mobTotal, currentEntity: "Preparing mobs...", status: "loading" });
+  setTimeout(() => {
+    sendToLobby(lobbyId, { type: "d_mob_progress", completed: mobTotal, total: mobTotal, currentEntity: "Ready", status: "complete" });
+  }, 600);
+  setTimeout(() => { initFloor(started); }, 800);
+
+  if (!skipGen) {
+    const workflowId = `mob-gen-${started.id}-${String(Date.now())}`;
+    const excludeNames = Array.from(started.players.values()).map((p) => p.name);
+    void (async () => {
+      try {
+        const { Client, Connection } = await import("@temporalio/client");
+        const connection = await Connection.connect({ address: "localhost:7233" });
+        const client = new Client({ connection });
+        await client.workflow.start("MobGenerationWorkflow", { workflowId, taskQueue: "listings-queue", args: [30, excludeNames] });
+        console.log(`[dungeon-ws] MobGenerationWorkflow started: ${workflowId}`);
+      } catch (err: unknown) {
+        console.warn("[dungeon-ws] MobGenerationWorkflow trigger failed:", err);
+      }
+    })();
+  } else {
+    console.log(`[dungeon-ws] skipGen=true — skipping MobGenerationWorkflow for lobby ${lobbyId}`);
+  }
+}
+
+function makeSendToPlayer(): (targetId: string, serverMsg: DungeonServerMessage) => void {
+  return (targetId: string, serverMsg: DungeonServerMessage): void => {
+    for (const [_sid, sock] of dungeonSockets) {
+      if (sock.data.userId === targetId) { sock.send(JSON.stringify(serverMsg)); break; }
+    }
+  };
+}
+
+function handleDPower(lobbyId: string, userId: string): void {
+  const inst = getInstance(lobbyId);
+  if (inst && (inst.status === "running" || inst.status === "boss")) queuePowerActivation(inst.id, userId);
+}
+
+function handleDPickPowerup(lobbyId: string, userId: string, msg: DungeonClientMessage): void {
+  if (msg.type !== "d_pick_powerup") return;
+  const inst = getInstance(lobbyId);
+  if (inst?.status === "between_floors") handlePowerupPick(inst.id, userId, msg.powerupId);
+}
+
+function handleDungeonWsActions(lobbyId: string, userId: string, msg: DungeonClientMessage): void {
+  if (msg.type === "d_start") { handleDungeonStart(lobbyId, userId, !!msg.skipGen); return; }
+  if (msg.type === "d_power") { handleDPower(lobbyId, userId); return; }
+  if (msg.type === "d_pick_powerup") { handleDPickPowerup(lobbyId, userId, msg); return; }
+  handleDungeonMessage(lobbyId, userId, msg, makeSendToPlayer());
+}
+
+function handleDungeonWsMessage(dws: import("bun").ServerWebSocket<DungeonSocketData>, raw: string): void {
+  const { userId, lobbyId } = dws.data;
+  let msg: DungeonClientMessage;
+  try {
+    msg = JSON.parse(raw) as DungeonClientMessage;
+  } catch {
+    return;
+  }
+  handleDungeonWsActions(lobbyId, userId, msg);
+}
+
+function handleCommonsWsMessage(ws: import("bun").ServerWebSocket<SocketData>, raw: string): void {
+  const { socketId } = ws.data;
+  const player = world.players.get(socketId);
+  if (!player) return;
+  player.lastSeen = Date.now();
+  ws.data.lastSeen = player.lastSeen;
+  let msg: ClientToServerMessage;
+  try {
+    msg = JSON.parse(raw) as ClientToServerMessage;
+  } catch (err) {
+    console.error(`[ws] Invalid JSON from ${socketId}:`, err);
+    return;
+  }
+  if (msg.type === "worn_path") {
+    recordWornPath(msg.chunkX, msg.chunkY, msg.tileX, msg.tileY);
+    return;
+  }
+  handleClientMessage(socketId, msg, world);
+}
+
+// ─── Route handler helpers ────────────────────────────────────────────────────
+
+function jsonOk(body: unknown, extra?: Record<string, string>): Response {
+  return new Response(JSON.stringify(body), {
+    headers: { "Content-Type": "application/json", ...extra },
+  });
+}
+
+function jsonErr(body: unknown, status = 500): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+async function handleAdminCongress(req: Request): Promise<Response> {
+  return req.json().then(
+    (body: { active: boolean }) => {
+      world.congress.active = body.active;
+      console.log(`[admin] Congress active: ${String(world.congress.active)}`);
+      return jsonOk({ active: world.congress.active });
+    },
+    (err: unknown) => {
+      console.error("[admin] Congress toggle failed to parse body:", err);
+      return jsonErr({ error: "Invalid JSON body" }, 400);
+    }
+  );
+}
+
+function handleAdminResetNpcs(): Response {
+  try {
+    const npcNames = Array.from(world.npcs.keys());
+    const center = resetNpcPositionsInDb(npcNames);
+    resetNpcPositions(world.npcs, center.x, center.y);
+    console.log(`[admin] NPC reset triggered — ${String(npcNames.length)} NPCs moved to center (${String(center.x)}, ${String(center.y)})`);
+    return jsonOk({ ok: true, npcsReset: npcNames.length, center });
+  } catch (err) {
+    console.error("[admin] NPC reset failed:", err);
+    return jsonErr({ error: String(err) });
+  }
+}
+
+function handleAdminTerrainChanged(): Response {
+  try {
+    const npcNames = Array.from(world.npcs.keys());
+    const center = resetNpcPositionsInDb(npcNames);
+    resetNpcPositions(world.npcs, center.x, center.y);
+    chunks.set("0:0", buildChunk(0, 0));
+    console.log(`[admin] Terrain changed — rebuilt chunk (0,0) and reset ${String(npcNames.length)} NPCs to center`);
+    return jsonOk({ ok: true, npcsReset: npcNames.length, center, chunkRebuilt: "0:0" });
+  } catch (err) {
+    console.error("[admin] terrain-changed handler failed:", err);
+    return jsonErr({ error: String(err) });
+  }
+}
+
+async function handleAdminRoutes(req: Request, url: URL): Promise<Response | null> {
+  if (url.pathname === "/health") {
+    return jsonOk({ status: "ok", players: world.players.size, tick: world.tickCount });
+  }
+  if (url.pathname === "/admin/congress" && req.method === "POST") return handleAdminCongress(req);
+  if (url.pathname === "/admin/reset-npcs" && req.method === "POST") return handleAdminResetNpcs();
+  if (url.pathname === "/admin/terrain-changed" && req.method === "POST") return handleAdminTerrainChanged();
+  return null;
+}
+
+async function handleAuditionPostById(
+  req: Request,
+  fn: (world: WorldState, id: string) => Response | Promise<Response>,
+): Promise<Response> {
+  const body = (await req.json()) as { id: string };
+  return fn(world, body.id);
+}
+
+async function routeAuditionPost(req: Request, path: string): Promise<Response | null> {
+  if (path === "/api/audition/pause") return handleAuditionPostById(req, pauseWalker);
+  if (path === "/api/audition/resume") return handleAuditionPostById(req, resumeWalker);
+  if (path === "/api/audition/keep") return handleAuditionPostById(req, keepWalker);
+  if (path === "/api/audition/dismiss") return handleAuditionPostById(req, dismissWalker);
+  return null;
+}
+
+async function handleAuditionRoutes(req: Request, url: URL): Promise<Response | null> {
+  if (!url.pathname.startsWith("/api/audition/")) return null;
+  if (url.pathname === "/api/audition/walkers" && req.method === "GET") return getWalkersResponse(world);
+  if (req.method === "POST") return routeAuditionPost(req, url.pathname);
+  return null;
+}
+
+function handleClungiverseLeaderboard(): Response {
+  try {
+    const entries = getLeaderboard();
+    return jsonOk(entries, { "Access-Control-Allow-Origin": "*" });
+  } catch (err) {
+    return jsonErr({ error: String(err) });
+  }
+}
+
+function notifyDiscordLobbyCreated(lobbyId: string, token: string): void {
+  fetch('https://discord.com/api/v10/channels/1488315244190236723/messages', {
+    method: 'POST',
+    headers: { 'Authorization': `Bot ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content: `⚔️ **Adventurer** created a Clungiverse lobby! Join here: https://clung.us/clungiverse?lobby=${lobbyId}` }),
+  }).then(async (res) => {
+    if (res.ok) {
+      const data = await res.json() as { id: string };
+      lobbyDiscordMessages.set(lobbyId, data.id);
+    } else {
+      const errText = await res.text();
+      console.warn(`[clungiverse] Discord notify failed: ${String(res.status)} ${errText}`);
+    }
+  }).catch((err: unknown) => { console.warn('[clungiverse] Discord notify failed:', err); });
+}
+
+async function handleClungiverseLobbyCreate(req: Request): Promise<Response> {
+  try {
+    const body = (await req.json()) as { userId: string; name: string };
+    if (!body.userId || !body.name) return jsonErr({ error: "userId and name required" }, 400);
+    const instance = createLobby(body.userId, body.name);
+    const discordToken = process.env.DISCORD_BOT_TOKEN;
+    if (discordToken) {
+      notifyDiscordLobbyCreated(instance.lobbyId, discordToken);
+    } else {
+      console.warn('[clungiverse] DISCORD_BOT_TOKEN not set, skipping notification');
+    }
+    return jsonOk({ lobbyId: instance.lobbyId, hostId: body.userId });
+  } catch (err) {
+    return jsonErr({ error: String(err) });
+  }
+}
+
+function handleClungiverseLobbyGet(lobbyId: string): Response {
+  const instance = getInstance(lobbyId);
+  if (!instance) return jsonErr({ error: "Lobby not found" }, 404);
+  const players = Array.from(instance.players.values()).map((p) => ({
+    playerId: p.id, name: p.name, personaSlug: p.personaSlug || null, ready: !!p.personaSlug,
+  }));
+  return jsonOk({ lobbyId: instance.lobbyId, status: instance.status, playerCount: instance.players.size, players });
+}
+
+async function handleClungiverseLobbyNotifyDiscord(lobbyId: string): Promise<Response> {
+  try {
+    const instance = getInstance(lobbyId);
+    if (!instance) return jsonErr({ error: "Lobby not found" }, 404);
+    const discordToken = process.env.DISCORD_BOT_TOKEN;
+    if (!discordToken) return jsonErr({ error: "DISCORD_BOT_TOKEN not set" });
+    const quickJoinUrl = `https://clung.us/clungiverse?lobby=${lobbyId}`;
+    const discordRes = await fetch("https://discord.com/api/v10/channels/1488315244190236723/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bot ${discordToken}` },
+      body: JSON.stringify({ content: `⚔️ **Adventurer** created a Clungiverse lobby! Join here: ${quickJoinUrl}` }),
+    });
+    if (!discordRes.ok) {
+      const errText = await discordRes.text();
+      return jsonErr({ error: `Discord API error: ${String(discordRes.status)} ${errText}` }, 502);
+    }
+    return jsonOk({ ok: true });
+  } catch (err) {
+    return jsonErr({ error: String(err) });
+  }
+}
+
+async function handleClungiverseLobbyJoin(req: Request, lobbyId: string): Promise<Response> {
+  try {
+    const body = (await req.json()) as { userId: string; name: string };
+    if (!body.userId || !body.name) return jsonErr({ error: "userId and name required" }, 400);
+    const instance = joinLobby(lobbyId, body.userId, body.name);
+    if (!instance) return jsonErr({ error: "Cannot join lobby (full, not found, or in progress)" }, 400);
+    return jsonOk({ lobbyId: instance.lobbyId, joined: true });
+  } catch (err) {
+    return jsonErr({ error: String(err) });
+  }
+}
+
+async function routeClungiverseLobbyById(req: Request, path: string): Promise<Response | null> {
+  const lobbyGetMatch = path.match(/^\/api\/clungiverse\/lobby\/([^/]+)$/);
+  if (lobbyGetMatch && req.method === "GET") return handleClungiverseLobbyGet(lobbyGetMatch[1]);
+
+  const lobbyNotifyMatch = path.match(/^\/api\/clungiverse\/lobby\/([^/]+)\/notify-discord$/);
+  if (lobbyNotifyMatch && req.method === "POST") return handleClungiverseLobbyNotifyDiscord(lobbyNotifyMatch[1]);
+
+  const lobbyJoinMatch = path.match(/^\/api\/clungiverse\/lobby\/([^/]+)\/join$/);
+  if (lobbyJoinMatch && req.method === "POST") return handleClungiverseLobbyJoin(req, lobbyJoinMatch[1]);
+
+  return null;
+}
+
+async function handleClungiverseLobbyRoutes(req: Request, url: URL): Promise<Response | null> {
+  if (url.pathname === "/api/clungiverse/leaderboard" && req.method === "GET") return handleClungiverseLeaderboard();
+  if (url.pathname === "/api/clungiverse/lobby/create" && req.method === "POST") return handleClungiverseLobbyCreate(req);
+  return routeClungiverseLobbyById(req, url.pathname);
+}
+
+// ─── WebSocket upgrade helpers ────────────────────────────────────────────────
+
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
+function tryUpgradeCommonsWs(
+  req: Request,
+  server: import("bun").Server,
+  url: URL,
+): Response | undefined {
+  const userId = url.searchParams.get("userId") ?? "anonymous";
+  const name = url.searchParams.get("name") ?? "unknown";
+  const color = url.searchParams.get("color") ?? "#ffffff";
+  const socketId = `${userId}-${String(Date.now())}-${Math.random().toString(36).slice(2, 7)}`;
+  const upgraded = server.upgrade(req, {
+    data: { userId, name, color, socketId, chunkX: 0, chunkY: 0, lastSeen: Date.now() } satisfies SocketData,
+  });
+  if (upgraded) return undefined;
+  return new Response("WebSocket upgrade failed", { status: 400 });
+}
+
+function tryUpgradeDungeonWs(
+  req: Request,
+  server: import("bun").Server,
+  url: URL,
+): Response | undefined {
+  const userId = url.searchParams.get("userId") ?? "anonymous";
+  const name = url.searchParams.get("name") ?? "unknown";
+  const lobbyId = url.searchParams.get("lobbyId") ?? "";
+  const socketId = `dng-${userId}-${String(Date.now())}-${Math.random().toString(36).slice(2, 7)}`;
+  const upgraded = server.upgrade(req, {
+    data: { userId, name, socketId, lobbyId, isDungeon: true } satisfies DungeonSocketData,
+  });
+  if (upgraded) return undefined;
+  return new Response("WebSocket upgrade failed", { status: 400 });
+}
+/* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 
 // ─── Bun server setup ─────────────────────────────────────────────────────────
 
@@ -186,324 +520,17 @@ const bunServer = serve<AnySocketData>({
   async fetch(req, server) {
     const url = new URL(req.url);
 
-    // WebSocket upgrade
-    if (url.pathname === "/ws") {
-      const userId = url.searchParams.get("userId") ?? "anonymous";
-      const name = url.searchParams.get("name") ?? "unknown";
-      const color = url.searchParams.get("color") ?? "#ffffff";
-      const socketId = `${userId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    if (url.pathname === "/ws") return tryUpgradeCommonsWs(req, server, url);
+    if (url.pathname === "/dungeon-ws") return tryUpgradeDungeonWs(req, server, url);
 
-      const upgraded = server.upgrade(req, {
-        data: {
-          userId,
-          name,
-          color,
-          socketId,
-          chunkX: 0,
-          chunkY: 0,
-          lastSeen: Date.now(),
-        } satisfies SocketData,
-      });
-      if (upgraded) return undefined;
-      return new Response("WebSocket upgrade failed", { status: 400 });
-    }
+    const adminRes = await handleAdminRoutes(req, url);
+    if (adminRes) return adminRes;
 
-    // Health check
-    if (url.pathname === "/health") {
-      return new Response(
-        JSON.stringify({ status: "ok", players: world.players.size, tick: world.tickCount }),
-        { headers: { "Content-Type": "application/json" } }
-      );
-    }
+    const auditionRes = await handleAuditionRoutes(req, url);
+    if (auditionRes) return auditionRes;
 
-    // Admin: toggle congress state (internal use)
-    if (url.pathname === "/admin/congress" && req.method === "POST") {
-      return req.json().then(
-        (body: { active: boolean }) => {
-          world.congress.active = !!body.active;
-          console.log(`[admin] Congress active: ${world.congress.active}`);
-          return new Response(JSON.stringify({ active: world.congress.active }), {
-            headers: { "Content-Type": "application/json" },
-          });
-        },
-        (err) => {
-          console.error("[admin] Congress toggle failed to parse body:", err);
-          return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-      );
-    }
-
-    // Admin: reset all NPC positions to center of chunk (0,0)
-    // Called after terrain modifications or when NPCs are stuck in impassable tiles.
-    if (url.pathname === "/admin/reset-npcs" && req.method === "POST") {
-      try {
-        const npcNames = Array.from(world.npcs.keys());
-        const center = resetNpcPositionsInDb(npcNames);
-        resetNpcPositions(world.npcs, center.x, center.y);
-
-        // Force a full NPC broadcast on the next tick by clearing lastSentState
-        // (accomplished by simply logging; the delta logic will detect position changes)
-        console.log(`[admin] NPC reset triggered — ${npcNames.length} NPCs moved to center (${center.x}, ${center.y})`);
-        return new Response(
-          JSON.stringify({ ok: true, npcsReset: npcNames.length, center }),
-          { headers: { "Content-Type": "application/json" } }
-        );
-      } catch (err) {
-        console.error("[admin] NPC reset failed:", err);
-        return new Response(
-          JSON.stringify({ error: String(err) }),
-          { status: 500, headers: { "Content-Type": "application/json" } }
-        );
-      }
-    }
-
-    // Admin: notify server that terrain/map was modified — resets NPC positions
-    // to prevent NPCs being stuck in newly-impassable tiles.
-    if (url.pathname === "/admin/terrain-changed" && req.method === "POST") {
-      try {
-        const npcNames = Array.from(world.npcs.keys());
-        const center = resetNpcPositionsInDb(npcNames);
-        resetNpcPositions(world.npcs, center.x, center.y);
-
-        // Rebuild chunk (0,0) from scratch so the server walkability grid reflects the change
-        chunks.set("0:0", buildChunk(0, 0));
-
-        console.log(`[admin] Terrain changed — rebuilt chunk (0,0) and reset ${npcNames.length} NPCs to center`);
-        return new Response(
-          JSON.stringify({ ok: true, npcsReset: npcNames.length, center, chunkRebuilt: "0:0" }),
-          { headers: { "Content-Type": "application/json" } }
-        );
-      } catch (err) {
-        console.error("[admin] terrain-changed handler failed:", err);
-        return new Response(
-          JSON.stringify({ error: String(err) }),
-          { status: 500, headers: { "Content-Type": "application/json" } }
-        );
-      }
-    }
-
-    // ── Audition REST endpoints ──────────────────────────────────────────────
-    if (url.pathname === "/api/audition/walkers" && req.method === "GET") {
-      return getWalkersResponse(world);
-    }
-
-    if (url.pathname === "/api/audition/pause" && req.method === "POST") {
-      const body = (await req.json()) as { id: string };
-      return pauseWalker(world, body.id);
-    }
-
-    if (url.pathname === "/api/audition/resume" && req.method === "POST") {
-      const body = (await req.json()) as { id: string };
-      return resumeWalker(world, body.id);
-    }
-
-    if (url.pathname === "/api/audition/keep" && req.method === "POST") {
-      const body = (await req.json()) as { id: string };
-      return keepWalker(world, body.id);
-    }
-
-    if (url.pathname === "/api/audition/dismiss" && req.method === "POST") {
-      const body = (await req.json()) as { id: string };
-      return dismissWalker(world, body.id);
-    }
-
-    // ── Clungiverse Dungeon WebSocket upgrade ─────────────────────────────
-    if (url.pathname === "/dungeon-ws") {
-      const userId = url.searchParams.get("userId") ?? "anonymous";
-      const name = url.searchParams.get("name") ?? "unknown";
-      const lobbyId = url.searchParams.get("lobbyId") ?? "";
-      const socketId = `dng-${userId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-
-      const upgraded = server.upgrade(req, {
-        data: {
-          userId,
-          name,
-          socketId,
-          lobbyId,
-          isDungeon: true,
-        } satisfies DungeonSocketData,
-      });
-      if (upgraded) return undefined;
-      return new Response("WebSocket upgrade failed", { status: 400 });
-    }
-
-    // ── Clungiverse REST routes ─────────────────────────────────────────
-    if (url.pathname === "/api/clungiverse/lobby/create" && req.method === "POST") {
-      try {
-        const body = (await req.json()) as { userId: string; name: string };
-        if (!body.userId || !body.name) {
-          return new Response(JSON.stringify({ error: "userId and name required" }), {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-        const instance = createLobby(body.userId, body.name);
-
-        // Auto-notify #clungiverse channel and store the returned message ID for later editing
-        const discordToken = process.env.DISCORD_BOT_TOKEN;
-        if (discordToken) {
-          fetch('https://discord.com/api/v10/channels/1488315244190236723/messages', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bot ${discordToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              content: `⚔️ **Adventurer** created a Clungiverse lobby! Join here: https://clung.us/clungiverse?lobby=${instance.lobbyId}`,
-            }),
-          }).then(async (res) => {
-            if (res.ok) {
-              const data = await res.json() as { id: string };
-              lobbyDiscordMessages.set(instance.lobbyId, data.id);
-            } else {
-              const errText = await res.text();
-              console.warn(`[clungiverse] Discord notify failed: ${res.status} ${errText}`);
-            }
-          }).catch((err) => { console.warn('[clungiverse] Discord notify failed:', err); });
-        } else {
-          console.warn('[clungiverse] DISCORD_BOT_TOKEN not set, skipping notification');
-        }
-
-        return new Response(
-          JSON.stringify({ lobbyId: instance.lobbyId, hostId: body.userId }),
-          { headers: { "Content-Type": "application/json" } }
-        );
-      } catch (err) {
-        return new Response(JSON.stringify({ error: String(err) }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-    }
-
-    // GET /api/clungiverse/leaderboard
-    if (url.pathname === "/api/clungiverse/leaderboard" && req.method === "GET") {
-      try {
-        const entries = getLeaderboard();
-        return new Response(JSON.stringify(entries), {
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
-          },
-        });
-      } catch (err) {
-        return new Response(JSON.stringify({ error: String(err) }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-    }
-
-    // GET /api/clungiverse/lobby/:id
-    const lobbyGetMatch = url.pathname.match(/^\/api\/clungiverse\/lobby\/([^/]+)$/);
-    if (lobbyGetMatch && req.method === "GET") {
-      const lobbyId = lobbyGetMatch[1];
-      const instance = getInstance(lobbyId);
-      if (!instance) {
-        return new Response(JSON.stringify({ error: "Lobby not found" }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-      const players = Array.from(instance.players.values()).map((p) => ({
-        playerId: p.id,
-        name: p.name,
-        personaSlug: p.personaSlug || null,
-        ready: !!p.personaSlug,
-      }));
-      return new Response(
-        JSON.stringify({
-          lobbyId: instance.lobbyId,
-          status: instance.status,
-          playerCount: instance.players.size,
-          players,
-        }),
-        { headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    // POST /api/clungiverse/lobby/:id/notify-discord
-    const lobbyNotifyMatch = url.pathname.match(/^\/api\/clungiverse\/lobby\/([^/]+)\/notify-discord$/);
-    if (lobbyNotifyMatch && req.method === "POST") {
-      try {
-        const lobbyId = lobbyNotifyMatch[1];
-        const instance = getInstance(lobbyId);
-        if (!instance) {
-          return new Response(JSON.stringify({ error: "Lobby not found" }), {
-            status: 404,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-        const quickJoinUrl = `https://clung.us/clungiverse?lobby=${lobbyId}`;
-        const discordToken = process.env.DISCORD_BOT_TOKEN;
-        if (!discordToken) {
-          return new Response(JSON.stringify({ error: "DISCORD_BOT_TOKEN not set" }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-        const discordRes = await fetch("https://discord.com/api/v10/channels/1488315244190236723/messages", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bot ${discordToken}`,
-          },
-          body: JSON.stringify({
-            content: `⚔️ **Adventurer** created a Clungiverse lobby! Join here: ${quickJoinUrl}`,
-          }),
-        });
-        if (!discordRes.ok) {
-          const errText = await discordRes.text();
-          return new Response(JSON.stringify({ error: `Discord API error: ${discordRes.status} ${errText}` }), {
-            status: 502,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-        return new Response(JSON.stringify({ ok: true }), {
-          headers: { "Content-Type": "application/json" },
-        });
-      } catch (err) {
-        return new Response(JSON.stringify({ error: String(err) }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-    }
-
-    // POST /api/clungiverse/lobby/:id/join
-    const lobbyJoinMatch = url.pathname.match(/^\/api\/clungiverse\/lobby\/([^/]+)\/join$/);
-    if (lobbyJoinMatch && req.method === "POST") {
-      try {
-        const lobbyId = lobbyJoinMatch[1];
-        const body = (await req.json()) as { userId: string; name: string };
-        if (!body.userId || !body.name) {
-          return new Response(JSON.stringify({ error: "userId and name required" }), {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-        const instance = joinLobby(lobbyId, body.userId, body.name);
-        if (!instance) {
-          return new Response(JSON.stringify({ error: "Cannot join lobby (full, not found, or in progress)" }), {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-
-        return new Response(
-          JSON.stringify({ lobbyId: instance.lobbyId, joined: true }),
-          { headers: { "Content-Type": "application/json" } }
-        );
-      } catch (err) {
-        return new Response(JSON.stringify({ error: String(err) }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-    }
+    const clungiverseRes = await handleClungiverseLobbyRoutes(req, url);
+    if (clungiverseRes) return clungiverseRes;
 
     return new Response("Not found", { status: 404 });
   },
@@ -551,10 +578,10 @@ const bunServer = serve<AnySocketData>({
 
       // ── Commons WebSocket ──
       const { socketId, chunkX, chunkY, name, color, userId } = ws.data;
-      ws.subscribe(`chunk:${chunkX}:${chunkY}`);
+      ws.subscribe(`chunk:${String(chunkX)}:${String(chunkY)}`);
 
       // Ensure chunk data is loaded
-      const chunkKey = `${chunkX}:${chunkY}`;
+      const chunkKey = `${String(chunkX)}:${String(chunkY)}`;
       if (!world.chunks.has(chunkKey)) {
         world.chunks.set(chunkKey, buildChunk(chunkX, chunkY));
       }
@@ -595,157 +622,11 @@ const bunServer = serve<AnySocketData>({
     },
 
     message(ws: import("bun").ServerWebSocket<AnySocketData>, rawMessage) {
-      // ── Dungeon WebSocket messages ──
       if (ws.data.isDungeon) {
-        const dws = ws as import("bun").ServerWebSocket<DungeonSocketData>;
-        const { userId, lobbyId } = dws.data;
-        let msg: DungeonClientMessage;
-        try {
-          msg = JSON.parse(rawMessage.toString()) as DungeonClientMessage;
-        } catch {
-          return;
-        }
-        const sendToPlayer = (targetId: string, serverMsg: DungeonServerMessage) => {
-          for (const [_sid, sock] of dungeonSockets) {
-            if (sock.data.userId === targetId) {
-              sock.send(JSON.stringify(serverMsg));
-              break;
-            }
-          }
-        };
-
-        // Intercept d_start to trigger floor generation after startRun
-        // Only the host (first player in the lobby) can start
-        if (msg.type === "d_start") {
-          const inst = getInstance(lobbyId);
-          if (inst?.status === "lobby") {
-            const hostId = inst.players.keys().next().value ?? "";
-            if (userId !== hostId) {
-              console.warn(`[dungeon-ws] Non-host ${userId} tried to start lobby ${lobbyId}`);
-              return;
-            }
-            const started = startRun(lobbyId, !!msg.skipGen);
-            if (started) {
-              const playerCount = started.players.size;
-
-              // Edit the lobby Discord notification to show the game is in progress
-              updateLobbyDiscordMessage(
-                lobbyId,
-                `~~⚔️ **Adventurer** created a Clungiverse lobby! Join here: https://clung.us/clungiverse?lobby=${lobbyId}~~ *(game in progress)*`
-              ).catch((err) => { console.warn(`[dungeon-ws] Failed to update lobby Discord message: ${err}`); });
-
-              // Step 1: Send loading status immediately so the overlay appears
-              const mobTotal = mobRegistry.size;
-              const mobLoadingMsg: DungeonServerMessage = {
-                type: "d_mob_progress",
-                completed: 0,
-                total: mobTotal,
-                currentEntity: "Preparing mobs...",
-                status: "loading",
-              };
-              for (const [_sid, sock] of dungeonSockets) {
-                if (sock.data.lobbyId === lobbyId) {
-                  sock.send(JSON.stringify(mobLoadingMsg));
-                }
-              }
-
-              // Step 2: After 600ms, send complete status
-              setTimeout(() => {
-                const mobCompleteMsg: DungeonServerMessage = {
-                  type: "d_mob_progress",
-                  completed: mobTotal,
-                  total: mobTotal,
-                  currentEntity: "Ready",
-                  status: "complete",
-                };
-                for (const [_sid, sock] of dungeonSockets) {
-                  if (sock.data.lobbyId === lobbyId) {
-                    sock.send(JSON.stringify(mobCompleteMsg));
-                  }
-                }
-              }, 600);
-
-              // Step 3: After 800ms, init the floor (loading screen visible for ~800ms total)
-              setTimeout(() => {
-                initFloor(started);
-              }, 800);
-
-              // Trigger MobGenerationWorkflow in background for future run enrichment
-              // Fire-and-forget: don't block game start on LLM generation
-              // Skip if the host requested cached-only mode (skipGen: true)
-              if (!msg.skipGen) {
-                const workflowId = `mob-gen-${started.id}-${Date.now()}`;
-                const excludeNames = Array.from(started.players.values())
-                  .map((p) => p.name);
-                (async () => {
-                  try {
-                    const { Client, Connection } = await import("@temporalio/client");
-                    const connection = await Connection.connect({ address: "localhost:7233" });
-                    const client = new Client({ connection });
-                    await client.workflow.start("MobGenerationWorkflow", {
-                      workflowId,
-                      taskQueue: "listings-queue",
-                      args: [30, excludeNames],
-                    });
-                    console.log(`[dungeon-ws] MobGenerationWorkflow started: ${workflowId}`);
-                  } catch (err) {
-                    console.warn("[dungeon-ws] MobGenerationWorkflow trigger failed:", err);
-                  }
-                })();
-              } else {
-                console.log(`[dungeon-ws] skipGen=true — skipping MobGenerationWorkflow for lobby ${lobbyId}`);
-              }
-            }
-          }
-          return;
-        }
-
-        // Intercept d_power to queue power activation
-        if (msg.type === "d_power") {
-          const inst = getInstance(lobbyId);
-          if (inst && (inst.status === "running" || inst.status === "boss")) {
-            queuePowerActivation(inst.id, userId);
-          }
-          return;
-        }
-
-        // Intercept d_pick_powerup to handle powerup selection between floors
-        if (msg.type === "d_pick_powerup") {
-          const inst = getInstance(lobbyId);
-          if (inst?.status === "between_floors") {
-            handlePowerupPick(inst.id, userId, msg.powerupId);
-          }
-          return;
-        }
-
-        handleDungeonMessage(lobbyId, userId, msg, sendToPlayer);
+        handleDungeonWsMessage(ws as import("bun").ServerWebSocket<DungeonSocketData>, rawMessage.toString());
         return;
       }
-
-      // ── Commons WebSocket messages ──
-      const { socketId } = ws.data;
-      const player = world.players.get(socketId);
-      if (!player) return;
-
-      player.lastSeen = Date.now();
-      ws.data.lastSeen = player.lastSeen;
-
-      let msg: ClientToServerMessage;
-      try {
-        msg = JSON.parse(rawMessage.toString()) as ClientToServerMessage;
-      } catch (err) {
-        console.error(`[ws] Invalid JSON from ${socketId}:`, err);
-        return;
-      }
-
-      // worn_path needs async SQLite write — handle separately
-      if (msg.type === "worn_path") {
-        const wpm = msg;
-        recordWornPath(wpm.chunkX, wpm.chunkY, wpm.tileX, wpm.tileY);
-        return;
-      }
-
-      handleClientMessage(socketId, msg, world);
+      handleCommonsWsMessage(ws as import("bun").ServerWebSocket<SocketData>, rawMessage.toString());
     },
 
     close(ws: import("bun").ServerWebSocket<AnySocketData>) {
@@ -762,7 +643,7 @@ const bunServer = serve<AnySocketData>({
 
       // ── Commons WebSocket close ──
       const { socketId, chunkX, chunkY, name } = ws.data;
-      ws.unsubscribe(`chunk:${chunkX}:${chunkY}`);
+      ws.unsubscribe(`chunk:${String(chunkX)}:${String(chunkY)}`);
 
       // Remove from warthog seats if present
       const seatIdx = world.warthog.seats.indexOf(socketId);
@@ -786,12 +667,12 @@ initMobRegistry(db);
 // ─── Dungeon loop setup ─────────────────────────────────────────────────────
 
 // Wire dungeon send function to route messages through dungeonSockets
-const dungeonSendFn = (playerId: string, msg: DungeonServerMessage) => {
+const dungeonSendFn = (playerId: string, msg: DungeonServerMessage): void => {
   for (const [_sid, sock] of dungeonSockets) {
     if (sock.data.userId === playerId) {
       try {
         sock.send(JSON.stringify(msg));
-      } catch (err) {
+      } catch (err: unknown) {
         console.error(`[dungeon] Failed to send to ${playerId}:`, err);
       }
       break;
@@ -816,7 +697,7 @@ setChunkSubscriptionCallback((socketId, oldChunkX, oldChunkY, newChunkX, newChun
   // The player will still receive ticks in their new chunk after the update.
 
   // Ensure new chunk data is loaded
-  const newKey = `${newChunkX}:${newChunkY}`;
+  const newKey = `${String(newChunkX)}:${String(newChunkY)}`;
   if (!world.chunks.has(newKey)) {
     world.chunks.set(newKey, buildChunk(newChunkX, newChunkY));
   }
@@ -829,7 +710,7 @@ setForceSyncCallback((_socketId: string) => {
 // ─── Broadcast helper ─────────────────────────────────────────────────────────
 
 const broadcast: BroadcastFn = (chunkX, chunkY, payload) => {
-  bunServer.publish(`chunk:${chunkX}:${chunkY}`, payload);
+  bunServer.publish(`chunk:${String(chunkX)}:${String(chunkY)}`, payload);
 };
 
 // ─── 20Hz game tick loop ─────────────────────────────────────────────────────
@@ -868,4 +749,4 @@ process.on("SIGINT", () => {
 startSpawnSchedule(world);
 console.log("[commons-server] Audition walker spawning enabled");
 
-console.log(`[commons-server] Listening on :8090 — 20Hz tick, ${world.npcs.size} NPCs loaded`);
+console.log(`[commons-server] Listening on :8090 — 20Hz tick, ${String(world.npcs.size)} NPCs loaded`);

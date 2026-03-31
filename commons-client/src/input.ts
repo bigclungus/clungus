@@ -30,15 +30,16 @@ function touchInput(): void {
   lastInputAt = Date.now();
 }
 
+const KEY_MAP: Record<string, keyof InputState> = {
+  ArrowLeft: "left",  a: "left",  A: "left",
+  ArrowRight: "right", d: "right", D: "right",
+  ArrowUp: "up",    w: "up",    W: "up",
+  ArrowDown: "down", s: "down",  S: "down",
+  " ": "hop",
+};
+
 function keyToField(key: string): keyof InputState | null {
-  switch (key) {
-    case "ArrowLeft":  case "a": case "A": return "left";
-    case "ArrowRight": case "d": case "D": return "right";
-    case "ArrowUp":    case "w": case "W": return "up";
-    case "ArrowDown":  case "s": case "S": return "down";
-    case " ": return "hop";
-    default: return null;
-  }
+  return KEY_MAP[key] ?? null;
 }
 
 function isTextInputFocused(): boolean {

@@ -6,7 +6,6 @@ import type {
   ClientPlayer,
   ClientEnemy,
   ClientProjectile,
-  ClientAoEZone,
   ClientTempPowerup,
   ClientFloorPickup,
   PowerupChoice,
@@ -30,7 +29,7 @@ interface ServerPlayerSnapshot {
   iframeTicks: number;
   cooldownRemaining: number; // server field name for cooldown ticks left
   scramblingTicks?: number;
-  activeTempPowerups?: Array<{ templateId: string; expiresAt: number }>;
+  activeTempPowerups?: { templateId: string; expiresAt: number }[];
   spectating?: boolean; // dead but party still alive
 }
 
@@ -137,12 +136,12 @@ interface ServerMobProgressMsg {
 
 interface ServerMobSpritesMsg {
   type: 'd_mob_sprites';
-  sprites: Array<{ entityName: string; spritePng: string }>;
+  sprites: { entityName: string; spritePng: string }[];
 }
 
 interface ServerMobRosterMsg {
   type: 'd_mob_roster';
-  mobs: Array<{
+  mobs: {
     entityName: string;
     displayName: string;
     behavior: 'melee_chase' | 'ranged_pattern' | 'slow_charge';
@@ -151,7 +150,7 @@ interface ServerMobRosterMsg {
     def: number;
     spd: number;
     flavorText: string | null;
-  }>;
+  }[];
 }
 
 interface ServerErrorMsg {
@@ -176,7 +175,7 @@ type ServerMessage =
 type Handler = (data: unknown) => void;
 
 class Emitter {
-  private map: Map<string, Handler[]> = new Map();
+  private map = new Map<string, Handler[]>();
 
   on(event: string, fn: Handler): void {
     const arr = this.map.get(event) ?? [];
@@ -206,12 +205,12 @@ const BACKOFF = 1.5;
 
 export class DungeonNetwork extends Emitter {
   private ws: WebSocket | null = null;
-  private url: string = '';
+  private url = '';
   private delay: number = INITIAL_DELAY;
   private timer: number | null = null;
-  private closing: boolean = false;
+  private closing = false;
   private gameState: DungeonClientState;
-  private runStartTime: number = 0;
+  private runStartTime = 0;
 
   constructor(state: DungeonClientState) {
     super();
@@ -264,12 +263,12 @@ export class DungeonNetwork extends Emitter {
       // onclose fires after onerror
     };
 
-    ws.onmessage = (ev: MessageEvent) => {
+    ws.onmessage = (ev: MessageEvent<string | Blob | ArrayBuffer>) => {
       const data = ev.data;
       if (typeof data === 'string') {
         this.handleRaw(data);
       } else if (data instanceof Blob) {
-        data.text().then((text) => this.handleRaw(text));
+        data.text().then((text) => { this.handleRaw(text); }).catch((err: unknown) => { throw err instanceof Error ? err : new Error(String(err)); });
       } else if (data instanceof ArrayBuffer) {
         this.handleRaw(new TextDecoder().decode(data));
       }
@@ -294,113 +293,144 @@ export class DungeonNetwork extends Emitter {
       return;
     }
 
-    switch (msg.type) {
-      case 'd_tick': this.onTick(msg as ServerTickMsg); break;
-      case 'd_floor': this.onFloor(msg as ServerFloorMsg); break;
-      case 'd_welcome': this.onWelcome(msg as ServerWelcomeMsg); break;
-      case 'd_lobby': this.onLobby(msg as ServerLobbyMsg); break;
-      case 'd_powerup_choices': this.onPowerup(msg as ServerPowerupMsg); break;
-      case 'd_results': this.onResults(msg as ServerResultsMsg); break;
-      case 'd_mob_progress': this.onMobProgress(msg as ServerMobProgressMsg); break;
-      case 'd_mob_sprites': this.onMobSprites(msg as ServerMobSpritesMsg); break;
-      case 'd_mob_roster': this.onMobRoster(msg as ServerMobRosterMsg); break;
-      case 'd_error':
-        console.error('[net] server error:', (msg as ServerErrorMsg).message);
-        this.emit('error', (msg as ServerErrorMsg).message);
-        break;
-    }
-
+    this.dispatchMessage(msg);
     this.emit(msg.type, msg);
   }
 
-  private onTick(msg: ServerTickMsg): void {
-    const s = this.gameState;
-    s.prevTickTimestamp = s.tickTimestamp;
-    s.tickTimestamp = performance.now();
-    s.lastServerTick = msg.tick;
-    s.tick = msg.tick;
+  private dispatchFlowMessage(msg: ServerMessage): boolean {
+    switch (msg.type) {
+      case 'd_tick': this.onTick(msg); return true;
+      case 'd_floor': this.onFloor(msg); return true;
+      case 'd_welcome': this.onWelcome(msg); return true;
+      case 'd_lobby': this.onLobby(msg); return true;
+      case 'd_powerup_choices': this.onPowerup(msg); return true;
+      default: return false;
+    }
+  }
 
-    // Players: convert server snapshot to ClientPlayer format
+  private dispatchMetaMessage(msg: ServerMessage): void {
+    switch (msg.type) {
+      case 'd_results': this.onResults(msg); break;
+      case 'd_mob_progress': this.onMobProgress(msg); break;
+      case 'd_mob_sprites': this.onMobSprites(msg); break;
+      case 'd_mob_roster': this.onMobRoster(msg); break;
+      case 'd_error':
+        console.error('[net] server error:', (msg).message);
+        this.emit('error', (msg).message);
+        break;
+    }
+  }
+
+  private dispatchMessage(msg: ServerMessage): void {
+    if (!this.dispatchFlowMessage(msg)) {
+      this.dispatchMetaMessage(msg);
+    }
+  }
+
+  private updateLocalPlayerFromSnapshot(
+    s: typeof this.gameState,
+    sp: ServerPlayerSnapshot,
+    old: ClientPlayer,
+    tempPowerups: ClientTempPowerup[],
+    scramblingUntil: number,
+  ): void {
+    old.hp = sp.hp;
+    old.maxHp = sp.maxHp;
+    old.alive = sp.hp > 0;
+    old.spectating = sp.spectating ?? false;
+    old.iframeTicks = sp.iframeTicks;
+    old.powerCooldown = sp.cooldownRemaining;
+    old.name = sp.name;
+    old.personaSlug = sp.personaSlug as PersonaSlug;
+    old.activeTempPowerups = tempPowerups;
+    if ((sp.scramblingTicks ?? 0) > 0) {
+      old.scramblingUntil = scramblingUntil;
+    }
+    s.localHp = sp.hp;
+    s.localMaxHp = sp.maxHp;
+    s.localCooldown = sp.cooldownRemaining;
+    s.localTempPowerups = tempPowerups;
+    s.localCooldownMax = old.powerCooldownMax;
+  }
+
+  private upsertRemotePlayerFromSnapshot(
+    s: typeof this.gameState,
+    sp: ServerPlayerSnapshot,
+    old: ClientPlayer | undefined,
+    tempPowerups: ClientTempPowerup[],
+    scramblingUntil: number,
+  ): void {
+    const facingX = sp.facing === 'left' ? -1 : 1;
+    const cp: ClientPlayer = {
+      id: sp.id,
+      name: sp.name,
+      personaSlug: sp.personaSlug as PersonaSlug,
+      x: sp.x,
+      y: sp.y,
+      prevX: old ? old.x : sp.x,
+      prevY: old ? old.y : sp.y,
+      facingX: old ? old.facingX : facingX,
+      facingY: old ? old.facingY : 0,
+      hp: sp.hp,
+      maxHp: sp.maxHp,
+      alive: sp.hp > 0,
+      isLocal: false,
+      iframeTicks: sp.iframeTicks,
+      powerCooldown: sp.cooldownRemaining,
+      powerCooldownMax: old ? old.powerCooldownMax : 128,
+      activeTempPowerups: tempPowerups,
+      scramblingUntil,
+      spectating: sp.spectating ?? false,
+    };
+    s.players.set(sp.id, cp);
+  }
+
+  private buildTempPowerups(sp: ServerTickMsg['players'][number]): ClientTempPowerup[] {
+    return (sp.activeTempPowerups ?? []).map((a) => ({
+      templateId: a.templateId,
+      expiresAt: a.expiresAt,
+    }));
+  }
+
+  private computeScramblingUntil(sp: ServerTickMsg['players'][number], old: ClientPlayer | undefined): number {
+    const TICK_MS = 62.5;
+    const ticks = sp.scramblingTicks ?? 0;
+    if (ticks > 0) return Date.now() + ticks * TICK_MS;
+    return old ? old.scramblingUntil : 0;
+  }
+
+  private upsertPlayerFromSnapshot(
+    s: typeof this.gameState,
+    sp: ServerTickMsg['players'][number],
+  ): void {
+    const old = s.players.get(sp.id);
+    const isLocal = sp.id === s.playerId;
+    const tempPowerups = this.buildTempPowerups(sp);
+    const scramblingUntil = this.computeScramblingUntil(sp, old);
+    if (isLocal && old) {
+      this.updateLocalPlayerFromSnapshot(s, sp, old, tempPowerups, scramblingUntil);
+    } else {
+      this.upsertRemotePlayerFromSnapshot(s, sp, old, tempPowerups, scramblingUntil);
+    }
+  }
+
+  private updateTickPlayers(s: typeof this.gameState, msg: ServerTickMsg): void {
     const seenPlayers = new Set<string>();
     for (const sp of msg.players) {
       seenPlayers.add(sp.id);
-      const old = s.players.get(sp.id);
-      const isLocal = sp.id === s.playerId;
-
-      // Convert server "left"/"right" facing to facingX/facingY
-      const facingX = sp.facing === 'left' ? -1 : 1;
-      const facingY = 0;
-
-      const tempPowerups: ClientTempPowerup[] = (sp.activeTempPowerups ?? []).map((a) => ({
-        templateId: a.templateId,
-        expiresAt: a.expiresAt,
-      }));
-
-      const TICK_MS = 62.5;
-      const scramblingUntil = (sp.scramblingTicks ?? 0) > 0
-        ? Date.now() + (sp.scramblingTicks ?? 0) * TICK_MS
-        : (old ? old.scramblingUntil : 0);
-
-      if (isLocal && old) {
-        // Client-authoritative: keep local position, only update non-position fields
-        old.hp = sp.hp;
-        old.maxHp = sp.maxHp;
-        old.alive = sp.hp > 0;
-        old.spectating = sp.spectating ?? false;
-        old.iframeTicks = sp.iframeTicks;
-        old.powerCooldown = sp.cooldownRemaining;
-        old.name = sp.name;
-        old.personaSlug = sp.personaSlug as PersonaSlug;
-        old.activeTempPowerups = tempPowerups;
-        // Only update scramblingUntil from server if it's currently active
-        if ((sp.scramblingTicks ?? 0) > 0) {
-          old.scramblingUntil = scramblingUntil;
-        }
-      } else {
-        const cp: ClientPlayer = {
-          id: sp.id,
-          name: sp.name,
-          personaSlug: sp.personaSlug as PersonaSlug,
-          x: sp.x,
-          y: sp.y,
-          prevX: old ? old.x : sp.x,
-          prevY: old ? old.y : sp.y,
-          facingX: old ? old.facingX : facingX,
-          facingY: old ? old.facingY : facingY,
-          hp: sp.hp,
-          maxHp: sp.maxHp,
-          alive: sp.hp > 0,
-          isLocal,
-          iframeTicks: sp.iframeTicks,
-          powerCooldown: sp.cooldownRemaining,
-          powerCooldownMax: old ? old.powerCooldownMax : 128,
-          activeTempPowerups: tempPowerups,
-          scramblingUntil,
-          spectating: sp.spectating ?? false,
-        };
-        s.players.set(sp.id, cp);
-      }
-
-      if (isLocal) {
-        s.localHp = sp.hp;
-        s.localMaxHp = sp.maxHp;
-        s.localCooldown = sp.cooldownRemaining;
-        s.localTempPowerups = tempPowerups;
-        const localPlayer = s.players.get(sp.id);
-        s.localCooldownMax = localPlayer ? localPlayer.powerCooldownMax : 128;
-      }
+      this.upsertPlayerFromSnapshot(s, sp);
     }
     for (const id of s.players.keys()) {
       if (!seenPlayers.has(id)) s.players.delete(id);
     }
+  }
 
-    // Update spectator state based on current local player status
+  private updateTickSpectator(s: typeof this.gameState): void {
     const localPlayer = s.players.get(s.playerId);
     const wasSpectating = s.isSpectating;
     s.isSpectating = (localPlayer?.spectating ?? false);
 
     if (s.isSpectating) {
-      // Pick or validate spectator target: must be an alive (non-spectating) player
       const aliveOthers = Array.from(s.players.values()).filter(
         (p) => !p.isLocal && p.alive && !p.spectating
       );
@@ -410,60 +440,59 @@ export class DungeonNetwork extends Emitter {
         s.spectatorTargetId === null ||
         !aliveOthers.some((p) => p.id === s.spectatorTargetId)
       ) {
-        // Auto-pick first alive player if current target is gone or unset
         s.spectatorTargetId = aliveOthers[0].id;
       }
-    } else {
-      // If we stopped spectating (revived), clear spectator state
-      if (wasSpectating) {
-        s.spectatorTargetId = null;
-      }
+    } else if (wasSpectating) {
+      s.spectatorTargetId = null;
     }
+  }
 
-    // Enemies: convert server snapshot to ClientEnemy format
+  private upsertEnemyFromSnapshot(
+    s: typeof this.gameState,
+    se: ServerTickMsg['enemies'][number],
+  ): void {
+    const old = s.enemies.get(se.id);
+    const ce: ClientEnemy = {
+      id: se.id,
+      type: se.variantName,
+      behavior: se.behavior,
+      x: se.x,
+      y: se.y,
+      prevX: old ? old.x : se.x,
+      prevY: old ? old.y : se.y,
+      hp: se.hp,
+      maxHp: se.maxHp,
+      alive: se.hp > 0,
+      isBoss: se.isBoss,
+      telegraphing: se.telegraphing,
+      aimDirX: 0,
+      aimDirY: 0,
+    };
+    s.enemies.set(se.id, ce);
+    if (se.isBoss) {
+      if (s.boss) {
+        ce.prevX = s.boss.x;
+        ce.prevY = s.boss.y;
+      }
+      s.boss = ce;
+    }
+  }
+
+  private updateTickEnemies(s: typeof this.gameState, msg: ServerTickMsg): void {
     const seenEnemies = new Set<string>();
     for (const se of msg.enemies) {
       seenEnemies.add(se.id);
-      const old = s.enemies.get(se.id);
-
-      const ce: ClientEnemy = {
-        id: se.id,
-        type: se.variantName,
-        behavior: se.behavior,
-        x: se.x,
-        y: se.y,
-        prevX: old ? old.x : se.x,
-        prevY: old ? old.y : se.y,
-        hp: se.hp,
-        maxHp: se.maxHp,
-        alive: se.hp > 0,
-        isBoss: se.isBoss,
-        telegraphing: se.telegraphing,
-        aimDirX: 0,
-        aimDirY: 0,
-      };
-
-      s.enemies.set(se.id, ce);
-
-      // Track boss separately
-      if (se.isBoss) {
-        if (s.boss) {
-          ce.prevX = s.boss.x;
-          ce.prevY = s.boss.y;
-        }
-        s.boss = ce;
-      }
+      this.upsertEnemyFromSnapshot(s, se);
     }
-    // Remove enemies no longer in snapshot
     for (const id of s.enemies.keys()) {
       if (!seenEnemies.has(id)) s.enemies.delete(id);
     }
-    // Clear boss if not present in snapshot
     if (s.boss && !seenEnemies.has(s.boss.id)) {
       s.boss = null;
     }
+  }
 
-    // Projectiles: convert server snapshot to ClientProjectile format
+  private updateTickProjectiles(s: typeof this.gameState, msg: ServerTickMsg): void {
     const seenProj = new Set<string>();
     for (const sp of msg.projectiles) {
       seenProj.add(sp.id);
@@ -485,6 +514,35 @@ export class DungeonNetwork extends Emitter {
     for (const id of s.projectiles.keys()) {
       if (!seenProj.has(id)) s.projectiles.delete(id);
     }
+  }
+
+  private updateTickPickups(s: typeof this.gameState, msg: ServerTickMsg): void {
+    s.floorPickups.clear();
+    if (!msg.floorPickups) return;
+    for (const fp of msg.floorPickups) {
+      const pickup: ClientFloorPickup = {
+        id: fp.id,
+        templateId: fp.templateId,
+        type: fp.type ?? 'temp_powerup',
+        healAmount: fp.healAmount,
+        x: fp.x,
+        y: fp.y,
+      };
+      s.floorPickups.set(fp.id, pickup);
+    }
+  }
+
+  private onTick(msg: ServerTickMsg): void {
+    const s = this.gameState;
+    s.prevTickTimestamp = s.tickTimestamp;
+    s.tickTimestamp = performance.now();
+    s.lastServerTick = msg.tick;
+    s.tick = msg.tick;
+
+    this.updateTickPlayers(s, msg);
+    this.updateTickSpectator(s);
+    this.updateTickEnemies(s, msg);
+    this.updateTickProjectiles(s, msg);
 
     // AoE zones
     s.aoeZones.clear();
@@ -503,21 +561,7 @@ export class DungeonNetwork extends Emitter {
     if (msg.totalMobs !== undefined) s.totalMobs = msg.totalMobs;
     if (msg.remainingMobs !== undefined) s.remainingMobs = msg.remainingMobs;
 
-    // Floor pickups (temp powerup drops + health hearts)
-    s.floorPickups.clear();
-    if (msg.floorPickups) {
-      for (const fp of msg.floorPickups) {
-        const pickup: ClientFloorPickup = {
-          id: fp.id,
-          templateId: fp.templateId,
-          type: fp.type ?? 'temp_powerup',
-          healAmount: fp.healAmount,
-          x: fp.x,
-          y: fp.y,
-        };
-        s.floorPickups.set(fp.id, pickup);
-      }
-    }
+    this.updateTickPickups(s, msg);
 
     // Elapsed time: derive from server timestamp
     if (this.runStartTime === 0) {
@@ -527,7 +571,6 @@ export class DungeonNetwork extends Emitter {
 
     // Tick events (kills are tracked client-side from kill events)
     for (const ev of msg.events) {
-      // Track kills from events
       if (ev.type === 'kill') {
         s.kills++;
       }
@@ -619,7 +662,7 @@ export class DungeonNetwork extends Emitter {
         kills: p.kills,
         damageDealt: p.damageDealt,
         damageTaken: p.damageTaken,
-        totalHealing: p.totalHealing ?? 0,
+        totalHealing: p.totalHealing,
         diedOnFloor: p.diedOnFloor,
       })),
     };
@@ -669,7 +712,7 @@ export class DungeonNetwork extends Emitter {
   // === Send Helpers ===
 
   private send(data: Record<string, unknown>): void {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+    if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(data));
     }
   }

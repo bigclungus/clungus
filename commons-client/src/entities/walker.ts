@@ -26,7 +26,7 @@ const AUDITION_BASE = "";
 function pollWalkers(state: WorldState): void {
   fetch(`${AUDITION_BASE}/api/audition/walkers`)
     .then((r) => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      if (!r.ok) throw new Error(`HTTP ${String(r.status)}`);
       return r.json();
     })
     .then((data: AuditionWalker[]) => {
@@ -109,8 +109,8 @@ function showCard(walker: AuditionWalker, canvasX: number, canvasY: number): voi
   let top = canvasY - 60;
   if (left + cw > window.innerWidth - margin) left = canvasX - cw - margin;
   if (top < margin) top = margin;
-  card.style.left = `${left}px`;
-  card.style.top = `${top}px`;
+  card.style.left = `${String(left)}px`;
+  card.style.top = `${String(top)}px`;
   card.style.display = "block";
 
   document.getElementById("cv2-walker-keep")?.addEventListener("click", () => { keepWalker(walker.id); }, { once: true });
@@ -133,7 +133,7 @@ function keepWalker(id: string): void {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id }),
   })
-    .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); })
+    .then((r) => { if (!r.ok) throw new Error(`HTTP ${String(r.status)}`); })
     .catch((err: unknown) => { console.error("[walkers] keep failed:", err instanceof Error ? err.message : String(err)); });
 }
 
@@ -144,7 +144,7 @@ function dismissWalker(id: string): void {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id }),
   })
-    .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); })
+    .then((r) => { if (!r.ok) throw new Error(`HTTP ${String(r.status)}`); })
     .catch((err: unknown) => { console.error("[walkers] dismiss failed:", err instanceof Error ? err.message : String(err)); });
 }
 
@@ -154,7 +154,7 @@ function pauseWalker(id: string): void {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id }),
   })
-    .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); })
+    .then((r) => { if (!r.ok) throw new Error(`HTTP ${String(r.status)}`); })
     .catch((err: unknown) => { console.error("[walkers] pause failed:", err instanceof Error ? err.message : String(err)); });
 }
 
@@ -164,7 +164,7 @@ function resumeWalker(id: string): void {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id }),
   })
-    .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); })
+    .then((r) => { if (!r.ok) throw new Error(`HTTP ${String(r.status)}`); })
     .catch((err: unknown) => { console.error("[walkers] resume failed:", err instanceof Error ? err.message : String(err)); });
 }
 

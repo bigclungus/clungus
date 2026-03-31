@@ -184,7 +184,7 @@ const chunkCache = new Map<string, Uint8Array[]>();
 const cacheOrder: string[] = [];
 
 export function getChunk(cx: number, cy: number): Uint8Array[] {
-  const key = `${cx},${cy}`;
+  const key = `${String(cx)},${String(cy)}`;
   let chunk = chunkCache.get(key);
   if (chunk) {
     // Move to end (most recently used)

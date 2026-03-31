@@ -27,7 +27,7 @@ export interface TileColors {
 
 export function getSeason(serverTime?: number): Season {
   // Use server-authoritative time when available so all clients agree on the season.
-  const ts = serverTime != null && serverTime > 0 ? serverTime : Date.now();
+  const ts = serverTime !== undefined && serverTime > 0 ? serverTime : Date.now();
   const week = Math.floor(ts / (1000 * 60 * 60 * 24 * 7));
   const idx = week % 4;
   return (["spring", "summer", "autumn", "winter"] as Season[])[idx];
@@ -83,6 +83,190 @@ interface TileCache {
 
 let tileCache: TileCache | null = null;
 
+function drawCongressRoofDetails(
+  ctx: OffscreenCanvasRenderingContext2D, x: number, y: number, tx: number, ty: number
+): void {
+  if (ty === 2) {
+    const distFromCenter = Math.abs(tx - 5);
+    const peakColor = distFromCenter <= 1 ? "#8a8aaa" : distFromCenter <= 2 ? "#6a6a8a" : "#4a4a6a";
+    ctx.fillStyle = peakColor;
+    ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+    const triH = Math.max(0, (3 - distFromCenter) * 4);
+    if (triH > 0) {
+      ctx.fillStyle = "#9a9abb";
+      ctx.fillRect(x + 2, y + 1, TILE - 4, triH);
+    }
+  } else if (ty === 6) {
+    ctx.fillStyle = "#4a4080"; ctx.fillRect(x, y + 10, TILE, 6);
+    ctx.fillStyle = "#5a5090"; ctx.fillRect(x, y + 12, TILE, 4);
+    ctx.fillStyle = "#6a60a0"; ctx.fillRect(x, y + 14, TILE, TILE - 14);
+  }
+}
+
+function isCongressColumnTile(tx: number): boolean {
+  return tx === 2 || tx === 4 || tx === 6 || tx === 8;
+}
+
+function drawCongressColumns(ctx: OffscreenCanvasRenderingContext2D, x: number, y: number, ty: number): void {
+  if (ty > 2 && ty < 6) {
+    ctx.fillStyle = "#7a7a9a"; ctx.fillRect(x + 5, y, 5, TILE);
+    ctx.fillStyle = "#9a9ab8"; ctx.fillRect(x + 6, y, 2, TILE);
+  } else if (ty === 6) {
+    ctx.fillStyle = "#7a7a9a"; ctx.fillRect(x + 5, y, 5, 10);
+  }
+}
+
+function drawCongressDoor(ctx: OffscreenCanvasRenderingContext2D, x: number, y: number, ty: number): void {
+  const doorTop = ty === 5 ? 4 : 0;
+  const doorH = ty === 5 ? TILE - 4 : 10;
+  ctx.fillStyle = "#000010"; ctx.fillRect(x + 3, y + doorTop, 9, doorH);
+  ctx.fillStyle = "rgba(240,208,96,0.27)";
+  ctx.fillRect(x + 2, y + doorTop, 1, doorH);
+  ctx.fillRect(x + 12, y + doorTop, 1, doorH);
+  if (ty === 5) {
+    ctx.fillStyle = "rgba(240,208,96,0.4)";
+    ctx.fillRect(x + 3, y + 3, 9, 2);
+  }
+}
+
+function drawCongressBuilding(
+  ctx: OffscreenCanvasRenderingContext2D, x: number, y: number, tx: number, ty: number
+): void {
+  ctx.fillStyle = "#2a2050"; ctx.fillRect(x, y, TILE, TILE);
+  ctx.fillStyle = "#3a3068"; ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+
+  drawCongressRoofDetails(ctx, x, y, tx, ty);
+
+  if (isCongressColumnTile(tx)) drawCongressColumns(ctx, x, y, ty);
+
+  if (tx === 5 && (ty === 5 || ty === 6)) drawCongressDoor(ctx, x, y, ty);
+}
+
+function drawDungeonRowDetails(
+  ctx: OffscreenCanvasRenderingContext2D, x: number, y: number, tx: number, ty: number
+): void {
+  if (ty === 2) {
+    ctx.fillStyle = "#3a3a3a"; ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+    if ((tx % 2) === 0) { ctx.fillStyle = "#0a0a0a"; ctx.fillRect(x + 4, y, TILE - 8, 8); }
+    else { ctx.fillStyle = "#3a3a3a"; ctx.fillRect(x + 1, y + 1, TILE - 2, 8); }
+  } else if (ty === 6) {
+    ctx.fillStyle = "#222"; ctx.fillRect(x, y + 14, TILE, TILE - 14);
+    ctx.fillStyle = "#2e2e2e"; ctx.fillRect(x, y + 10, TILE, 4);
+  }
+}
+
+function drawDungeonBuildingOverlays(
+  ctx: OffscreenCanvasRenderingContext2D, x: number, y: number, tx: number, ty: number
+): void {
+  if ((tx === 41 || tx === 46) && (ty === 4 || ty === 5)) drawDungeonTorch(ctx, x, y);
+  if (tx === 43 && (ty === 5 || ty === 6)) drawDungeonArch(ctx, x, y, ty);
+}
+
+function drawDungeonBuilding(
+  ctx: OffscreenCanvasRenderingContext2D, x: number, y: number, tx: number, ty: number
+): void {
+  ctx.fillStyle = "#1a1a1a"; ctx.fillRect(x, y, TILE, TILE);
+  ctx.fillStyle = "#2a2a2a"; ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+  ctx.fillStyle = "#111";
+  ctx.fillRect(x, y + TILE / 2, TILE, 1);
+  const brickOffset = (ty % 2 === 0) ? 0 : TILE / 2;
+  ctx.fillRect(x + brickOffset, y, 1, TILE);
+  drawDungeonRowDetails(ctx, x, y, tx, ty);
+  drawDungeonBuildingOverlays(ctx, x, y, tx, ty);
+}
+
+function drawDungeonTorch(ctx: OffscreenCanvasRenderingContext2D, x: number, y: number): void {
+  ctx.fillStyle = "#8b4513"; ctx.fillRect(x + 8, y + 2, 3, 8);
+  ctx.fillStyle = "rgba(255,140,0,0.85)"; ctx.fillRect(x + 7, y, 5, 5);
+  ctx.fillStyle = "rgba(255,220,0,0.6)"; ctx.fillRect(x + 8, y + 1, 3, 3);
+}
+
+function drawDungeonArch(ctx: OffscreenCanvasRenderingContext2D, x: number, y: number, ty: number): void {
+  const archTop = ty === 5 ? 3 : 0;
+  const archH = ty === 5 ? TILE - 3 : 14;
+  ctx.fillStyle = "#000"; ctx.fillRect(x + 2, y + archTop, 12, archH);
+  ctx.fillStyle = "#3a3030";
+  ctx.fillRect(x + 1, y + archTop, 2, archH);
+  ctx.fillRect(x + 14, y + archTop, 2, archH);
+  if (ty === 5) ctx.fillRect(x + 2, y + 2, 12, 2);
+  ctx.fillStyle = "rgba(0,80,30,0.22)";
+  ctx.fillRect(x + 3, y + (ty === 5 ? 5 : 0), 10, ty === 5 ? TILE - 5 : 14);
+}
+
+function isCongressBuildingTile(tx: number, ty: number): boolean {
+  return ty >= 2 && ty <= 6 && tx >= 2 && tx <= 8;
+}
+
+function isDungeonBuildingTile(tx: number, ty: number): boolean {
+  return ty >= 2 && ty <= 6 && tx >= DUNGEON_BUILDING_COL_MIN && tx <= DUNGEON_BUILDING_COL_MAX;
+}
+
+function drawGenericBuilding(
+  ctx: OffscreenCanvasRenderingContext2D, x: number, y: number, tx: number, ty: number, colors: TileColors
+): void {
+  ctx.fillStyle = colors.building; ctx.fillRect(x, y, TILE, TILE);
+  ctx.fillStyle = colors.buildingRoof; ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+  if ((tx + ty) % 3 === 0) {
+    ctx.fillStyle = "rgba(240,208,96,0.67)";
+    ctx.fillRect(x + 4, y + 4, 4, 5);
+  }
+}
+
+function drawBuilding(
+  ctx: OffscreenCanvasRenderingContext2D,
+  x: number, y: number, tx: number, ty: number, colors: TileColors
+): void {
+  if (isCongressBuildingTile(tx, ty)) drawCongressBuilding(ctx, x, y, tx, ty);
+  else if (isDungeonBuildingTile(tx, ty)) drawDungeonBuilding(ctx, x, y, tx, ty);
+  else drawGenericBuilding(ctx, x, y, tx, ty, colors);
+}
+
+type TileDrawer = (ctx: OffscreenCanvasRenderingContext2D, x: number, y: number, tx: number, ty: number, colors: TileColors) => void;
+
+function drawGrass(ctx: OffscreenCanvasRenderingContext2D, x: number, y: number, tx: number, ty: number, colors: TileColors): void {
+  const variant = (tx * 7 + ty * 13) % 5;
+  ctx.fillStyle = variant === 0 ? colors.grassAlt : colors.grass;
+  ctx.fillRect(x, y, TILE, TILE);
+}
+
+function drawPath(ctx: OffscreenCanvasRenderingContext2D, x: number, y: number, _tx: number, _ty: number, colors: TileColors): void {
+  ctx.fillStyle = colors.path; ctx.fillRect(x, y, TILE, TILE);
+  ctx.fillStyle = "rgba(0,0,0,0.08)";
+  ctx.fillRect(x, y, TILE, 1); ctx.fillRect(x, y, 1, TILE);
+}
+
+function drawWater(ctx: OffscreenCanvasRenderingContext2D, x: number, y: number, _tx: number, _ty: number, colors: TileColors): void {
+  ctx.fillStyle = colors.water; ctx.fillRect(x, y, TILE, TILE);
+  ctx.fillStyle = colors.waterDark; ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
+  ctx.fillStyle = "rgba(255,255,255,0.15)";
+  ctx.fillRect(x + 4, y + 8, 8, 1); ctx.fillRect(x + 8, y + 13, 6, 1);
+}
+
+function drawTreeBase(ctx: OffscreenCanvasRenderingContext2D, x: number, y: number, _tx: number, _ty: number, colors: TileColors): void {
+  ctx.fillStyle = colors.grass; ctx.fillRect(x, y, TILE, TILE);
+  ctx.fillStyle = "#5a3a1a"; ctx.fillRect(x + 8, y + 10, 4, TILE - 10);
+}
+
+function drawRockBase(ctx: OffscreenCanvasRenderingContext2D, x: number, y: number, _tx: number, _ty: number, colors: TileColors): void {
+  ctx.fillStyle = colors.grass; ctx.fillRect(x, y, TILE, TILE);
+}
+
+function drawFountain(ctx: OffscreenCanvasRenderingContext2D, x: number, y: number, _tx: number, _ty: number, colors: TileColors): void {
+  ctx.fillStyle = colors.path; ctx.fillRect(x, y, TILE, TILE);
+  ctx.fillStyle = colors.fountain; ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
+  ctx.fillStyle = colors.fountainWater; ctx.fillRect(x + 4, y + 4, TILE - 8, TILE - 8);
+}
+
+const TILE_DRAWERS: Record<number, TileDrawer> = {
+  [TILE_GRASS]:    drawGrass,
+  [TILE_PATH]:     drawPath,
+  [TILE_WATER]:    drawWater,
+  [TILE_BUILDING]: drawBuilding,
+  [TILE_TREE]:     drawTreeBase,
+  [TILE_ROCK]:     drawRockBase,
+  [TILE_FOUNTAIN]: drawFountain,
+};
+
 function drawTile(
   ctx: OffscreenCanvasRenderingContext2D,
   tile: number,
@@ -91,205 +275,20 @@ function drawTile(
   tx: number,
   ty: number,
   colors: TileColors,
-  frame: number
 ): void {
-  switch (tile) {
-    case TILE_GRASS: {
-      // Subtle variation by position
-      const variant = (tx * 7 + ty * 13) % 5;
-      ctx.fillStyle = variant === 0 ? colors.grassAlt : colors.grass;
-      ctx.fillRect(x, y, TILE, TILE);
-      break;
-    }
-    case TILE_PATH:
-      ctx.fillStyle = colors.path;
-      ctx.fillRect(x, y, TILE, TILE);
-      // Subtle edge lines
-      ctx.fillStyle = "rgba(0,0,0,0.08)";
-      ctx.fillRect(x, y, TILE, 1);
-      ctx.fillRect(x, y, 1, TILE);
-      break;
-    case TILE_WATER: {
-      ctx.fillStyle = colors.water;
-      ctx.fillRect(x, y, TILE, TILE);
-      // Inner darker
-      ctx.fillStyle = colors.waterDark;
-      ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
-      // Ripple lines (static for cache)
-      ctx.fillStyle = "rgba(255,255,255,0.15)";
-      ctx.fillRect(x + 4, y + 8, 8, 1);
-      ctx.fillRect(x + 8, y + 13, 6, 1);
-      break;
-    }
-    case TILE_BUILDING:
-      // Congress / council building (rows 2-6, cols 2-8 in chunk 0,0)
-      if (ty >= 2 && ty <= 6 && tx >= 2 && tx <= 8) {
-        // Base: deep indigo wall
-        ctx.fillStyle = "#2a2050";
-        ctx.fillRect(x, y, TILE, TILE);
-        ctx.fillStyle = "#3a3068";
-        ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
-
-        if (ty === 2) {
-          // Pediment row: triangular peak effect
-          const distFromCenter = Math.abs(tx - 5);
-          const peakColor = distFromCenter <= 1 ? "#8a8aaa" : distFromCenter <= 2 ? "#6a6a8a" : "#4a4a6a";
-          ctx.fillStyle = peakColor;
-          ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
-          const triH = Math.max(0, (3 - distFromCenter) * 4);
-          if (triH > 0) {
-            ctx.fillStyle = "#9a9abb";
-            ctx.fillRect(x + 2, y + 1, TILE - 4, triH);
-          }
-        } else if (ty === 6) {
-          // Steps row
-          ctx.fillStyle = "#4a4080";
-          ctx.fillRect(x, y + 10, TILE, 6);
-          ctx.fillStyle = "#5a5090";
-          ctx.fillRect(x, y + 12, TILE, 4);
-          ctx.fillStyle = "#6a60a0";
-          ctx.fillRect(x, y + 14, TILE, TILE - 14);
-        }
-
-        // Columns at tx 2, 4, 6, 8
-        if (tx === 2 || tx === 4 || tx === 6 || tx === 8) {
-          if (ty > 2 && ty < 6) {
-            ctx.fillStyle = "#7a7a9a";
-            ctx.fillRect(x + 5, y, 5, TILE);
-            ctx.fillStyle = "#9a9ab8";
-            ctx.fillRect(x + 6, y, 2, TILE);
-          } else if (ty === 6) {
-            ctx.fillStyle = "#7a7a9a";
-            ctx.fillRect(x + 5, y, 5, 10);
-          }
-        }
-
-        // Doorway at center column, lower rows
-        if (tx === 5 && (ty === 5 || ty === 6)) {
-          ctx.fillStyle = "#000010";
-          ctx.fillRect(x + 3, y + (ty === 5 ? 4 : 0), 9, ty === 5 ? TILE - 4 : 10);
-          // Amber glow
-          ctx.fillStyle = "rgba(240,208,96,0.27)";
-          ctx.fillRect(x + 2, y + (ty === 5 ? 4 : 0), 1, ty === 5 ? TILE - 4 : 10);
-          ctx.fillRect(x + 12, y + (ty === 5 ? 4 : 0), 1, ty === 5 ? TILE - 4 : 10);
-          if (ty === 5) {
-            ctx.fillStyle = "rgba(240,208,96,0.4)";
-            ctx.fillRect(x + 3, y + 3, 9, 2);
-          }
-        }
-      } else if (ty >= 2 && ty <= 6 && tx >= DUNGEON_BUILDING_COL_MIN && tx <= DUNGEON_BUILDING_COL_MAX) {
-        // Dungeon entrance building — top-right corner (rows 2-6, cols 40-47)
-        // Dark stone walls
-        ctx.fillStyle = "#1a1a1a";
-        ctx.fillRect(x, y, TILE, TILE);
-        ctx.fillStyle = "#2a2a2a";
-        ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
-
-        // Stone block texture: mortar lines
-        ctx.fillStyle = "#111";
-        ctx.fillRect(x, y + TILE / 2, TILE, 1);
-        const brickOffset = (ty % 2 === 0) ? 0 : TILE / 2;
-        ctx.fillRect(x + brickOffset, y, 1, TILE);
-
-        if (ty === 2) {
-          // Battlements / crenellations on top row
-          ctx.fillStyle = "#3a3a3a";
-          ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
-          // Merlon notch pattern
-          if ((tx % 2) === 0) {
-            ctx.fillStyle = "#0a0a0a";
-            ctx.fillRect(x + 4, y, TILE - 8, 8);
-          } else {
-            ctx.fillStyle = "#3a3a3a";
-            ctx.fillRect(x + 1, y + 1, TILE - 2, 8);
-          }
-        } else if (ty === 6) {
-          // Bottom row: gate arch base / steps
-          ctx.fillStyle = "#222";
-          ctx.fillRect(x, y + 14, TILE, TILE - 14);
-          ctx.fillStyle = "#2e2e2e";
-          ctx.fillRect(x, y + 10, TILE, 4);
-        }
-
-        // Torch sconces on col 41 and 46, rows 4-5
-        if ((tx === 41 || tx === 46) && (ty === 4 || ty === 5)) {
-          ctx.fillStyle = "#8b4513";
-          ctx.fillRect(x + 8, y + 2, 3, 8);
-          // Flame flicker (static for cached tile)
-          ctx.fillStyle = "rgba(255,140,0,0.85)";
-          ctx.fillRect(x + 7, y, 5, 5);
-          ctx.fillStyle = "rgba(255,220,0,0.6)";
-          ctx.fillRect(x + 8, y + 1, 3, 3);
-        }
-
-        // Dungeon doorway arch at tx=43, rows 5-6
-        if (tx === 43 && (ty === 5 || ty === 6)) {
-          // Arch opening (void black)
-          ctx.fillStyle = "#000";
-          ctx.fillRect(x + 2, y + (ty === 5 ? 3 : 0), 12, ty === 5 ? TILE - 3 : 14);
-          // Stone arch surround
-          ctx.fillStyle = "#3a3030";
-          ctx.fillRect(x + 1, y + (ty === 5 ? 2 : 0), 2, ty === 5 ? TILE - 2 : 14);
-          ctx.fillRect(x + 14, y + (ty === 5 ? 2 : 0), 2, ty === 5 ? TILE - 2 : 14);
-          if (ty === 5) {
-            ctx.fillStyle = "#3a3030";
-            ctx.fillRect(x + 2, y + 2, 12, 2);
-          }
-          // Eerie green glow from the void
-          ctx.fillStyle = "rgba(0,80,30,0.22)";
-          ctx.fillRect(x + 3, y + (ty === 5 ? 5 : 0), 10, ty === 5 ? TILE - 5 : 14);
-        }
-      } else {
-        // Generic building tile
-        ctx.fillStyle = colors.building;
-        ctx.fillRect(x, y, TILE, TILE);
-        ctx.fillStyle = colors.buildingRoof;
-        ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
-        // Window
-        if ((tx + ty) % 3 === 0) {
-          ctx.fillStyle = "rgba(240,208,96,0.67)";
-          ctx.fillRect(x + 4, y + 4, 4, 5);
-        }
-      }
-      break;
-    case TILE_TREE: {
-      // Base pass only: grass background + trunk stub
-      // The canopy is drawn in the tall-sprite pass (after entities) via drawTallSprites()
-      ctx.fillStyle = colors.grass;
-      ctx.fillRect(x, y, TILE, TILE);
-      ctx.fillStyle = "#5a3a1a";
-      ctx.fillRect(x + 8, y + 10, 4, TILE - 10);
-      break;
-    }
-    case TILE_ROCK:
-      // Base pass only: grass background
-      // The rock body is drawn in the tall-sprite pass (after entities) via drawTallSprites()
-      ctx.fillStyle = colors.grass;
-      ctx.fillRect(x, y, TILE, TILE);
-      break;
-    case TILE_FOUNTAIN: {
-      ctx.fillStyle = colors.path;
-      ctx.fillRect(x, y, TILE, TILE);
-      ctx.fillStyle = colors.fountain;
-      ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
-      ctx.fillStyle = colors.fountainWater;
-      ctx.fillRect(x + 4, y + 4, TILE - 8, TILE - 8);
-      break;
-    }
-    default:
-      ctx.fillStyle = colors.grass;
-      ctx.fillRect(x, y, TILE, TILE);
-  }
+  const drawer = TILE_DRAWERS[tile] ?? drawGrass;
+  drawer(ctx, x, y, tx, ty, colors);
 }
 
 export function renderChunkToCache(map: Uint8Array[], chunkX: number, chunkY: number, season: Season): OffscreenCanvas {
   const offscreen = new OffscreenCanvas(COLS * TILE, ROWS * TILE);
-  const ctx = offscreen.getContext("2d")!;
+  const ctx = offscreen.getContext("2d");
+  if (!ctx) throw new Error("Could not get OffscreenCanvas 2d context");
   const colors = getTileColors(season);
 
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
-      drawTile(ctx, map[r][c], c * TILE, r * TILE, c, r, colors, 0);
+      drawTile(ctx, map[r][c], c * TILE, r * TILE, c, r, colors);
     }
   }
 
@@ -304,8 +303,7 @@ export function getOrBuildTileCache(
   season: Season
 ): OffscreenCanvas {
   if (
-    tileCache &&
-    tileCache.chunkX === chunkX &&
+    tileCache?.chunkX === chunkX &&
     tileCache.chunkY === chunkY &&
     tileCache.season === season
   ) {

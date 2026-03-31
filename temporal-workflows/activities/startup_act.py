@@ -86,6 +86,24 @@ async def startup_run_watchdog() -> str:
 
 
 @activity.defn
+async def startup_check_heartbeat() -> str:
+    """Check if heartbeat inject has landed recently. Returns 'ok' or a warning message."""
+    try:
+        result = subprocess.run(
+            ["bash", "/mnt/data/scripts/watchdog-heartbeat.sh"],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        output = result.stdout.strip()
+        if output.startswith("WARN"):
+            return output
+        return "ok"
+    except Exception as e:
+        return f"ERROR: {e}"
+
+
+@activity.defn
 async def startup_extract_directives() -> str:
     """Extract congress directives into learned-directives.md. Returns status."""
     try:

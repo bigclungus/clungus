@@ -7,7 +7,7 @@ export interface Camera {
 }
 
 let canvas: HTMLCanvasElement;
-let ctx: CanvasRenderingContext2D;
+let ctx: CanvasRenderingContext2D | undefined;
 const camera: Camera = { x: 0, y: 0, zoom: 1 };
 
 export function initCanvas(c: HTMLCanvasElement): CanvasRenderingContext2D {
@@ -33,6 +33,7 @@ export function getCanvas(): HTMLCanvasElement {
 }
 
 export function getCtx(): CanvasRenderingContext2D {
+  if (!ctx) throw new Error('Canvas not initialized');
   return ctx;
 }
 

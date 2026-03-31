@@ -203,21 +203,33 @@ function procCarvePath(tiles: number[][], rand: RandFn): void {
   }
 }
 
+function clearTileIfSolid(tiles: number[][], col: number, row: number): void {
+  if (tiles[col]?.[row] !== 0) tiles[col][row] = TILE.GRASS;
+}
+
+function procClearHorizontalCorridor(tiles: number[][], midC: number, H: number): void {
+  for (let i = -5; i <= 5; i++) {
+    clearTileIfSolid(tiles, midC + i, 0);
+    clearTileIfSolid(tiles, midC + i, 1);
+    clearTileIfSolid(tiles, midC + i, H - 1);
+    clearTileIfSolid(tiles, midC + i, H - 2);
+  }
+}
+
+function procClearVerticalCorridor(tiles: number[][], midR: number, W: number): void {
+  for (let i = -5; i <= 5; i++) {
+    clearTileIfSolid(tiles, 0, midR + i);
+    clearTileIfSolid(tiles, 1, midR + i);
+    clearTileIfSolid(tiles, W - 1, midR + i);
+    clearTileIfSolid(tiles, W - 2, midR + i);
+  }
+}
+
 function procClearEdgeCorridors(tiles: number[][]): void {
   const W = CHUNK_TILES_W;
   const H = CHUNK_TILES_H;
-  const midC = Math.floor(W / 2);
-  const midR = Math.floor(H / 2);
-  for (let i = -5; i <= 5; i++) {
-    if (tiles[midC + i]?.[0] !== 0) tiles[midC + i][0] = TILE.GRASS;
-    if (tiles[midC + i]?.[1] !== 0) tiles[midC + i][1] = TILE.GRASS;
-    if (tiles[midC + i]?.[H - 1] !== 0) tiles[midC + i][H - 1] = TILE.GRASS;
-    if (tiles[midC + i]?.[H - 2] !== 0) tiles[midC + i][H - 2] = TILE.GRASS;
-    if (tiles[0]?.[midR + i] !== 0) tiles[0][midR + i] = TILE.GRASS;
-    if (tiles[1]?.[midR + i] !== 0) tiles[1][midR + i] = TILE.GRASS;
-    if (tiles[W - 1]?.[midR + i] !== 0) tiles[W - 1][midR + i] = TILE.GRASS;
-    if (tiles[W - 2]?.[midR + i] !== 0) tiles[W - 2][midR + i] = TILE.GRASS;
-  }
+  procClearHorizontalCorridor(tiles, Math.floor(W / 2), H);
+  procClearVerticalCorridor(tiles, Math.floor(H / 2), W);
 }
 
 /**
