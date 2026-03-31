@@ -16,6 +16,7 @@ async function injectAlert(message: string): Promise<void> {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content: `⚠️ ${message}`, chat_id: "1485343472952148008", user: "clunger-monitor" }),
+      signal: AbortSignal.timeout(5_000),
     });
     if (!resp.ok) console.error("[clunger] injectAlert failed:", resp.status);
   } catch (e) {
@@ -186,6 +187,7 @@ async function handleGithubCallback(
         code,
         redirect_uri: "https://clung.us/auth/callback",
       }),
+      signal: AbortSignal.timeout(10_000),
     });
     const tokenData = (await tokenResp.json()) as Record<string, string>;
     const accessToken = tokenData["access_token"] ?? "";
@@ -204,6 +206,7 @@ async function handleGithubCallback(
         Accept: "application/json",
         "User-Agent": "BigClungus",
       },
+      signal: AbortSignal.timeout(10_000),
     });
     const userData = (await userResp.json()) as Record<string, string>;
     username = userData["login"] ?? "";
@@ -596,6 +599,7 @@ async function restHandleDiscordPersona(req: http.IncomingMessage, res: http.Ser
         user: "clunger-persona",
         ...(messageId ? { message_id: `persona-${messageId}` } : {}),
       }),
+      signal: AbortSignal.timeout(10_000),
     });
     if (!injectResp.ok) {
       const errText = await injectResp.text();
