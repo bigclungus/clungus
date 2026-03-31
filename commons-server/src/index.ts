@@ -143,6 +143,7 @@ async function updateLobbyDiscordMessage(lobbyId: string, content: string): Prom
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ content }),
+      signal: AbortSignal.timeout(8000),
     }
   );
   if (!res.ok) {
@@ -399,6 +400,7 @@ function notifyDiscordLobbyCreated(lobbyId: string, token: string): void {
     method: 'POST',
     headers: { 'Authorization': `Bot ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ content: `⚔️ **Adventurer** created a Clungiverse lobby! Join here: https://clung.us/clungiverse?lobby=${lobbyId}` }),
+    signal: AbortSignal.timeout(8000),
   }).then(async (res) => {
     if (res.ok) {
       const data = await res.json() as { id: string };
