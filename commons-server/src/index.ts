@@ -9,7 +9,7 @@ import type {
   WornPathMessage,
 } from "./protocol.ts";
 import { buildChunk } from "./map.ts";
-import { initNpcs } from "./npc-ai.ts";
+import { initNpcs , resetNpcPositions } from "./npc-ai.ts";
 import {
   runTick,
   handleClientMessage,
@@ -18,9 +18,8 @@ import {
   buildTickPayload,
   type BroadcastFn,
 } from "./game-loop.ts";
-import { loadNpcPositions, recordWornPath, persistState, resetNpcPositionsInDb, loadWornPathsForChunk, getLeaderboard } from "./persistence.ts";
+import { loadNpcPositions, recordWornPath, persistState, resetNpcPositionsInDb, loadWornPathsForChunk, getLeaderboard , db } from "./persistence.ts";
 import { handleWalkerInteraction } from "./game-loop.ts";
-import { resetNpcPositions } from "./npc-ai.ts";
 import {
   startSpawnSchedule,
   getWalkersResponse,
@@ -50,7 +49,6 @@ import {
 } from "./dungeon/dungeon-loop.ts";
 import { initLootSystem } from "./dungeon/loot.ts";
 import { initMobRegistry, mobRegistry } from "./dungeon/mob-registry.ts";
-import { db } from "./persistence.ts";
 
 // ─── World state initialisation ──────────────────────────────────────────────
 
@@ -177,7 +175,7 @@ async function pollCongressState(): Promise<void> {
 
 // Poll congress state every 10s
 setInterval(() => {
-  pollCongressState().catch((err) => console.error("[congress-poll] Error:", err));
+  pollCongressState().catch((err) => { console.error("[congress-poll] Error:", err); });
 }, 10_000);
 
 // ─── Bun server setup ─────────────────────────────────────────────────────────
@@ -364,7 +362,7 @@ const bunServer = serve<AnySocketData>({
               const errText = await res.text();
               console.warn(`[clungiverse] Discord notify failed: ${res.status} ${errText}`);
             }
-          }).catch((err) => console.warn('[clungiverse] Discord notify failed:', err));
+          }).catch((err) => { console.warn('[clungiverse] Discord notify failed:', err); });
         } else {
           console.warn('[clungiverse] DISCORD_BOT_TOKEN not set, skipping notification');
         }
@@ -552,7 +550,7 @@ const bunServer = serve<AnySocketData>({
       }
 
       // ── Commons WebSocket ──
-      const { socketId, chunkX, chunkY, name, color, userId } = ws.data as SocketData;
+      const { socketId, chunkX, chunkY, name, color, userId } = ws.data;
       ws.subscribe(`chunk:${chunkX}:${chunkY}`);
 
       // Ensure chunk data is loaded
@@ -620,7 +618,7 @@ const bunServer = serve<AnySocketData>({
         // Only the host (first player in the lobby) can start
         if (msg.type === "d_start") {
           const inst = getInstance(lobbyId);
-          if (inst && inst.status === "lobby") {
+          if (inst?.status === "lobby") {
             const hostId = inst.players.keys().next().value ?? "";
             if (userId !== hostId) {
               console.warn(`[dungeon-ws] Non-host ${userId} tried to start lobby ${lobbyId}`);
@@ -634,7 +632,7 @@ const bunServer = serve<AnySocketData>({
               updateLobbyDiscordMessage(
                 lobbyId,
                 `~~⚔️ **Adventurer** created a Clungiverse lobby! Join here: https://clung.us/clungiverse?lobby=${lobbyId}~~ *(game in progress)*`
-              ).catch((err) => console.warn(`[dungeon-ws] Failed to update lobby Discord message: ${err}`));
+              ).catch((err) => { console.warn(`[dungeon-ws] Failed to update lobby Discord message: ${err}`); });
 
               // Step 1: Send loading status immediately so the overlay appears
               const mobTotal = mobRegistry.size;
@@ -714,7 +712,7 @@ const bunServer = serve<AnySocketData>({
         // Intercept d_pick_powerup to handle powerup selection between floors
         if (msg.type === "d_pick_powerup") {
           const inst = getInstance(lobbyId);
-          if (inst && inst.status === "between_floors") {
+          if (inst?.status === "between_floors") {
             handlePowerupPick(inst.id, userId, msg.powerupId);
           }
           return;
@@ -725,7 +723,7 @@ const bunServer = serve<AnySocketData>({
       }
 
       // ── Commons WebSocket messages ──
-      const { socketId } = ws.data as SocketData;
+      const { socketId } = ws.data;
       const player = world.players.get(socketId);
       if (!player) return;
 
@@ -742,7 +740,7 @@ const bunServer = serve<AnySocketData>({
 
       // worn_path needs async SQLite write — handle separately
       if (msg.type === "worn_path") {
-        const wpm = msg as WornPathMessage;
+        const wpm = msg;
         recordWornPath(wpm.chunkX, wpm.chunkY, wpm.tileX, wpm.tileY);
         return;
       }
@@ -753,7 +751,7 @@ const bunServer = serve<AnySocketData>({
     close(ws: import("bun").ServerWebSocket<AnySocketData>) {
       // ── Dungeon WebSocket close ──
       if (ws.data.isDungeon) {
-        const { socketId, userId, lobbyId, name } = ws.data as DungeonSocketData;
+        const { socketId, userId, lobbyId, name } = ws.data;
         dungeonSockets.delete(socketId);
         if (lobbyId) {
           handleDisconnect(lobbyId, userId);
@@ -763,7 +761,7 @@ const bunServer = serve<AnySocketData>({
       }
 
       // ── Commons WebSocket close ──
-      const { socketId, chunkX, chunkY, name } = ws.data as SocketData;
+      const { socketId, chunkX, chunkY, name } = ws.data;
       ws.unsubscribe(`chunk:${chunkX}:${chunkY}`);
 
       // Remove from warthog seats if present

@@ -4,7 +4,6 @@
 
 import { Database } from "bun:sqlite";
 import { readdirSync } from "fs";
-import { join } from "path";
 import type { EnemyVariant } from "./dungeon-generation.ts";
 
 // ─── Image availability ──────────────────────────────────────────────────────
@@ -72,7 +71,7 @@ class MobRegistry {
                 budget_cost, flavor_text, sprite_png, sprite_hash
          FROM mob_cache`
       )
-      .all() as Array<{
+      .all() as {
         entity_name: string;
         display_name: string;
         behavior: string;
@@ -84,7 +83,7 @@ class MobRegistry {
         flavor_text: string | null;
         sprite_png: Buffer | null;
         sprite_hash: string | null;
-      }>;
+      }[];
 
     this.items.clear();
     for (const row of rows) {
@@ -103,7 +102,7 @@ class MobRegistry {
       });
     }
 
-    console.log(`[mob-registry] Loaded ${this.items.size} mobs from DB`);
+    console.log(`[mob-registry] Loaded ${String(this.items.size)} mobs from DB`);
   }
 
   /** Register a single mob. */
@@ -178,7 +177,7 @@ class MobRegistry {
       const available = loadAvailableImageSlugs();
       const before = all.length;
       all = all.filter((m) => available.has(displayNameToSlug(m.displayName)));
-      console.log(`[mob-registry] selectForRun imageOnly: ${all.length}/${before} mobs have images`);
+      console.log(`[mob-registry] selectForRun imageOnly: ${String(all.length)}/${String(before)} mobs have images`);
     }
 
     if (all.length === 0) return [];
@@ -216,7 +215,7 @@ class MobRegistry {
 
 export const mobRegistry = new MobRegistry();
 
-const SEED_MOBS: Array<{
+const SEED_MOBS: {
   entity_name: string;
   display_name: string;
   behavior: MobBehavior;
@@ -226,7 +225,7 @@ const SEED_MOBS: Array<{
   spd: number;
   budget_cost: number;
   flavor_text: string;
-}> = [
+}[] = [
   // melee_chase tier
   { entity_name: "cave_rat", display_name: "Cave Rat", behavior: "melee_chase", hp: 30, atk: 8, def: 4, spd: 10, budget_cost: 5, flavor_text: "Gnaws at anything that moves." },
   { entity_name: "shadow_hound", display_name: "Shadow Hound", behavior: "melee_chase", hp: 39, atk: 10, def: 5, spd: 13, budget_cost: 7, flavor_text: "Hunts by scent in total darkness." },
@@ -283,7 +282,7 @@ export function initMobRegistry(db: Database): void {
     for (const m of SEED_MOBS) {
       insert.run(m.entity_name, m.display_name, m.behavior, m.hp, m.atk, m.def, m.spd, m.budget_cost, m.flavor_text);
     }
-    console.log(`[mob-registry] Seeded ${SEED_MOBS.length} mobs into DB`);
+    console.log(`[mob-registry] Seeded ${String(SEED_MOBS.length)} mobs into DB`);
   }
 
   mobRegistry.loadFromDB(db);

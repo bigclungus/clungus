@@ -146,7 +146,7 @@ export function resolveAutoAttack(
 function rollDamage(
   attacker: CombatEntity,
   target: CombatEntity,
-  tick: number,
+  _tick: number,
 ): DamageResult {
   const variance = 1 + (Math.random() * 0.2 - 0.1); // 0.9 to 1.1
   const rawDamage = attacker.stats.ATK * variance;
@@ -169,6 +169,18 @@ function rollDamage(
 
 // ─── Spacebar Powers ────────────────────────────────────────────────────────
 
+type PowerHandler = (
+  player: PlayerEntity, enemies: EnemyEntity[], tick: number, allPlayers: PlayerEntity[],
+) => PowerResult;
+
+const POWER_HANDLERS: Record<PersonaPower, PowerHandler> = {
+  holden: (player, enemies, tick) => resolveHolden(player, enemies, tick),
+  broseidon: (player, _enemies, tick) => resolveBroseidon(player, tick),
+  deckard_cain: (player, _enemies, tick, allPlayers) => resolveDeckard(player, allPlayers, tick),
+  galactus: (player, enemies, tick) => resolveGalactus(player, enemies, tick),
+  crundle: (player, _enemies, tick) => resolveCrundle(player, tick),
+};
+
 /**
  * Dispatch to the correct power handler based on player persona.
  */
@@ -181,19 +193,7 @@ export function resolvePower(
 ): PowerResult | null {
   if (player.powerCooldownUntilTick > tick) return null;
   if (!player.alive) return null;
-
-  switch (player.persona) {
-    case "holden":
-      return resolveHolden(player, enemies, tick);
-    case "broseidon":
-      return resolveBroseidon(player, tick);
-    case "deckard_cain":
-      return resolveDeckard(player, allPlayers ?? [player], tick);
-    case "galactus":
-      return resolveGalactus(player, enemies, tick);
-    case "crundle":
-      return resolveCrundle(player, tick);
-  }
+  return POWER_HANDLERS[player.persona](player, enemies, tick, allPlayers ?? [player]);
 }
 
 /** Holden — Overwhelming Force: 60deg cone stun, 48px range. */
@@ -403,12 +403,10 @@ export function tickAoEZones(
       continue;
     }
 
-    if (zone.type === "deckard_slow") {
-      for (const e of enemies) {
-        if (!e.alive) continue;
-        if (circleVsCircle(e.x, e.y, e.radius, zone.x, zone.y, zone.radius)) {
-          e.slowMultiplier = zone.slowFactor;
-        }
+    for (const e of enemies) {
+      if (!e.alive) continue;
+      if (circleVsCircle(e.x, e.y, e.radius, zone.x, zone.y, zone.radius)) {
+        e.slowMultiplier = zone.slowFactor;
       }
     }
   }

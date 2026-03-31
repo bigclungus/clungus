@@ -11,7 +11,7 @@ import type {
   DungeonResultsMessage,
 } from "./dungeon-protocol.ts";
 
-import { db, saveRunResult } from "../persistence.ts";
+import { saveRunResult } from "../persistence.ts";
 
 // ─── Player snapshots ─────────────────────────────────────────────────────────
 
@@ -36,7 +36,7 @@ export function buildPlayerSnapshots(instance: DungeonInstance): DungeonPlayerSn
       maxHp: p.maxHp,
       iframeTicks: p.iframeTicks,
       cooldownRemaining: p.cooldownTicks,
-      scramblingTicks: p.scramblingTicks ?? 0,
+      scramblingTicks: p.scramblingTicks,
       activeTempPowerups: p.activeTempPowerups.map((a) => ({
         templateId: a.templateId,
         expiresAt: a.expiresAt,
@@ -104,14 +104,14 @@ export function buildAoEZoneSnapshots(instance: DungeonInstance): AoEZoneSnapsho
 
 // ─── Floor pickup snapshots ───────────────────────────────────────────────────
 
-export type FloorPickupSnap = {
+export interface FloorPickupSnap {
   id: string;
   templateId: string;
   type: 'temp_powerup' | 'health';
   healAmount?: number;
   x: number;
   y: number;
-};
+}
 
 export function buildFloorPickupSnapshots(instance: DungeonInstance): FloorPickupSnap[] {
   const snaps: FloorPickupSnap[] = [];

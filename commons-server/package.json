@@ -10,6 +10,8 @@
   "dependencies": {
     "@temporalio/client": "^1.15.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "bun-types": "^1.3.11"
+  },
   "type": "module"
 }

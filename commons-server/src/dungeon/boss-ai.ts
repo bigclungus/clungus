@@ -1,8 +1,7 @@
 // Boss phase management and AI for each floor's boss encounter.
 // Bosses follow multi-phase patterns that escalate as HP drops.
 
-import { circleVsCircle } from "./collision";
-import type { EnemyEntity, AoEZone } from "./combat";
+import type { EnemyEntity } from "./combat";
 import type { EnemyBehavior } from "./enemy-ai";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -134,30 +133,33 @@ export function updateBossAI(
 
 // ─── Phase Transitions ──────────────────────────────────────────────────────
 
+function updateHiveMotherPhase(hpFrac: number, aiState: BossAIState): void {
+  if (hpFrac <= HM_PHASE2_THRESHOLD && aiState.phase < 2) {
+    aiState.phase = 2;
+    aiState.enraged = true;
+  }
+}
+
+function updateSporeLordPhase(hpFrac: number, aiState: BossAIState): void {
+  if (hpFrac <= SL_PHASE2_THRESHOLD && aiState.phase < 2) {
+    aiState.phase = 2;
+  }
+}
+
+function updateArchitectPhase(hpFrac: number, aiState: BossAIState): void {
+  if (hpFrac <= ARCH_PHASE3_THRESHOLD && aiState.phase < 3) {
+    aiState.phase = 3;
+  } else if (hpFrac <= ARCH_PHASE2_THRESHOLD && aiState.phase < 2) {
+    aiState.phase = 2;
+  }
+}
+
 function updatePhase(boss: EnemyEntity, aiState: BossAIState): void {
   const hpFrac = boss.hp / boss.maxHP;
-
   switch (aiState.bossType) {
-    case "hive_mother":
-      if (hpFrac <= HM_PHASE2_THRESHOLD && aiState.phase < 2) {
-        aiState.phase = 2;
-        aiState.enraged = true;
-      }
-      break;
-
-    case "spore_lord":
-      if (hpFrac <= SL_PHASE2_THRESHOLD && aiState.phase < 2) {
-        aiState.phase = 2;
-      }
-      break;
-
-    case "the_architect":
-      if (hpFrac <= ARCH_PHASE3_THRESHOLD && aiState.phase < 3) {
-        aiState.phase = 3;
-      } else if (hpFrac <= ARCH_PHASE2_THRESHOLD && aiState.phase < 2) {
-        aiState.phase = 2;
-      }
-      break;
+    case "hive_mother": updateHiveMotherPhase(hpFrac, aiState); break;
+    case "spore_lord": updateSporeLordPhase(hpFrac, aiState); break;
+    case "the_architect": updateArchitectPhase(hpFrac, aiState); break;
   }
 }
 

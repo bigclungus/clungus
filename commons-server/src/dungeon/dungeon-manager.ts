@@ -186,7 +186,7 @@ export function startRun(lobbyId: string, skipGen = false): DungeonInstance | nu
   instance.startedAt = Date.now();
   instance.skipGen = skipGen;
 
-  console.log(`[dungeon] Run started for lobby ${lobbyId} (${instance.players.size} players, skipGen=${skipGen})`);
+  console.log(`[dungeon] Run started for lobby ${lobbyId} (${String(instance.players.size)} players, skipGen=${String(skipGen)})`);
 
   // Floor generation is triggered by the caller after startRun returns
   return instance;
@@ -255,6 +255,30 @@ export function handleReconnect(
 
 // ─── Message routing ─────────────────────────────────────────────────────────
 
+function handleReadyMessage(instance: DungeonInstance, player: DungeonPlayer, msg: Extract<DungeonClientMessage, { type: "d_ready" }>): void {
+  if (instance.status === "lobby") {
+    player.personaSlug = msg.personaSlug;
+    broadcastLobbyState(instance);
+  }
+}
+
+function handleMoveMessage(instance: DungeonInstance, player: DungeonPlayer, msg: Extract<DungeonClientMessage, { type: "d_move" }>): void {
+  if (instance.status === "running" || instance.status === "boss") {
+    player.inputQueue.push(msg);
+  }
+}
+
+function dispatchMessage(instance: DungeonInstance, player: DungeonPlayer, lobbyId: string, msg: DungeonClientMessage): void {
+  switch (msg.type) {
+    case "d_ready": handleReadyMessage(instance, player, msg); break;
+    case "d_start": startRun(lobbyId); break;
+    case "d_move": handleMoveMessage(instance, player, msg); break;
+    case "d_attack": break;
+    case "d_power": break;
+    case "d_pick_powerup": break;
+  }
+}
+
 export function handleMessage(
   lobbyId: string,
   playerId: string,
@@ -263,39 +287,7 @@ export function handleMessage(
 ): void {
   const instance = instances.get(lobbyId);
   if (!instance) return;
-
   const player = instance.players.get(playerId);
   if (!player) return;
-
-  switch (msg.type) {
-    case "d_ready":
-      if (instance.status === "lobby") {
-        player.personaSlug = msg.personaSlug;
-        broadcastLobbyState(instance);
-      }
-      break;
-
-    case "d_start":
-      // Only host can start — for now first player is host
-      startRun(lobbyId);
-      break;
-
-    case "d_move":
-      if (instance.status === "running" || instance.status === "boss") {
-        player.inputQueue.push(msg);
-      }
-      break;
-
-    case "d_attack":
-      // TODO: Phase 1 — auto-attack request
-      break;
-
-    case "d_power":
-      // TODO: Phase 2 — spacebar power activation
-      break;
-
-    case "d_pick_powerup":
-      // TODO: Phase 2 — powerup selection between floors
-      break;
-  }
+  dispatchMessage(instance, player, lobbyId, msg);
 }

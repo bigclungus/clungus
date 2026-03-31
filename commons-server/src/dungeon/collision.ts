@@ -58,12 +58,30 @@ export function pointInCone(
  * Returns true if the line from (x1,y1) to (x2,y2) is unobstructed.
  * Coordinates are in pixels; TILE_SIZE assumed 16px.
  */
+function isTileSolid(tx: number, ty: number, tileGrid: Uint8Array, gridWidth: number): boolean {
+  const idx = ty * gridWidth + tx;
+  return idx >= 0 && idx < tileGrid.length && SOLID_TILES.has(tileGrid[idx]);
+}
+
+function bresenhamStep(
+  err: number, dx: number, dy: number, sx: number, sy: number,
+  tx: number, ty: number,
+): { err: number; tx: number; ty: number } {
+  const e2 = 2 * err;
+  let newErr = err;
+  let newTx = tx;
+  let newTy = ty;
+  if (e2 > -dy) { newErr -= dy; newTx += sx; }
+  if (e2 < dx) { newErr += dx; newTy += sy; }
+  return { err: newErr, tx: newTx, ty: newTy };
+}
+
 export function lineOfSight(
   x1: number, y1: number,
   x2: number, y2: number,
   tileGrid: Uint8Array,
   gridWidth: number,
-  tileSize: number = 16,
+  tileSize = 16,
 ): boolean {
   let tx0 = Math.floor(x1 / tileSize);
   let ty0 = Math.floor(y1 / tileSize);
@@ -76,15 +94,10 @@ export function lineOfSight(
   const sy = ty0 < ty1 ? 1 : -1;
   let err = dx - dy;
 
-  while (true) {
-    const idx = ty0 * gridWidth + tx0;
-    if (idx >= 0 && idx < tileGrid.length && SOLID_TILES.has(tileGrid[idx])) {
-      return false;
-    }
+  for (;;) {
+    if (isTileSolid(tx0, ty0, tileGrid, gridWidth)) return false;
     if (tx0 === tx1 && ty0 === ty1) break;
-    const e2 = 2 * err;
-    if (e2 > -dy) { err -= dy; tx0 += sx; }
-    if (e2 < dx) { err += dx; ty0 += sy; }
+    ({ err, tx: tx0, ty: ty0 } = bresenhamStep(err, dx, dy, sx, sy, tx0, ty0));
   }
   return true;
 }
@@ -106,7 +119,7 @@ export function wallSlide(
   tileGrid: Uint8Array,
   gridWidth: number,
   gridHeight: number,
-  tileSize: number = 16,
+  tileSize = 16,
 ): SlideResult {
   // Try full move first
   const nx = x + dx;

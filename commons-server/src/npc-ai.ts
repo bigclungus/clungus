@@ -59,9 +59,9 @@ const NPC_SPAWN_POSITIONS: Record<string, { x: number; y: number }> = {
 };
 
 // Per-NPC pacing state (for deterministic patterns)
-const pacingState: Map<string, { ticksOnCurrent: number; maxTicks: number }> = new Map();
-const circularState: Map<string, { angle: number }> = new Map();
-const directedState: Map<string, { targetX: number; targetY: number; stuckTicks: number }> = new Map();
+const pacingState = new Map<string, { ticksOnCurrent: number; maxTicks: number }>();
+const circularState = new Map<string, { angle: number }>();
+const directedState = new Map<string, { targetX: number; targetY: number; stuckTicks: number }>();
 
 export function initNpcs(): Map<string, NPCState> {
   const npcs = new Map<string, NPCState>();
@@ -196,7 +196,7 @@ const NPC_QUIPS: Record<string, string[]> = {
 const DEFAULT_QUIPS = ["...", "hmm.", "processing.", "interesting.", "noted.", "ok."];
 
 // Per-NPC blurb state — tracks index and cooldown
-const blurbState: Map<string, { cooldownTicks: number; quipIndex: number }> = new Map();
+const blurbState = new Map<string, { cooldownTicks: number; quipIndex: number }>();
 
 // Blurb TTL in ticks (20Hz → 150 ticks = 7.5s)
 const BLURB_TTL_TICKS = 150;
@@ -257,8 +257,9 @@ function applyWander(npc: NPCState, speed: number, walkable: boolean[][]): void 
   }
 }
 
-function applyPacing(npc: NPCState, speed: number, walkable: boolean[][]): void {
-  const state = pacingState.get(npc.name)!;
+function applyPacing(npc: NPCState, speed: number, _walkable: boolean[][]): void {
+  const state = pacingState.get(npc.name);
+  if (!state) return;
   state.ticksOnCurrent++;
   if (state.ticksOnCurrent >= state.maxTicks) {
     // Reverse direction or pick new
@@ -285,7 +286,8 @@ function applyStationary(npc: NPCState, _speed: number, _walkable: boolean[][]):
 }
 
 function applyCircular(npc: NPCState, speed: number, _walkable: boolean[][]): void {
-  const state = circularState.get(npc.name)!;
+  const state = circularState.get(npc.name);
+  if (!state) return;
   state.angle += 0.03;
   npc.vx = Math.cos(state.angle) * speed;
   npc.vy = Math.sin(state.angle) * speed;
@@ -299,7 +301,8 @@ function applyAggressive(npc: NPCState, speed: number, walkable: boolean[][]): v
 }
 
 function applyDirected(npc: NPCState, speed: number, walkable: boolean[][]): void {
-  const state = directedState.get(npc.name)!;
+  const state = directedState.get(npc.name);
+  if (!state) return;
   const dist = Math.sqrt((state.targetX - npc.x) ** 2 + (state.targetY - npc.y) ** 2);
   if (dist < speed * 2 || state.stuckTicks > 40) {
     // Pick new target within canvas bounds (1000×700)
@@ -347,15 +350,44 @@ export function resetNpcPositions(npcs: Map<string, NPCState>, x: number, y: num
     npc.congressTarget = undefined;
   }
   // Reset directed state targets so they don't immediately path back into a bad tile
-  for (const [name, state] of directedState) {
+  for (const [_name, state] of directedState) {
     state.targetX = x + (Math.random() - 0.5) * 200;
     state.targetY = y + (Math.random() - 0.5) * 200;
     state.stuckTicks = 0;
   }
-  console.log(`[npc-ai] Reset ${npcs.size} NPC positions to (${x}, ${y})`);
+  console.log(`[npc-ai] Reset ${String(npcs.size)} NPC positions to (${String(x)}, ${String(y)})`);
 }
 
 // ─── Main NPC tick ───────────────────────────────────────────────────────────
+
+function applyNpcMovement(npc: NPCState, speed: number, walkable: boolean[][]): void {
+  const targetX = npc.x + npc.vx;
+  const targetY = npc.y + npc.vy;
+
+  if (isWalkablePixel(targetX, targetY, walkable)) {
+    npc.x = targetX;
+    npc.y = targetY;
+  } else if (isWalkablePixel(targetX, npc.y, walkable)) {
+    npc.x = targetX;
+    npc.vy = -npc.vy * 0.5;
+  } else if (isWalkablePixel(npc.x, targetY, walkable)) {
+    npc.y = targetY;
+    npc.vx = -npc.vx * 0.5;
+  } else {
+    npc.vx = 0;
+    npc.vy = 0;
+    pickWalkableDirection(npc, speed, walkable);
+  }
+
+  // Clamp to chunk bounds (pixel space) — CHUNK_TILES_W=50, CHUNK_TILES_H=35, TILE_SIZE=20
+  const maxX = CHUNK_TILES_W * TILE_SIZE;  // 1000
+  const maxY = CHUNK_TILES_H * TILE_SIZE;  // 700
+  npc.x = Math.max(TILE_SIZE, Math.min(maxX - TILE_SIZE, npc.x));
+  npc.y = Math.max(TILE_SIZE, Math.min(maxY - TILE_SIZE, npc.y));
+
+  if (npc.vx > 0.01) npc.facing = "right";
+  else if (npc.vx < -0.01) npc.facing = "left";
+}
 
 export function tickNpcs(
   npcs: Map<string, NPCState>,
@@ -372,7 +404,6 @@ export function tickNpcs(
 
   for (const npc of npcs.values()) {
     const patternCfg = NPC_PATTERNS[npc.name];
-    if (!patternCfg) continue;
     const speed = patternCfg.speed * speedMod;
 
     // Congress mode: override with pathfinding to council target
@@ -390,41 +421,6 @@ export function tickNpcs(
       applyPatternBehavior(npc, patternCfg.behavior, speed, chunk.walkable);
     }
 
-    // Apply movement with tile collision check
-    const targetX = npc.x + npc.vx;
-    const targetY = npc.y + npc.vy;
-
-    // Try full move
-    if (isWalkablePixel(targetX, targetY, chunk.walkable)) {
-      npc.x = targetX;
-      npc.y = targetY;
-    } else {
-      // Try horizontal only
-      if (isWalkablePixel(targetX, npc.y, chunk.walkable)) {
-        npc.x = targetX;
-        npc.vy = -npc.vy * 0.5;
-      }
-      // Try vertical only
-      else if (isWalkablePixel(npc.x, targetY, chunk.walkable)) {
-        npc.y = targetY;
-        npc.vx = -npc.vx * 0.5;
-      }
-      // Fully blocked — pick new direction
-      else {
-        npc.vx = 0;
-        npc.vy = 0;
-        pickWalkableDirection(npc, speed, chunk.walkable);
-      }
-    }
-
-    // Clamp to chunk bounds (pixel space) — CHUNK_TILES_W=50, CHUNK_TILES_H=35, TILE_SIZE=20
-    const maxX = CHUNK_TILES_W * TILE_SIZE;  // 1000
-    const maxY = CHUNK_TILES_H * TILE_SIZE;  // 700
-    npc.x = Math.max(TILE_SIZE, Math.min(maxX - TILE_SIZE, npc.x));
-    npc.y = Math.max(TILE_SIZE, Math.min(maxY - TILE_SIZE, npc.y));
-
-    // Update facing
-    if (npc.vx > 0.01) npc.facing = "right";
-    else if (npc.vx < -0.01) npc.facing = "left";
+    applyNpcMovement(npc, speed, chunk.walkable);
   }
 }

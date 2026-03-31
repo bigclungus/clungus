@@ -28,19 +28,68 @@ const RARITY_WEIGHTS: Record<string, number> = {
 const FLOOR_UNCOMMON_BONUS = 5;
 const FLOOR_RARE_BONUS = 3;
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+interface RarityPools {
+  common: LootItem[];
+  uncommon: LootItem[];
+  rare: LootItem[];
+}
+
+interface RarityWeights {
+  common: number;
+  uncommon: number;
+  rare: number;
+}
+
+function buildRarityPools(items: LootItem[]): RarityPools {
+  const pools: RarityPools = { common: [], uncommon: [], rare: [] };
+  for (const item of items) {
+    pools[item.rarity].push(item);
+  }
+  return pools;
+}
+
+function calcAdjustedWeights(floorNumber: number): RarityWeights {
+  const floorBonus = Math.max(0, floorNumber - 1);
+  return {
+    common: Math.max(10, RARITY_WEIGHTS.common - floorBonus * (FLOOR_UNCOMMON_BONUS + FLOOR_RARE_BONUS)),
+    uncommon: RARITY_WEIGHTS.uncommon + floorBonus * FLOOR_UNCOMMON_BONUS,
+    rare: RARITY_WEIGHTS.rare + floorBonus * FLOOR_RARE_BONUS,
+  };
+}
+
+function rollRarity(roll: number, weights: RarityWeights): keyof RarityPools {
+  if (roll < weights.common) return "common";
+  if (roll < weights.common + weights.uncommon) return "uncommon";
+  return "rare";
+}
+
+function fillRemainingChoices(chosen: LootItem[], allItems: LootItem[], usedIds: Set<number>, count: number): void {
+  for (const item of allItems) {
+    if (chosen.length >= count) break;
+    if (!usedIds.has(item.id)) {
+      usedIds.add(item.id);
+      chosen.push(item);
+    }
+  }
+}
+
+// ─── Registry ────────────────────────────────────────────────────────────────
+
 class LootRegistry {
   private items: LootItem[] = [];
 
   /** Load all powerups from the SQLite powerups table. */
   loadFromDB(db: Database): void {
-    const rows = db.query("SELECT id, slug, name, description, stat_modifier, rarity FROM powerups").all() as Array<{
+    const rows = db.query("SELECT id, slug, name, description, stat_modifier, rarity FROM powerups").all() as {
       id: number;
       slug: string;
       name: string;
       description: string | null;
       stat_modifier: string;
       rarity: string;
-    }>;
+    }[];
 
     this.items = rows.map((row) => ({
       id: row.id,
@@ -51,7 +100,7 @@ class LootRegistry {
       rarity: row.rarity as LootItem["rarity"],
     }));
 
-    console.log(`[loot] Loaded ${this.items.length} powerups from DB`);
+    console.log(`[loot] Loaded ${String(this.items.length)} powerups from DB`);
   }
 
   /** Register a single item (for LLM-generated loot). */
@@ -68,7 +117,7 @@ class LootRegistry {
   /** Swap the entire registry contents (for batch LLM generation). */
   clearAndReplace(items: LootItem[]): void {
     this.items = [...items];
-    console.log(`[loot] Registry replaced with ${this.items.length} items`);
+    console.log(`[loot] Registry replaced with ${String(this.items.length)} items`);
   }
 
   /** How many items are registered. */
@@ -90,20 +139,8 @@ class LootRegistry {
     if (this.items.length === 0) return [];
     if (this.items.length <= count) return [...this.items];
 
-    // Build per-rarity pools
-    const pools: Record<string, LootItem[]> = { common: [], uncommon: [], rare: [] };
-    for (const item of this.items) {
-      const pool = pools[item.rarity];
-      if (pool) pool.push(item);
-    }
-
-    // Adjusted weights for this floor
-    const floorBonus = Math.max(0, floorNumber - 1);
-    const weights = {
-      common: Math.max(10, RARITY_WEIGHTS.common - floorBonus * (FLOOR_UNCOMMON_BONUS + FLOOR_RARE_BONUS)),
-      uncommon: RARITY_WEIGHTS.uncommon + floorBonus * FLOOR_UNCOMMON_BONUS,
-      rare: RARITY_WEIGHTS.rare + floorBonus * FLOOR_RARE_BONUS,
-    };
+    const pools = buildRarityPools(this.items);
+    const weights = calcAdjustedWeights(floorNumber);
     const totalWeight = weights.common + weights.uncommon + weights.rare;
 
     const chosen: LootItem[] = [];
@@ -112,40 +149,16 @@ class LootRegistry {
     let attempts = 0;
     while (chosen.length < count && attempts < count * 20) {
       attempts++;
-
-      // Roll rarity
-      const roll = rng() * totalWeight;
-      let rarity: string;
-      if (roll < weights.common) {
-        rarity = "common";
-      } else if (roll < weights.common + weights.uncommon) {
-        rarity = "uncommon";
-      } else {
-        rarity = "rare";
-      }
-
+      const rarity = rollRarity(rng() * totalWeight, weights);
       const pool = pools[rarity];
-      if (!pool || pool.length === 0) continue;
-
-      // Pick random item from pool
+      if (pool.length === 0) continue;
       const item = pool[Math.floor(rng() * pool.length)];
       if (usedIds.has(item.id)) continue;
-
       usedIds.add(item.id);
       chosen.push(item);
     }
 
-    // If we couldn't fill enough from weighted selection, fill from remaining items
-    if (chosen.length < count) {
-      for (const item of this.items) {
-        if (chosen.length >= count) break;
-        if (!usedIds.has(item.id)) {
-          usedIds.add(item.id);
-          chosen.push(item);
-        }
-      }
-    }
-
+    fillRemainingChoices(chosen, this.items, usedIds, count);
     return chosen;
   }
 }
@@ -191,7 +204,7 @@ export function initLootSystem(db: Database): void {
     for (const p of SEED_POWERUPS) {
       insert.run(p.slug, p.name, p.description, p.stat_modifier, p.rarity);
     }
-    console.log(`[loot] Seeded ${SEED_POWERUPS.length} powerups into DB`);
+    console.log(`[loot] Seeded ${String(SEED_POWERUPS.length)} powerups into DB`);
   }
 
   lootRegistry.loadFromDB(db);

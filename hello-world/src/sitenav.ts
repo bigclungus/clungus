@@ -27,26 +27,31 @@
     { href: 'https://terminal.clung.us/topology', label: 'topology', external: true },
   ];
 
+  function normalizePath(p: string): string {
+    return p.replace(/\/+$/, '') || '/';
+  }
+
+  function isActiveSameDomain(link: NavLink): boolean {
+    try {
+      const linkUrl = new URL(link.href);
+      if (linkUrl.hostname !== window.location.hostname) return false;
+      const lp = normalizePath(linkUrl.pathname);
+      const p = normalizePath(window.location.pathname);
+      return p === lp;
+    } catch (_e) {
+      return false;
+    }
+  }
+
   function isActive(link: NavLink): boolean {
     if (link.toolHost) {
       return window.location.hostname === link.toolHost;
     }
     if (link.external) return false;
-    if (link.href) {
-      try {
-        const linkUrl = new URL(link.href);
-        if (linkUrl.hostname === window.location.hostname) {
-          const lp = linkUrl.pathname.replace(/\/+$/, '') || '/';
-          const p = window.location.pathname.replace(/\/+$/, '') || '/';
-          return p === lp;
-        }
-      } catch (_e) {
-        // invalid URL, fall through
-      }
-    }
+    if (isActiveSameDomain(link)) return true;
     if (!link.path) return false;
-    const p = window.location.pathname.replace(/\/+$/, '') || '/';
-    const lp = link.path.replace(/\/+$/, '') || '/';
+    const p = normalizePath(window.location.pathname);
+    const lp = normalizePath(link.path);
     return p === lp;
   }
 
@@ -117,7 +122,7 @@
   }
 
   function initTheme(toggleBtn: HTMLElement): void {
-    const saved = localStorage.getItem('theme') || 'dark';
+    const saved = localStorage.getItem('theme') ?? 'dark';
     applyTheme(saved, toggleBtn);
 
     toggleBtn.addEventListener('click', () => {
@@ -138,7 +143,7 @@
       const navHeight = nav.getBoundingClientRect().height;
       const existing = parseFloat(window.getComputedStyle(body).paddingTop) || 0;
       if (existing < navHeight) {
-        body.style.paddingTop = navHeight + 'px';
+        body.style.paddingTop = `${String(navHeight)}px`;
       }
     }
     applyNavOffset();

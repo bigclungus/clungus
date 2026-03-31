@@ -9,11 +9,11 @@ mkdirSync("./db", { recursive: true });
 export const db = new Database("./db/commons.db", { create: true });
 
 // WAL mode for concurrent access
-db.exec("PRAGMA journal_mode = WAL");
-db.exec("PRAGMA synchronous = NORMAL");
+db.run("PRAGMA journal_mode = WAL");
+db.run("PRAGMA synchronous = NORMAL");
 
 // Schema
-db.exec(`
+db.run(`
   CREATE TABLE IF NOT EXISTS npc_positions (
     name TEXT PRIMARY KEY,
     x REAL,
@@ -158,7 +158,7 @@ export function resetNpcPositionsInDb(npcNames: string[]): { x: number; y: numbe
   });
   try {
     resetTx();
-    console.log(`[persistence] Reset ${npcNames.length} NPC positions to center (${CENTER_X}, ${CENTER_Y})`);
+    console.log(`[persistence] Reset ${String(npcNames.length)} NPC positions to center (${String(CENTER_X)}, ${String(CENTER_Y)})`);
   } catch (err) {
     console.error("[persistence] resetNpcPositionsInDb failed:", err);
     throw err;
@@ -185,7 +185,7 @@ export function saveRunResult(
 ): void {
   try {
     saveRunStmt.run(outcome, floorReached, durationMs, JSON.stringify(party), Date.now());
-    console.log(`[persistence] Saved dungeon run: ${outcome} floor ${floorReached} (${party.length} players)`);
+    console.log(`[persistence] Saved dungeon run: ${outcome} floor ${String(floorReached)} (${String(party.length)} players)`);
   } catch (err) {
     console.error("[persistence] saveRunResult failed:", err);
     throw err;

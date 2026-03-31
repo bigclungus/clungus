@@ -39,7 +39,7 @@ export interface Room {
 
 export interface Corridor {
   /** Sequence of {x,y} tiles forming the corridor path (3-wide) */
-  points: Array<{ x: number; y: number }>;
+  points: { x: number; y: number }[];
   roomA: number;
   roomB: number;
 }
@@ -136,27 +136,27 @@ interface BSPNode {
 const MIN_LEAF_SIZE = 30;
 const MIN_ROOM_SIZE = 25;
 
-function splitBSP(node: BSPNode, depth: number, maxDepth: number, rng: SeededRNG): void {
-  if (depth >= maxDepth) return;
-  if (node.w < MIN_LEAF_SIZE * 2 && node.h < MIN_LEAF_SIZE * 2) return;
+function preferredSplitH(node: BSPNode, rng: SeededRNG): boolean {
+  if (node.w > node.h * 1.4) return false;
+  if (node.h > node.w * 1.4) return true;
+  return rng.next() < 0.5;
+}
 
-  // Bias split direction by aspect ratio
-  let splitH: boolean;
-  if (node.w > node.h * 1.4) {
-    splitH = false; // vertical split (split width)
-  } else if (node.h > node.w * 1.4) {
-    splitH = true; // horizontal split (split height)
-  } else {
-    splitH = rng.next() < 0.5;
-  }
+function canSplitAxis(size: number): boolean {
+  return size >= MIN_LEAF_SIZE * 2;
+}
 
-  // Check if split is viable
-  if (splitH && node.h < MIN_LEAF_SIZE * 2) splitH = false;
-  if (!splitH && node.w < MIN_LEAF_SIZE * 2) splitH = true;
-  if ((splitH && node.h < MIN_LEAF_SIZE * 2) || (!splitH && node.w < MIN_LEAF_SIZE * 2)) {
-    return; // Cannot split
-  }
+function chooseSplitHorizontal(node: BSPNode, rng: SeededRNG): boolean | null {
+  let splitH = preferredSplitH(node, rng);
+  // If preferred axis is too small, try the other
+  if (splitH && !canSplitAxis(node.h)) splitH = false;
+  else if (!splitH && !canSplitAxis(node.w)) splitH = true;
+  // Validate final choice
+  if (splitH ? !canSplitAxis(node.h) : !canSplitAxis(node.w)) return null;
+  return splitH;
+}
 
+function applySplit(node: BSPNode, splitH: boolean, rng: SeededRNG): [BSPNode, BSPNode] {
   if (splitH) {
     const splitAt = rng.int(MIN_LEAF_SIZE, node.h - MIN_LEAF_SIZE);
     node.left = { x: node.x, y: node.y, w: node.w, h: splitAt, left: null, right: null, room: null };
@@ -166,9 +166,19 @@ function splitBSP(node: BSPNode, depth: number, maxDepth: number, rng: SeededRNG
     node.left = { x: node.x, y: node.y, w: splitAt, h: node.h, left: null, right: null, room: null };
     node.right = { x: node.x + splitAt, y: node.y, w: node.w - splitAt, h: node.h, left: null, right: null, room: null };
   }
+  return [node.left, node.right];
+}
 
-  splitBSP(node.left, depth + 1, maxDepth, rng);
-  splitBSP(node.right, depth + 1, maxDepth, rng);
+function splitBSP(node: BSPNode, depth: number, maxDepth: number, rng: SeededRNG): void {
+  if (depth >= maxDepth) return;
+  if (node.w < MIN_LEAF_SIZE * 2 && node.h < MIN_LEAF_SIZE * 2) return;
+
+  const splitH = chooseSplitHorizontal(node, rng);
+  if (splitH === null) return;
+
+  const [left, right] = applySplit(node, splitH, rng);
+  splitBSP(left, depth + 1, maxDepth, rng);
+  splitBSP(right, depth + 1, maxDepth, rng);
 }
 
 function getLeaves(node: BSPNode): BSPNode[] {
@@ -205,41 +215,37 @@ function placeRooms(leaves: BSPNode[], rng: SeededRNG): Room[] {
 
 // ─── Room Type Assignment ────────────────────────────────────────────────────
 
+function rollRoomType(rng: SeededRNG): RoomType {
+  const roll = rng.next();
+  if (roll < 0.10) return "rest";
+  if (roll < 0.25) return "treasure";
+  return "combat";
+}
+
+function guaranteeRoomType(rooms: Room[], type: RoomType, minRooms: number, rng: SeededRNG): void {
+  if (rooms.length <= minRooms) return;
+  const types = new Set(rooms.map((r) => r.type));
+  if (!types.has(type)) {
+    const candidates = rooms.filter((r) => r.type === "combat");
+    if (candidates.length > 0) rng.pick(candidates).type = type;
+  }
+}
+
 function assignRoomTypes(rooms: Room[], hasBoss: boolean, rng: SeededRNG): void {
   if (rooms.length === 0) return;
 
-  // First room is always start
   rooms[0].type = "start";
-
-  // If boss floor, last room is boss
   if (hasBoss && rooms.length > 1) {
     rooms[rooms.length - 1].type = "boss";
   }
 
-  // Assign remaining rooms
   for (let i = 1; i < rooms.length; i++) {
-    if (rooms[i].type !== "combat") continue; // skip already-assigned (boss)
-
-    const roll = rng.next();
-    if (roll < 0.10) {
-      rooms[i].type = "rest";
-    } else if (roll < 0.25) {
-      rooms[i].type = "treasure";
-    } else {
-      rooms[i].type = "combat";
-    }
+    if (rooms[i].type !== "combat") continue;
+    rooms[i].type = rollRoomType(rng);
   }
 
-  // Guarantee at least one treasure and one rest if enough rooms
-  const types = new Set(rooms.map((r) => r.type));
-  if (!types.has("treasure") && rooms.length > 3) {
-    const candidates = rooms.filter((r) => r.type === "combat");
-    if (candidates.length > 0) rng.pick(candidates).type = "treasure";
-  }
-  if (!types.has("rest") && rooms.length > 4) {
-    const candidates = rooms.filter((r) => r.type === "combat");
-    if (candidates.length > 0) rng.pick(candidates).type = "rest";
-  }
+  guaranteeRoomType(rooms, "treasure", 3, rng);
+  guaranteeRoomType(rooms, "rest", 4, rng);
 }
 
 // ─── Corridor Connection ─────────────────────────────────────────────────────
@@ -262,67 +268,40 @@ function findRoom(node: BSPNode): Room | null {
   return null;
 }
 
+function buildLPath(
+  aCenter: { x: number; y: number },
+  bCenter: { x: number; y: number },
+): { x: number; y: number }[] {
+  const points: { x: number; y: number }[] = [];
+  const dx = bCenter.x > aCenter.x ? 1 : -1;
+  const dy = bCenter.y > aCenter.y ? 1 : -1;
+  for (let x = aCenter.x; x !== bCenter.x; x += dx) {
+    points.push({ x, y: aCenter.y });
+  }
+  for (let y = aCenter.y; y !== bCenter.y + dy; y += dy) {
+    points.push({ x: bCenter.x, y });
+  }
+  return points;
+}
+
 /** Connect BSP siblings with L-shaped corridors */
 function connectBSP(node: BSPNode, corridors: Corridor[]): void {
   if (!node.left || !node.right) return;
-
-  // Recurse first
   connectBSP(node.left, corridors);
   connectBSP(node.right, corridors);
-
-  // Find a room in each subtree
   const roomA = findRoom(node.left);
   const roomB = findRoom(node.right);
   if (!roomA || !roomB) return;
-
-  const centerA = getRoomCenter(roomA);
-  const centerB = getRoomCenter(roomB);
-
-  const points: Array<{ x: number; y: number }> = [];
-
-  // L-shaped path: go horizontal first, then vertical
-  const dx = centerB.x > centerA.x ? 1 : -1;
-  const dy = centerB.y > centerA.y ? 1 : -1;
-
-  // Horizontal segment
-  for (let x = centerA.x; x !== centerB.x; x += dx) {
-    points.push({ x, y: centerA.y });
-  }
-  // Vertical segment
-  for (let y = centerA.y; y !== centerB.y + dy; y += dy) {
-    points.push({ x: centerB.x, y });
-  }
-
+  const points = buildLPath(getRoomCenter(roomA), getRoomCenter(roomB));
   corridors.push({ points, roomA: roomA.id, roomB: roomB.id });
 }
 
 // ─── Tile Grid ───────────────────────────────────────────────────────────────
 
-function buildTileGrid(
-  width: number,
-  height: number,
-  rooms: Room[],
-  corridors: Corridor[]
-): Uint8Array {
-  const grid = new Uint8Array(width * height);
-  grid.fill(Tile.WALL);
+type TileSetFn = (x: number, y: number, tile: TileType) => void;
+type TileGetFn = (x: number, y: number) => TileType;
 
-  const CORRIDOR_HALF_WIDTH = 2; // 5-wide corridor (center +/- 2)
-
-  const set = (x: number, y: number, tile: TileType) => {
-    if (x >= 0 && x < width && y >= 0 && y < height) {
-      grid[y * width + x] = tile;
-    }
-  };
-
-  const get = (x: number, y: number): TileType => {
-    if (x >= 0 && x < width && y >= 0 && y < height) {
-      return grid[y * width + x] as TileType;
-    }
-    return Tile.WALL;
-  };
-
-  // Carve rooms
+function carveRooms(rooms: Room[], set: TileSetFn): void {
   for (const room of rooms) {
     for (let ry = room.y; ry < room.y + room.h; ry++) {
       for (let rx = room.x; rx < room.x + room.w; rx++) {
@@ -330,8 +309,10 @@ function buildTileGrid(
       }
     }
   }
+}
 
-  // Carve corridors (3-wide)
+function carveCorridors(corridors: Corridor[], get: TileGetFn, set: TileSetFn): void {
+  const CORRIDOR_HALF_WIDTH = 2;
   for (const corridor of corridors) {
     for (const pt of corridor.points) {
       for (let dy = -CORRIDOR_HALF_WIDTH; dy <= CORRIDOR_HALF_WIDTH; dy++) {
@@ -345,63 +326,79 @@ function buildTileGrid(
       }
     }
   }
+}
 
-  // Place doors where corridors meet room edges
+function isAdjacentToRoom(rx: number, ry: number, room: Room, get: TileGetFn): boolean {
+  const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]] as const;
+  for (const [dx, dy] of dirs) {
+    if (get(rx + dx, ry + dy) === Tile.FLOOR && isInRoom(rx + dx, ry + dy, room)) return true;
+  }
+  return false;
+}
+
+function checkDoorTile(rx: number, ry: number, room: Room, get: TileGetFn, set: TileSetFn): void {
+  if (rx >= room.x && rx < room.x + room.w && ry >= room.y && ry < room.y + room.h) return;
+  if (get(rx, ry) !== Tile.FLOOR) return;
+  if (isAdjacentToRoom(rx, ry, room, get)) {
+    set(rx, ry, Tile.DOOR_CLOSED);
+  }
+}
+
+function placeDoors(rooms: Room[], get: TileGetFn, set: TileSetFn): void {
   for (const room of rooms) {
-    // Check all border tiles of the room
     for (let rx = room.x - 1; rx <= room.x + room.w; rx++) {
       for (let ry = room.y - 1; ry <= room.y + room.h; ry++) {
-        // Only look at edge tiles (just outside the room)
-        const insideX = rx >= room.x && rx < room.x + room.w;
-        const insideY = ry >= room.y && ry < room.y + room.h;
-        if (insideX && insideY) continue; // inside room, skip
-
-        if (get(rx, ry) !== Tile.FLOOR) continue; // not carved corridor
-
-        // Check if this tile is adjacent to room floor on one side and corridor on the other
-        const adjRoom =
-          get(rx - 1, ry) === Tile.FLOOR && isInRoom(rx - 1, ry, room) ||
-          get(rx + 1, ry) === Tile.FLOOR && isInRoom(rx + 1, ry, room) ||
-          get(rx, ry - 1) === Tile.FLOOR && isInRoom(rx, ry - 1, room) ||
-          get(rx, ry + 1) === Tile.FLOOR && isInRoom(rx, ry + 1, room);
-
-        if (adjRoom) {
-          set(rx, ry, Tile.DOOR_CLOSED);
-        }
+        checkDoorTile(rx, ry, room, get, set);
       }
     }
   }
+}
 
-  // Place special tiles in rooms
+function placeSpecialTiles(rooms: Room[], set: TileSetFn): void {
   for (const room of rooms) {
     const cx = Math.floor(room.x + room.w / 2);
     const cy = Math.floor(room.y + room.h / 2);
-
     switch (room.type) {
-      case "start":
-        set(cx, cy, Tile.SPAWN_POINT);
-        break;
-      case "treasure":
-        set(cx, cy, Tile.TREASURE_CHEST);
-        break;
-      case "rest":
-        set(cx, cy, Tile.REST_SHRINE);
-        break;
-      case "boss":
-        // Boss room gets stairs after boss is defeated (placed as floor for now,
-        // stairs placed dynamically at runtime). Mark center as spawn.
-        set(cx, cy, Tile.SPAWN_POINT);
-        break;
+      case "start": set(cx, cy, Tile.SPAWN_POINT); break;
+      case "treasure": set(cx, cy, Tile.TREASURE_CHEST); break;
+      case "rest": set(cx, cy, Tile.REST_SHRINE); break;
+      case "boss": set(cx, cy, Tile.SPAWN_POINT); break;
     }
   }
-
-  // Place stairs in the last non-boss room or boss room
   const stairsRoom = rooms[rooms.length - 1];
   const sx = stairsRoom.x + stairsRoom.w - 2;
   const sy = stairsRoom.y + stairsRoom.h - 2;
   if (sx > stairsRoom.x && sy > stairsRoom.y) {
     set(sx, sy, Tile.STAIRS);
   }
+}
+
+function buildTileGrid(
+  width: number,
+  height: number,
+  rooms: Room[],
+  corridors: Corridor[]
+): Uint8Array {
+  const grid = new Uint8Array(width * height);
+  grid.fill(Tile.WALL);
+
+  const set = (x: number, y: number, tile: TileType): void => {
+    if (x >= 0 && x < width && y >= 0 && y < height) {
+      grid[y * width + x] = tile;
+    }
+  };
+
+  const get = (x: number, y: number): TileType => {
+    if (x >= 0 && x < width && y >= 0 && y < height) {
+      return grid[y * width + x] as TileType;
+    }
+    return Tile.WALL;
+  };
+
+  carveRooms(rooms, set);
+  carveCorridors(corridors, get, set);
+  placeDoors(rooms, get, set);
+  placeSpecialTiles(rooms, set);
 
   return grid;
 }
@@ -412,6 +409,50 @@ function isInRoom(x: number, y: number, room: Room): boolean {
 
 // ─── Enemy Spawning ──────────────────────────────────────────────────────────
 
+function distributeBudget(combatRooms: Room[], totalBudget: number, rng: SeededRNG): Map<number, number> {
+  const roomBudgets = new Map<number, number>();
+  let remaining = totalBudget;
+  const basePer = Math.floor(totalBudget / combatRooms.length);
+  for (const room of combatRooms) {
+    const variance = rng.int(-Math.floor(basePer * 0.3), Math.floor(basePer * 0.3));
+    const budget = Math.max(1, basePer + variance);
+    roomBudgets.set(room.id, Math.min(budget, remaining));
+    remaining -= Math.min(budget, remaining);
+    if (remaining <= 0) break;
+  }
+  if (remaining > 0) {
+    const target = combatRooms.find((r) => r.type === "boss") ?? combatRooms[0];
+    roomBudgets.set(target.id, (roomBudgets.get(target.id) ?? 0) + remaining);
+  }
+  return roomBudgets;
+}
+
+function spawnInRoom(
+  room: Room, budget: number, available: EnemyVariant[], spawns: EnemySpawn[], rng: SeededRNG,
+): void {
+  const minX = room.x + 1;
+  const maxX = room.x + room.w - 2;
+  const minY = room.y + 1;
+  const maxY = room.y + room.h - 2;
+  if (maxX <= minX || maxY <= minY) return;
+  let remaining = budget;
+  let attempts = 0;
+  while (remaining > 0 && attempts < 100) {
+    attempts++;
+    const variant = rng.pick(available);
+    if (variant.budget_cost > remaining) {
+      const cheaper = available.filter((v) => v.budget_cost <= remaining);
+      if (cheaper.length === 0) break;
+      const picked = rng.pick(cheaper);
+      spawns.push({ variantId: picked.id, x: rng.int(minX, maxX), y: rng.int(minY, maxY), roomId: room.id });
+      remaining -= picked.budget_cost;
+    } else {
+      spawns.push({ variantId: variant.id, x: rng.int(minX, maxX), y: rng.int(minY, maxY), roomId: room.id });
+      remaining -= variant.budget_cost;
+    }
+  }
+}
+
 function spawnEnemies(
   rooms: Room[],
   floorNumber: number,
@@ -421,83 +462,17 @@ function spawnEnemies(
   rng: SeededRNG
 ): EnemySpawn[] {
   const spawns: EnemySpawn[] = [];
-
-  // Filter variants available on this floor
   const available = enemyVariants.filter((v) => v.floor_min <= floorNumber);
   if (available.length === 0) return spawns;
-
-  // Collect combat and boss rooms
   const combatRooms = rooms.filter((r) => r.type === "combat" || r.type === "boss");
   if (combatRooms.length === 0) return spawns;
 
-  // Scale budget
   const totalBudget = Math.floor(enemyBudget * enemyScaling);
+  const roomBudgets = distributeBudget(combatRooms, totalBudget, rng);
 
-  // Distribute budget roughly evenly across combat rooms, with some variance
-  let remaining = totalBudget;
-  const roomBudgets: Map<number, number> = new Map();
-
-  const basePer = Math.floor(totalBudget / combatRooms.length);
   for (const room of combatRooms) {
-    const variance = rng.int(-Math.floor(basePer * 0.3), Math.floor(basePer * 0.3));
-    const budget = Math.max(1, basePer + variance);
-    roomBudgets.set(room.id, Math.min(budget, remaining));
-    remaining -= Math.min(budget, remaining);
-    if (remaining <= 0) break;
+    spawnInRoom(room, roomBudgets.get(room.id) ?? 0, available, spawns, rng);
   }
-
-  // Spread leftover to boss room if present
-  if (remaining > 0) {
-    const bossRoom = combatRooms.find((r) => r.type === "boss");
-    if (bossRoom) {
-      roomBudgets.set(bossRoom.id, (roomBudgets.get(bossRoom.id) ?? 0) + remaining);
-    } else {
-      // Spread to first combat room
-      const first = combatRooms[0];
-      roomBudgets.set(first.id, (roomBudgets.get(first.id) ?? 0) + remaining);
-    }
-  }
-
-  // Spawn enemies in each room
-  for (const room of combatRooms) {
-    let budget = roomBudgets.get(room.id) ?? 0;
-
-    // Usable spawn area (1-tile inset from room edges)
-    const minX = room.x + 1;
-    const maxX = room.x + room.w - 2;
-    const minY = room.y + 1;
-    const maxY = room.y + room.h - 2;
-
-    if (maxX <= minX || maxY <= minY) continue;
-
-    let attempts = 0;
-    while (budget > 0 && attempts < 100) {
-      attempts++;
-      const variant = rng.pick(available);
-      if (variant.budget_cost > budget) {
-        // Try to find a cheaper one
-        const cheaper = available.filter((v) => v.budget_cost <= budget);
-        if (cheaper.length === 0) break;
-        const picked = rng.pick(cheaper);
-        spawns.push({
-          variantId: picked.id,
-          x: rng.int(minX, maxX),
-          y: rng.int(minY, maxY),
-          roomId: room.id,
-        });
-        budget -= picked.budget_cost;
-      } else {
-        spawns.push({
-          variantId: variant.id,
-          x: rng.int(minX, maxX),
-          y: rng.int(minY, maxY),
-          roomId: room.id,
-        });
-        budget -= variant.budget_cost;
-      }
-    }
-  }
-
   return spawns;
 }
 
@@ -538,7 +513,7 @@ export function generateFloor(
   const rooms = placeRooms(leaves, rng);
 
   if (rooms.length === 0) {
-    throw new Error(`BSP produced zero rooms for seed="${seed}" floor=${floorNumber}`);
+    throw new Error(`BSP produced zero rooms for seed="${seed}" floor=${String(floorNumber)}`);
   }
 
   // Assign room types
@@ -627,15 +602,15 @@ if (import.meta.main) {
 
   const layout = generateFloor("test-seed-42", 1, testTemplate, testVariants);
 
-  console.log(`Floor ${layout.floorNumber} (${layout.width}x${layout.height})`);
+  console.log(`Floor ${String(layout.floorNumber)} (${String(layout.width)}x${String(layout.height)})`);
   console.log(`Seed: ${layout.seed}`);
-  console.log(`Rooms: ${layout.rooms.length}`);
+  console.log(`Rooms: ${String(layout.rooms.length)}`);
   for (const room of layout.rooms) {
-    console.log(`  Room ${room.id}: ${room.type} at (${room.x},${room.y}) ${room.w}x${room.h}`);
+    console.log(`  Room ${String(room.id)}: ${room.type} at (${String(room.x)},${String(room.y)}) ${String(room.w)}x${String(room.h)}`);
   }
-  console.log(`Corridors: ${layout.corridors.length}`);
-  console.log(`Enemy spawns: ${layout.enemySpawns.length}`);
-  console.log(`Tile grid size: ${layout.tileGrid.length} bytes`);
+  console.log(`Corridors: ${String(layout.corridors.length)}`);
+  console.log(`Enemy spawns: ${String(layout.enemySpawns.length)}`);
+  console.log(`Tile grid size: ${String(layout.tileGrid.length)} bytes`);
   console.log();
   console.log(floorToAscii(layout));
 
@@ -655,5 +630,5 @@ if (import.meta.main) {
     enemy_scaling: 1.8,
   };
   const layout3 = generateFloor("floor-3-seed", 3, template3, testVariants);
-  console.log(`\nFloor 3: ${layout3.width}x${layout3.height}, ${layout3.rooms.length} rooms, ${layout3.enemySpawns.length} enemies`);
+  console.log(`\nFloor 3: ${String(layout3.width)}x${String(layout3.height)}, ${String(layout3.rooms.length)} rooms, ${String(layout3.enemySpawns.length)} enemies`);
 }

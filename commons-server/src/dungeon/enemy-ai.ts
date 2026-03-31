@@ -1,8 +1,8 @@
 // Per-tick enemy AI for each behavior type.
 // Each enemy runs one AI update per game tick (16Hz).
 
-import { circleVsCircle, lineOfSight, wallSlide } from "./collision";
-import type { EnemyEntity, AoEZone } from "./combat";
+import { lineOfSight, wallSlide } from "./collision";
+import type { EnemyEntity } from "./combat";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -72,12 +72,37 @@ const SPITTER_PROJECTILE_RADIUS = 4;
 const SPITTER_PROJECTILE_LIFETIME = 64; // 4s
 const SPITTER_SPREAD = 0.15; // radians of random spread
 
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+/** Returns true if enemy has/gains aggro on target; updates aiState.aggrod. */
+function checkAggro(enemy: EnemyEntity, aiState: EnemyAIState, target: PlayerTarget): boolean {
+  const dx = target.x - enemy.x;
+  const dy = target.y - enemy.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (!aiState.aggrod) {
+    if (dist > AGGRO_RADIUS) return false;
+    aiState.aggrod = true;
+  } else if (dist > DEAGGRO_RADIUS) {
+    aiState.aggrod = false;
+    return false;
+  }
+  return true;
+}
+
 // ─── Main AI Update ─────────────────────────────────────────────────────────
 
 /**
  * Run one tick of AI for an enemy. Returns the action to execute.
  * The game loop applies the resulting movement/attack.
  */
+type BehaviorFn = (enemy: EnemyEntity, aiState: EnemyAIState, target: PlayerTarget, speed: number, tileGrid: Uint8Array, gw: number, gh: number, tick: number, tileSize: number) => EnemyAction;
+
+const BEHAVIOR_DISPATCH: Record<EnemyBehavior, BehaviorFn> = {
+  melee_chase: (e, _s, t, spd, tg, gw, gh, _tick, ts) => crawlerAI(e, t, spd, tg, gw, gh, ts),
+  ranged_pattern: (e, s, t, spd, tg, gw, gh, tick, ts) => spitterAI(e, s, t, spd, tg, gw, gh, tick, ts),
+  slow_charge: (e, s, t, spd, tg, gw, gh, tick, ts) => bruteAI(e, s, t, spd, tg, gw, gh, tick, ts),
+};
+
 export function updateEnemyAI(
   enemy: EnemyEntity,
   aiState: EnemyAIState,
@@ -86,43 +111,14 @@ export function updateEnemyAI(
   gridWidth: number,
   gridHeight: number,
   tick: number,
-  tileSize: number = 16,
+  tileSize = 16,
 ): EnemyAction {
   const idle: EnemyAction = { type: "idle", dx: 0, dy: 0 };
-
-  if (!enemy.alive) return idle;
-
-  // Stunned: skip all AI
-  if (enemy.stunUntilTick > tick) return idle;
-
-  // Find nearest alive player
+  if (!enemy.alive || enemy.stunUntilTick > tick) return idle;
   const target = findNearestPlayer(enemy, players);
-  if (!target) return idle;
-
-  // Aggro radius check: enemies idle until a player comes within range
-  const dx0 = target.x - enemy.x;
-  const dy0 = target.y - enemy.y;
-  const distToTarget = Math.sqrt(dx0 * dx0 + dy0 * dy0);
-
-  if (!aiState.aggrod) {
-    if (distToTarget > AGGRO_RADIUS) return idle;
-    aiState.aggrod = true;
-  } else if (distToTarget > DEAGGRO_RADIUS) {
-    aiState.aggrod = false;
-    return idle;
-  }
-
-  // Apply slow multiplier to effective speed
+  if (!target || !checkAggro(enemy, aiState, target)) return idle;
   const effectiveSpeed = enemy.stats.SPD * enemy.slowMultiplier;
-
-  switch (aiState.behavior) {
-    case "melee_chase":
-      return crawlerAI(enemy, target, effectiveSpeed, tileGrid, gridWidth, gridHeight, tileSize);
-    case "ranged_pattern":
-      return spitterAI(enemy, aiState, target, effectiveSpeed, tileGrid, gridWidth, gridHeight, tick, tileSize);
-    case "slow_charge":
-      return bruteAI(enemy, aiState, target, effectiveSpeed, tileGrid, gridWidth, gridHeight, tick, tileSize);
-  }
+  return BEHAVIOR_DISPATCH[aiState.behavior](enemy, aiState, target, effectiveSpeed, tileGrid, gridWidth, gridHeight, tick, tileSize);
 }
 
 // ─── Crawler (melee_chase) ──────────────────────────────────────────────────
@@ -223,6 +219,48 @@ function spitterAI(
 
 // ─── Brute (slow_charge) ────────────────────────────────────────────────────
 
+function bruteChargeAction(
+  enemy: EnemyEntity,
+  aiState: EnemyAIState,
+  speed: number,
+  tileGrid: Uint8Array,
+  gridWidth: number,
+  gridHeight: number,
+  tick: number,
+  tileSize: number,
+): EnemyAction {
+  const chargeSpeed = speed * BRUTE_CHARGE_SPEED_MULT;
+  const distanceTraveled = (tick - aiState.chargeStartTick) * chargeSpeed;
+  if (distanceTraveled >= BRUTE_CHARGE_DISTANCE) {
+    aiState.chargeStartTick = 0;
+    aiState.cooldownUntilTick = tick + BRUTE_COOLDOWN_TICKS;
+    return { type: "idle", dx: 0, dy: 0 };
+  }
+  const slid = wallSlide(enemy.x, enemy.y, aiState.chargeDx * chargeSpeed, aiState.chargeDy * chargeSpeed, enemy.radius, tileGrid, gridWidth, gridHeight, tileSize);
+  if (slid.x === enemy.x && slid.y === enemy.y) {
+    aiState.chargeStartTick = 0;
+    aiState.cooldownUntilTick = tick + BRUTE_COOLDOWN_TICKS;
+    return { type: "idle", dx: 0, dy: 0 };
+  }
+  return { type: "charge", dx: slid.x - enemy.x, dy: slid.y - enemy.y };
+}
+
+function bruteTelegraphAction(
+  aiState: EnemyAIState,
+  dx: number,
+  dy: number,
+  dist: number,
+  tick: number,
+): EnemyAction {
+  if (tick - aiState.telegraphStartTick >= BRUTE_TELEGRAPH_TICKS) {
+    aiState.telegraphStartTick = 0;
+    aiState.chargeStartTick = tick;
+    if (dist > 0) { aiState.chargeDx = dx / dist; aiState.chargeDy = dy / dist; }
+    return { type: "charge", dx: 0, dy: 0 };
+  }
+  return { type: "telegraph", dx: 0, dy: 0, telegraphTicks: tick - aiState.telegraphStartTick };
+}
+
 function bruteAI(
   enemy: EnemyEntity,
   aiState: EnemyAIState,
@@ -238,69 +276,16 @@ function bruteAI(
   const dy = target.y - enemy.y;
   const dist = Math.sqrt(dx * dx + dy * dy);
 
-  // Currently charging
-  if (aiState.chargeStartTick > 0) {
-    const chargeTicksElapsed = tick - aiState.chargeStartTick;
-    const chargeSpeed = speed * BRUTE_CHARGE_SPEED_MULT;
-    const distanceTraveled = chargeTicksElapsed * chargeSpeed;
-
-    if (distanceTraveled >= BRUTE_CHARGE_DISTANCE) {
-      // Charge complete — enter cooldown
-      aiState.chargeStartTick = 0;
-      aiState.cooldownUntilTick = tick + BRUTE_COOLDOWN_TICKS;
-      return { type: "idle", dx: 0, dy: 0 };
-    }
-
-    // Continue charging in locked direction
-    const chargeDx = aiState.chargeDx * chargeSpeed;
-    const chargeDy = aiState.chargeDy * chargeSpeed;
-    const slid = wallSlide(enemy.x, enemy.y, chargeDx, chargeDy, enemy.radius, tileGrid, gridWidth, gridHeight, tileSize);
-
-    // If wall-blocked, end charge early
-    if (slid.x === enemy.x && slid.y === enemy.y) {
-      aiState.chargeStartTick = 0;
-      aiState.cooldownUntilTick = tick + BRUTE_COOLDOWN_TICKS;
-      return { type: "idle", dx: 0, dy: 0 };
-    }
-
-    return { type: "charge", dx: slid.x - enemy.x, dy: slid.y - enemy.y };
-  }
-
-  // Currently telegraphing
-  if (aiState.telegraphStartTick > 0) {
-    if (tick - aiState.telegraphStartTick >= BRUTE_TELEGRAPH_TICKS) {
-      // Telegraph done — begin charge
-      aiState.telegraphStartTick = 0;
-      aiState.chargeStartTick = tick;
-      // Lock charge direction toward current target position
-      if (dist > 0) {
-        aiState.chargeDx = dx / dist;
-        aiState.chargeDy = dy / dist;
-      }
-      return { type: "charge", dx: 0, dy: 0 };
-    }
-    return { type: "telegraph", dx: 0, dy: 0, telegraphTicks: tick - aiState.telegraphStartTick };
-  }
-
-  // Cooldown after charge
-  if (tick < aiState.cooldownUntilTick) {
-    return { type: "idle", dx: 0, dy: 0 };
-  }
-
-  // In range — start telegraph
+  if (aiState.chargeStartTick > 0) return bruteChargeAction(enemy, aiState, speed, tileGrid, gridWidth, gridHeight, tick, tileSize);
+  if (aiState.telegraphStartTick > 0) return bruteTelegraphAction(aiState, dx, dy, dist, tick);
+  if (tick < aiState.cooldownUntilTick) return { type: "idle", dx: 0, dy: 0 };
   if (dist <= BRUTE_TRIGGER_RANGE) {
     aiState.telegraphStartTick = tick;
     return { type: "telegraph", dx: 0, dy: 0, telegraphTicks: 0 };
   }
-
-  // Out of range — approach slowly
-  const moveDx = (dx / dist) * speed * 0.6;
-  const moveDy = (dy / dist) * speed * 0.6;
-  const slid = wallSlide(enemy.x, enemy.y, moveDx, moveDy, enemy.radius, tileGrid, gridWidth, gridHeight, tileSize);
+  const slid = wallSlide(enemy.x, enemy.y, (dx / dist) * speed * 0.6, (dy / dist) * speed * 0.6, enemy.radius, tileGrid, gridWidth, gridHeight, tileSize);
   return { type: "move", dx: slid.x - enemy.x, dy: slid.y - enemy.y };
 }
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
 
 function findNearestPlayer(
   enemy: EnemyEntity,

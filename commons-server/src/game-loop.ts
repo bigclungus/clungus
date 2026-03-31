@@ -15,7 +15,7 @@ import type {
 } from "./protocol.ts";
 import { tickNpcs } from "./npc-ai.ts";
 import { persistState } from "./persistence.ts";
-import { isPixelWalkable, CHUNK_TILES_W, CHUNK_TILES_H, TILE_SIZE } from "./map.ts";
+import { isPixelWalkable } from "./map.ts";
 
 // Max distance a player can move per server tick in tile coords
 // Client moves ~1.8px/frame at 60fps, TILE=20px → ~5.4px/frame → ~0.27 tiles/frame
@@ -71,7 +71,8 @@ export function handleWarthogMessage(
         world.warthog.seats[emptySeat] = socketId;
       }
     }
-  } else if (msg.type === "warthog_leave") {
+  } else {
+    // warthog_leave
     const seatIndex = world.warthog.seats.indexOf(socketId);
     if (seatIndex >= 0) {
       world.warthog.seats[seatIndex] = null;
@@ -127,7 +128,7 @@ function validateAndApplyMove(player: PlayerState, msg: MoveMessage, world: Worl
   }
 
   // Server-side tile collision — dimensions match client (50×35 @ 20px)
-  const chunkKey = `${msg.chunkX}:${msg.chunkY}`;
+  const chunkKey = `${String(msg.chunkX)}:${String(msg.chunkY)}`;
   const chunk = world.chunks.get(chunkKey);
   if (chunk) {
     // Check all four corners of the player hitbox (12×12, centered) — matches client isBlocked
@@ -200,43 +201,51 @@ export function setForceSyncCallback(cb: ForceSyncCallback): void {
   forceSyncCb = cb;
 }
 
+function handleMoveMessage(socketId: string, player: PlayerState, msg: Extract<ClientToServerMessage, { type: "move" }>, world: WorldState): void {
+  const oldChunkX = player.chunkX;
+  const oldChunkY = player.chunkY;
+  validateAndApplyMove(player, msg, world);
+  if (player.chunkX !== oldChunkX || player.chunkY !== oldChunkY) {
+    chunkSubscriptionCb?.(socketId, oldChunkX, oldChunkY, player.chunkX, player.chunkY);
+  }
+}
+
+function handleChunkMessage(socketId: string, player: PlayerState, msg: Extract<ClientToServerMessage, { type: "chunk" }>): void {
+  const oldChunkX = player.chunkX;
+  const oldChunkY = player.chunkY;
+  player.chunkX = msg.chunkX;
+  player.chunkY = msg.chunkY;
+  if (player.chunkX !== oldChunkX || player.chunkY !== oldChunkY) {
+    chunkSubscriptionCb?.(socketId, oldChunkX, oldChunkY, player.chunkX, player.chunkY);
+  }
+}
+
+function isWarthogMessage(msg: ClientToServerMessage): msg is WarthogInputMessage | WarthogJoinMessage | WarthogLeaveMessage {
+  return msg.type === "warthog_input" || msg.type === "warthog_join" || msg.type === "warthog_leave";
+}
+
+function dispatchSimpleMsg(socketId: string, player: PlayerState, msg: ClientToServerMessage): boolean {
+  if (msg.type === "hop") { player.hopFrame = 1; return true; }
+  if (msg.type === "status") { player.isAway = msg.away; return true; }
+  if (msg.type === "resync") { forceSyncCb?.(socketId); return true; }
+  return false;
+}
+
+function dispatchClientMsg(socketId: string, player: PlayerState, msg: ClientToServerMessage, world: WorldState): void {
+  if (msg.type === "move") { handleMoveMessage(socketId, player, msg, world); return; }
+  if (msg.type === "chunk") { handleChunkMessage(socketId, player, msg); return; }
+  if (dispatchSimpleMsg(socketId, player, msg)) return;
+  if (isWarthogMessage(msg)) handleWarthogMessage(socketId, msg, world);
+  // worn_path is handled separately (async SQLite write)
+}
+
 export function handleClientMessage(
   socketId: string,
   msg: ClientToServerMessage,
   world: WorldState
 ): void {
   const player = world.players.get(socketId);
-  if (!player) return;
-
-  if (msg.type === "move") {
-    const oldChunkX = player.chunkX;
-    const oldChunkY = player.chunkY;
-    validateAndApplyMove(player, msg, world);
-    if (player.chunkX !== oldChunkX || player.chunkY !== oldChunkY) {
-      chunkSubscriptionCb?.(socketId, oldChunkX, oldChunkY, player.chunkX, player.chunkY);
-    }
-  } else if (msg.type === "hop") {
-    player.hopFrame = 1;
-  } else if (msg.type === "status") {
-    player.isAway = msg.away;
-  } else if (msg.type === "chunk") {
-    const oldChunkX = player.chunkX;
-    const oldChunkY = player.chunkY;
-    player.chunkX = msg.chunkX;
-    player.chunkY = msg.chunkY;
-    if (player.chunkX !== oldChunkX || player.chunkY !== oldChunkY) {
-      chunkSubscriptionCb?.(socketId, oldChunkX, oldChunkY, player.chunkX, player.chunkY);
-    }
-  } else if (msg.type === "resync") {
-    forceSyncCb?.(socketId);
-  } else if (
-    msg.type === "warthog_input" ||
-    msg.type === "warthog_join" ||
-    msg.type === "warthog_leave"
-  ) {
-    handleWarthogMessage(socketId, msg as WarthogInputMessage | WarthogJoinMessage | WarthogLeaveMessage, world);
-  }
-  // worn_path is handled separately (async SQLite write)
+  if (player) dispatchClientMsg(socketId, player, msg, world);
 }
 
 // ─── Stale player eviction ───────────────────────────────────────────────────
@@ -253,10 +262,10 @@ export function evictStalePlayers(world: WorldState, now: number): void {
 // ─── Delta snapshot logic ────────────────────────────────────────────────────
 
 // Per-chunk last-sent NPC/congress/warthog state for delta diffing
-const lastSentState: Map<
+const lastSentState = new Map<
   string,
   { npcs: NPCState[]; congress: { active: boolean }; warthog: WarthogState }
-> = new Map();
+>();
 
 function hasNpcsChanged(current: Map<string, NPCState>, last: NPCState[]): boolean {
   const currArray = Array.from(current.values());
@@ -264,7 +273,7 @@ function hasNpcsChanged(current: Map<string, NPCState>, last: NPCState[]): boole
   for (let i = 0; i < currArray.length; i++) {
     const c = currArray[i];
     const l = last[i];
-    if (!l || c.x !== l.x || c.y !== l.y || c.facing !== l.facing || c.blurb !== l.blurb) return true;
+    if (c.x !== l.x || c.y !== l.y || c.facing !== l.facing || c.blurb !== l.blurb) return true;
   }
   return false;
 }
@@ -374,7 +383,7 @@ export function runTick(world: WorldState, broadcast: BroadcastFn): void {
 function groupPlayersByChunk(players: Map<string, PlayerState>): Map<string, PlayerState[]> {
   const groups = new Map<string, PlayerState[]>();
   for (const player of players.values()) {
-    const key = `${player.chunkX}:${player.chunkY}`;
+    const key = `${String(player.chunkX)}:${String(player.chunkY)}`;
     const group = groups.get(key);
     if (group) {
       group.push(player);

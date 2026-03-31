@@ -82,7 +82,7 @@ async function callClaude(existingNames: string[]): Promise<GeneratedPersona> {
       throw new Error(`Anthropic API error ${response.status}: ${body.slice(0, 300)}`);
     }
 
-    const msg = (await response.json()) as { content: Array<{ type: string; text: string }> };
+    const msg = (await response.json()) as { content: { type: string; text: string }[] };
     return parsePersonaJson(msg.content[0].text);
   }
 
@@ -203,7 +203,7 @@ export function startSpawnSchedule(world: WorldState): void {
 
   // Initial spawn
   spawnWalker(world).catch((err) =>
-    console.error("[audition] initial spawn failed:", err)
+    { console.error("[audition] initial spawn failed:", err); }
   );
   scheduleNext();
 }

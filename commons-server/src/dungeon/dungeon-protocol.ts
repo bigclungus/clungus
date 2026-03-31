@@ -133,12 +133,12 @@ export interface DungeonMobProgressMessage {
 
 export interface DungeonMobSpritesMessage {
   type: "d_mob_sprites";
-  sprites: Array<{ entityName: string; spritePng: string }>;
+  sprites: { entityName: string; spritePng: string }[];
 }
 
 export interface DungeonMobRosterMessage {
   type: "d_mob_roster";
-  mobs: Array<{
+  mobs: {
     entityName: string;
     displayName: string;
     behavior: "melee_chase" | "ranged_pattern" | "slow_charge";
@@ -147,7 +147,7 @@ export interface DungeonMobRosterMessage {
     def: number;
     spd: number;
     flavorText: string | null;
-  }>;
+  }[];
 }
 
 export type DungeonServerMessage =
