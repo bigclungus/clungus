@@ -646,7 +646,7 @@ async def congress_evolve(session_id: str, topic: str, debate_summaries: list) -
                 activity.logger.warning(f"congress_evolve: failed to parse persona file {fname}: {_fe}")
     except Exception as _lse:
         activity.logger.error(f"congress_evolve: failed to scan agents dir: {_lse}")
-        asyncio.ensure_future(_inject_alert(f"congress_evolve: agents dir scan failed — {str(_lse)[:200]}"))
+        asyncio.create_task(_inject_alert(f"congress_evolve: agents dir scan failed — {str(_lse)[:200]}"))
 
     # Build probationary note to append to the evolution prompt
     probationary_in_debate = [

@@ -185,7 +185,7 @@ for path in glob.glob(f'{sessions_dir}/congress-*.json'):
             json.dump(d, open(path, 'w'), indent=2)
             print(f'Marked stale: {os.path.basename(path)}')
     except Exception as e:
-        pass
+        print(f'Warning: could not process {os.path.basename(path)}: {e}', file=sys.stderr)
 PYEOF
 
 # Clean up deliberating sessions whose Temporal workflow is no longer running.
