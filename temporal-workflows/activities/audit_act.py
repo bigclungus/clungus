@@ -9,7 +9,6 @@ inject endpoint (with an optional thread for long reports).
 import asyncio
 import json
 import logging
-import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -18,6 +17,7 @@ from temporalio import activity
 
 from .constants import DISCORD_API, HELLO_WORLD_SESSIONS_DIR, MAIN_CHANNEL_ID
 from .inject_act import _do_inject
+from .utils import DISCORD_TIMEOUT, _discord_headers
 
 logger = logging.getLogger(__name__)
 
@@ -236,8 +236,6 @@ async def post_audit_results(audit_text: str) -> None:
     to the main channel via inject. Otherwise post a short summary to main
     channel and full details to a Discord thread.
     """
-    bot_token = os.environ.get("DISCORD_BOT_TOKEN", "")
-
     header = "📋 **daily congress audit**\n"
     full_message = header + audit_text
 
@@ -267,9 +265,9 @@ async def post_audit_results(audit_text: str) -> None:
     # Post summary to main channel via inject; get message_id from the response
     msg_id = await _do_inject(summary_msg, MAIN_CHANNEL_ID, user="congress-audit", return_message_id=True)
 
-    if msg_id and bot_token:
+    if msg_id:
         # Create a thread off the summary message and post full audit there
-        await _post_to_thread(msg_id, audit_text, bot_token)
+        await _post_to_thread(msg_id, audit_text)
         activity.logger.info(
             "Posted summary (%d chars) to main channel, full audit to thread off msg %s",
             len(summary_msg),
@@ -278,9 +276,8 @@ async def post_audit_results(audit_text: str) -> None:
     else:
         # Fall back: split and post in chunks to main channel via inject
         activity.logger.warning(
-            "Could not create thread (msg_id=%s, token_present=%s) — chunking to main channel",
+            "Could not create thread (msg_id=%s) — chunking to main channel",
             msg_id,
-            bool(bot_token),
         )
         chunk_size = 1800
         chunks = [audit_text[i:i + chunk_size] for i in range(0, len(audit_text), chunk_size)]
@@ -289,16 +286,12 @@ async def post_audit_results(audit_text: str) -> None:
             await _do_inject(prefix + chunk, MAIN_CHANNEL_ID, user="congress-audit")
 
 
-async def _post_to_thread(anchor_message_id: str, content: str, bot_token: str) -> None:
+async def _post_to_thread(anchor_message_id: str, content: str) -> None:
     """
     Create a Discord thread off anchor_message_id and post content there.
     The thread channel_id equals the message_id for Discord threads.
     """
-    headers = {
-        "Authorization": f"Bot {bot_token}",
-        "Content-Type": "application/json",
-        "User-Agent": "BigClungus/1.0",
-    }
+    headers = {**_discord_headers(), "User-Agent": "BigClungus/1.0"}
 
     # Create thread off the anchor message
     thread_url = (
@@ -314,7 +307,7 @@ async def _post_to_thread(anchor_message_id: str, content: str, bot_token: str) 
             thread_url,
             json=thread_payload,
             headers=headers,
-            timeout=aiohttp.ClientTimeout(total=10),
+            timeout=DISCORD_TIMEOUT,
         ) as resp:
             if resp.status not in (200, 201):
                 text = await resp.text()
@@ -336,7 +329,7 @@ async def _post_to_thread(anchor_message_id: str, content: str, bot_token: str) 
                 msg_url,
                 json={"content": chunk},
                 headers=headers,
-                timeout=aiohttp.ClientTimeout(total=10),
+                timeout=DISCORD_TIMEOUT,
             ) as resp:
                 if resp.status not in (200, 201):
                     text = await resp.text()

@@ -15,6 +15,7 @@ from temporalio import activity
 
 from .constants import DISCORD_API, MAIN_CHANNEL_ID, TASKS_DIR
 from .inject_act import _do_inject
+from .utils import DISCORD_TIMEOUT, _discord_headers
 
 
 def _age_str(iso_str: str) -> str:
@@ -143,16 +144,11 @@ async def check_open_tasks() -> Optional[str]:
     except Exception as _e:
         activity.logger.warning(f"inject endpoint unavailable, falling back to Discord API: {_e}")
 
-    token = os.environ["DISCORD_BOT_TOKEN"]
     api_url = f"{DISCORD_API}/channels/{MAIN_CHANNEL_ID}/messages"
-    headers = {
-        "Authorization": f"Bot {token}",
-        "Content-Type": "application/json",
-    }
     payload = {"content": message}
 
-    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
-        async with session.post(api_url, headers=headers, json=payload) as resp:
+    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
+        async with session.post(api_url, headers=_discord_headers(), json=payload) as resp:
             if resp.status not in (200, 201):
                 body = await resp.text()
                 raise RuntimeError(f"Discord API error {resp.status}: {body}")

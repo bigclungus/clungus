@@ -42,12 +42,14 @@ from .constants import (
     HELLO_WORLD_SESSIONS_DIR,
     MAIN_CHANNEL_ID,
     META_REPO_PATH,
+    SESSION_MODE_MEME,
     SIGNAL_ABORT,
     SIGNAL_CONTINUE,
     SIGNAL_REFRAME,
     TASKS_DIR,
 )
 from .inject_act import _do_inject
+from .utils import DISCORD_TIMEOUT, _discord_headers
 
 logger = logging.getLogger(__name__)
 
@@ -236,19 +238,6 @@ def _update_persona_stats(file_path: str, verdict: str, date_str: str) -> None:
         activity.logger.warning(f"_update_persona_stats: failed to update {file_path}: {exc}")
 
 
-def _discord_headers() -> dict:
-    token = os.environ.get("DISCORD_BOT_TOKEN", "")
-    if not token:
-        raise ApplicationError(
-            "DISCORD_BOT_TOKEN is not set — cannot make Discord API calls",
-            non_retryable=True,
-        )
-    return {
-        "Authorization": f"Bot {token}",
-        "Content-Type": "application/json",
-    }
-
-
 async def _post_persona_verdict(persona_name: str, verdict: str, date_str: str) -> None:
     """Record a congress verdict in personas.db via PersonaService.PostVerdict.
 
@@ -328,7 +317,7 @@ async def congress_identities(mode: str = "standard") -> list:
     #   show_trial -> eligible, meme (moderator excluded; meme/retired allowed)
     if mode == "show_trial":
         ALLOWED_STATUSES = {"eligible", "meme"}
-    elif mode == "meme":
+    elif mode == SESSION_MODE_MEME:
         ALLOWED_STATUSES = {"eligible", "moderator", "meme"}
     else:
         ALLOWED_STATUSES = {"eligible", "moderator"}
@@ -366,7 +355,7 @@ async def congress_create_thread(channel_id: str, message_id: str, session_numbe
     """
     thread_name = f"Congress #{session_number}: {topic[:80]}"
     url = f"{DISCORD_API}/channels/{channel_id}/messages/{message_id}/threads"
-    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
+    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
         async with session.post(
             url,
             headers=_discord_headers(),
@@ -402,7 +391,7 @@ async def congress_announce(chat_id: str, topic: str) -> str:
     """Post a congress announcement to Discord and return the message ID."""
     url = f"{DISCORD_API}/channels/{chat_id}/messages"
     data = {"content": f"⚖️ **I'm calling a congress on:** {topic}\n*verdict will follow when the panel deliberates*"}
-    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
+    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
         async with session.post(url, json=data, headers=_discord_headers()) as r:
             if r.status not in (200, 201):
                 body = await r.text()
@@ -474,7 +463,7 @@ async def congress_debate(
         prior_lines = []
         try:
             fetch_url = f"{DISCORD_API}/channels/{thread_id}/messages?limit=50"
-            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as s:
+            async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as s:
                 async with s.get(fetch_url, headers=_discord_headers()) as resp:
                     if resp.status == 200:
                         messages = await resp.json()
@@ -524,7 +513,7 @@ async def congress_debate(
         truncated = response_text[:1900]
         post_content = f"**{name}**: {truncated}"
         try:
-            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as s:
+            async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as s:
                 async with s.post(post_url, headers=_discord_headers(), json={"content": post_content}) as resp:
                     if resp.status not in (200, 201):
                         body = await resp.text()
@@ -546,7 +535,7 @@ async def congress_debate(
 async def congress_post_separator(thread_id: str, text: str) -> None:
     """Post a separator/announcement message to a Discord thread."""
     url = f"{DISCORD_API}/channels/{thread_id}/messages"
-    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
+    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
         async with session.post(url, headers=_discord_headers(), json={"content": text}) as resp:
             if resp.status not in (200, 201):
                 body = await resp.text()
@@ -584,10 +573,10 @@ async def congress_finalize(
     if vote_summary:
         rest_payload["vote_summary"] = vote_summary
     rest_payload["mode"] = mode or "standard"
-    rest_payload["requires_ack"] = mode != "meme"
+    rest_payload["requires_ack"] = mode != SESSION_MODE_MEME
     if rest_payload and INTERNAL_TOKEN:
         rest_url = f"{CLUNGER_BASE_URL}/api/congress/sessions/{session_id}"
-        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as http_session:
+        async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as http_session:
             async with http_session.patch(
                 rest_url,
                 json=rest_payload,
@@ -1478,7 +1467,7 @@ async def congress_report(
         disagree_str = ", ".join(disagree_names) if disagree_names else "none"
         vote_suffix = f"\n📊 **Synthesis vote:** {tally} — agreed: {agree_str} | dissented: {disagree_str}"
 
-    meme_footer = "\n\n🃏 *meme session — no action items*" if mode == "meme" else ""
+    meme_footer = "\n\n🃏 *meme session — no action items*" if mode == SESSION_MODE_MEME else ""
 
     closing = f"⚖️ **Congress #{session_number} adjourned**\n**Verdict:** {verdict}\n\n🔗 {session_link}"
     closing += vote_suffix
@@ -1491,7 +1480,7 @@ async def congress_report(
         closing = closing[:1987] + "…"
 
     headers = _discord_headers()
-    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
+    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
         if thread_id:
             # Post full closing summary to the thread
             thread_url = f"{DISCORD_API}/channels/{thread_id}/messages"
@@ -1511,7 +1500,7 @@ async def congress_report(
                 raise RuntimeError(f"Discord main channel notice error {resp.status}: {body}")
 
     # Inject verdict back to BigClungus for self-implementation (skipped in meme mode)
-    if mode != "meme":
+    if mode != SESSION_MODE_MEME:
         try:
             inject_msg = (
                 f"📋 **Congress #{session_number} verdict ready for implementation.**\n"

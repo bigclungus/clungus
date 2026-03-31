@@ -3,6 +3,11 @@ Shared utility helpers for temporal-workflows activities.
 """
 import os
 
+import aiohttp
+from temporalio.exceptions import ApplicationError
+
+DISCORD_TIMEOUT = aiohttp.ClientTimeout(total=10)
+
 
 def get_openai_key() -> str:
     key = os.environ.get("OPENAI_API_KEY")
@@ -37,3 +42,16 @@ def get_discord_token() -> str:
     if not token:
         raise RuntimeError("DISCORD_BOT_TOKEN not available")
     return token
+
+
+def _discord_headers() -> dict:
+    token = get_discord_token()
+    if not token:
+        raise ApplicationError(
+            "DISCORD_BOT_TOKEN is not set — cannot make Discord API calls",
+            non_retryable=True,
+        )
+    return {
+        "Authorization": f"Bot {token}",
+        "Content-Type": "application/json",
+    }

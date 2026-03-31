@@ -25,3 +25,7 @@ HELLO_WORLD_SESSIONS_DIR = "/home/clungus/work/hello-world/sessions"
 
 # Discord REST API base URL
 DISCORD_API = "https://discord.com/api/v10"
+
+# Congress/trial session mode constants
+SESSION_MODE_MEME = "meme"
+SESSION_MODE_STANDARD = "standard"

@@ -1,26 +1,30 @@
 import asyncio
+import datetime as _dt
 import json
-import os
+from datetime import date
 
 import aiohttp
 from temporalio import activity
 
 from .constants import DISCORD_API
+from .utils import DISCORD_TIMEOUT, _discord_headers
+
+_PPSF_GOOD = 600
+_PPSF_FAIR = 750
+_COLOR_GREEN = 0x2ECC71
+_COLOR_GOLD = 0xF1C40F
+_COLOR_RED = 0xE74C3C
+_COLOR_NEUTRAL = 0x95A5A6
 
 
 @activity.defn
 async def post_discord_message(channel_id: str, content: str) -> str:
     """Post a message to Discord. Returns message ID."""
-    token = os.environ["DISCORD_BOT_TOKEN"]
     url = f"{DISCORD_API}/channels/{channel_id}/messages"
-    headers = {
-        "Authorization": f"Bot {token}",
-        "Content-Type": "application/json",
-    }
     payload = {"content": content}
 
-    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
-        async with session.post(url, headers=headers, json=payload) as resp:
+    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
+        async with session.post(url, headers=_discord_headers(), json=payload) as resp:
             if resp.status not in (200, 201):
                 body = await resp.text()
                 raise RuntimeError(f"Discord API error {resp.status}: {body}")
@@ -45,27 +49,24 @@ def _extract_neighborhood(address: str) -> str:
     """
     parts = [p.strip() for p in address.split(",")]
     if len(parts) >= 2:
-        # parts[1] is typically the city
         return parts[1]
     return parts[0] if parts else address
 
 
 def _price_per_sqft_tier(ppsf: float) -> tuple[str, int]:
     """Return (emoji, embed_color) for a price-per-sqft value."""
-    if ppsf < 600:
-        return "✅", 0x2ECC71   # green
-    elif ppsf <= 750:
-        return "🟡", 0xF1C40F  # gold
+    if ppsf < _PPSF_GOOD:
+        return "✅", _COLOR_GREEN
+    elif ppsf <= _PPSF_FAIR:
+        return "🟡", _COLOR_GOLD
     else:
-        return "💸", 0xE74C3C  # red
+        return "💸", _COLOR_RED
 
 
 def _days_on_market(list_date_str: str) -> int | None:
     """Return integer days on market, or None if list_date is unparseable."""
     if not list_date_str:
         return None
-    from datetime import date
-    import datetime as _dt
     for fmt in ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M:%S"):
         try:
             listed = _dt.datetime.strptime(list_date_str, fmt).date()
@@ -87,12 +88,7 @@ async def post_listings_summary(channel_id: str, listings: list) -> str:
     if not listings:
         raise ValueError("post_listings_summary called with empty listings list")
 
-    token = os.environ["DISCORD_BOT_TOKEN"]
     url = f"{DISCORD_API}/channels/{channel_id}/messages"
-    headers = {
-        "Authorization": f"Bot {token}",
-        "Content-Type": "application/json",
-    }
 
     # Discord allows up to 10 embeds per message; we cap at 3.
     embeds = []
@@ -111,19 +107,16 @@ async def post_listings_summary(channel_id: str, listings: list) -> str:
         price_str = _format_price(raw_price) if raw_price else "?"
         neighborhood = _extract_neighborhood(address)
 
-        # Days on market
         dom = _days_on_market(list_date_str)
         dom_display = f"📅 Day {dom}" if dom is not None else ""
 
-        # Stats bar: 🛏 X  🛁 Y  📐 Z sqft  🏷 $X.XXM  📅 Day N
         stats_parts = [f"🛏 {beds}", f"🛁 {baths}", f"📐 {sqft_display} sqft", f"🏷 {price_str}"]
         if dom_display:
             stats_parts.append(dom_display)
         stats_bar = "  ".join(stats_parts)
 
-        # Price-per-sqft verdict
         ppsf_line = ""
-        embed_color = 0x2ECC71  # default green
+        embed_color = _COLOR_NEUTRAL
         if raw_price and sqft_val:
             ppsf = raw_price / sqft_val
             tier_emoji, embed_color = _price_per_sqft_tier(ppsf)
@@ -152,8 +145,8 @@ async def post_listings_summary(channel_id: str, listings: list) -> str:
 
     payload = {"content": content, "embeds": embeds}
 
-    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
-        async with session.post(url, headers=headers, json=payload) as resp:
+    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
+        async with session.post(url, headers=_discord_headers(), json=payload) as resp:
             if resp.status not in (200, 201):
                 body = await resp.text()
                 raise RuntimeError(f"Discord API error {resp.status}: {body}")
@@ -169,7 +162,7 @@ async def post_listings_summary(channel_id: str, listings: list) -> str:
                 f"{DISCORD_API}/channels/{channel_id}/messages/{message_id}/reactions/{emoji}/@me"
             )
             for attempt in range(3):
-                async with session.put(reaction_url, headers=headers) as react_resp:
+                async with session.put(reaction_url, headers=_discord_headers()) as react_resp:
                     if react_resp.status in (200, 201, 204):
                         break
                     body = await react_resp.text()
