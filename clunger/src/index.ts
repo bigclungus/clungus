@@ -3356,8 +3356,7 @@ const server = http.createServer(async (req, res) => {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[clunger] unhandled error in request handler:", msg);
     if (!res.headersSent) {
-      res.writeHead(500, { "Content-Type": "text/plain" });
-      res.end("Internal Server Error");
+      jsonResponse(res, { error: msg }, 500);
     }
   }
 });
