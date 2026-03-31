@@ -24,7 +24,7 @@ const WALKER_HIT_H = 18;
 const AUDITION_BASE = "";
 
 function pollWalkers(state: WorldState): void {
-  fetch(`${AUDITION_BASE}/api/audition/walkers`)
+  fetch(`${AUDITION_BASE}/api/audition/walkers`, { signal: AbortSignal.timeout(8_000) })
     .then((r) => {
       if (!r.ok) throw new Error(`HTTP ${String(r.status)}`);
       return r.json();
@@ -133,6 +133,7 @@ function keepWalker(id: string): void {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id }),
+    signal: AbortSignal.timeout(8_000),
   })
     .then((r) => { if (!r.ok) throw new Error(`HTTP ${String(r.status)}`); })
     .catch((err: unknown) => {
@@ -147,6 +148,7 @@ function dismissWalker(id: string): void {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id }),
+    signal: AbortSignal.timeout(8_000),
   })
     .then((r) => { if (!r.ok) throw new Error(`HTTP ${String(r.status)}`); })
     .catch((err: unknown) => {
@@ -160,6 +162,7 @@ function pauseWalker(id: string): void {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id }),
+    signal: AbortSignal.timeout(8_000),
   })
     .then((r) => { if (!r.ok) throw new Error(`HTTP ${String(r.status)}`); })
     .catch((err: unknown) => {
@@ -173,6 +176,7 @@ function resumeWalker(id: string): void {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id }),
+    signal: AbortSignal.timeout(8_000),
   })
     .then((r) => { if (!r.ok) throw new Error(`HTTP ${String(r.status)}`); })
     .catch((err: unknown) => {

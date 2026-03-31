@@ -721,7 +721,7 @@
 
     /* ── Fetch ── */
     function fetchAndRender() {
-      fetch('/api/tasks?limit=50')
+      fetch('/api/tasks?limit=50', { signal: AbortSignal.timeout(8000) })
         .then(function(r) {
           if (!r.ok) throw new Error('HTTP ' + r.status);
           return r.json();
@@ -862,7 +862,8 @@
             fetch('/api/cockpit/restart', {
               method: 'POST',
               headers: {'Content-Type': 'application/json'},
-              body: JSON.stringify({service: serviceName})
+              body: JSON.stringify({service: serviceName}),
+              signal: AbortSignal.timeout(15000)
             })
             .then(function (r) {
               if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -894,7 +895,7 @@
     }
 
     function fetchServices() {
-      fetch('/api/cockpit/status')
+      fetch('/api/cockpit/status', { signal: AbortSignal.timeout(8000) })
         .then(function (r) {
           if (r.status === 403) {
             /* Not authed — hide widget silently */
@@ -960,7 +961,7 @@
     }
 
     function fetchMetrics() {
-      fetch('/api/cockpit/metrics')
+      fetch('/api/cockpit/metrics', { signal: AbortSignal.timeout(8000) })
         .then(function (r) {
           if (r.status === 401 || r.status === 403) {
             if (metricsWidget) metricsWidget.style.display = 'none';
@@ -1075,7 +1076,7 @@
     }
 
     function fetchContainers() {
-      fetch('/api/cockpit/containers')
+      fetch('/api/cockpit/containers', { signal: AbortSignal.timeout(8000) })
         .then(function (r) {
           if (r.status === 401 || r.status === 403) {
             if (containersWidget) containersWidget.style.display = 'none';

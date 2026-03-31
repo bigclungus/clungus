@@ -438,7 +438,7 @@
 
     async function fetchMetrics() {
       try {
-        const res = await fetch('/api/cockpit/metrics');
+        const res = await fetch('/api/cockpit/metrics', { signal: AbortSignal.timeout(8_000) });
         if (!res.ok) {
           if (res.status === 401 || res.status === 403) {
             window.location.href = '/auth/github?next=' + encodeURIComponent(window.location.href);
@@ -509,7 +509,7 @@
 
     async function fetchStatus() {
       try {
-        const res = await fetch('/api/cockpit/status');
+        const res = await fetch('/api/cockpit/status', { signal: AbortSignal.timeout(8_000) });
         if (!res.ok) {
           if (res.status === 401 || res.status === 403) {
             window.location.href = '/auth/github?next=' + encodeURIComponent(window.location.href);
@@ -569,7 +569,7 @@
       panel.classList.add('visible');
       panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       try {
-        const res = await fetch(`/api/cockpit/logs/${encodeURIComponent(service)}`);
+        const res = await fetch(`/api/cockpit/logs/${encodeURIComponent(service)}`, { signal: AbortSignal.timeout(15_000) });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         content.textContent = data.logs || '(no output)';
@@ -588,6 +588,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ service }),
+          signal: AbortSignal.timeout(15_000),
         });
         const data = await res.json();
         if (!res.ok) {
@@ -607,7 +608,7 @@
     // ── Containers ──
     async function fetchContainers() {
       try {
-        const res = await fetch('/api/cockpit/containers');
+        const res = await fetch('/api/cockpit/containers', { signal: AbortSignal.timeout(8_000) });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const containers = await res.json();
         renderContainers(containers);
@@ -641,7 +642,7 @@
     // ── Schedules ──
     async function fetchSchedules() {
       try {
-        const res = await fetch('/api/cockpit/schedules');
+        const res = await fetch('/api/cockpit/schedules', { signal: AbortSignal.timeout(8_000) });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const schedules = await res.json();
         renderSchedules(schedules);

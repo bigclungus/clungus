@@ -259,7 +259,7 @@ async function fetchLeaderboard(): Promise<void> {
   if (loadingEl) loadingEl.style.display = "block";
 
   try {
-    const res = await fetch("/api/clungiverse/leaderboard");
+    const res = await fetch("/api/clungiverse/leaderboard", { signal: AbortSignal.timeout(10_000) });
     if (!res.ok) {
       throw new Error(`HTTP ${String(res.status)}`);
     }
