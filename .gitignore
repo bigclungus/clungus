@@ -61,3 +61,11 @@ install.sh
 tmp-squash-instruction.txt
 *.patch
 plan.md
+giga-log.md
+commons-impl-spec.md
+clungiverse-plan.md
+clungiverse-mob-gen-plan.md
+commons-spec-research.md
+commons-spec.md
+start.sh
+tests/
