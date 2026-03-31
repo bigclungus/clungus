@@ -414,6 +414,7 @@ def _run_history_ingest_sync() -> str:
     total_new = 0
 
     for filepath in jsonl_files:
+        activity.heartbeat(f"processing {os.path.basename(filepath)}")
         current_size = os.path.getsize(filepath)
 
         row = conn.execute(

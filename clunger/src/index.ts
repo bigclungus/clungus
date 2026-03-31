@@ -1377,6 +1377,7 @@ async function restServeWalletBalance(res: http.ServerResponse): Promise<void> {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ jsonrpc: "2.0", method: "eth_getBalance", params: [address, "latest"], id: 1 }),
+      signal: AbortSignal.timeout(10_000),
     });
     const data = (await rpcRes.json()) as { result?: string; error?: { message: string } };
     if (data.error) { jsonResponse(res, { error: `RPC error: ${data.error.message}` }, 502); return; }
@@ -3113,6 +3114,7 @@ const server = http.createServer(async (req, res) => {
         method: req.method,
         headers: { "Content-Type": "application/json" },
         body: req.method !== "GET" ? (await readBody(req)).toString() : undefined,
+        signal: AbortSignal.timeout(10_000),
       }).catch(() => null);
       if (!upstreamRes) {
         res.writeHead(503, { "Content-Type": "application/json" });
@@ -3132,6 +3134,7 @@ const server = http.createServer(async (req, res) => {
         method: req.method,
         headers: { "Content-Type": "application/json" },
         body: req.method !== "GET" ? (await readBody(req)).toString() : undefined,
+        signal: AbortSignal.timeout(10_000),
       }).catch(() => null);
       if (!upstreamRes) {
         res.writeHead(503, { "Content-Type": "application/json" });
