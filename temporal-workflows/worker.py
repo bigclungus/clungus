@@ -46,7 +46,10 @@ from activities.congress_act import (
     congress_start,
     congress_vote,
 )
+from activities.bokoen1_ingest_act import run_bokoen1_ingest
+from activities.cost_watchdog_act import run_cost_watchdog
 from activities.discord_act import post_discord_message, post_listings_summary
+from activities.discord_ingest_act import run_discord_ingest
 from activities.drift_scan_act import run_drift_scan
 from activities.email_act import check_new_emails, inject_email_notification
 from activities.github_act import github_inject_discord_notification, github_post_ack_comment
@@ -54,6 +57,7 @@ from activities.healthcheck_act import check_sites, send_alert
 from activities.history_ingest_act import run_history_ingest
 from activities.http import rate_limited_get
 from activities.inject_act import inject_message
+from activities.persona_polls_act import run_create_persona_polls
 from activities.mob_gen_act import (
     check_mob_cache,
     generate_mob_sprite,
@@ -87,7 +91,10 @@ from activities.trial_act import (
     trial_verdict,
 )
 from workflows.audit_wf import CongressAuditWorkflow
+from workflows.bokoen1_ingest_wf import Bokoen1IngestWorkflow
 from workflows.congress_wf import CongressWorkflow
+from workflows.cost_watchdog_wf import CostWatchdogWorkflow
+from workflows.discord_ingest_wf import DiscordIngestWorkflow
 from workflows.drift_scan_wf import DriftScanWorkflow
 from workflows.email_wf import EmailPollerWorkflow
 from workflows.github_wf import GitHubWebhookWorkflow
@@ -96,6 +103,7 @@ from workflows.heartbeat_wf import HeartbeatWorkflow
 from workflows.history_ingest_wf import HistoryIngestWorkflow
 from workflows.listings import ListingsWorkflow, filter_new_listings
 from workflows.mob_gen_wf import MobGenerationWorkflow
+from workflows.persona_polls_wf import PersonaPollsWorkflow
 from workflows.nightowl_wf import NightOwlWorkflow
 from workflows.reminder_wf import OnceReminderWorkflow
 from workflows.session_wf import SessionWorkflow
@@ -271,6 +279,37 @@ async def main() -> None:
     except Exception as exc:
         logger.info("Drift scan cron already exists or scheduling skipped: %s", exc)
 
+    # Schedule cost watchdog — runs every 5 minutes
+    try:
+        handle = await client.start_workflow(
+            CostWatchdogWorkflow.run,
+            id="cost-watchdog-cron",
+            task_queue=TASK_QUEUE,
+            cron_schedule="*/5 * * * *",
+        )
+        logger.info(
+            "Cost watchdog cron scheduled: id=cost-watchdog-cron run_id=%s",
+            handle.result_run_id,
+        )
+    except Exception as exc:
+        logger.info("Cost watchdog cron already exists or scheduling skipped: %s", exc)
+
+    # Schedule daily Discord → Graphiti ingestion — runs at 02:00 UTC
+    try:
+        handle = await client.start_workflow(
+            DiscordIngestWorkflow.run,
+            7,  # ingest last 7 days
+            id="discord-ingest-daily",
+            task_queue=TASK_QUEUE,
+            cron_schedule="0 2 * * *",
+        )
+        logger.info(
+            "Discord ingest cron scheduled: id=discord-ingest-daily run_id=%s",
+            handle.result_run_id,
+        )
+    except Exception as exc:
+        logger.info("Discord ingest cron already exists or scheduling skipped: %s", exc)
+
     worker = Worker(
         client,
         task_queue=TASK_QUEUE,
@@ -294,6 +333,10 @@ async def main() -> None:
             DriftScanWorkflow,
             HistoryIngestWorkflow,
             MobGenerationWorkflow,
+            CostWatchdogWorkflow,
+            DiscordIngestWorkflow,
+            Bokoen1IngestWorkflow,
+            PersonaPollsWorkflow,
         ],
         activities=[
             rate_limited_get,
@@ -347,6 +390,10 @@ async def main() -> None:
             post_audit_results,
             run_drift_scan,
             run_history_ingest,
+            run_cost_watchdog,
+            run_discord_ingest,
+            run_bokoen1_ingest,
+            run_create_persona_polls,
             trial_alert_failure,
             trial_announce,
             trial_apply_retire_verdict,
