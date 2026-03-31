@@ -7,14 +7,6 @@
     "installLocation": "/home/clungus/.claude/plugins/marketplaces/claude-plugins-official",
     "lastUpdated": "2026-03-28T03:54:10.645Z"
   },
-  "discord-bridge-local": {
-    "source": {
-      "source": "directory",
-      "path": "/home/clungus/work/discord-bridge-marketplace"
-    },
-    "installLocation": "/home/clungus/work/discord-bridge-marketplace",
-    "lastUpdated": "2026-03-23T05:33:45.711Z"
-  },
   "local": {
     "source": {
       "source": "directory",
