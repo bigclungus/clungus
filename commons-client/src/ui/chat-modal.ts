@@ -1,10 +1,8 @@
 // ui/chat-modal.ts — NPC click-to-chat modal
 // Click an NPC on the canvas to open a chat prompt. Sends to /api/invoke-persona.
 
-import { WorldState, NPC } from "../state.ts";
+import { WorldState, NPC, NPC_HIT_RADIUS } from "../state.ts";
 import { getSpriteId, getWinner, getSpriteFn, NPC_DISPLAY_NAMES } from "../sprites.ts";
-
-const NPC_HIT_RADIUS = 14; // px — half-width of NPC hitbox for click detection
 
 // Modal DOM elements (created lazily on first initChatModal() call)
 let overlay: HTMLDivElement | null = null;

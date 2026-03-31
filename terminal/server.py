@@ -4,6 +4,7 @@ Live terminal stream server — streams /tmp/screenlog.txt to websocket clients,
 served alongside an xterm.js HTML page.
 """
 import asyncio
+import bisect as _bisect
 import glob
 import hashlib
 import hmac
@@ -2619,7 +2620,6 @@ def _build_discord_event_index() -> list[tuple[float, str]]:
     Called once per auto_meta_loop iteration so the expensive file reads happen
     only once, not once per task file.
     """
-    import bisect as _bisect
     jsonl_files = sorted(glob.glob(f'{_JSONL_DIR}/*.jsonl'), key=os.path.getmtime, reverse=True)
     events: list[tuple[float, str]] = []
     for jsonl_path in jsonl_files[:2]:
@@ -2642,7 +2642,6 @@ def _build_discord_event_index() -> list[tuple[float, str]]:
 
 def _requester_from_index(events: list[tuple[float, str]], task_ctime: float) -> str:
     """Given the pre-built event index, find the most recent Discord user before task_ctime."""
-    import bisect as _bisect
     if not events:
         return ''
     # Find rightmost event with ts < task_ctime
@@ -2667,11 +2666,13 @@ def _auto_meta_work() -> None:
                 continue
             agent_id = fname[:-7]
             meta_path = os.path.join(task_dir, agent_id + '.meta.json')
+            existing_desc = ''
             if os.path.exists(meta_path):
                 try:
                     data = json.load(open(meta_path))
                     if data.get('requester'):
                         continue  # Already has a requester
+                    existing_desc = data.get('description', '')
                 except (OSError, json.JSONDecodeError):
                     pass
             try:
@@ -2681,11 +2682,6 @@ def _auto_meta_work() -> None:
             requester = _requester_from_index(events, ctime)
             if not requester:
                 continue
-            existing_desc = ''
-            try:
-                existing_desc = json.load(open(meta_path)).get('description', '')
-            except (OSError, json.JSONDecodeError):
-                pass
             try:
                 with open(meta_path, 'w') as f:
                     json.dump({'description': existing_desc, 'requester': requester}, f)

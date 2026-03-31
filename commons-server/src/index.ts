@@ -449,6 +449,7 @@ async function handleClungiverseLobbyNotifyDiscord(lobbyId: string): Promise<Res
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bot ${discordToken}` },
       body: JSON.stringify({ content: `⚔️ **Adventurer** created a Clungiverse lobby! Join here: ${quickJoinUrl}` }),
+      signal: AbortSignal.timeout(8_000),
     });
     if (!discordRes.ok) {
       const errText = await discordRes.text();

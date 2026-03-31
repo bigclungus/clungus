@@ -437,6 +437,7 @@
     let prevNet = null;
 
     async function fetchMetrics() {
+      if (document.hidden) return;
       try {
         const res = await fetch('/api/cockpit/metrics', { signal: AbortSignal.timeout(8_000) });
         if (!res.ok) {
@@ -500,7 +501,7 @@
 
         updateTimestamp();
       } catch (err) {
-        // silent on metrics — don't clobber status bar
+        showToast(`metrics: ${err.message}`, true);
       }
     }
 
@@ -508,6 +509,7 @@
     let activeLogService = null;
 
     async function fetchStatus() {
+      if (document.hidden) return;
       try {
         const res = await fetch('/api/cockpit/status', { signal: AbortSignal.timeout(8_000) });
         if (!res.ok) {
@@ -521,7 +523,7 @@
         renderServices(services);
         updateTimestamp();
       } catch (err) {
-        // ignore
+        showToast(`status: ${err.message}`, true);
       }
     }
 
@@ -607,6 +609,7 @@
 
     // ── Containers ──
     async function fetchContainers() {
+      if (document.hidden) return;
       try {
         const res = await fetch('/api/cockpit/containers', { signal: AbortSignal.timeout(8_000) });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -641,6 +644,7 @@
 
     // ── Schedules ──
     async function fetchSchedules() {
+      if (document.hidden) return;
       try {
         const res = await fetch('/api/cockpit/schedules', { signal: AbortSignal.timeout(8_000) });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -690,7 +694,7 @@
       setInterval(fetchMetrics, METRICS_INTERVAL);
       setInterval(fetchStatus, SERVICES_INTERVAL);
       setInterval(fetchContainers, SERVICES_INTERVAL);
-      setInterval(fetchSchedules, 60000);
+      setInterval(fetchSchedules, 60_000);
     });
   </script>
 </body>

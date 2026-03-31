@@ -122,7 +122,7 @@ function gameLoop(timestamp: number): void {
 // Fetch GitHub username from auth, fall back to "Adventurer"
 async function fetchUsername(): Promise<string> {
   try {
-    const res = await fetch('/api/me');
+    const res = await fetch('/api/me', { signal: AbortSignal.timeout(8_000) });
     if (res.ok) {
       const data = await res.json() as { username?: string };
       if (data.username) return data.username;
@@ -169,6 +169,7 @@ async function joinExistingLobby(id: string): Promise<string | null> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, name: userName }),
+      signal: AbortSignal.timeout(8_000),
     });
     if (!joinRes.ok) {
       const err = await joinRes.json().catch(() => ({})) as { error?: string };
@@ -192,6 +193,7 @@ async function createAndJoinLobby(): Promise<string> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId, name: userName }),
+    signal: AbortSignal.timeout(8_000),
   });
   if (!createRes.ok) {
     const err = await createRes.json().catch(() => ({})) as { error?: string };
@@ -207,6 +209,7 @@ async function createAndJoinLobby(): Promise<string> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId, name: userName }),
+    signal: AbortSignal.timeout(8_000),
   });
   if (!joinRes.ok) {
     const err = await joinRes.json().catch(() => ({})) as { error?: string };

@@ -20,11 +20,8 @@ const WALKER_HIT_H = 18;
 // Polling is owned here via setInterval — the game loop does NOT call pollWalkers
 // per frame. This keeps scheduling in one place.
 
-// Audition service URL — proxied via clunger at /api/audition/*
-const AUDITION_BASE = "";
-
 function pollWalkers(state: WorldState): void {
-  fetch(`${AUDITION_BASE}/api/audition/walkers`, { signal: AbortSignal.timeout(8_000) })
+  fetch("/api/audition/walkers", { signal: AbortSignal.timeout(8_000) })
     .then((r) => {
       if (!r.ok) throw new Error(`HTTP ${String(r.status)}`);
       return r.json();
@@ -129,7 +126,7 @@ function escapeHtml(s: string): string {
 
 function keepWalker(id: string): void {
   hideCard();
-  fetch(`${AUDITION_BASE}/api/audition/keep`, {
+  fetch("/api/audition/keep", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id }),
@@ -144,7 +141,7 @@ function keepWalker(id: string): void {
 
 function dismissWalker(id: string): void {
   hideCard();
-  fetch(`${AUDITION_BASE}/api/audition/dismiss`, {
+  fetch("/api/audition/dismiss", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id }),
@@ -158,7 +155,7 @@ function dismissWalker(id: string): void {
 }
 
 function pauseWalker(id: string): void {
-  fetch(`${AUDITION_BASE}/api/audition/pause`, {
+  fetch("/api/audition/pause", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id }),
@@ -172,7 +169,7 @@ function pauseWalker(id: string): void {
 }
 
 function resumeWalker(id: string): void {
-  fetch(`${AUDITION_BASE}/api/audition/resume`, {
+  fetch("/api/audition/resume", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id }),

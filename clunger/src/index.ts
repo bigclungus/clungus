@@ -49,6 +49,7 @@ import { congressServiceImpl, activeStreams } from "./services/congress.js";
 import { PostDebateRequestSchema } from "../gen/congress/v1/congress_pb.js";
 import { create } from "@bufbuild/protobuf";
 import { isInternalRequest } from "./auth.js";
+import { injectDiscord } from "./utils/inject.js";
 
 const PORT = parseInt(process.env.PORT ?? "8081");
 
@@ -2197,21 +2198,13 @@ function getWinner(counts: Record<string, number>, quorum = QUORUM): string | nu
 }
 
 async function notifySpriteTie(pollId: string): Promise<void> {
-  const INJECT_URL = "http://127.0.0.1:8085/webhooks/bigclungus-main";
-  const INJECT_HEADERS = { "Content-Type": "application/json" };
   try {
     // Human-readable alert
-    const alertResp = await fetch(INJECT_URL, {
-      method: "POST",
-      headers: INJECT_HEADERS,
-      body: JSON.stringify({
-        content: `🎨 Three-way tie on ${pollId}! Votes reset. Regenerating 3 new sprite variants...`,
-        chat_id: "1485343472952148008",
-        user: "vote-system",
-      }),
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!alertResp.ok) console.error("[vote] notifySpriteTie alert failed:", alertResp.status);
+    await injectDiscord(
+      `🎨 Three-way tie on ${pollId}! Votes reset. Regenerating 3 new sprite variants...`,
+      undefined,
+      "vote-system",
+    );
     // Spawn regen script directly — no Discord trigger parsing needed
     // pollId is e.g. "sprite-critic"; strip the "sprite-" prefix to get the persona slug
     const persona = pollId.replace(/^sprite-/, "");
@@ -2226,28 +2219,18 @@ async function notifySpriteTie(pollId: string): Promise<void> {
       if (code !== 0) {
         console.error(`[vote] regen-sprites failed (exit ${code}) for ${persona}:\n${err}`);
         // Notify Discord of failure
-        await fetch(INJECT_URL, {
-          method: "POST",
-          headers: INJECT_HEADERS,
-          body: JSON.stringify({
-            content: `❌ Sprite regen failed for ${pollId} (exit ${code}): ${err.slice(0, 300)}`,
-            chat_id: "1485343472952148008",
-            user: "vote-system",
-          }),
-          signal: AbortSignal.timeout(10_000),
-        }).catch((e) => console.error("[vote] regen failure notify error:", e));
+        await injectDiscord(
+          `❌ Sprite regen failed for ${pollId} (exit ${code}): ${err.slice(0, 300)}`,
+          undefined,
+          "vote-system",
+        ).catch((e) => console.error("[vote] regen failure notify error:", e));
       } else {
         console.log(`[vote] regen-sprites done for ${persona}:\n${out}`);
-        await fetch(INJECT_URL, {
-          method: "POST",
-          headers: INJECT_HEADERS,
-          body: JSON.stringify({
-            content: `✅ New ${persona} sprite variants are live — vote again!`,
-            chat_id: "1485343472952148008",
-            user: "vote-system",
-          }),
-          signal: AbortSignal.timeout(10_000),
-        }).catch((e) => console.error("[vote] regen success notify error:", e));
+        await injectDiscord(
+          `✅ New ${persona} sprite variants are live — vote again!`,
+          undefined,
+          "vote-system",
+        ).catch((e) => console.error("[vote] regen success notify error:", e));
       }
     });
   } catch (e) {
@@ -2257,17 +2240,11 @@ async function notifySpriteTie(pollId: string): Promise<void> {
 
 async function notifyVoteWinner(pollId: string, option: string, count: number): Promise<void> {
   try {
-    const resp = await fetch("http://127.0.0.1:8085/webhooks/bigclungus-main", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        content: `🗳️ vote/${pollId}: **${option}** wins (${count} votes) — queued for implementation`,
-        chat_id: "1485343472952148008",
-        user: "vote-system",
-      }),
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!resp.ok) console.error("[vote] notifyVoteWinner failed:", resp.status);
+    await injectDiscord(
+      `🗳️ vote/${pollId}: **${option}** wins (${count} votes) — queued for implementation`,
+      undefined,
+      "vote-system",
+    );
   } catch (e) {
     console.error("[vote] notifyVoteWinner error:", e);
   }
