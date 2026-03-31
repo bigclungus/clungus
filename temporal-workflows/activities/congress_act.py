@@ -1127,11 +1127,13 @@ async def congress_select_seats(topic: str, debaters: list, session_id: str) -> 
                         removed = True
                         break
                 if not removed:
-                    # No Claude seat to evict — stop trying to enforce further
-                    activity.logger.warning(
-                        f"congress_select_seats: no Claude seat available to evict for provider '{provider}'; skipping"
+                    # No Claude seat to evict — hard abort per provider diversity requirement
+                    raise ApplicationError(
+                        f"Congress aborted: provider '{provider}' has eligible personas "
+                        f"({[d.get('name') for d in pool]}) but no Claude seat can be evicted "
+                        f"to guarantee representation. Increase MAX_DEBATERS or reduce provider count.",
+                        non_retryable=True,
                     )
-                    break
                 enforced.append(representative)
                 activity.logger.info(
                     f"congress_select_seats: seated {rep_name} to represent provider '{provider}'"
@@ -1140,6 +1142,8 @@ async def congress_select_seats(topic: str, debaters: list, session_id: str) -> 
             selected = enforced
 
         return selected
+    except ApplicationError:
+        raise
     except Exception as e:
         activity.logger.warning(f"congress_select_seats failed ({e}), using full roster")
         return debaters
