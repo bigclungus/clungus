@@ -16,7 +16,7 @@ import requests
 
 from temporalio import activity
 
-from .constants import MAIN_MAIN_CHANNEL_ID, DISCORD_API
+from .constants import MAIN_CHANNEL_ID, DISCORD_API
 from .utils import get_discord_token, get_openai_key
 
 logger = logging.getLogger(__name__)
