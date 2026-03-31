@@ -784,7 +784,9 @@ function buildGeneratorPage(base: string): string {
           document.getElementById("duration").value = data.duration;
           document.getElementById("duration-val").textContent = data.duration + " min";
         }
-      } catch {}
+      } catch (e) {
+        console.warn("[workout] loadPrefs failed:", e);
+      }
     }
 
     async function savePrefs() {
