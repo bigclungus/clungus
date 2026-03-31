@@ -15,6 +15,7 @@ from .constants import DISCORD_API, MAIN_CHANNEL_ID
 
 SITES = [
     {"url": "https://clung.us", "ok_codes": {200}},
+    {"url": "https://labs.clung.us", "ok_codes": {200}},
     {"url": "https://terminal.clung.us", "ok_codes": {200, 302}},
     {"url": "https://temporal.clung.us", "ok_codes": {200, 302}},
 ]

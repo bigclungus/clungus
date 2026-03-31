@@ -327,6 +327,23 @@
     </table>
   </div>
 
+  <!-- Schedules section -->
+  <div class="section">
+    <div class="section-label">schedules</div>
+    <table>
+      <thead>
+        <tr>
+          <th>id</th>
+          <th>next run</th>
+          <th>notes</th>
+        </tr>
+      </thead>
+      <tbody id="schedule-tbody">
+        <tr><td colspan="3" class="dim" style="padding:16px 10px">loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
   <div class="toast" id="toast"></div>
 
   <script>
@@ -621,6 +638,42 @@
       }
     }
 
+    // ── Schedules ──
+    async function fetchSchedules() {
+      try {
+        const res = await fetch('/api/cockpit/schedules');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const schedules = await res.json();
+        renderSchedules(schedules);
+      } catch (err) {
+        const tbody = document.getElementById('schedule-tbody');
+        tbody.innerHTML = `<tr><td colspan="3" class="dim" style="padding:12px 10px">error: ${err.message}</td></tr>`;
+      }
+    }
+
+    function renderSchedules(schedules) {
+      const tbody = document.getElementById('schedule-tbody');
+      if (schedules.error) {
+        tbody.innerHTML = `<tr><td colspan="3" class="dim" style="padding:12px 10px">error: ${schedules.error}</td></tr>`;
+        return;
+      }
+      if (!schedules.length) {
+        tbody.innerHTML = `<tr><td colspan="3" class="dim" style="padding:12px 10px">no schedules</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = '';
+      for (const s of schedules) {
+        const tr = document.createElement('tr');
+        const nextRun = s.nextRunTime ? new Date(s.nextRunTime).toLocaleString() : '—';
+        tr.innerHTML = `
+          <td style="font-family:monospace;font-size:0.8rem">${s.scheduleId || '—'}</td>
+          <td style="font-size:0.75rem;color:#aaa">${nextRun}</td>
+          <td style="font-size:0.72rem;color:#888">${s.state || '—'}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
     // ── Timestamp ──
     function updateTimestamp() {
       document.getElementById('last-updated').textContent =
@@ -632,9 +685,11 @@
       fetchMetrics();
       fetchStatus();
       fetchContainers();
+      fetchSchedules();
       setInterval(fetchMetrics, METRICS_INTERVAL);
       setInterval(fetchStatus, SERVICES_INTERVAL);
       setInterval(fetchContainers, SERVICES_INTERVAL);
+      setInterval(fetchSchedules, 60000);
     });
   </script>
 </body>

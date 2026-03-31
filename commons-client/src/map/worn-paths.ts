@@ -8,12 +8,14 @@
 // Visit thresholds (matching V1):
 //   >= 10 visits → "worn" (slight dark overlay)
 //   >= 30 visits → "dirt" (light brown overlay)
+//   >= 100 visits → "cobblestone" (stone-grey overlay)
 
 import { TILE, ROWS, COLS } from "../state.ts";
 
 const STORAGE_KEY = "commons_worn_tiles";
 const WORN_THRESHOLD = 10;
 const DIRT_THRESHOLD = 30;
+const COBBLESTONE_THRESHOLD = 100;
 const SAVE_EVERY_N_VISITS = 30;
 
 // Tile counts for the current session (keyed "tileX,tileY" in chunk coords)
@@ -88,8 +90,9 @@ export function recordTileVisit(tileX: number, tileY: number): void {
   }
 }
 
-export function getWornLevel(tileX: number, tileY: number): 0 | 1 | 2 {
+export function getWornLevel(tileX: number, tileY: number): 0 | 1 | 2 | 3 {
   const count = store.counts[`${String(tileX)},${String(tileY)}`] ?? 0;
+  if (count >= COBBLESTONE_THRESHOLD) return 3;
   if (count >= DIRT_THRESHOLD) return 2;
   if (count >= WORN_THRESHOLD) return 1;
   return 0;
@@ -112,7 +115,10 @@ export function drawWornPaths(
       const x = tx * TILE;
       const y = ty * TILE;
 
-      if (level === 2) {
+      if (level === 3) {
+        // Cobblestone: stone-grey overlay
+        ctx.fillStyle = "rgba(120,110,90,0.65)";
+      } else if (level === 2) {
         // Dirt: light brown overlay
         ctx.fillStyle = "rgba(107,76,24,0.53)";
       } else {

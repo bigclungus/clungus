@@ -923,6 +923,45 @@ function restCockpitContainers(res: http.ServerResponse): void {
   jsonResponse(res, cachedContainers ?? []);
 }
 
+// ── Cockpit: GET /api/cockpit/schedules ───────────────────────────────────────
+interface CachedSchedule { scheduleId: string; nextRunTime: string | null; state: string | null }
+let cachedSchedules: CachedSchedule[] | null = null;
+let cachedSchedulesError: string | null = null;
+function refreshSchedules(): void {
+  const r = spawnSync(
+    "temporal",
+    ["schedule", "list", "--namespace", "default", "--output", "json"],
+    { encoding: "utf-8", timeout: 5000 }
+  );
+  if (r.error) { cachedSchedulesError = String(r.error); return; }
+  if (r.status !== 0) { cachedSchedulesError = r.stderr?.trim() || `exit ${String(r.status)}`; return; }
+  cachedSchedulesError = null;
+  const schedules: CachedSchedule[] = [];
+  try {
+    const parsed: unknown = JSON.parse(r.stdout ?? "[]");
+    const items = Array.isArray(parsed) ? parsed : [];
+    for (const item of items as Record<string, unknown>[]) {
+      const id = (item["scheduleId"] as string | undefined) ?? (item["id"] as string | undefined) ?? "";
+      const info = (item["info"] as Record<string, unknown> | undefined) ?? {};
+      const nextRuns = info["nextActionTimes"] as string[] | undefined;
+      const nextRunTime = (nextRuns && nextRuns.length > 0) ? nextRuns[0] : null;
+      const state = (info["state"] as Record<string, unknown> | undefined)?.["notes"] as string | null ?? null;
+      schedules.push({ scheduleId: id, nextRunTime, state });
+    }
+  } catch { cachedSchedulesError = "failed to parse temporal schedule list output"; return; }
+  cachedSchedules = schedules;
+}
+refreshSchedules();
+setInterval(refreshSchedules, 60000);
+
+function restCockpitSchedules(res: http.ServerResponse): void {
+  if (cachedSchedulesError !== null) {
+    jsonResponse(res, { error: cachedSchedulesError }, 500);
+    return;
+  }
+  jsonResponse(res, cachedSchedules ?? []);
+}
+
 function restServeAgents(res: http.ServerResponse): void {
   interface VerdictCounts { retained: number; evolved: number; retired: number; lastVerdict: string }
   const verdictHistory = new Map<string, VerdictCounts>();
@@ -3237,6 +3276,12 @@ const server = http.createServer(async (req, res) => {
   if (pathname === "/api/cockpit/containers" && req.method === "GET") {
     if (!restIsAuthed(req)) { jsonResponse(res, { error: "Forbidden: authentication required" }, 403); return; }
     restCockpitContainers(res);
+    return;
+  }
+
+  if (pathname === "/api/cockpit/schedules" && req.method === "GET") {
+    if (!restIsAuthed(req)) { jsonResponse(res, { error: "Forbidden: authentication required" }, 403); return; }
+    restCockpitSchedules(res);
     return;
   }
 
