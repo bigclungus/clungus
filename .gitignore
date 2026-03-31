@@ -46,3 +46,18 @@ kokoro-models/
 *.onnx
 *.jsonl
 bigclungus-meta/
+
+# Pruned stale directories
+irc-bridge/
+1998/
+1998-archived/
+discord-plugin/
+discord-server/
+local-marketplace/
+discord-bridge-marketplace/
+
+# Pruned stale files
+install.sh
+tmp-squash-instruction.txt
+*.patch
+plan.md
