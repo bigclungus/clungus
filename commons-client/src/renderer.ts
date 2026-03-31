@@ -210,7 +210,7 @@ function drawNPCBlurb(
   const remaining = npc.blurbExpiry - now;
   const fadeMs = 1200;
   const alpha = remaining < fadeMs ? remaining / fadeMs : 1.0;
-  const bubbleY = y - 14 + hopOff - (hovered ? 12 : 0);
+  const bubbleY = npc.displayY - 14 + hopOff - (hovered ? 12 : 0);
   drawSpeechBubble(ctx, x, bubbleY, npc.blurb, alpha);
 }
 
