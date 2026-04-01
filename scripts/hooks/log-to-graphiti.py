@@ -3,8 +3,8 @@
 PostToolUse hook: log BigClungus's outgoing Discord replies to Graphiti memory.
 
 Receives a JSON blob on stdin from Claude Code's hook system with:
-  tool_name   - should be mcp__plugin_discord_discord__reply
-  tool_input  - dict with at least: text, chat_id
+  tool_name   - mcp__omni__omni_dispatch (omnichannel dispatch tool)
+  tool_input  - dict with: channelId, capability, args (contains text), replyHandle
   tool_result - the tool's return value (may contain message id, etc.)
 
 Adds an episode to Graphiti with group_id "discord_history" so the bot's own
@@ -21,7 +21,7 @@ from pathlib import Path
 
 # ── logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
-    level=logging.WARNING,
+    level=logging.INFO,
     format='%(asctime)s log-to-graphiti %(levelname)s: %(message)s',
     stream=sys.stderr,
 )
@@ -86,19 +86,23 @@ def main() -> None:
         sys.exit(0)
 
     tool_input = payload.get('tool_input') or {}
-    text = tool_input.get('text', '')
-    chat_id = str(tool_input.get('chat_id', ''))
+
+    # omni_dispatch nests the message text inside tool_input.args
+    args = tool_input.get('args') or {}
+    text = args.get('text', '')
+    chat_id = str(tool_input.get('channelId', ''))
 
     if not text:
-        # Nothing useful to log
+        logger.info('No text in payload args, skipping (capability=%s)', tool_input.get('capability'))
         sys.exit(0)
 
     try:
         asyncio.run(add_episode(text, chat_id))
+        logger.info('Logged reply to Graphiti (channel=%s, %d chars)', chat_id, len(text))
     except Exception as exc:
-        # Fire-and-forget: never crash the hook chain
-        logger.error('Graphiti ingestion failed: %s', exc)
-        sys.exit(0)
+        # Log the full error with traceback so failures are diagnosable
+        logger.error('Graphiti ingestion failed: %s', exc, exc_info=True)
+        sys.exit(1)
 
 
 if __name__ == '__main__':

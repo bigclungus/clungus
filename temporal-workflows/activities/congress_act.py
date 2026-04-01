@@ -124,66 +124,117 @@ def _save_context_cache(brief: str, topic: str) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _sanitize_fulltext_query(topic_text: str) -> str:
+    """Build a sanitized fulltext query string from topic text.
+
+    Extracts meaningful words (>3 chars), strips punctuation, and joins them
+    with spaces for FalkorDB's RedisSearch-style fulltext indexing.
+    Hyphenated words are split into their components.
+    Returns empty string if no usable keywords remain.
+    """
+    words = [w.strip(".,!?\"'()[]{}:;@#$%^&*~`<>/\\|") for w in topic_text.split()]
+    # Split hyphenated words into components
+    expanded: list[str] = []
+    for w in words:
+        if "-" in w:
+            expanded.extend(part for part in w.split("-") if part)
+        else:
+            expanded.append(w)
+    # Filter to words >3 chars that don't contain special RedisSearch chars
+    keywords = [w for w in expanded if len(w) > 3 and not any(c in w for c in "+-@~")][:10]
+    return " ".join(keywords)
+
+
 def _query_graphiti_facts(topic_text: str) -> list:
-    """Query FalkorDB for Entity and Episodic facts relevant to topic_text.
+    """Query FalkorDB for facts relevant to topic_text using fulltext search.
+
+    Uses FalkorDB's fulltext indexes (RedisSearch-backed) on Entity nodes,
+    RELATES_TO edges, and Episodic nodes for relevance-ranked retrieval
+    instead of brute-force CONTAINS matching.
 
     Returns a list of raw fact strings (deduped, capped at 10).
     Caller is responsible for formatting. Returns [] on any failure.
     """
+    query_str = _sanitize_fulltext_query(topic_text)
+    if not query_str:
+        logger.warning("graphiti query: no usable keywords from topic: %s", topic_text[:80])
+        return []
+
     try:
         graph = _falkordb_client.select_graph("discord_history")
-
-        words = [w.strip(".,!?\"'()[]") for w in topic_text.split()]
-        keywords = [w for w in words if len(w) > 3][:6]
-
-        raw: list = []
-
-        for keyword in keywords:
-            try:
-                result = graph.query(
-                    "MATCH (n:Entity) WHERE toLower(n.name) CONTAINS toLower($kw) "
-                    "OR toLower(n.summary) CONTAINS toLower($kw) "
-                    "RETURN n.name, n.summary LIMIT 3",
-                    {"kw": keyword},
-                )
-                for row in result.result_set:
-                    name = (row[0] or "").strip()
-                    summary = (row[1] or "").strip()
-                    if name and summary:
-                        raw.append(f"**{name}**: {summary[:300]}")
-            except Exception:
-                pass
-
-        for keyword in keywords[:3]:
-            try:
-                result = graph.query(
-                    "MATCH (n:Episodic) WHERE toLower(n.content) CONTAINS toLower($kw) RETURN n.content LIMIT 2",
-                    {"kw": keyword},
-                )
-                for row in result.result_set:
-                    content = (row[0] or "").strip()
-                    if not content:
-                        continue
-                    for line in content.splitlines():
-                        if keyword.lower() in line.lower() and len(line.strip()) > 10:
-                            raw.append(line.strip()[:250])
-                            break
-            except Exception:
-                pass
-
-        # Deduplicate on first 80 chars
-        seen: set = set()
-        deduped: list = []
-        for f in raw:
-            key = f[:80]
-            if key not in seen:
-                seen.add(key)
-                deduped.append(f)
-
-        return deduped[:10]
-
-    except Exception:
+    except Exception as exc:
+        logger.error("graphiti query: failed to select graph 'discord_history': %s", exc)
         return []
+
+    raw: list = []
+
+    # 1. Fulltext search on Entity nodes (name + summary indexed)
+    try:
+        result = graph.query(
+            "CALL db.idx.fulltext.queryNodes('Entity', $q) "
+            "YIELD node, score "
+            "RETURN node.name, node.summary, score "
+            "ORDER BY score DESC "
+            "LIMIT 5",
+            {"q": query_str},
+        )
+        for row in result.result_set:
+            name = (row[0] or "").strip()
+            summary = (row[1] or "").strip()
+            if name and summary:
+                raw.append(f"**{name}**: {summary[:300]}")
+    except Exception as exc:
+        logger.warning("graphiti query: Entity fulltext search failed: %s", exc)
+
+    # 2. Fulltext search on RELATES_TO edges (fact field indexed)
+    try:
+        result = graph.query(
+            "CALL db.idx.fulltext.queryRelationships('RELATES_TO', $q) "
+            "YIELD relationship AS r, score "
+            "WHERE r.fact IS NOT NULL AND r.fact <> '' "
+            "RETURN r.fact, score "
+            "ORDER BY score DESC "
+            "LIMIT 5",
+            {"q": query_str},
+        )
+        for row in result.result_set:
+            fact = (row[0] or "").strip()
+            if fact and len(fact) > 10:
+                raw.append(fact[:300])
+    except Exception as exc:
+        logger.warning("graphiti query: RELATES_TO fulltext search failed: %s", exc)
+
+    # 3. Fulltext search on Episodic nodes (content indexed)
+    try:
+        result = graph.query(
+            "CALL db.idx.fulltext.queryNodes('Episodic', $q) "
+            "YIELD node, score "
+            "RETURN node.content, score "
+            "ORDER BY score DESC "
+            "LIMIT 3",
+            {"q": query_str},
+        )
+        for row in result.result_set:
+            content = (row[0] or "").strip()
+            if not content:
+                continue
+            # Extract the most relevant line from episodic content
+            lines = [ln.strip() for ln in content.splitlines() if len(ln.strip()) > 10]
+            if lines:
+                raw.append(lines[0][:250])
+    except Exception as exc:
+        logger.warning("graphiti query: Episodic fulltext search failed: %s", exc)
+
+    # Deduplicate on first 80 chars
+    seen: set = set()
+    deduped: list = []
+    for f in raw:
+        key = f[:80]
+        if key not in seen:
+            seen.add(key)
+            deduped.append(f)
+
+    return deduped[:10]
 
 
 def _truncate_snippet(text: str, max_len: int = 500) -> str:

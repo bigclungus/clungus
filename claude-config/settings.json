@@ -1,7 +1,7 @@
 {
   "model": "sonnet",
   "mcpServers": {
-    "discord": {
+    "omni": {
       "command": "/home/clungus/.bun/bin/bun",
       "args": ["run", "mcp"],
       "cwd": "/mnt/data/omni/omnichannel",
@@ -61,7 +61,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "mcp__discord__omni_dispatch",
+        "matcher": "mcp__omni__omni_dispatch",
         "hooks": [
           {
             "type": "command",
