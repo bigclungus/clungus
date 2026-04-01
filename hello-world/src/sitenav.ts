@@ -15,6 +15,7 @@
     { href: 'https://clung.us/congress', label: 'congress', path: '/congress' },
     { href: 'https://labs.clung.us', label: 'labs', external: true },
     { href: 'https://clung.us/commons-v2/', label: 'commons', path: '/commons-v2/' },
+    { href: 'https://clung.us/clungiverse', label: 'clungiverse', path: '/clungiverse' },
     { href: 'https://clung.us/refinery', label: 'voting', path: '/refinery' },
     { href: 'https://clung.us/timeline', label: 'timeline', path: '/timeline' },
     { href: 'https://clung.us/wallet', label: 'wallet', path: '/wallet' },

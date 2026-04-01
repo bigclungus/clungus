@@ -32,48 +32,47 @@ const network = new DungeonNetwork(state);
 initInput(getCanvas());
 preloadAvatars();
 
-// === Virtual D-Pad (touch devices) ===
+// === Virtual Joystick + Fire Button (touch devices) ===
 
-function createDpad(): void {
+function createTouchControls(): void {
+  const BASE_SIZE = 100;
+  const THUMB_SIZE = 40;
+  const RADIUS = BASE_SIZE / 2;
+  const DEAD_ZONE = RADIUS * 0.15;
+
   const style = document.createElement('style');
   style.textContent = `
-    #dpad {
+    #joystick-base {
       position: fixed;
       bottom: 24px;
       left: 24px;
-      width: 144px;
-      height: 144px;
+      width: ${String(BASE_SIZE)}px;
+      height: ${String(BASE_SIZE)}px;
+      border-radius: 50%;
+      background: rgba(40,40,40,0.55);
+      border: 1px solid rgba(255,255,255,0.15);
       display: none;
       z-index: 100;
       touch-action: none;
       user-select: none;
       -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
     }
     @media (hover: none) and (pointer: coarse) {
-      #dpad { display: grid; }
+      #joystick-base { display: block; }
     }
-    #dpad {
-      grid-template-columns: repeat(3, 48px);
-      grid-template-rows: repeat(3, 48px);
+    #joystick-thumb {
+      position: absolute;
+      width: ${String(THUMB_SIZE)}px;
+      height: ${String(THUMB_SIZE)}px;
+      border-radius: 50%;
+      background: rgba(200,200,200,0.5);
+      border: 1px solid rgba(255,255,255,0.3);
+      top: ${String((BASE_SIZE - THUMB_SIZE) / 2)}px;
+      left: ${String((BASE_SIZE - THUMB_SIZE) / 2)}px;
+      pointer-events: none;
     }
-    .dpad-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(255,255,255,0.12);
-      border: 1px solid rgba(255,255,255,0.25);
-      border-radius: 8px;
-      color: #fff;
-      font-size: 22px;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      transition: background 0.08s;
-    }
-    .dpad-btn:active,
-    .dpad-btn.pressed {
-      background: rgba(255,255,255,0.3);
-    }
-    .dpad-center { background: transparent; border: none; }
     .dpad-fire {
       position: fixed;
       bottom: 96px;
@@ -87,12 +86,19 @@ function createDpad(): void {
       background: rgba(255,180,0,0.22);
       border: 1px solid rgba(255,180,0,0.5);
       border-radius: 50%;
-      color: #ffe;
-      font-size: 22px;
       touch-action: none;
       user-select: none;
       -webkit-user-select: none;
       -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+    }
+    .dpad-fire::after {
+      content: '';
+      display: block;
+      width: 10px;
+      height: 10px;
+      background: #ffe;
+      border-radius: 50%;
     }
     @media (hover: none) and (pointer: coarse) {
       .dpad-fire { display: flex; }
@@ -100,73 +106,182 @@ function createDpad(): void {
   `;
   document.head.appendChild(style);
 
-  const dpad = document.createElement('div');
-  dpad.id = 'dpad';
+  // --- Joystick ---
+  const base = document.createElement('div');
+  base.id = 'joystick-base';
+  const thumb = document.createElement('div');
+  thumb.id = 'joystick-thumb';
+  base.appendChild(thumb);
+  document.body.appendChild(base);
 
-  // 3x3 grid: row 0 = up, row 1 = left/right, row 2 = down
-  // cell positions (row, col): up=(0,1) left=(1,0) right=(1,2) down=(2,1) center=(1,1)
-  const cells: { row: number; col: number; key: string; label: string }[] = [
-    { row: 0, col: 0, key: '', label: '' },
-    { row: 0, col: 1, key: 'arrowup', label: '▲' },
-    { row: 0, col: 2, key: '', label: '' },
-    { row: 1, col: 0, key: 'arrowleft', label: '◀' },
-    { row: 1, col: 1, key: '', label: '' },
-    { row: 1, col: 2, key: 'arrowright', label: '▶' },
-    { row: 2, col: 0, key: '', label: '' },
-    { row: 2, col: 1, key: 'arrowdown', label: '▼' },
-    { row: 2, col: 2, key: '', label: '' },
-  ];
+  const centerX = RADIUS;
+  const centerY = RADIUS;
+  const thumbRadius = THUMB_SIZE / 2;
+  const maxThumbOffset = RADIUS - thumbRadius;
 
-  const activeKeys = new Map<number, string>(); // pointerId -> key
+  // Direction keys currently held by the joystick
+  const heldKeys = new Set<string>();
+  let joystickTouchId: number | null = null;
 
-  cells.forEach(({ key, label }) => {
-    const btn = document.createElement('div');
-    btn.className = key ? 'dpad-btn' : 'dpad-btn dpad-center';
-    btn.textContent = label;
+  function setThumbPosition(dx: number, dy: number): void {
+    thumb.style.left = `${String(centerX - thumbRadius + dx)}px`;
+    thumb.style.top = `${String(centerY - thumbRadius + dy)}px`;
+  }
 
-    if (key) {
-      btn.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        btn.setPointerCapture(e.pointerId);
-        activeKeys.set(e.pointerId, key);
-        pressKey(key);
-        btn.classList.add('pressed');
-      });
+  function resetThumb(): void {
+    setThumbPosition(0, 0);
+  }
 
-      const release = (e: PointerEvent): void => {
-        const k = activeKeys.get(e.pointerId);
-        if (k) {
-          releaseKey(k);
-          activeKeys.delete(e.pointerId);
-        }
-        btn.classList.remove('pressed');
-      };
+  function releaseAllHeld(): void {
+    for (const k of heldKeys) releaseKey(k);
+    heldKeys.clear();
+  }
 
-      btn.addEventListener('pointerup', release);
-      btn.addEventListener('pointercancel', release);
+  /** Map angle + distance to direction keys. Angle in radians, 0 = right, counter-clockwise positive. */
+  function updateDirection(dx: number, dy: number): void {
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist < DEAD_ZONE) {
+      releaseAllHeld();
+      return;
     }
 
-    dpad.appendChild(btn);
-  });
+    // atan2 with screen coords: dy is inverted (down = positive)
+    // Angle: 0=right, positive=clockwise in screen space
+    let angle = Math.atan2(dy, dx); // radians, -PI to PI
+    if (angle < 0) angle += Math.PI * 2; // normalize to 0..2PI
 
-  document.body.appendChild(dpad);
+    // Convert to degrees for sector math
+    const deg = (angle * 180) / Math.PI;
 
-  // Fire / power button (bottom-right)
+    // 8 sectors of 45 degrees each, centered on the cardinal/diagonal
+    // Sector boundaries: 22.5, 67.5, 112.5, 157.5, 202.5, 247.5, 292.5, 337.5
+    let keys: string[];
+    if (deg < 22.5 || deg >= 337.5) {
+      keys = ['arrowright'];                          // E  (0)
+    } else if (deg < 67.5) {
+      keys = ['arrowright', 'arrowdown'];             // SE (45)
+    } else if (deg < 112.5) {
+      keys = ['arrowdown'];                           // S  (90)
+    } else if (deg < 157.5) {
+      keys = ['arrowleft', 'arrowdown'];              // SW (135)
+    } else if (deg < 202.5) {
+      keys = ['arrowleft'];                           // W  (180)
+    } else if (deg < 247.5) {
+      keys = ['arrowleft', 'arrowup'];                // NW (225)
+    } else if (deg < 292.5) {
+      keys = ['arrowup'];                             // N  (270)
+    } else {
+      keys = ['arrowright', 'arrowup'];               // NE (315)
+    }
+
+    const wanted = new Set(keys);
+
+    // Release keys no longer wanted
+    for (const k of heldKeys) {
+      if (!wanted.has(k)) {
+        releaseKey(k);
+        heldKeys.delete(k);
+      }
+    }
+
+    // Press newly wanted keys
+    for (const k of wanted) {
+      if (!heldKeys.has(k)) {
+        pressKey(k);
+        heldKeys.add(k);
+      }
+    }
+  }
+
+  function handleJoystickTouch(clientX: number, clientY: number): void {
+    const rect = base.getBoundingClientRect();
+    let dx = clientX - (rect.left + centerX);
+    let dy = clientY - (rect.top + centerY);
+
+    // Clamp thumb to base circle
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > maxThumbOffset) {
+      dx = (dx / dist) * maxThumbOffset;
+      dy = (dy / dist) * maxThumbOffset;
+    }
+
+    setThumbPosition(dx, dy);
+    updateDirection(dx, dy);
+  }
+
+  base.addEventListener('touchstart', (e: TouchEvent) => {
+    e.preventDefault();
+    if (joystickTouchId !== null) return; // already tracking a touch
+    const touch = e.changedTouches[0];
+    joystickTouchId = touch.identifier;
+    handleJoystickTouch(touch.clientX, touch.clientY);
+  }, { passive: false });
+
+  base.addEventListener('touchmove', (e: TouchEvent) => {
+    e.preventDefault();
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      const touch = e.changedTouches[i];
+      if (touch.identifier === joystickTouchId) {
+        handleJoystickTouch(touch.clientX, touch.clientY);
+        break;
+      }
+    }
+  }, { passive: false });
+
+  const handleJoystickEnd = (e: TouchEvent): void => {
+    e.preventDefault();
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      if (e.changedTouches[i].identifier === joystickTouchId) {
+        joystickTouchId = null;
+        resetThumb();
+        releaseAllHeld();
+        break;
+      }
+    }
+  };
+
+  base.addEventListener('touchend', handleJoystickEnd, { passive: false });
+  base.addEventListener('touchcancel', handleJoystickEnd, { passive: false });
+
+  // --- Fire button (bottom-right) ---
   const fireBtn = document.createElement('div');
   fireBtn.className = 'dpad-fire';
-  fireBtn.textContent = '⚡';
-  fireBtn.addEventListener('pointerdown', (e) => {
+  let fireTouchId: number | null = null;
+
+  fireBtn.addEventListener('touchstart', (e: TouchEvent) => {
     e.preventDefault();
-    // Dispatch a synthetic spacebar keydown so the power one-shot logic fires
+    if (fireTouchId !== null) return;
+    fireTouchId = e.changedTouches[0].identifier;
     window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
-  });
-  fireBtn.addEventListener('pointerup', () => {
-    window.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true }));
-  });
+  }, { passive: false });
+
+  fireBtn.addEventListener('touchend', (e: TouchEvent) => {
+    e.preventDefault();
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      if (e.changedTouches[i].identifier === fireTouchId) {
+        fireTouchId = null;
+        window.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true }));
+        break;
+      }
+    }
+  }, { passive: false });
+
+  fireBtn.addEventListener('touchcancel', (e: TouchEvent) => {
+    e.preventDefault();
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      if (e.changedTouches[i].identifier === fireTouchId) {
+        fireTouchId = null;
+        window.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true }));
+        break;
+      }
+    }
+  }, { passive: false });
+
   document.body.appendChild(fireBtn);
 }
 
-createDpad();
+createTouchControls();
 
 // === Scene Interface ===
 

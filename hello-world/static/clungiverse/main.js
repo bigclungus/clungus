@@ -822,7 +822,8 @@ function measureWrappedLines(ctx2, text, maxWidth) {
 var BASE_CARD_W = 210;
 var BASE_CARD_H = 240;
 var BASE_CARD_GAP = 16;
-var GRID_COLS = 2;
+var DESKTOP_GRID_COLS = 2;
+var MOBILE_BREAKPOINT = 500;
 var cardHits = [];
 var startButtonHit = null;
 var copyLinkHit = null;
@@ -831,19 +832,64 @@ var touchHandler = null;
 var linkCopiedFlash = 0;
 var skipGenCheckbox = null;
 var skipGenLabel = null;
+var lobbyScrollY = 0;
+var lobbyMaxScroll = 0;
+var touchScrollStartY = 0;
+var touchScrollStartOffset = 0;
+var isTouchScrolling = false;
+var bgGradient = null;
+var bgGradientH = 0;
+var wheelHandler = null;
+var touchStartHandler = null;
+var touchMoveHandler = null;
+var HEADER_H = 110;
+var GRID_BTN_GAP = 30;
+var START_BTN_H = 48;
+var BTN_LINK_GAP = 28;
+var COPY_LINK_H = 32;
+var BOTTOM_PAD = 30;
+function clampScroll(value) {
+  return Math.max(0, Math.min(lobbyMaxScroll, value));
+}
+var cachedLayout = null;
+var cachedLayoutW = 0;
+var cachedLayoutH = 0;
 function computeCardLayout(canvasH, canvasW) {
-  const reservedH = 110 + 30 + 48 + 20;
-  const gridRows = Math.ceil(PERSONA_SLUGS.length / GRID_COLS);
-  const maxGridH = canvasH - reservedH;
-  const naturalGridH = gridRows * BASE_CARD_H + (gridRows - 1) * BASE_CARD_GAP;
-  const scale = naturalGridH > maxGridH ? maxGridH / naturalGridH : 1;
-  const CARD_W = Math.floor(BASE_CARD_W * scale);
-  const CARD_H = Math.floor(BASE_CARD_H * scale);
-  const CARD_GAP = Math.floor(BASE_CARD_GAP * scale);
-  const gridW = GRID_COLS * CARD_W + (GRID_COLS - 1) * CARD_GAP;
-  const gridH = gridRows * CARD_H + (gridRows - 1) * CARD_GAP;
-  const gridX = (canvasW - gridW) / 2;
-  return { gridX, gridY: 110, gridW, gridH, CARD_W, CARD_H, CARD_GAP };
+  if (cachedLayout && cachedLayoutW === canvasW && cachedLayoutH === canvasH) {
+    return cachedLayout;
+  }
+  const isMobile = canvasW < MOBILE_BREAKPOINT;
+  const cols = isMobile ? 1 : DESKTOP_GRID_COLS;
+  const maxCardW = isMobile ? Math.min(BASE_CARD_W, canvasW - 40) : BASE_CARD_W;
+  const reservedH = HEADER_H + GRID_BTN_GAP + START_BTN_H + 20;
+  const gridRows = Math.ceil(PERSONA_SLUGS.length / cols);
+  let result;
+  if (isMobile) {
+    const CARD_W = maxCardW;
+    const CARD_H = BASE_CARD_H;
+    const CARD_GAP = BASE_CARD_GAP;
+    const gridW = cols * CARD_W + (cols - 1) * CARD_GAP;
+    const gridH = gridRows * CARD_H + (gridRows - 1) * CARD_GAP;
+    const gridX = (canvasW - gridW) / 2;
+    const totalContentH = HEADER_H + gridH + GRID_BTN_GAP + START_BTN_H + BTN_LINK_GAP + COPY_LINK_H + BOTTOM_PAD;
+    const maxScroll = Math.max(0, totalContentH - canvasH);
+    result = { gridX, gridY: HEADER_H, gridW, gridH, CARD_W, CARD_H, CARD_GAP, cols, maxScroll };
+  } else {
+    const maxGridH = canvasH - reservedH;
+    const naturalGridH = gridRows * BASE_CARD_H + (gridRows - 1) * BASE_CARD_GAP;
+    const scale = naturalGridH > maxGridH ? maxGridH / naturalGridH : 1;
+    const CARD_W = Math.floor(maxCardW * scale);
+    const CARD_H = Math.floor(BASE_CARD_H * scale);
+    const CARD_GAP = Math.floor(BASE_CARD_GAP * scale);
+    const gridW = cols * CARD_W + (cols - 1) * CARD_GAP;
+    const gridH = gridRows * CARD_H + (gridRows - 1) * CARD_GAP;
+    const gridX = (canvasW - gridW) / 2;
+    result = { gridX, gridY: HEADER_H, gridW, gridH, CARD_W, CARD_H, CARD_GAP, cols, maxScroll: 0 };
+  }
+  cachedLayout = result;
+  cachedLayoutW = canvasW;
+  cachedLayoutH = canvasH;
+  return result;
 }
 function renderLobbyStatus(ctx2, state, w) {
   if (state.lobbyStatus === "error") {
@@ -868,31 +914,48 @@ function renderLobbyStatus(ctx2, state, w) {
     ctx2.fillText("Connecting...", w / 2, 98);
   }
 }
-function renderPersonaStatBlock(ctx2, stats, cx, cy) {
+var statLabelWidths = null;
+function getStatLabelWidths(ctx2) {
+  if (statLabelWidths)
+    return statLabelWidths;
+  ctx2.font = "12px monospace";
+  statLabelWidths = {
+    HP: ctx2.measureText("HP").width,
+    ATK: ctx2.measureText("ATK").width,
+    DEF: ctx2.measureText("DEF").width,
+    SPD: ctx2.measureText("SPD").width,
+    LCK: ctx2.measureText("LCK").width
+  };
+  return statLabelWidths;
+}
+function renderPersonaStatBlock(ctx2, stats, cx, cy, cardW) {
   const statY = cy + 92;
   ctx2.font = "12px monospace";
   ctx2.textAlign = "left";
   const sx = cx + 14;
+  const rightCol = Math.min(90, cardW - 110);
+  const lw = getStatLabelWidths(ctx2);
   ctx2.fillStyle = "#ffcc66";
   ctx2.fillText("HP", sx, statY);
   ctx2.fillStyle = "#e0e0e0";
-  ctx2.fillText(` ${String(stats.hp)}`, sx + ctx2.measureText("HP").width, statY);
+  ctx2.fillText(` ${String(stats.hp)}`, sx + lw.HP, statY);
   ctx2.fillStyle = "#ff7766";
   ctx2.fillText("ATK", sx, statY + 16);
   ctx2.fillStyle = "#e0e0e0";
-  ctx2.fillText(` ${String(stats.atk)}`, sx + ctx2.measureText("ATK").width, statY + 16);
+  ctx2.fillText(` ${String(stats.atk)}`, sx + lw.ATK, statY + 16);
   ctx2.fillStyle = "#66bbff";
-  ctx2.fillText("DEF", sx + 90, statY);
+  ctx2.fillText("DEF", sx + rightCol, statY);
   ctx2.fillStyle = "#e0e0e0";
-  ctx2.fillText(` ${String(stats.def)}`, sx + 90 + ctx2.measureText("DEF").width, statY);
+  ctx2.fillText(` ${String(stats.def)}`, sx + rightCol + lw.DEF, statY);
   ctx2.fillStyle = "#66ffaa";
-  ctx2.fillText("SPD", sx + 90, statY + 16);
+  ctx2.fillText("SPD", sx + rightCol, statY + 16);
   ctx2.fillStyle = "#e0e0e0";
-  ctx2.fillText(` ${String(stats.spd)}`, sx + 90 + ctx2.measureText("SPD").width, statY + 16);
+  ctx2.fillText(` ${String(stats.spd)}`, sx + rightCol + lw.SPD, statY + 16);
+  const lckCol = Math.floor(rightCol / 2);
   ctx2.fillStyle = "#cc99ff";
-  ctx2.fillText("LCK", sx + 45, statY + 32);
+  ctx2.fillText("LCK", sx + lckCol, statY + 32);
   ctx2.fillStyle = "#e0e0e0";
-  ctx2.fillText(` ${String(stats.lck)}`, sx + 45 + ctx2.measureText("LCK").width, statY + 32);
+  ctx2.fillText(` ${String(stats.lck)}`, sx + lckCol + lw.LCK, statY + 32);
 }
 function cardBgColor(selected, taken) {
   if (taken)
@@ -929,7 +992,11 @@ function renderPersonaCard(ctx2, state, slug, cx, cy, CARD_W, CARD_H) {
   const selected = state.selectedPersona === slug;
   const taken = state.lobbyPlayers.some((p) => p.personaSlug === slug && p.playerId !== state.playerId);
   renderPersonaCardHeader(ctx2, persona, cx, cy, CARD_W, CARD_H, selected, taken);
-  renderPersonaStatBlock(ctx2, persona.baseStats, cx, cy);
+  renderPersonaStatBlock(ctx2, persona.baseStats, cx, cy, CARD_W);
+  ctx2.save();
+  ctx2.beginPath();
+  ctx2.rect(cx, cy, CARD_W, CARD_H);
+  ctx2.clip();
   ctx2.textAlign = "center";
   ctx2.fillStyle = "#88bbff";
   ctx2.font = "bold 14px monospace";
@@ -937,6 +1004,7 @@ function renderPersonaCard(ctx2, state, slug, cx, cy, CARD_W, CARD_H) {
   ctx2.fillStyle = "#c0c0c0";
   ctx2.font = "12px monospace";
   wrapText(ctx2, persona.powerDescription, cx + CARD_W / 2, cy + 186, CARD_W - 20, 14);
+  ctx2.restore();
   if (taken) {
     ctx2.fillStyle = "rgba(0,0,0,0.5)";
     ctx2.fillRect(cx, cy, CARD_W, CARD_H);
@@ -946,12 +1014,12 @@ function renderPersonaCard(ctx2, state, slug, cx, cy, CARD_W, CARD_H) {
     ctx2.fillText("TAKEN", cx + CARD_W / 2, cy + CARD_H / 2);
   }
 }
-function renderPersonaGrid(ctx2, state, gridX, gridY, CARD_W, CARD_H, CARD_GAP) {
+function renderPersonaGrid(ctx2, state, gridX, gridY, CARD_W, CARD_H, CARD_GAP, cols) {
   cardHits = [];
   for (let i = 0;i < PERSONA_SLUGS.length; i++) {
     const slug = PERSONA_SLUGS[i];
-    const col = i % GRID_COLS;
-    const row = Math.floor(i / GRID_COLS);
+    const col = i % cols;
+    const row = Math.floor(i / cols);
     const cx = gridX + col * (CARD_W + CARD_GAP);
     const cy = gridY + row * (CARD_H + CARD_GAP);
     cardHits.push({ slug, x: cx, y: cy, w: CARD_W, h: CARD_H });
@@ -1138,7 +1206,7 @@ function handleStartButtonClick(mx, my, state, network) {
 }
 function handleLobbyClick(e, state, network) {
   const mx = e.clientX;
-  const my = e.clientY;
+  const my = e.clientY + lobbyScrollY;
   if (handleCardClick(mx, my, state, network))
     return;
   if (handleCopyLinkClick(mx, my, state))
@@ -1176,9 +1244,13 @@ function createLobbyScene(network) {
       touchHandler = (e) => {
         if (e.changedTouches.length !== 1)
           return;
+        if (isTouchScrolling) {
+          isTouchScrolling = false;
+          return;
+        }
         const t = e.changedTouches[0];
         const mx = t.clientX;
-        const my = t.clientY;
+        const my = t.clientY + lobbyScrollY;
         if (handleCardClick(mx, my, state, network)) {
           e.preventDefault();
           return;
@@ -1189,18 +1261,59 @@ function createLobbyScene(network) {
         }
         handleStartButtonClick(mx, my, state, network);
       };
+      wheelHandler = (e) => {
+        if (lobbyMaxScroll <= 0)
+          return;
+        lobbyScrollY = clampScroll(lobbyScrollY + e.deltaY);
+        e.preventDefault();
+      };
+      touchStartHandler = (e) => {
+        if (e.touches.length !== 1)
+          return;
+        e.preventDefault();
+        touchScrollStartY = e.touches[0].clientY;
+        touchScrollStartOffset = lobbyScrollY;
+        isTouchScrolling = false;
+      };
+      touchMoveHandler = (e) => {
+        if (e.touches.length !== 1 || lobbyMaxScroll <= 0)
+          return;
+        const dy = touchScrollStartY - e.touches[0].clientY;
+        if (Math.abs(dy) > 5)
+          isTouchScrolling = true;
+        lobbyScrollY = clampScroll(touchScrollStartOffset + dy);
+        e.preventDefault();
+      };
       window.addEventListener("click", clickHandler);
       window.addEventListener("touchend", touchHandler, { passive: false });
+      window.addEventListener("wheel", wheelHandler, { passive: false });
+      window.addEventListener("touchstart", touchStartHandler, { passive: false });
+      window.addEventListener("touchmove", touchMoveHandler, { passive: false });
     },
     update(_state, _dt) {},
     render(state, ctx2) {
       const w = ctx2.canvas.width;
       const h = ctx2.canvas.height;
-      const grad = ctx2.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, "#0d0d1a");
-      grad.addColorStop(1, "#1a1a2e");
-      ctx2.fillStyle = grad;
+      if (!bgGradient || bgGradientH !== h) {
+        bgGradient = ctx2.createLinearGradient(0, 0, 0, h);
+        bgGradient.addColorStop(0, "#0d0d1a");
+        bgGradient.addColorStop(1, "#1a1a2e");
+        bgGradientH = h;
+      }
+      ctx2.fillStyle = bgGradient;
       ctx2.fillRect(0, 0, w, h);
+      if (state.mobGenProgress) {
+        renderMobGenOverlay(ctx2, state, w, h);
+        return;
+      }
+      const layout = computeCardLayout(h, w);
+      const { gridX, gridY, gridH, CARD_W, CARD_H, CARD_GAP, cols } = layout;
+      lobbyMaxScroll = layout.maxScroll;
+      lobbyScrollY = clampScroll(lobbyScrollY);
+      ctx2.save();
+      if (lobbyMaxScroll > 0) {
+        ctx2.translate(0, -lobbyScrollY);
+      }
       ctx2.fillStyle = "#ffffff";
       ctx2.font = "bold 32px monospace";
       ctx2.textAlign = "center";
@@ -1209,15 +1322,17 @@ function createLobbyScene(network) {
       ctx2.fillStyle = "#bbbbbb";
       ctx2.fillText("Select Your Persona", w / 2, 78);
       renderLobbyStatus(ctx2, state, w);
-      if (state.mobGenProgress) {
-        renderMobGenOverlay(ctx2, state, w, h);
-        return;
-      }
-      const { gridX, gridY, gridW: _gridW, gridH, CARD_W, CARD_H, CARD_GAP } = computeCardLayout(h, w);
-      renderPersonaGrid(ctx2, state, gridX, gridY, CARD_W, CARD_H, CARD_GAP);
+      renderPersonaGrid(ctx2, state, gridX, gridY, CARD_W, CARD_H, CARD_GAP, cols);
       renderPartyRoster(ctx2, state, w);
       renderStartOrWaitButton(ctx2, state, w, gridY, gridH);
       renderCopyInviteButton(ctx2, state, w, gridY, gridH);
+      ctx2.restore();
+      if (lobbyMaxScroll > 0 && lobbyScrollY < lobbyMaxScroll - 10) {
+        ctx2.fillStyle = "rgba(255,255,255,0.3)";
+        ctx2.font = "14px monospace";
+        ctx2.textAlign = "center";
+        ctx2.fillText("▼ scroll", w / 2, h - 12);
+      }
     },
     exit(_state) {
       if (clickHandler) {
@@ -1228,10 +1343,27 @@ function createLobbyScene(network) {
         window.removeEventListener("touchend", touchHandler);
         touchHandler = null;
       }
+      if (wheelHandler) {
+        window.removeEventListener("wheel", wheelHandler);
+        wheelHandler = null;
+      }
+      if (touchStartHandler) {
+        window.removeEventListener("touchstart", touchStartHandler);
+        touchStartHandler = null;
+      }
+      if (touchMoveHandler) {
+        window.removeEventListener("touchmove", touchMoveHandler);
+        touchMoveHandler = null;
+      }
       cardHits = [];
       startButtonHit = null;
       copyLinkHit = null;
       linkCopiedFlash = 0;
+      lobbyScrollY = 0;
+      lobbyMaxScroll = 0;
+      touchScrollStartY = 0;
+      touchScrollStartOffset = 0;
+      cachedLayout = null;
       const wrapper = document.getElementById("skip-gen-wrapper");
       if (wrapper)
         wrapper.remove();
@@ -3180,46 +3312,44 @@ var state = createInitialState();
 var network = new DungeonNetwork(state);
 initInput(getCanvas());
 preloadAvatars();
-function createDpad() {
+function createTouchControls() {
+  const BASE_SIZE = 100;
+  const THUMB_SIZE = 40;
+  const RADIUS = BASE_SIZE / 2;
+  const DEAD_ZONE = RADIUS * 0.15;
   const style = document.createElement("style");
   style.textContent = `
-    #dpad {
+    #joystick-base {
       position: fixed;
       bottom: 24px;
       left: 24px;
-      width: 144px;
-      height: 144px;
+      width: ${String(BASE_SIZE)}px;
+      height: ${String(BASE_SIZE)}px;
+      border-radius: 50%;
+      background: rgba(40,40,40,0.55);
+      border: 1px solid rgba(255,255,255,0.15);
       display: none;
       z-index: 100;
       touch-action: none;
       user-select: none;
       -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
     }
     @media (hover: none) and (pointer: coarse) {
-      #dpad { display: grid; }
+      #joystick-base { display: block; }
     }
-    #dpad {
-      grid-template-columns: repeat(3, 48px);
-      grid-template-rows: repeat(3, 48px);
+    #joystick-thumb {
+      position: absolute;
+      width: ${String(THUMB_SIZE)}px;
+      height: ${String(THUMB_SIZE)}px;
+      border-radius: 50%;
+      background: rgba(200,200,200,0.5);
+      border: 1px solid rgba(255,255,255,0.3);
+      top: ${String((BASE_SIZE - THUMB_SIZE) / 2)}px;
+      left: ${String((BASE_SIZE - THUMB_SIZE) / 2)}px;
+      pointer-events: none;
     }
-    .dpad-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(255,255,255,0.12);
-      border: 1px solid rgba(255,255,255,0.25);
-      border-radius: 8px;
-      color: #fff;
-      font-size: 22px;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      transition: background 0.08s;
-    }
-    .dpad-btn:active,
-    .dpad-btn.pressed {
-      background: rgba(255,255,255,0.3);
-    }
-    .dpad-center { background: transparent; border: none; }
     .dpad-fire {
       position: fixed;
       bottom: 96px;
@@ -3233,71 +3363,167 @@ function createDpad() {
       background: rgba(255,180,0,0.22);
       border: 1px solid rgba(255,180,0,0.5);
       border-radius: 50%;
-      color: #ffe;
-      font-size: 22px;
       touch-action: none;
       user-select: none;
       -webkit-user-select: none;
       -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+    }
+    .dpad-fire::after {
+      content: '';
+      display: block;
+      width: 10px;
+      height: 10px;
+      background: #ffe;
+      border-radius: 50%;
     }
     @media (hover: none) and (pointer: coarse) {
       .dpad-fire { display: flex; }
     }
   `;
   document.head.appendChild(style);
-  const dpad = document.createElement("div");
-  dpad.id = "dpad";
-  const cells = [
-    { row: 0, col: 0, key: "", label: "" },
-    { row: 0, col: 1, key: "arrowup", label: "▲" },
-    { row: 0, col: 2, key: "", label: "" },
-    { row: 1, col: 0, key: "arrowleft", label: "◀" },
-    { row: 1, col: 1, key: "", label: "" },
-    { row: 1, col: 2, key: "arrowright", label: "▶" },
-    { row: 2, col: 0, key: "", label: "" },
-    { row: 2, col: 1, key: "arrowdown", label: "▼" },
-    { row: 2, col: 2, key: "", label: "" }
-  ];
-  const activeKeys = new Map;
-  cells.forEach(({ key, label }) => {
-    const btn = document.createElement("div");
-    btn.className = key ? "dpad-btn" : "dpad-btn dpad-center";
-    btn.textContent = label;
-    if (key) {
-      btn.addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-        btn.setPointerCapture(e.pointerId);
-        activeKeys.set(e.pointerId, key);
-        pressKey(key);
-        btn.classList.add("pressed");
-      });
-      const release = (e) => {
-        const k = activeKeys.get(e.pointerId);
-        if (k) {
-          releaseKey(k);
-          activeKeys.delete(e.pointerId);
-        }
-        btn.classList.remove("pressed");
-      };
-      btn.addEventListener("pointerup", release);
-      btn.addEventListener("pointercancel", release);
+  const base = document.createElement("div");
+  base.id = "joystick-base";
+  const thumb = document.createElement("div");
+  thumb.id = "joystick-thumb";
+  base.appendChild(thumb);
+  document.body.appendChild(base);
+  const centerX = RADIUS;
+  const centerY = RADIUS;
+  const thumbRadius = THUMB_SIZE / 2;
+  const maxThumbOffset = RADIUS - thumbRadius;
+  const heldKeys = new Set;
+  let joystickTouchId = null;
+  function setThumbPosition(dx, dy) {
+    thumb.style.left = `${String(centerX - thumbRadius + dx)}px`;
+    thumb.style.top = `${String(centerY - thumbRadius + dy)}px`;
+  }
+  function resetThumb() {
+    setThumbPosition(0, 0);
+  }
+  function releaseAllHeld() {
+    for (const k of heldKeys)
+      releaseKey(k);
+    heldKeys.clear();
+  }
+  function updateDirection(dx, dy) {
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < DEAD_ZONE) {
+      releaseAllHeld();
+      return;
     }
-    dpad.appendChild(btn);
-  });
-  document.body.appendChild(dpad);
+    let angle = Math.atan2(dy, dx);
+    if (angle < 0)
+      angle += Math.PI * 2;
+    const deg = angle * 180 / Math.PI;
+    let keys;
+    if (deg < 22.5 || deg >= 337.5) {
+      keys = ["arrowright"];
+    } else if (deg < 67.5) {
+      keys = ["arrowright", "arrowdown"];
+    } else if (deg < 112.5) {
+      keys = ["arrowdown"];
+    } else if (deg < 157.5) {
+      keys = ["arrowleft", "arrowdown"];
+    } else if (deg < 202.5) {
+      keys = ["arrowleft"];
+    } else if (deg < 247.5) {
+      keys = ["arrowleft", "arrowup"];
+    } else if (deg < 292.5) {
+      keys = ["arrowup"];
+    } else {
+      keys = ["arrowright", "arrowup"];
+    }
+    const wanted = new Set(keys);
+    for (const k of heldKeys) {
+      if (!wanted.has(k)) {
+        releaseKey(k);
+        heldKeys.delete(k);
+      }
+    }
+    for (const k of wanted) {
+      if (!heldKeys.has(k)) {
+        pressKey(k);
+        heldKeys.add(k);
+      }
+    }
+  }
+  function handleJoystickTouch(clientX, clientY) {
+    const rect = base.getBoundingClientRect();
+    let dx = clientX - (rect.left + centerX);
+    let dy = clientY - (rect.top + centerY);
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > maxThumbOffset) {
+      dx = dx / dist * maxThumbOffset;
+      dy = dy / dist * maxThumbOffset;
+    }
+    setThumbPosition(dx, dy);
+    updateDirection(dx, dy);
+  }
+  base.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    if (joystickTouchId !== null)
+      return;
+    const touch = e.changedTouches[0];
+    joystickTouchId = touch.identifier;
+    handleJoystickTouch(touch.clientX, touch.clientY);
+  }, { passive: false });
+  base.addEventListener("touchmove", (e) => {
+    e.preventDefault();
+    for (let i = 0;i < e.changedTouches.length; i++) {
+      const touch = e.changedTouches[i];
+      if (touch.identifier === joystickTouchId) {
+        handleJoystickTouch(touch.clientX, touch.clientY);
+        break;
+      }
+    }
+  }, { passive: false });
+  const handleJoystickEnd = (e) => {
+    e.preventDefault();
+    for (let i = 0;i < e.changedTouches.length; i++) {
+      if (e.changedTouches[i].identifier === joystickTouchId) {
+        joystickTouchId = null;
+        resetThumb();
+        releaseAllHeld();
+        break;
+      }
+    }
+  };
+  base.addEventListener("touchend", handleJoystickEnd, { passive: false });
+  base.addEventListener("touchcancel", handleJoystickEnd, { passive: false });
   const fireBtn = document.createElement("div");
   fireBtn.className = "dpad-fire";
-  fireBtn.textContent = "⚡";
-  fireBtn.addEventListener("pointerdown", (e) => {
+  let fireTouchId = null;
+  fireBtn.addEventListener("touchstart", (e) => {
     e.preventDefault();
+    if (fireTouchId !== null)
+      return;
+    fireTouchId = e.changedTouches[0].identifier;
     window.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
-  });
-  fireBtn.addEventListener("pointerup", () => {
-    window.dispatchEvent(new KeyboardEvent("keyup", { key: " ", bubbles: true }));
-  });
+  }, { passive: false });
+  fireBtn.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    for (let i = 0;i < e.changedTouches.length; i++) {
+      if (e.changedTouches[i].identifier === fireTouchId) {
+        fireTouchId = null;
+        window.dispatchEvent(new KeyboardEvent("keyup", { key: " ", bubbles: true }));
+        break;
+      }
+    }
+  }, { passive: false });
+  fireBtn.addEventListener("touchcancel", (e) => {
+    e.preventDefault();
+    for (let i = 0;i < e.changedTouches.length; i++) {
+      if (e.changedTouches[i].identifier === fireTouchId) {
+        fireTouchId = null;
+        window.dispatchEvent(new KeyboardEvent("keyup", { key: " ", bubbles: true }));
+        break;
+      }
+    }
+  }, { passive: false });
   document.body.appendChild(fireBtn);
 }
-createDpad();
+createTouchControls();
 function handleReturnToCommons() {
   network.disconnect();
   clearLobbyParam();

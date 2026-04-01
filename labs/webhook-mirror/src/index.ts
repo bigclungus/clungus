@@ -347,7 +347,7 @@ function viewerPage(id: string, publicBase: string, base: string): Response {
           document.getElementById('requests-container').innerHTML = renderRequests(reqs);
         }
       } catch(e) {
-        // ignore transient errors
+        console.warn("[webhook-mirror] poll error (transient):", e);
       }
     }
 

@@ -13,11 +13,12 @@ interface LobbyScene {
   exit(state: DungeonClientState): void;
 }
 
-// Card layout — base values, scaled down when viewport is short
+// Card layout — base values, scaled down when viewport is short or narrow
 const BASE_CARD_W = 210;
 const BASE_CARD_H = 240;
 const BASE_CARD_GAP = 16;
-const GRID_COLS = 2;
+const DESKTOP_GRID_COLS = 2;
+const MOBILE_BREAKPOINT = 500;
 
 interface CardHit {
   slug: PersonaSlug;
@@ -36,6 +37,17 @@ let linkCopiedFlash = 0; // timestamp when "Copied!" was triggered
 let skipGenCheckbox: HTMLInputElement | null = null;
 let skipGenLabel: HTMLLabelElement | null = null;
 
+let lobbyScrollY = 0;
+let lobbyMaxScroll = 0;
+let touchScrollStartY = 0;
+let touchScrollStartOffset = 0;
+let isTouchScrolling = false;
+let bgGradient: CanvasGradient | null = null;
+let bgGradientH = 0;
+let wheelHandler: ((e: WheelEvent) => void) | null = null;
+let touchStartHandler: ((e: TouchEvent) => void) | null = null;
+let touchMoveHandler: ((e: TouchEvent) => void) | null = null;
+
 interface CardLayout {
   gridX: number;
   gridY: number;
@@ -44,21 +56,75 @@ interface CardLayout {
   CARD_W: number;
   CARD_H: number;
   CARD_GAP: number;
+  cols: number;
+  maxScroll: number;
 }
 
+// Header + subtitle + status area
+const HEADER_H = 110;
+// Gap between grid and start button
+const GRID_BTN_GAP = 30;
+// Start button height
+const START_BTN_H = 48;
+// Gap between start button and copy-link button
+const BTN_LINK_GAP = 28;
+// Copy-link button height
+const COPY_LINK_H = 32;
+// Bottom padding
+const BOTTOM_PAD = 30;
+
+function clampScroll(value: number): number {
+  return Math.max(0, Math.min(lobbyMaxScroll, value));
+}
+
+let cachedLayout: CardLayout | null = null;
+let cachedLayoutW = 0;
+let cachedLayoutH = 0;
+
 function computeCardLayout(canvasH: number, canvasW: number): CardLayout {
-  const reservedH = 110 + 30 + 48 + 20;
-  const gridRows = Math.ceil(PERSONA_SLUGS.length / GRID_COLS);
-  const maxGridH = canvasH - reservedH;
-  const naturalGridH = gridRows * BASE_CARD_H + (gridRows - 1) * BASE_CARD_GAP;
-  const scale = naturalGridH > maxGridH ? maxGridH / naturalGridH : 1;
-  const CARD_W = Math.floor(BASE_CARD_W * scale);
-  const CARD_H = Math.floor(BASE_CARD_H * scale);
-  const CARD_GAP = Math.floor(BASE_CARD_GAP * scale);
-  const gridW = GRID_COLS * CARD_W + (GRID_COLS - 1) * CARD_GAP;
-  const gridH = gridRows * CARD_H + (gridRows - 1) * CARD_GAP;
-  const gridX = (canvasW - gridW) / 2;
-  return { gridX, gridY: 110, gridW, gridH, CARD_W, CARD_H, CARD_GAP };
+  if (cachedLayout && cachedLayoutW === canvasW && cachedLayoutH === canvasH) {
+    return cachedLayout;
+  }
+
+  const isMobile = canvasW < MOBILE_BREAKPOINT;
+  const cols = isMobile ? 1 : DESKTOP_GRID_COLS;
+
+  // On mobile single-column, fit card width to screen with padding
+  const maxCardW = isMobile ? Math.min(BASE_CARD_W, canvasW - 40) : BASE_CARD_W;
+
+  const reservedH = HEADER_H + GRID_BTN_GAP + START_BTN_H + 20;
+  const gridRows = Math.ceil(PERSONA_SLUGS.length / cols);
+  let result: CardLayout;
+
+  if (isMobile) {
+    // On mobile, don't shrink cards — allow scrolling instead
+    const CARD_W = maxCardW;
+    const CARD_H = BASE_CARD_H;
+    const CARD_GAP = BASE_CARD_GAP;
+    const gridW = cols * CARD_W + (cols - 1) * CARD_GAP;
+    const gridH = gridRows * CARD_H + (gridRows - 1) * CARD_GAP;
+    const gridX = (canvasW - gridW) / 2;
+    const totalContentH = HEADER_H + gridH + GRID_BTN_GAP + START_BTN_H + BTN_LINK_GAP + COPY_LINK_H + BOTTOM_PAD;
+    const maxScroll = Math.max(0, totalContentH - canvasH);
+    result = { gridX, gridY: HEADER_H, gridW, gridH, CARD_W, CARD_H, CARD_GAP, cols, maxScroll };
+  } else {
+    // Desktop: scale down if too tall
+    const maxGridH = canvasH - reservedH;
+    const naturalGridH = gridRows * BASE_CARD_H + (gridRows - 1) * BASE_CARD_GAP;
+    const scale = naturalGridH > maxGridH ? maxGridH / naturalGridH : 1;
+    const CARD_W = Math.floor(maxCardW * scale);
+    const CARD_H = Math.floor(BASE_CARD_H * scale);
+    const CARD_GAP = Math.floor(BASE_CARD_GAP * scale);
+    const gridW = cols * CARD_W + (cols - 1) * CARD_GAP;
+    const gridH = gridRows * CARD_H + (gridRows - 1) * CARD_GAP;
+    const gridX = (canvasW - gridW) / 2;
+    result = { gridX, gridY: HEADER_H, gridW, gridH, CARD_W, CARD_H, CARD_GAP, cols, maxScroll: 0 };
+  }
+
+  cachedLayout = result;
+  cachedLayoutW = canvasW;
+  cachedLayoutH = canvasH;
+  return result;
 }
 
 function renderLobbyStatus(ctx: CanvasRenderingContext2D, state: DungeonClientState, w: number): void {
@@ -85,26 +151,47 @@ function renderLobbyStatus(ctx: CanvasRenderingContext2D, state: DungeonClientSt
   }
 }
 
+// Cached stat label widths (measured once per ctx font)
+let statLabelWidths: Record<string, number> | null = null;
+
+function getStatLabelWidths(ctx: CanvasRenderingContext2D): Record<string, number> {
+  if (statLabelWidths) return statLabelWidths;
+  ctx.font = '12px monospace';
+  statLabelWidths = {
+    HP: ctx.measureText('HP').width,
+    ATK: ctx.measureText('ATK').width,
+    DEF: ctx.measureText('DEF').width,
+    SPD: ctx.measureText('SPD').width,
+    LCK: ctx.measureText('LCK').width,
+  };
+  return statLabelWidths;
+}
+
 function renderPersonaStatBlock(
   ctx: CanvasRenderingContext2D,
   stats: { hp: number; atk: number; def: number; spd: number; lck: number },
   cx: number,
   cy: number,
+  cardW: number,
 ): void {
   const statY = cy + 92;
   ctx.font = '12px monospace';
   ctx.textAlign = 'left';
   const sx = cx + 14;
+  // Right column offset scales with card width (90 is good for 210px cards)
+  const rightCol = Math.min(90, cardW - 110);
+  const lw = getStatLabelWidths(ctx);
   ctx.fillStyle = '#ffcc66'; ctx.fillText('HP', sx, statY);
-  ctx.fillStyle = '#e0e0e0'; ctx.fillText(` ${String(stats.hp)}`, sx + ctx.measureText('HP').width, statY);
+  ctx.fillStyle = '#e0e0e0'; ctx.fillText(` ${String(stats.hp)}`, sx + lw.HP, statY);
   ctx.fillStyle = '#ff7766'; ctx.fillText('ATK', sx, statY + 16);
-  ctx.fillStyle = '#e0e0e0'; ctx.fillText(` ${String(stats.atk)}`, sx + ctx.measureText('ATK').width, statY + 16);
-  ctx.fillStyle = '#66bbff'; ctx.fillText('DEF', sx + 90, statY);
-  ctx.fillStyle = '#e0e0e0'; ctx.fillText(` ${String(stats.def)}`, sx + 90 + ctx.measureText('DEF').width, statY);
-  ctx.fillStyle = '#66ffaa'; ctx.fillText('SPD', sx + 90, statY + 16);
-  ctx.fillStyle = '#e0e0e0'; ctx.fillText(` ${String(stats.spd)}`, sx + 90 + ctx.measureText('SPD').width, statY + 16);
-  ctx.fillStyle = '#cc99ff'; ctx.fillText('LCK', sx + 45, statY + 32);
-  ctx.fillStyle = '#e0e0e0'; ctx.fillText(` ${String(stats.lck)}`, sx + 45 + ctx.measureText('LCK').width, statY + 32);
+  ctx.fillStyle = '#e0e0e0'; ctx.fillText(` ${String(stats.atk)}`, sx + lw.ATK, statY + 16);
+  ctx.fillStyle = '#66bbff'; ctx.fillText('DEF', sx + rightCol, statY);
+  ctx.fillStyle = '#e0e0e0'; ctx.fillText(` ${String(stats.def)}`, sx + rightCol + lw.DEF, statY);
+  ctx.fillStyle = '#66ffaa'; ctx.fillText('SPD', sx + rightCol, statY + 16);
+  ctx.fillStyle = '#e0e0e0'; ctx.fillText(` ${String(stats.spd)}`, sx + rightCol + lw.SPD, statY + 16);
+  const lckCol = Math.floor(rightCol / 2);
+  ctx.fillStyle = '#cc99ff'; ctx.fillText('LCK', sx + lckCol, statY + 32);
+  ctx.fillStyle = '#e0e0e0'; ctx.fillText(` ${String(stats.lck)}`, sx + lckCol + lw.LCK, statY + 32);
 }
 
 function cardBgColor(selected: boolean, taken: boolean): string {
@@ -163,7 +250,12 @@ function renderPersonaCard(
   );
 
   renderPersonaCardHeader(ctx, persona, cx, cy, CARD_W, CARD_H, selected, taken);
-  renderPersonaStatBlock(ctx, persona.baseStats, cx, cy);
+  renderPersonaStatBlock(ctx, persona.baseStats, cx, cy, CARD_W);
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(cx, cy, CARD_W, CARD_H);
+  ctx.clip();
 
   ctx.textAlign = 'center';
   ctx.fillStyle = '#88bbff';
@@ -173,6 +265,8 @@ function renderPersonaCard(
   ctx.fillStyle = '#c0c0c0';
   ctx.font = '12px monospace';
   wrapText(ctx, persona.powerDescription, cx + CARD_W / 2, cy + 186, CARD_W - 20, 14);
+
+  ctx.restore();
 
   if (taken) {
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
@@ -192,12 +286,13 @@ function renderPersonaGrid(
   CARD_W: number,
   CARD_H: number,
   CARD_GAP: number,
+  cols: number,
 ): void {
   cardHits = [];
   for (let i = 0; i < PERSONA_SLUGS.length; i++) {
     const slug = PERSONA_SLUGS[i];
-    const col = i % GRID_COLS;
-    const row = Math.floor(i / GRID_COLS);
+    const col = i % cols;
+    const row = Math.floor(i / cols);
     const cx = gridX + col * (CARD_W + CARD_GAP);
     const cy = gridY + row * (CARD_H + CARD_GAP);
     cardHits.push({ slug, x: cx, y: cy, w: CARD_W, h: CARD_H });
@@ -450,7 +545,7 @@ function handleStartButtonClick(mx: number, my: number, state: DungeonClientStat
 
 function handleLobbyClick(e: MouseEvent, state: DungeonClientState, network: DungeonNetwork): void {
   const mx = e.clientX;
-  const my = e.clientY;
+  const my = e.clientY + lobbyScrollY;
   if (handleCardClick(mx, my, state, network)) return;
   if (handleCopyLinkClick(mx, my, state)) return;
   handleStartButtonClick(mx, my, state, network);
@@ -494,16 +589,48 @@ export function createLobbyScene(network: DungeonNetwork): LobbyScene {
       touchHandler = (e: TouchEvent) => {
         // Only handle single-finger taps; ignore multi-touch
         if (e.changedTouches.length !== 1) return;
+        // If user was scrolling, don't treat as a tap
+        if (isTouchScrolling) {
+          isTouchScrolling = false;
+          return;
+        }
         const t = e.changedTouches[0];
         const mx = t.clientX;
-        const my = t.clientY;
+        const my = t.clientY + lobbyScrollY;
         if (handleCardClick(mx, my, state, network)) { e.preventDefault(); return; }
         if (handleCopyLinkClick(mx, my, state)) { e.preventDefault(); return; }
         handleStartButtonClick(mx, my, state, network);
       };
 
+      wheelHandler = (e: WheelEvent) => {
+        if (lobbyMaxScroll <= 0) return;
+        lobbyScrollY = clampScroll(lobbyScrollY + e.deltaY);
+        e.preventDefault();
+      };
+
+      touchStartHandler = (e: TouchEvent) => {
+        if (e.touches.length !== 1) return;
+        // Always preventDefault on touchstart so iOS Safari doesn't
+        // claim the gesture (scroll/zoom) before touchend fires
+        e.preventDefault();
+        touchScrollStartY = e.touches[0].clientY;
+        touchScrollStartOffset = lobbyScrollY;
+        isTouchScrolling = false;
+      };
+
+      touchMoveHandler = (e: TouchEvent) => {
+        if (e.touches.length !== 1 || lobbyMaxScroll <= 0) return;
+        const dy = touchScrollStartY - e.touches[0].clientY;
+        if (Math.abs(dy) > 5) isTouchScrolling = true;
+        lobbyScrollY = clampScroll(touchScrollStartOffset + dy);
+        e.preventDefault();
+      };
+
       window.addEventListener('click', clickHandler);
       window.addEventListener('touchend', touchHandler, { passive: false });
+      window.addEventListener('wheel', wheelHandler, { passive: false });
+      window.addEventListener('touchstart', touchStartHandler, { passive: false });
+      window.addEventListener('touchmove', touchMoveHandler, { passive: false });
     },
 
     update(_state: DungeonClientState, _dt: number): void {
@@ -514,12 +641,29 @@ export function createLobbyScene(network: DungeonNetwork): LobbyScene {
       const w = ctx.canvas.width;
       const h = ctx.canvas.height;
 
-      // Background
-      const grad = ctx.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, '#0d0d1a');
-      grad.addColorStop(1, '#1a1a2e');
-      ctx.fillStyle = grad;
+      if (!bgGradient || bgGradientH !== h) {
+        bgGradient = ctx.createLinearGradient(0, 0, 0, h);
+        bgGradient.addColorStop(0, '#0d0d1a');
+        bgGradient.addColorStop(1, '#1a1a2e');
+        bgGradientH = h;
+      }
+      ctx.fillStyle = bgGradient;
       ctx.fillRect(0, 0, w, h);
+
+      if (state.mobGenProgress) {
+        renderMobGenOverlay(ctx, state, w, h);
+        return;
+      }
+
+      const layout = computeCardLayout(h, w);
+      const { gridX, gridY, gridH, CARD_W, CARD_H, CARD_GAP, cols } = layout;
+      lobbyMaxScroll = layout.maxScroll;
+      lobbyScrollY = clampScroll(lobbyScrollY);
+
+      ctx.save();
+      if (lobbyMaxScroll > 0) {
+        ctx.translate(0, -lobbyScrollY);
+      }
 
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 32px monospace';
@@ -532,18 +676,20 @@ export function createLobbyScene(network: DungeonNetwork): LobbyScene {
 
       renderLobbyStatus(ctx, state, w);
 
-      // Mob generation loading overlay (shown over everything while floor is initializing)
-      if (state.mobGenProgress) {
-        renderMobGenOverlay(ctx, state, w, h);
-        return;
-      }
-
-      const { gridX, gridY, gridW: _gridW, gridH, CARD_W, CARD_H, CARD_GAP } = computeCardLayout(h, w);
-
-      renderPersonaGrid(ctx, state, gridX, gridY, CARD_W, CARD_H, CARD_GAP);
+      renderPersonaGrid(ctx, state, gridX, gridY, CARD_W, CARD_H, CARD_GAP, cols);
       renderPartyRoster(ctx, state, w);
       renderStartOrWaitButton(ctx, state, w, gridY, gridH);
       renderCopyInviteButton(ctx, state, w, gridY, gridH);
+
+      ctx.restore();
+
+      // Scroll indicator on mobile (drawn outside the scroll transform)
+      if (lobbyMaxScroll > 0 && lobbyScrollY < lobbyMaxScroll - 10) {
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.font = '14px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('\u25BC scroll', w / 2, h - 12);
+      }
     },
 
     exit(_state: DungeonClientState): void {
@@ -555,10 +701,27 @@ export function createLobbyScene(network: DungeonNetwork): LobbyScene {
         window.removeEventListener('touchend', touchHandler);
         touchHandler = null;
       }
+      if (wheelHandler) {
+        window.removeEventListener('wheel', wheelHandler);
+        wheelHandler = null;
+      }
+      if (touchStartHandler) {
+        window.removeEventListener('touchstart', touchStartHandler);
+        touchStartHandler = null;
+      }
+      if (touchMoveHandler) {
+        window.removeEventListener('touchmove', touchMoveHandler);
+        touchMoveHandler = null;
+      }
       cardHits = [];
       startButtonHit = null;
       copyLinkHit = null;
       linkCopiedFlash = 0;
+      lobbyScrollY = 0;
+      lobbyMaxScroll = 0;
+      touchScrollStartY = 0;
+      touchScrollStartOffset = 0;
+      cachedLayout = null;
       const wrapper = document.getElementById('skip-gen-wrapper');
       if (wrapper) wrapper.remove();
       if (skipGenCheckbox) {
