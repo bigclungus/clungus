@@ -3812,9 +3812,6 @@ server.listen(PORT, () => {
   if (!existsSync("/usr/local/bin/gemini")) {
     console.warn("[clunger] WARNING: gemini CLI not found at /usr/local/bin/gemini — gemini personas will fail");
     missingProviders.push("gemini (CLI not found at /usr/local/bin/gemini)");
-  } else if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
-    console.warn("[clunger] WARNING: GEMINI_API_KEY not set — gemini personas will fail");
-    missingProviders.push("gemini (GEMINI_API_KEY missing)");
   }
   if (missingProviders.length > 0) {
     injectAlert(`clunger startup: unavailable LLM providers — ${missingProviders.join(", ")}. Personas using these models will fail.`).catch(() => {});

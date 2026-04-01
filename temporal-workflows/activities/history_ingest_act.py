@@ -32,6 +32,11 @@ EMBED_DIMS = 1536
 JSONL_GLOB = "/home/clungus/.claude/projects/*/*.jsonl"
 BATCH_SIZE = 100
 
+# Circuit breaker: after N consecutive 429 failures, pause for COOLDOWN seconds
+CIRCUIT_BREAKER_FILE = "/tmp/history-ingest-circuit-open"
+CIRCUIT_BREAKER_THRESHOLD = 3
+CIRCUIT_BREAKER_COOLDOWN = 3600  # 1 hour
+
 IMAGE_MIMES = {"image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp"}
 VISION_MODEL = "gpt-4o-mini"
 MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB limit for vision API
@@ -365,8 +370,54 @@ def embed_batch(client, texts: list[str]) -> list[list[float]]:
 
 # ---- Main ingest loop --------------------------------------------------------
 
+def _check_circuit_breaker() -> bool:
+    """Return True if circuit breaker is open (should skip). False if OK to proceed."""
+    if not os.path.exists(CIRCUIT_BREAKER_FILE):
+        return False
+    try:
+        with open(CIRCUIT_BREAKER_FILE, "r") as f:
+            data = json.loads(f.read())
+        ts = data.get("timestamp", 0)
+        failures = data.get("failures", 0)
+        elapsed = time.time() - ts
+        if failures >= CIRCUIT_BREAKER_THRESHOLD and elapsed < CIRCUIT_BREAKER_COOLDOWN:
+            return True  # circuit open, skip
+        if elapsed >= CIRCUIT_BREAKER_COOLDOWN:
+            # Half-open: allow a retry
+            return False
+    except (json.JSONDecodeError, OSError):
+        pass
+    return False
+
+
+def _record_circuit_failure():
+    """Record a 429 failure to the circuit breaker file."""
+    failures = 0
+    try:
+        if os.path.exists(CIRCUIT_BREAKER_FILE):
+            with open(CIRCUIT_BREAKER_FILE, "r") as f:
+                data = json.loads(f.read())
+            failures = data.get("failures", 0)
+    except (json.JSONDecodeError, OSError):
+        pass
+    failures += 1
+    with open(CIRCUIT_BREAKER_FILE, "w") as f:
+        json.dump({"failures": failures, "timestamp": time.time()}, f)
+
+
+def _clear_circuit_breaker():
+    """Clear the circuit breaker after a successful run."""
+    if os.path.exists(CIRCUIT_BREAKER_FILE):
+        os.remove(CIRCUIT_BREAKER_FILE)
+
+
 def _run_history_ingest_sync() -> str:
     import sqlite_vec
+
+    # Circuit breaker check
+    if _check_circuit_breaker():
+        activity.logger.info("Circuit breaker open, skipping history ingest run")
+        return "Circuit breaker open — skipping (will retry after cooldown)"
 
     api_key = get_openai_key()
     from openai import OpenAI
@@ -458,6 +509,11 @@ def _run_history_ingest_sync() -> str:
                 embeddings = embed_batch(client, texts)
             except Exception as e:
                 activity.logger.error("ERROR embedding batch: %s", e)
+                # Track 429 rate-limit errors for circuit breaker
+                err_str = str(e)
+                if "429" in err_str or "rate" in err_str.lower():
+                    _record_circuit_failure()
+                    activity.logger.warning("429 rate limit hit — circuit breaker failure recorded")
                 raise  # No silent failures
 
             for msg, emb in zip(batch, embeddings):
@@ -486,6 +542,7 @@ def _run_history_ingest_sync() -> str:
 
     total_messages = conn.execute("SELECT COUNT(*) FROM messages").fetchone()[0]
     conn.close()
+    _clear_circuit_breaker()
     summary = f"Ingest complete. New messages this run: {total_new}. Total in DB: {total_messages}."
     activity.logger.info(summary)
     return summary

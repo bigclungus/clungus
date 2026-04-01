@@ -47,6 +47,32 @@ class HealthcheckWorkflow:
         newly_down = now_down_set - prev_down_set
         recovered = (prev_down_set - now_down_set) & current_urls  # only URLs we actually checked
 
+        # Confirmation step: if sites appear newly down, wait 30s and recheck
+        # to avoid false alerts from transient failures.
+        if newly_down:
+            workflow.logger.info(
+                "Sites appear down, waiting 30s for confirmation recheck: %s",
+                ", ".join(sorted(newly_down)),
+            )
+            await workflow.sleep(timedelta(seconds=30))
+            confirm_results: dict = await workflow.execute_activity(
+                check_sites,
+                start_to_close_timeout=timedelta(seconds=30),
+                retry_policy=RetryPolicy(maximum_attempts=1),
+            )
+            # Only alert for sites that are still down after the confirmation check
+            confirmed_down = {
+                url for url in newly_down
+                if url in confirm_results and not confirm_results[url]["ok"]
+            }
+            # Update results with confirmation data for confirmed-down sites
+            for url in confirmed_down:
+                results[url] = confirm_results[url]
+            # Sites that recovered during the 30s gap are not newly down
+            newly_down = confirmed_down
+            # Update now_down_set: remove sites that recovered during confirmation
+            now_down_set = (now_down_set - (now_down_set - prev_down_set - confirmed_down)) | confirmed_down
+
         for url in sorted(newly_down):
             info = results[url]
             detail = info["error"] if info["error"] else str(info["status_code"])
