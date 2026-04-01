@@ -71,7 +71,7 @@ class HealthcheckWorkflow:
             # Sites that recovered during the 30s gap are not newly down
             newly_down = confirmed_down
             # Update now_down_set: remove sites that recovered during confirmation
-            now_down_set = (now_down_set - (now_down_set - prev_down_set - confirmed_down)) | confirmed_down
+            now_down_set = (now_down_set & prev_down_set) | confirmed_down
 
         for url in sorted(newly_down):
             info = results[url]

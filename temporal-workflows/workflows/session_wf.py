@@ -257,7 +257,7 @@ class SessionWorkflow:
                 display_name: str = identity_obj.get("display_name") or identity_obj.get("name", str(identity_obj))
                 if isinstance(response, Exception):
                     workflow.logger.warning(f"Round {round_num} debate failed for {display_name}: {response}")
-                    response_text = ""
+                    response_text = f"[DEBATE FAILED: {response}]"
                 else:
                     response_text = response
                 snippet = response_text[:500].strip() if response_text else ""
@@ -276,7 +276,7 @@ class SessionWorkflow:
                     )
                 except Exception as exc:
                     workflow.logger.warning(f"Round {round_num} debate failed for {display_name}: {exc}")
-                    response_text = ""
+                    response_text = f"[DEBATE FAILED: {exc}]"
                 snippet = response_text[:500].strip() if response_text else ""
                 summaries.append({"identity": display_name, "snippet": snippet, "round": round_num})
         return summaries

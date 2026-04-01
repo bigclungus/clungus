@@ -17,41 +17,27 @@ import argparse
 import json
 import os
 import sqlite3
-import struct
 import sys
 import time
 from datetime import datetime, timezone
 
 import requests
 import sqlite_vec
-from sentence_transformers import SentenceTransformer
+
+from common import (
+    DB_PATH, LOCAL_EMBED_MODEL, LOCAL_EMBED_DIMS,
+    serialize_f32, get_bot_token, get_local_model,
+)
 
 # ---- Config ------------------------------------------------------------------
 
-DB_PATH = "/mnt/data/data/discord-history.db"
 GUILD_ID = "1008814210144292894"
-LOCAL_EMBED_DIMS = 384
-LOCAL_EMBED_MODEL = "all-MiniLM-L6-v2"
 BATCH_SIZE = 100  # Discord API max per request
 EMBED_BATCH_SIZE = 256  # sentences per embedding batch
 
 DISCORD_API = "https://discord.com/api/v10"
-BOT_ENV = "/home/clungus/.claude/channels/discord/.env"
 
 # ---- Helpers -----------------------------------------------------------------
-
-
-def get_bot_token() -> str:
-    """Load DISCORD_BOT_TOKEN from .env file."""
-    token = os.environ.get("DISCORD_BOT_TOKEN")
-    if token:
-        return token
-    with open(BOT_ENV) as f:
-        for line in f:
-            line = line.strip()
-            if line.startswith("DISCORD_BOT_TOKEN="):
-                return line.split("=", 1)[1].strip().strip('"').strip("'")
-    raise RuntimeError(f"DISCORD_BOT_TOKEN not found in {BOT_ENV}")
 
 
 def open_db() -> sqlite3.Connection:
@@ -76,11 +62,6 @@ def open_db() -> sqlite3.Connection:
     """)
     conn.commit()
     return conn
-
-
-def serialize_f32(vec: list[float]) -> bytes:
-    """Serialize a list of floats to bytes for sqlite-vec."""
-    return struct.pack(f"{len(vec)}f", *vec)
 
 
 # ---- Discord API -------------------------------------------------------------
@@ -220,16 +201,13 @@ def backfill_channel(client: DiscordClient, conn: sqlite3.Connection,
             if not content:
                 continue
 
-            try:
-                conn.execute(
-                    "INSERT OR IGNORE INTO messages (message_id, author, channel_id, ts, content) "
-                    "VALUES (?, ?, ?, ?, ?)",
-                    (msg_id, author, channel_id, ts, content),
-                )
-                if conn.total_changes:
-                    batch_new += 1
-            except sqlite3.IntegrityError:
-                pass
+            cursor = conn.execute(
+                "INSERT OR IGNORE INTO messages (message_id, author, channel_id, ts, content) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (msg_id, author, channel_id, ts, content),
+            )
+            if cursor.rowcount > 0:
+                batch_new += 1
 
         # The oldest message in this batch becomes our next "before" cursor
         before_id = messages[-1]["id"]
@@ -248,28 +226,40 @@ def backfill_channel(client: DiscordClient, conn: sqlite3.Connection,
     return total_new
 
 
-def embed_missing(conn: sqlite3.Connection, model: SentenceTransformer) -> int:
+def embed_missing(conn: sqlite3.Connection, model) -> int:
     """Generate local embeddings for all messages missing from messages_vec_local."""
-    # Find messages without local embeddings
-    missing = conn.execute("""
-        SELECT m.id, m.content
+    # Count total missing first
+    missing_count = conn.execute("""
+        SELECT COUNT(*)
         FROM messages m
         LEFT JOIN messages_vec_local v ON v.rowid = m.id
         WHERE v.rowid IS NULL
-        ORDER BY m.id
-    """).fetchall()
+    """).fetchone()[0]
 
-    if not missing:
+    if not missing_count:
         print("All messages already have local embeddings.")
         return 0
 
-    print(f"Generating local embeddings for {len(missing)} messages...")
+    print(f"Generating local embeddings for {missing_count} messages...")
     total = 0
+    last_id = 0
 
-    for i in range(0, len(missing), EMBED_BATCH_SIZE):
-        batch = missing[i:i + EMBED_BATCH_SIZE]
+    while True:
+        batch = conn.execute("""
+            SELECT m.id, m.content
+            FROM messages m
+            LEFT JOIN messages_vec_local v ON v.rowid = m.id
+            WHERE v.rowid IS NULL AND m.id > ?
+            ORDER BY m.id
+            LIMIT ?
+        """, (last_id, EMBED_BATCH_SIZE)).fetchall()
+
+        if not batch:
+            break
+
         ids = [row[0] for row in batch]
         texts = [row[1] for row in batch]
+        last_id = ids[-1]
 
         embeddings = model.encode(texts, show_progress_bar=False)
 
@@ -282,8 +272,8 @@ def embed_missing(conn: sqlite3.Connection, model: SentenceTransformer) -> int:
 
         conn.commit()
         total += len(batch)
-        if total % 1000 == 0 or total == len(missing):
-            print(f"  Embedded {total}/{len(missing)} messages")
+        if total % 1000 == 0 or total == missing_count:
+            print(f"  Embedded {total}/{missing_count} messages")
 
     print(f"Done: generated {total} local embeddings")
     return total
@@ -303,7 +293,7 @@ def main():
 
     # Load embedding model
     print(f"Loading embedding model ({LOCAL_EMBED_MODEL})...")
-    model = SentenceTransformer(LOCAL_EMBED_MODEL)
+    model = get_local_model()
     print(f"Model loaded (dims={model.get_sentence_embedding_dimension()})")
 
     if args.embed_only or args.migrate:

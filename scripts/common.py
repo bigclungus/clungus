@@ -2,6 +2,7 @@ import os
 import struct
 
 DB_PATH = "/mnt/data/data/discord-history.db"
+BOT_ENV = "/home/clungus/.claude/channels/discord/.env"
 
 # Legacy OpenAI embeddings (kept for backward compat)
 EMBED_MODEL = "text-embedding-3-small"
@@ -63,6 +64,19 @@ def local_embed_query(query: str) -> bytes:
     model = get_local_model()
     emb = model.encode([query], show_progress_bar=False)[0]
     return sqlite_vec.serialize_float32(emb.tolist())
+
+
+def get_bot_token() -> str:
+    """Load DISCORD_BOT_TOKEN from environment or .env file."""
+    token = os.environ.get("DISCORD_BOT_TOKEN")
+    if token:
+        return token
+    with open(BOT_ENV) as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith("DISCORD_BOT_TOKEN="):
+                return line.split("=", 1)[1].strip().strip('"').strip("'")
+    raise RuntimeError(f"DISCORD_BOT_TOKEN not found in {BOT_ENV}")
 
 
 def serialize_f32(vec: list[float]) -> bytes:
