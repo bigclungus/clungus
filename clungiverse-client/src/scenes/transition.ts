@@ -26,6 +26,7 @@ interface CardRect {
 
 let cardRects: CardRect[] = [];
 let clickHandler: ((e: MouseEvent) => void) | null = null;
+let touchHandler: ((e: TouchEvent) => void) | null = null;
 let picked = false;
 let timerStart = 0;
 const PICK_TIMEOUT_MS = 15000;
@@ -102,7 +103,23 @@ export function createTransitionScene(network: DungeonNetwork): TransitionScene 
         }
       };
 
+      touchHandler = (e: TouchEvent) => {
+        if (picked || e.changedTouches.length !== 1) return;
+        const t = e.changedTouches[0];
+        const mx = t.clientX;
+        const my = t.clientY;
+        for (const card of cardRects) {
+          if (mx >= card.x && mx <= card.x + card.w && my >= card.y && my <= card.y + card.h) {
+            picked = true;
+            network.sendPickPowerup(card.choice.id);
+            e.preventDefault();
+            return;
+          }
+        }
+      };
+
       window.addEventListener('click', clickHandler);
+      window.addEventListener('touchend', touchHandler, { passive: false });
     },
 
     update(state: DungeonClientState, _dt: number): void {
@@ -169,6 +186,10 @@ export function createTransitionScene(network: DungeonNetwork): TransitionScene 
       if (clickHandler) {
         window.removeEventListener('click', clickHandler);
         clickHandler = null;
+      }
+      if (touchHandler) {
+        window.removeEventListener('touchend', touchHandler);
+        touchHandler = null;
       }
       cardRects = [];
       picked = false;

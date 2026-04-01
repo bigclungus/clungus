@@ -119,3 +119,12 @@ export function pollInput(): InputSnapshot {
 export function isKeyDown(key: string): boolean {
   return held.has(key.toLowerCase());
 }
+
+// Synthetic key press/release — used by the virtual d-pad overlay
+export function pressKey(key: string): void {
+  held.add(key.toLowerCase());
+}
+
+export function releaseKey(key: string): void {
+  held.delete(key.toLowerCase());
+}

@@ -31,6 +31,7 @@ let cardHits: CardHit[] = [];
 let startButtonHit: { x: number; y: number; w: number; h: number } | null = null;
 let copyLinkHit: { x: number; y: number; w: number; h: number } | null = null;
 let clickHandler: ((e: MouseEvent) => void) | null = null;
+let touchHandler: ((e: TouchEvent) => void) | null = null;
 let linkCopiedFlash = 0; // timestamp when "Copied!" was triggered
 let skipGenCheckbox: HTMLInputElement | null = null;
 let skipGenLabel: HTMLLabelElement | null = null;
@@ -205,6 +206,8 @@ function renderPersonaGrid(
 }
 
 function renderPartyRoster(ctx: CanvasRenderingContext2D, state: DungeonClientState, w: number): void {
+  // On narrow viewports (mobile), skip the sidebar roster — player list is visible in the persona cards
+  if (w < 480) return;
   const rosterX = w - 200;
   const rosterY = 110;
 
@@ -488,7 +491,19 @@ export function createLobbyScene(network: DungeonNetwork): LobbyScene {
         handleLobbyClick(e, state, network);
       };
 
+      touchHandler = (e: TouchEvent) => {
+        // Only handle single-finger taps; ignore multi-touch
+        if (e.changedTouches.length !== 1) return;
+        const t = e.changedTouches[0];
+        const mx = t.clientX;
+        const my = t.clientY;
+        if (handleCardClick(mx, my, state, network)) { e.preventDefault(); return; }
+        if (handleCopyLinkClick(mx, my, state)) { e.preventDefault(); return; }
+        handleStartButtonClick(mx, my, state, network);
+      };
+
       window.addEventListener('click', clickHandler);
+      window.addEventListener('touchend', touchHandler, { passive: false });
     },
 
     update(_state: DungeonClientState, _dt: number): void {
@@ -535,6 +550,10 @@ export function createLobbyScene(network: DungeonNetwork): LobbyScene {
       if (clickHandler) {
         window.removeEventListener('click', clickHandler);
         clickHandler = null;
+      }
+      if (touchHandler) {
+        window.removeEventListener('touchend', touchHandler);
+        touchHandler = null;
       }
       cardHits = [];
       startButtonHit = null;

@@ -3,7 +3,7 @@
 
 import { createInitialState, type DungeonClientState, type SceneName } from './state';
 import { initCanvas, getCanvas, clearCanvas } from './renderer/canvas';
-import { initInput } from './input/input';
+import { initInput, pressKey, releaseKey } from './input/input';
 import { DungeonNetwork } from './network/dungeon-network';
 import { createLobbyScene } from './scenes/lobby';
 import { createDungeonScene } from './scenes/dungeon';
@@ -31,6 +31,142 @@ const network = new DungeonNetwork(state);
 
 initInput(getCanvas());
 preloadAvatars();
+
+// === Virtual D-Pad (touch devices) ===
+
+function createDpad(): void {
+  const style = document.createElement('style');
+  style.textContent = `
+    #dpad {
+      position: fixed;
+      bottom: 24px;
+      left: 24px;
+      width: 144px;
+      height: 144px;
+      display: none;
+      z-index: 100;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    @media (hover: none) and (pointer: coarse) {
+      #dpad { display: grid; }
+    }
+    #dpad {
+      grid-template-columns: repeat(3, 48px);
+      grid-template-rows: repeat(3, 48px);
+    }
+    .dpad-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 22px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.08s;
+    }
+    .dpad-btn:active,
+    .dpad-btn.pressed {
+      background: rgba(255,255,255,0.3);
+    }
+    .dpad-center { background: transparent; border: none; }
+    .dpad-fire {
+      position: fixed;
+      bottom: 96px;
+      right: 24px;
+      width: 64px;
+      height: 64px;
+      display: none;
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,180,0,0.22);
+      border: 1px solid rgba(255,180,0,0.5);
+      border-radius: 50%;
+      color: #ffe;
+      font-size: 22px;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    @media (hover: none) and (pointer: coarse) {
+      .dpad-fire { display: flex; }
+    }
+  `;
+  document.head.appendChild(style);
+
+  const dpad = document.createElement('div');
+  dpad.id = 'dpad';
+
+  // 3x3 grid: row 0 = up, row 1 = left/right, row 2 = down
+  // cell positions (row, col): up=(0,1) left=(1,0) right=(1,2) down=(2,1) center=(1,1)
+  const cells: { row: number; col: number; key: string; label: string }[] = [
+    { row: 0, col: 0, key: '', label: '' },
+    { row: 0, col: 1, key: 'arrowup', label: '▲' },
+    { row: 0, col: 2, key: '', label: '' },
+    { row: 1, col: 0, key: 'arrowleft', label: '◀' },
+    { row: 1, col: 1, key: '', label: '' },
+    { row: 1, col: 2, key: 'arrowright', label: '▶' },
+    { row: 2, col: 0, key: '', label: '' },
+    { row: 2, col: 1, key: 'arrowdown', label: '▼' },
+    { row: 2, col: 2, key: '', label: '' },
+  ];
+
+  const activeKeys = new Map<number, string>(); // pointerId -> key
+
+  cells.forEach(({ key, label }) => {
+    const btn = document.createElement('div');
+    btn.className = key ? 'dpad-btn' : 'dpad-btn dpad-center';
+    btn.textContent = label;
+
+    if (key) {
+      btn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        btn.setPointerCapture(e.pointerId);
+        activeKeys.set(e.pointerId, key);
+        pressKey(key);
+        btn.classList.add('pressed');
+      });
+
+      const release = (e: PointerEvent): void => {
+        const k = activeKeys.get(e.pointerId);
+        if (k) {
+          releaseKey(k);
+          activeKeys.delete(e.pointerId);
+        }
+        btn.classList.remove('pressed');
+      };
+
+      btn.addEventListener('pointerup', release);
+      btn.addEventListener('pointercancel', release);
+    }
+
+    dpad.appendChild(btn);
+  });
+
+  document.body.appendChild(dpad);
+
+  // Fire / power button (bottom-right)
+  const fireBtn = document.createElement('div');
+  fireBtn.className = 'dpad-fire';
+  fireBtn.textContent = '⚡';
+  fireBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    // Dispatch a synthetic spacebar keydown so the power one-shot logic fires
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+  });
+  fireBtn.addEventListener('pointerup', () => {
+    window.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true }));
+  });
+  document.body.appendChild(fireBtn);
+}
+
+createDpad();
 
 // === Scene Interface ===
 
