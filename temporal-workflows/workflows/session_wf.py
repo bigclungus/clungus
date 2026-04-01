@@ -266,13 +266,17 @@ class SessionWorkflow:
             for identity_obj in debaters:
                 identity_name: str = identity_obj.get("name", str(identity_obj))
                 display_name: str = identity_obj.get("display_name") or identity_name
-                response_text: str = await workflow.execute_activity(
-                    congress_debate,
-                    args=[topic, identity_name, session_id, thread_id, display_name, round_num, debater_display_names, pre_debate_context],
-                    start_to_close_timeout=_DEBATE_TIMEOUT,
-                    schedule_to_start_timeout=timedelta(minutes=3),
-                    retry_policy=RetryPolicy(maximum_attempts=2),
-                )
+                try:
+                    response_text: str = await workflow.execute_activity(
+                        congress_debate,
+                        args=[topic, identity_name, session_id, thread_id, display_name, round_num, debater_display_names, pre_debate_context],
+                        start_to_close_timeout=_DEBATE_TIMEOUT,
+                        schedule_to_start_timeout=timedelta(minutes=3),
+                        retry_policy=RetryPolicy(maximum_attempts=2),
+                    )
+                except Exception as exc:
+                    workflow.logger.warning(f"Round {round_num} debate failed for {display_name}: {exc}")
+                    response_text = ""
                 snippet = response_text[:500].strip() if response_text else ""
                 summaries.append({"identity": display_name, "snippet": snippet, "round": round_num})
         return summaries
@@ -435,9 +439,9 @@ class SessionWorkflow:
             )
 
         # ------------------------------------------------------------------ #
-        # 2c. Multimodel preflight — abort fast if non-Claude backends are down
+        # 2c. Multimodel preflight — downgrade unavailable backends to Claude
         # ------------------------------------------------------------------ #
-        await workflow.execute_activity(
+        debaters = await workflow.execute_activity(
             congress_preflight_check,
             args=[debaters],
             start_to_close_timeout=timedelta(seconds=30),

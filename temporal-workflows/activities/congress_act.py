@@ -1690,11 +1690,13 @@ def _classify_model(model: str) -> str:
 
 
 @activity.defn
-async def congress_preflight_check(debaters: list) -> None:
+async def congress_preflight_check(debaters: list) -> list:
     """Verify that every non-Claude model assigned to a seated debater is reachable.
 
-    Runs before any debate activity. Raises ApplicationError (non-retryable) if a
-    required external model is unreachable or out of credits, so the workflow aborts
+    Runs before any debate activity. If a non-Claude backend is unavailable, the
+    affected personas are downgraded to Claude (model field cleared) and a warning
+    is logged. Returns the (possibly modified) debaters list so the workflow can
+    use the corrected version. Only raises if something truly unexpected happens.
     fast before burning tokens on Claude-side activities.
 
     Checks performed:
@@ -1721,7 +1723,7 @@ async def congress_preflight_check(debaters: list) -> None:
 
     if not need_grok and not need_gemini:
         activity.logger.info("congress_preflight_check: all debaters are Claude-only — skipping multimodel check")
-        return
+        return debaters
 
     errors: list[str] = []
 
@@ -1810,11 +1812,26 @@ async def congress_preflight_check(debaters: list) -> None:
             activity.logger.info(f"congress_preflight_check: Gemini key present and binary found — OK. Personas: {gemini_personas}")
 
     # ------------------------------------------------------------------
-    # Fail fast if any check failed
+    # Graceful degradation: downgrade unavailable models to Claude
     # ------------------------------------------------------------------
     if errors:
         combined = " | ".join(errors)
-        raise ApplicationError(
-            f"Congress preflight failed — multimodel backend unavailable: {combined}",
-            non_retryable=True,
+        activity.logger.warning(
+            f"congress_preflight_check: multimodel backend(s) unavailable, "
+            f"downgrading affected personas to Claude. Issues: {combined}"
         )
+        # Strip non-Claude models whose backends failed
+        grok_failed = any("Grok" in e for e in errors)
+        gemini_failed = any("Gemini" in e for e in errors)
+        for d in debaters:
+            model = (d.get("model") or "").strip()
+            kind = _classify_model(model)
+            if (kind == "grok" and grok_failed) or (kind == "gemini" and gemini_failed):
+                name = d.get("display_name") or d.get("name") or str(d)
+                activity.logger.warning(
+                    f"congress_preflight_check: downgrading {name} from {model} to Claude"
+                )
+                d["model"] = ""
+                d["_original_model"] = model  # preserve for logging
+
+    return debaters
