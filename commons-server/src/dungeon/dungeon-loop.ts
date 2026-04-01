@@ -523,7 +523,11 @@ export function initFloor(instance: DungeonInstance): void {
     gridWidth: genLayout.width,
     gridHeight: genLayout.height,
     tiles: Array.from(genLayout.tileGrid),
-    rooms: layout.rooms.map((r) => ({ x: r.x, y: r.y, w: r.w, h: r.h })),
+    rooms: genLayout.rooms.map((r, i) => ({
+      x: r.x, y: r.y, w: r.w, h: r.h,
+      shape: r.shape,
+      tileSet: r.shape !== "rect" ? r.tileSet : undefined,
+    })),
     corridors: layout.corridors.map((c) => ({
       x1: c.x1, y1: c.y1, x2: c.x2, y2: c.y2, width: c.width,
     })),

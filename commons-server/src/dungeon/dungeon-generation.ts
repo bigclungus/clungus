@@ -27,6 +27,7 @@ export interface EnemyVariant {
 }
 
 export type RoomType = "combat" | "treasure" | "rest" | "boss" | "start";
+export type RoomShape = "rect" | "L" | "circle" | "cross" | "cave";
 
 export interface Room {
   id: number;
@@ -35,6 +36,9 @@ export interface Room {
   w: number;
   h: number;
   type: RoomType;
+  shape: RoomShape;
+  /** Actual floor tiles belonging to this room (for non-rect shapes). */
+  tileSet: { x: number; y: number }[];
 }
 
 export interface Corridor {
@@ -189,6 +193,28 @@ function getLeaves(node: BSPNode): BSPNode[] {
   return leaves;
 }
 
+// ─── Shape Selection ─────────────────────────────────────────────────────────
+
+/** Pick a random room shape, weighted. Returns "rect" if bounding box is too small for the shape. */
+function pickRoomShape(w: number, h: number, rng: SeededRNG): RoomShape {
+  const roll = rng.next();
+  // rect 40%, L 20%, circle 15%, cross 10%, cave 15%
+  let shape: RoomShape;
+  if (roll < 0.40) shape = "rect";
+  else if (roll < 0.60) shape = "L";
+  else if (roll < 0.75) shape = "circle";
+  else if (roll < 0.85) shape = "cross";
+  else shape = "cave";
+
+  // Enforce minimum sizes — fall back to rect if too small
+  if (shape === "L" && (w < 12 || h < 12)) shape = "rect";
+  if (shape === "circle" && (w < 10 || h < 10)) shape = "rect";
+  if (shape === "cross" && (w < 10 || h < 10)) shape = "rect";
+  if (shape === "cave" && (w < 10 || h < 10)) shape = "rect";
+
+  return shape;
+}
+
 // ─── Room Placement ──────────────────────────────────────────────────────────
 
 function placeRooms(leaves: BSPNode[], rng: SeededRNG): Room[] {
@@ -205,7 +231,8 @@ function placeRooms(leaves: BSPNode[], rng: SeededRNG): Room[] {
     const roomX = leaf.x + rng.int(1, leaf.w - roomW - 1);
     const roomY = leaf.y + rng.int(1, leaf.h - roomH - 1);
 
-    const room: Room = { id: id++, x: roomX, y: roomY, w: roomW, h: roomH, type: "combat" };
+    const shape = pickRoomShape(roomW, roomH, rng);
+    const room: Room = { id: id++, x: roomX, y: roomY, w: roomW, h: roomH, type: "combat", shape, tileSet: [] };
     leaf.room = room;
     rooms.push(room);
   }
@@ -235,8 +262,14 @@ function assignRoomTypes(rooms: Room[], hasBoss: boolean, rng: SeededRNG): void 
   if (rooms.length === 0) return;
 
   rooms[0].type = "start";
+  rooms[0].shape = "rect"; // Start room always rect
   if (hasBoss && rooms.length > 1) {
     rooms[rooms.length - 1].type = "boss";
+    // Boss room: rect or circle only
+    const bossRoom = rooms[rooms.length - 1];
+    if (bossRoom.shape !== "rect" && bossRoom.shape !== "circle") {
+      bossRoom.shape = (bossRoom.w >= 10 && bossRoom.h >= 10 && rng.next() < 0.4) ? "circle" : "rect";
+    }
   }
 
   for (let i = 1; i < rooms.length; i++) {
@@ -251,6 +284,7 @@ function assignRoomTypes(rooms: Room[], hasBoss: boolean, rng: SeededRNG): void 
 // ─── Corridor Connection ─────────────────────────────────────────────────────
 
 function getRoomCenter(room: Room): { x: number; y: number } {
+  // Use bounding box center (corridors connect before carving populates tileSet)
   return { x: Math.floor(room.x + room.w / 2), y: Math.floor(room.y + room.h / 2) };
 }
 
@@ -301,12 +335,164 @@ function connectBSP(node: BSPNode, corridors: Corridor[]): void {
 type TileSetFn = (x: number, y: number, tile: TileType) => void;
 type TileGetFn = (x: number, y: number) => TileType;
 
-function carveRooms(rooms: Room[], set: TileSetFn): void {
-  for (const room of rooms) {
-    for (let ry = room.y; ry < room.y + room.h; ry++) {
-      for (let rx = room.x; rx < room.x + room.w; rx++) {
-        set(rx, ry, Tile.FLOOR);
+// ─── Shape Carving ──────────────────────────────────────────────────────────
+
+function carveRect(room: Room, set: TileSetFn): void {
+  const tiles: { x: number; y: number }[] = [];
+  for (let ry = room.y; ry < room.y + room.h; ry++) {
+    for (let rx = room.x; rx < room.x + room.w; rx++) {
+      set(rx, ry, Tile.FLOOR);
+      tiles.push({ x: rx, y: ry });
+    }
+  }
+  room.tileSet = tiles;
+}
+
+function carveL(room: Room, set: TileSetFn, rng: SeededRNG): void {
+  // L-shape: two overlapping rects. Pick a random corner to notch out.
+  const tiles: { x: number; y: number }[] = [];
+  const notchCorner = rng.int(0, 3); // 0=TL, 1=TR, 2=BL, 3=BR
+  // Notch dimensions: roughly 40-50% of each dimension
+  const notchW = Math.floor(room.w * (0.35 + rng.next() * 0.15));
+  const notchH = Math.floor(room.h * (0.35 + rng.next() * 0.15));
+
+  for (let ry = room.y; ry < room.y + room.h; ry++) {
+    for (let rx = room.x; rx < room.x + room.w; rx++) {
+      const localX = rx - room.x;
+      const localY = ry - room.y;
+      let inNotch = false;
+      switch (notchCorner) {
+        case 0: inNotch = localX < notchW && localY < notchH; break;
+        case 1: inNotch = localX >= room.w - notchW && localY < notchH; break;
+        case 2: inNotch = localX < notchW && localY >= room.h - notchH; break;
+        case 3: inNotch = localX >= room.w - notchW && localY >= room.h - notchH; break;
       }
+      if (!inNotch) {
+        set(rx, ry, Tile.FLOOR);
+        tiles.push({ x: rx, y: ry });
+      }
+    }
+  }
+  room.tileSet = tiles;
+}
+
+function carveCircle(room: Room, set: TileSetFn): void {
+  const tiles: { x: number; y: number }[] = [];
+  const cx = room.x + room.w / 2;
+  const cy = room.y + room.h / 2;
+  const rx = (room.w - 1) / 2;
+  const ry = (room.h - 1) / 2;
+
+  for (let py = room.y; py < room.y + room.h; py++) {
+    for (let px = room.x; px < room.x + room.w; px++) {
+      const dx = (px + 0.5 - cx) / rx;
+      const dy = (py + 0.5 - cy) / ry;
+      if (dx * dx + dy * dy <= 1.0) {
+        set(px, py, Tile.FLOOR);
+        tiles.push({ x: px, y: py });
+      }
+    }
+  }
+  room.tileSet = tiles;
+}
+
+function carveCross(room: Room, set: TileSetFn): void {
+  const tiles: { x: number; y: number }[] = [];
+  // Central horizontal and vertical strips, each ~50-60% of the bounding box
+  const hStripH = Math.max(5, Math.floor(room.h * 0.45));
+  const vStripW = Math.max(5, Math.floor(room.w * 0.45));
+  const hStripY = room.y + Math.floor((room.h - hStripH) / 2);
+  const vStripX = room.x + Math.floor((room.w - vStripW) / 2);
+
+  for (let py = room.y; py < room.y + room.h; py++) {
+    for (let px = room.x; px < room.x + room.w; px++) {
+      const inHStrip = py >= hStripY && py < hStripY + hStripH;
+      const inVStrip = px >= vStripX && px < vStripX + vStripW;
+      if (inHStrip || inVStrip) {
+        set(px, py, Tile.FLOOR);
+        tiles.push({ x: px, y: py });
+      }
+    }
+  }
+  room.tileSet = tiles;
+}
+
+function carveCave(room: Room, set: TileSetFn, rng: SeededRNG): void {
+  // Start with full rect, then erode edges using cellular automata
+  const w = room.w;
+  const h = room.h;
+  // Working grid: 1 = floor, 0 = wall
+  let grid = new Uint8Array(w * h);
+  grid.fill(1);
+
+  // Randomly kill ~30% of edge tiles (tiles within 2 of boundary)
+  for (let ly = 0; ly < h; ly++) {
+    for (let lx = 0; lx < w; lx++) {
+      const distFromEdge = Math.min(lx, ly, w - 1 - lx, h - 1 - ly);
+      if (distFromEdge < 3 && rng.next() < 0.4) {
+        grid[ly * w + lx] = 0;
+      }
+    }
+  }
+
+  // 2-3 cellular automata smoothing passes
+  const passes = 2 + (rng.next() < 0.5 ? 1 : 0);
+  for (let pass = 0; pass < passes; pass++) {
+    const next = new Uint8Array(w * h);
+    for (let ly = 0; ly < h; ly++) {
+      for (let lx = 0; lx < w; lx++) {
+        // Count alive neighbors (including self)
+        let alive = 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const nx = lx + dx;
+            const ny = ly + dy;
+            if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+              alive += grid[ny * w + nx];
+            }
+          }
+        }
+        // Standard B5678/S45678 rule (keeps caves connected)
+        next[ly * w + lx] = alive >= 5 ? 1 : 0;
+      }
+    }
+    grid = next;
+  }
+
+  // Ensure center area is always carved (connectivity guarantee)
+  const coreX1 = Math.floor(w * 0.25);
+  const coreX2 = Math.ceil(w * 0.75);
+  const coreY1 = Math.floor(h * 0.25);
+  const coreY2 = Math.ceil(h * 0.75);
+  for (let ly = coreY1; ly < coreY2; ly++) {
+    for (let lx = coreX1; lx < coreX2; lx++) {
+      grid[ly * w + lx] = 1;
+    }
+  }
+
+  const tiles: { x: number; y: number }[] = [];
+  for (let ly = 0; ly < h; ly++) {
+    for (let lx = 0; lx < w; lx++) {
+      if (grid[ly * w + lx] === 1) {
+        const px = room.x + lx;
+        const py = room.y + ly;
+        set(px, py, Tile.FLOOR);
+        tiles.push({ x: px, y: py });
+      }
+    }
+  }
+  room.tileSet = tiles;
+}
+
+function carveRooms(rooms: Room[], set: TileSetFn, rng: SeededRNG): void {
+  for (const room of rooms) {
+    switch (room.shape) {
+      case "L": carveL(room, set, rng); break;
+      case "circle": carveCircle(room, set); break;
+      case "cross": carveCross(room, set); break;
+      case "cave": carveCave(room, set, rng); break;
+      case "rect":
+      default: carveRect(room, set); break;
     }
   }
 }
@@ -337,7 +523,8 @@ function isAdjacentToRoom(rx: number, ry: number, room: Room, get: TileGetFn): b
 }
 
 function checkDoorTile(rx: number, ry: number, room: Room, get: TileGetFn, set: TileSetFn): void {
-  if (rx >= room.x && rx < room.x + room.w && ry >= room.y && ry < room.y + room.h) return;
+  // Must be outside the room's actual tile set
+  if (isInRoom(rx, ry, room)) return;
   if (get(rx, ry) !== Tile.FLOOR) return;
   if (isAdjacentToRoom(rx, ry, room, get)) {
     set(rx, ry, Tile.DOOR_CLOSED);
@@ -346,6 +533,7 @@ function checkDoorTile(rx: number, ry: number, room: Room, get: TileGetFn, set: 
 
 function placeDoors(rooms: Room[], get: TileGetFn, set: TileSetFn): void {
   for (const room of rooms) {
+    // Scan the bounding box +1 border for door candidates
     for (let rx = room.x - 1; rx <= room.x + room.w; rx++) {
       for (let ry = room.y - 1; ry <= room.y + room.h; ry++) {
         checkDoorTile(rx, ry, room, get, set);
@@ -354,10 +542,19 @@ function placeDoors(rooms: Room[], get: TileGetFn, set: TileSetFn): void {
   }
 }
 
+/** Get center of mass from tileSet, falling back to bounding box center */
+function getRoomCenterOfMass(room: Room): { x: number; y: number } {
+  if (room.tileSet.length === 0) {
+    return { x: Math.floor(room.x + room.w / 2), y: Math.floor(room.y + room.h / 2) };
+  }
+  let sx = 0, sy = 0;
+  for (const t of room.tileSet) { sx += t.x; sy += t.y; }
+  return { x: Math.floor(sx / room.tileSet.length), y: Math.floor(sy / room.tileSet.length) };
+}
+
 function placeSpecialTiles(rooms: Room[], set: TileSetFn): void {
   for (const room of rooms) {
-    const cx = Math.floor(room.x + room.w / 2);
-    const cy = Math.floor(room.y + room.h / 2);
+    const { x: cx, y: cy } = getRoomCenterOfMass(room);
     switch (room.type) {
       case "start": set(cx, cy, Tile.SPAWN_POINT); break;
       case "treasure": set(cx, cy, Tile.TREASURE_CHEST); break;
@@ -366,10 +563,19 @@ function placeSpecialTiles(rooms: Room[], set: TileSetFn): void {
     }
   }
   const stairsRoom = rooms[rooms.length - 1];
-  const sx = stairsRoom.x + stairsRoom.w - 2;
-  const sy = stairsRoom.y + stairsRoom.h - 2;
-  if (sx > stairsRoom.x && sy > stairsRoom.y) {
-    set(sx, sy, Tile.STAIRS);
+  // For stairs, pick a tile from tileSet near the bottom-right if available
+  if (stairsRoom.tileSet.length > 0) {
+    // Sort by x+y descending, pick first (near bottom-right)
+    const sorted = [...stairsRoom.tileSet].sort((a, b) => (b.x + b.y) - (a.x + a.y));
+    // Skip the very edge — pick 2nd or 3rd tile
+    const stairTile = sorted[Math.min(2, sorted.length - 1)];
+    set(stairTile.x, stairTile.y, Tile.STAIRS);
+  } else {
+    const sx = stairsRoom.x + stairsRoom.w - 2;
+    const sy = stairsRoom.y + stairsRoom.h - 2;
+    if (sx > stairsRoom.x && sy > stairsRoom.y) {
+      set(sx, sy, Tile.STAIRS);
+    }
   }
 }
 
@@ -377,7 +583,8 @@ function buildTileGrid(
   width: number,
   height: number,
   rooms: Room[],
-  corridors: Corridor[]
+  corridors: Corridor[],
+  rng: SeededRNG,
 ): Uint8Array {
   const grid = new Uint8Array(width * height);
   grid.fill(Tile.WALL);
@@ -395,7 +602,7 @@ function buildTileGrid(
     return Tile.WALL;
   };
 
-  carveRooms(rooms, set);
+  carveRooms(rooms, set, rng);
   carveCorridors(corridors, get, set);
   placeDoors(rooms, get, set);
   placeSpecialTiles(rooms, set);
@@ -404,6 +611,10 @@ function buildTileGrid(
 }
 
 function isInRoom(x: number, y: number, room: Room): boolean {
+  // For non-rect shapes, check actual tileSet
+  if (room.shape !== "rect" && room.tileSet.length > 0) {
+    return room.tileSet.some((t) => t.x === x && t.y === y);
+  }
   return x >= room.x && x < room.x + room.w && y >= room.y && y < room.y + room.h;
 }
 
@@ -427,27 +638,49 @@ function distributeBudget(combatRooms: Room[], totalBudget: number, rng: SeededR
   return roomBudgets;
 }
 
+/** Get interior tiles for spawning (1 tile inset from edges). Falls back to tileSet or rect. */
+function getSpawnableTiles(room: Room): { x: number; y: number }[] {
+  if (room.tileSet.length > 0) {
+    // Build a set of all room tiles for quick lookup
+    const tileKeys = new Set(room.tileSet.map((t) => `${String(t.x)},${String(t.y)}`));
+    // Filter to interior tiles: all 4 cardinal neighbors must also be in the room
+    return room.tileSet.filter((t) => {
+      return tileKeys.has(`${String(t.x - 1)},${String(t.y)}`) &&
+             tileKeys.has(`${String(t.x + 1)},${String(t.y)}`) &&
+             tileKeys.has(`${String(t.x)},${String(t.y - 1)}`) &&
+             tileKeys.has(`${String(t.x)},${String(t.y + 1)}`);
+    });
+  }
+  // Rect fallback
+  const tiles: { x: number; y: number }[] = [];
+  for (let y = room.y + 1; y < room.y + room.h - 1; y++) {
+    for (let x = room.x + 1; x < room.x + room.w - 1; x++) {
+      tiles.push({ x, y });
+    }
+  }
+  return tiles;
+}
+
 function spawnInRoom(
   room: Room, budget: number, available: EnemyVariant[], spawns: EnemySpawn[], rng: SeededRNG,
 ): void {
-  const minX = room.x + 1;
-  const maxX = room.x + room.w - 2;
-  const minY = room.y + 1;
-  const maxY = room.y + room.h - 2;
-  if (maxX <= minX || maxY <= minY) return;
+  const spawnTiles = getSpawnableTiles(room);
+  if (spawnTiles.length === 0) return;
   let remaining = budget;
   let attempts = 0;
   while (remaining > 0 && attempts < 100) {
     attempts++;
     const variant = rng.pick(available);
+    const tile = rng.pick(spawnTiles);
     if (variant.budget_cost > remaining) {
       const cheaper = available.filter((v) => v.budget_cost <= remaining);
       if (cheaper.length === 0) break;
       const picked = rng.pick(cheaper);
-      spawns.push({ variantId: picked.id, x: rng.int(minX, maxX), y: rng.int(minY, maxY), roomId: room.id });
+      const t2 = rng.pick(spawnTiles);
+      spawns.push({ variantId: picked.id, x: t2.x, y: t2.y, roomId: room.id });
       remaining -= picked.budget_cost;
     } else {
-      spawns.push({ variantId: variant.id, x: rng.int(minX, maxX), y: rng.int(minY, maxY), roomId: room.id });
+      spawns.push({ variantId: variant.id, x: tile.x, y: tile.y, roomId: room.id });
       remaining -= variant.budget_cost;
     }
   }
@@ -525,7 +758,7 @@ export function generateFloor(
   connectBSP(root, corridors);
 
   // Build tile grid
-  const tileGrid = buildTileGrid(width, height, rooms, corridors);
+  const tileGrid = buildTileGrid(width, height, rooms, corridors, rng);
 
   // Spawn enemies
   const enemySpawns = spawnEnemies(
@@ -606,7 +839,7 @@ if (import.meta.main) {
   console.log(`Seed: ${layout.seed}`);
   console.log(`Rooms: ${String(layout.rooms.length)}`);
   for (const room of layout.rooms) {
-    console.log(`  Room ${String(room.id)}: ${room.type} at (${String(room.x)},${String(room.y)}) ${String(room.w)}x${String(room.h)}`);
+    console.log(`  Room ${String(room.id)}: ${room.type} [${room.shape}] at (${String(room.x)},${String(room.y)}) ${String(room.w)}x${String(room.h)} tiles=${String(room.tileSet.length)}`);
   }
   console.log(`Corridors: ${String(layout.corridors.length)}`);
   console.log(`Enemy spawns: ${String(layout.enemySpawns.length)}`);

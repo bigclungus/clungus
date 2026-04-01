@@ -84,10 +84,20 @@ function rebuildRoomMap(rooms: ClientRoom[], gridW: number, gridH: number): void
   roomMap = new Uint8Array(gridW * gridH);
   for (const room of rooms) {
     const themeIdx = THEME_TO_INDEX[room.theme] ?? 2;
-    for (let r = room.y; r < room.y + room.h; r++) {
-      for (let c = room.x; c < room.x + room.w; c++) {
-        if (r >= 0 && r < gridH && c >= 0 && c < gridW) {
-          roomMap[r * gridW + c] = themeIdx;
+    if (room.tileSet && room.tileSet.length > 0) {
+      // Non-rect rooms: use actual tile set
+      for (const t of room.tileSet) {
+        if (t.y >= 0 && t.y < gridH && t.x >= 0 && t.x < gridW) {
+          roomMap[t.y * gridW + t.x] = themeIdx;
+        }
+      }
+    } else {
+      // Rect rooms: fill bounding box
+      for (let r = room.y; r < room.y + room.h; r++) {
+        for (let c = room.x; c < room.x + room.w; c++) {
+          if (r >= 0 && r < gridH && c >= 0 && c < gridW) {
+            roomMap[r * gridW + c] = themeIdx;
+          }
         }
       }
     }
@@ -214,19 +224,22 @@ export class TileRenderer {
   ): void {
     const ts = TILE_SIZE;
     const baseColor = isDim ? 0x222222 : (mask === 15 ? WALL_COLOR_INTERIOR : WALL_COLOR_BASE);
-    const inset = 2; // how much narrower shaped walls are
+    const inset = Math.max(3, Math.round(TILE_SIZE * 0.25)); // 25% inset for visible shape variation
 
     // Draw base fill first (always full tile for background)
+    // Use floor-like color so the exposed gaps read as "no wall here"
     this.gfx.rect(px, py, ts, ts);
-    this.gfx.fill(isDim ? 0x1a1a1a : 0x1a1a1a);
+    this.gfx.fill(isDim ? 0x0e0e0e : 0x111111);
 
     switch (mask) {
       case 0: // Isolated pillar
         this.gfx.rect(px + inset + 1, py + inset + 1, ts - (inset + 1) * 2, ts - (inset + 1) * 2);
         this.gfx.fill(baseColor);
         if (!isDim) {
-          this.gfx.rect(px + inset + 1, py + inset + 1, ts - (inset + 1) * 2, 1);
-          this.gfx.fill({ color: WALL_HIGHLIGHT, alpha: 0.12 });
+          this.gfx.rect(px + inset + 1, py + inset + 1, ts - (inset + 1) * 2, 2);
+          this.gfx.fill({ color: WALL_HIGHLIGHT, alpha: 0.18 });
+          this.gfx.rect(px + inset + 1, py + ts - inset - 2, ts - (inset + 1) * 2, 2);
+          this.gfx.fill({ color: WALL_SHADOW, alpha: 0.25 });
         }
         break;
 

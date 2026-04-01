@@ -96,7 +96,7 @@ interface ServerFloorMsg {
   gridWidth: number;
   gridHeight: number;
   tiles: number[];
-  rooms: { x: number; y: number; w: number; h: number }[];
+  rooms: { x: number; y: number; w: number; h: number; shape?: string; tileSet?: { x: number; y: number }[] }[];
   corridors: { x1: number; y1: number; x2: number; y2: number; width: number }[];
 }
 
@@ -611,6 +611,8 @@ export class DungeonNetwork extends Emitter {
       h: r.h,
       cleared: false, // rooms start uncleared; door_open events mark them
       theme: deriveRoomTheme(i, msg.rooms.length, msg.floor, r.x, r.y),
+      shape: (r.shape as import('../state').RoomShape) ?? 'rect',
+      tileSet: r.tileSet,
     }));
     // Start room (index 0) is always visited; fog of war hides the rest
     s.visitedRooms = new Set([0]);

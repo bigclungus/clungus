@@ -238,6 +238,7 @@ export interface ClientAoEZone {
 }
 
 export type RoomTheme = 'start' | 'combat' | 'treasure' | 'rest' | 'boss';
+export type RoomShape = 'rect' | 'L' | 'circle' | 'cross' | 'cave';
 
 export interface ClientRoom {
   x: number;
@@ -246,6 +247,9 @@ export interface ClientRoom {
   h: number;
   cleared: boolean;
   theme: RoomTheme;
+  shape: RoomShape;
+  /** Actual floor tiles for non-rect shapes. Undefined for rect rooms. */
+  tileSet?: { x: number; y: number }[];
 }
 
 export interface PowerupChoice {

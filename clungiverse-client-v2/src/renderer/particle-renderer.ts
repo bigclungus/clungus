@@ -351,19 +351,19 @@ export function updateFootstepDust(playerX: number, playerY: number): void {
 
   if (dist > 2) {
     const now = performance.now();
-    if (now - lastFootstepSpawn > 80) {
+    if (now - lastFootstepSpawn > 60) {
       lastFootstepSpawn = now;
-      const count = 1 + (Math.random() < 0.5 ? 1 : 0);
+      const count = 2 + (Math.random() < 0.5 ? 1 : 0);
       for (let i = 0; i < count && particles.length < MAX_PARTICLES; i++) {
         particles.push({
-          x: playerX + (Math.random() - 0.5) * 6,
-          y: playerY + 4 + Math.random() * 2,
-          vx: (Math.random() - 0.5) * 20,
-          vy: -(5 + Math.random() * 10),
-          life: 200 + Math.random() * 100,
-          maxLife: 300,
+          x: playerX + (Math.random() - 0.5) * 10,
+          y: playerY + 6 + Math.random() * 3,
+          vx: (Math.random() - 0.5) * 30,
+          vy: -(8 + Math.random() * 15),
+          life: 350 + Math.random() * 150,
+          maxLife: 500,
           color: 0xb8a874,
-          size: 1 + Math.random() * 0.5,
+          size: 2 + Math.random() * 1.5,
         });
       }
     }

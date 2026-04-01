@@ -216,6 +216,8 @@ export interface RoomSnapshot {
   y: number;
   w: number;
   h: number;
+  shape?: "rect" | "L" | "circle" | "cross" | "cave";
+  tileSet?: { x: number; y: number }[];
 }
 
 export interface CorridorSnapshot {

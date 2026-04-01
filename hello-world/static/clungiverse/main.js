@@ -31676,7 +31676,9 @@ class DungeonNetwork extends Emitter {
       w: r2.w,
       h: r2.h,
       cleared: false,
-      theme: deriveRoomTheme(i2, msg.rooms.length, msg.floor, r2.x, r2.y)
+      theme: deriveRoomTheme(i2, msg.rooms.length, msg.floor, r2.x, r2.y),
+      shape: r2.shape ?? "rect",
+      tileSet: r2.tileSet
     }));
     s2.visitedRooms = new Set([0]);
     s2.exploredTiles = new Uint8Array(msg.gridWidth * msg.gridHeight);
@@ -32578,10 +32580,18 @@ function rebuildRoomMap(rooms, gridW, gridH) {
   roomMap = new Uint8Array(gridW * gridH);
   for (const room of rooms) {
     const themeIdx = THEME_TO_INDEX[room.theme] ?? 2;
-    for (let r2 = room.y;r2 < room.y + room.h; r2++) {
-      for (let c2 = room.x;c2 < room.x + room.w; c2++) {
-        if (r2 >= 0 && r2 < gridH && c2 >= 0 && c2 < gridW) {
-          roomMap[r2 * gridW + c2] = themeIdx;
+    if (room.tileSet && room.tileSet.length > 0) {
+      for (const t2 of room.tileSet) {
+        if (t2.y >= 0 && t2.y < gridH && t2.x >= 0 && t2.x < gridW) {
+          roomMap[t2.y * gridW + t2.x] = themeIdx;
+        }
+      }
+    } else {
+      for (let r2 = room.y;r2 < room.y + room.h; r2++) {
+        for (let c2 = room.x;c2 < room.x + room.w; c2++) {
+          if (r2 >= 0 && r2 < gridH && c2 >= 0 && c2 < gridW) {
+            roomMap[r2 * gridW + c2] = themeIdx;
+          }
         }
       }
     }
@@ -32670,16 +32680,18 @@ class TileRenderer {
   drawAutotiledWall(px, py, mask, isDim, isVisible, grid, gridW, gridH, col, row) {
     const ts = TILE_SIZE;
     const baseColor = isDim ? 2236962 : mask === 15 ? WALL_COLOR_INTERIOR : WALL_COLOR_BASE;
-    const inset = 2;
+    const inset = Math.max(3, Math.round(TILE_SIZE * 0.25));
     this.gfx.rect(px, py, ts, ts);
-    this.gfx.fill(isDim ? 1710618 : 1710618);
+    this.gfx.fill(isDim ? 921102 : 1118481);
     switch (mask) {
       case 0:
         this.gfx.rect(px + inset + 1, py + inset + 1, ts - (inset + 1) * 2, ts - (inset + 1) * 2);
         this.gfx.fill(baseColor);
         if (!isDim) {
-          this.gfx.rect(px + inset + 1, py + inset + 1, ts - (inset + 1) * 2, 1);
-          this.gfx.fill({ color: WALL_HIGHLIGHT, alpha: 0.12 });
+          this.gfx.rect(px + inset + 1, py + inset + 1, ts - (inset + 1) * 2, 2);
+          this.gfx.fill({ color: WALL_HIGHLIGHT, alpha: 0.18 });
+          this.gfx.rect(px + inset + 1, py + ts - inset - 2, ts - (inset + 1) * 2, 2);
+          this.gfx.fill({ color: WALL_SHADOW, alpha: 0.25 });
         }
         break;
       case 1:
@@ -33659,19 +33671,19 @@ function updateFootstepDust(playerX, playerY) {
   const dist = Math.sqrt(dx * dx + dy * dy);
   if (dist > 2) {
     const now = performance.now();
-    if (now - lastFootstepSpawn > 80) {
+    if (now - lastFootstepSpawn > 60) {
       lastFootstepSpawn = now;
-      const count2 = 1 + (Math.random() < 0.5 ? 1 : 0);
+      const count2 = 2 + (Math.random() < 0.5 ? 1 : 0);
       for (let i2 = 0;i2 < count2 && particles.length < MAX_PARTICLES; i2++) {
         particles.push({
-          x: playerX + (Math.random() - 0.5) * 6,
-          y: playerY + 4 + Math.random() * 2,
-          vx: (Math.random() - 0.5) * 20,
-          vy: -(5 + Math.random() * 10),
-          life: 200 + Math.random() * 100,
-          maxLife: 300,
+          x: playerX + (Math.random() - 0.5) * 10,
+          y: playerY + 6 + Math.random() * 3,
+          vx: (Math.random() - 0.5) * 30,
+          vy: -(8 + Math.random() * 15),
+          life: 350 + Math.random() * 150,
+          maxLife: 500,
           color: 12101748,
-          size: 1 + Math.random() * 0.5
+          size: 2 + Math.random() * 1.5
         });
       }
     }
@@ -34179,36 +34191,56 @@ var ROOM_DECO_TYPES = {
   boss: ["skull", "cracked_floor", "brazier"],
   start: ["torch_sconce"]
 };
+var SHAPE_DECO_TYPES = {
+  rect: [],
+  cave: ["cobweb", "stalactite", "mushroom", "moss_patch", "bones"],
+  circle: ["pillar", "brazier", "fountain", "gold_pile"],
+  L: ["weapon_rack", "bench", "open_chest"],
+  cross: ["brazier", "skull", "altar"]
+};
+function getDecoTypes(theme, shape) {
+  const shapeTypes = SHAPE_DECO_TYPES[shape];
+  if (shapeTypes.length > 0)
+    return shapeTypes;
+  return ROOM_DECO_TYPES[theme] ?? [];
+}
 var decorations = [];
 function generateDecorations(rooms, grid, gridW, gridH) {
   decorations = [];
   for (const room of rooms) {
     const seed = room.x * 31 + room.y * 17 + gridW >>> 0;
     const rng = seededRng(seed);
-    const types = ROOM_DECO_TYPES[room.theme];
+    const types = getDecoTypes(room.theme, room.shape ?? "rect");
     if (!types || types.length === 0)
       continue;
     const count2 = 2 + Math.floor(rng() * 4);
     const centerX = room.x + room.w / 2;
     const centerY = room.y + room.h / 2;
     const candidates = [];
-    for (let r2 = room.y;r2 < room.y + room.h; r2++) {
-      for (let c2 = room.x;c2 < room.x + room.w; c2++) {
-        if (c2 < 0 || c2 >= gridW || r2 < 0 || r2 >= gridH)
-          continue;
-        const tile = grid[r2 * gridW + c2];
-        if (tile !== TILE_FLOOR)
-          continue;
-        if (isSpecialTile(grid, gridW, gridH, c2, r2))
-          continue;
-        const dx = c2 - centerX;
-        const dy = r2 - centerY;
-        if (Math.abs(dx) < 2 && Math.abs(dy) < 2)
-          continue;
-        if (!nearWall(grid, gridW, gridH, c2, r2))
-          continue;
-        candidates.push({ col: c2, row: r2 });
+    const tilesToScan = room.tileSet && room.tileSet.length > 0 ? room.tileSet.map((t2) => ({ c: t2.x, r: t2.y })) : (() => {
+      const arr = [];
+      for (let r2 = room.y;r2 < room.y + room.h; r2++) {
+        for (let c2 = room.x;c2 < room.x + room.w; c2++) {
+          arr.push({ c: c2, r: r2 });
+        }
       }
+      return arr;
+    })();
+    for (const { c: c2, r: r2 } of tilesToScan) {
+      if (c2 < 0 || c2 >= gridW || r2 < 0 || r2 >= gridH)
+        continue;
+      const tile = grid[r2 * gridW + c2];
+      if (tile !== TILE_FLOOR)
+        continue;
+      if (isSpecialTile(grid, gridW, gridH, c2, r2))
+        continue;
+      const dx = c2 - centerX;
+      const dy = r2 - centerY;
+      if (Math.abs(dx) < 2 && Math.abs(dy) < 2)
+        continue;
+      if (!nearWall(grid, gridW, gridH, c2, r2))
+        continue;
+      candidates.push({ col: c2, row: r2 });
     }
     for (let i2 = candidates.length - 1;i2 > 0; i2--) {
       const j2 = Math.floor(rng() * (i2 + 1));
@@ -34291,108 +34323,158 @@ class DecorationRenderer {
     const x2 = d2.x;
     const y2 = d2.y;
     const s2 = d2.seed;
+    const k2 = TILE_SIZE / 8;
     switch (d2.type) {
       case "bones": {
-        const size = 3 + s2 % 2;
+        const size = (3 + s2 % 2) * k2;
         this.gfx.moveTo(x2 - size, y2 - size);
         this.gfx.lineTo(x2 + size, y2 + size);
-        this.gfx.stroke({ color: 13421755, alpha: 0.5, width: 1 });
+        this.gfx.stroke({ color: 13421755, alpha: 0.6, width: 1.5 * k2 });
         this.gfx.moveTo(x2 + size, y2 - size);
         this.gfx.lineTo(x2 - size, y2 + size);
-        this.gfx.stroke({ color: 13421755, alpha: 0.5, width: 1 });
+        this.gfx.stroke({ color: 13421755, alpha: 0.6, width: 1.5 * k2 });
         break;
       }
       case "weapon_rack": {
-        this.gfx.rect(x2 - 3, y2 - 2, 6, 4);
-        this.gfx.fill({ color: 7029286, alpha: 0.6 });
-        this.gfx.moveTo(x2 - 1, y2 - 4);
-        this.gfx.lineTo(x2 - 1, y2 + 2);
-        this.gfx.stroke({ color: 8947848, alpha: 0.5, width: 0.5 });
-        this.gfx.moveTo(x2 + 1, y2 - 3);
-        this.gfx.lineTo(x2 + 1, y2 + 2);
-        this.gfx.stroke({ color: 8947848, alpha: 0.5, width: 0.5 });
+        this.gfx.rect(x2 - 3 * k2, y2 - 2 * k2, 6 * k2, 4 * k2);
+        this.gfx.fill({ color: 7029286, alpha: 0.7 });
+        this.gfx.moveTo(x2 - k2, y2 - 4 * k2);
+        this.gfx.lineTo(x2 - k2, y2 + 2 * k2);
+        this.gfx.stroke({ color: 8947848, alpha: 0.6, width: k2 });
+        this.gfx.moveTo(x2 + k2, y2 - 3 * k2);
+        this.gfx.lineTo(x2 + k2, y2 + 2 * k2);
+        this.gfx.stroke({ color: 8947848, alpha: 0.6, width: k2 });
         break;
       }
       case "blood_splatter": {
         const count2 = 3 + s2 % 3;
         for (let i2 = 0;i2 < count2; i2++) {
-          const ox = (s2 >>> i2 * 3) % 7 - 3;
-          const oy = (s2 >>> i2 * 3 + 8) % 7 - 3;
-          this.gfx.circle(x2 + ox, y2 + oy, 0.8 + i2 % 2 * 0.4);
-          this.gfx.fill({ color: 6689041, alpha: 0.35 });
+          const ox = ((s2 >>> i2 * 3) % 7 - 3) * k2;
+          const oy = ((s2 >>> i2 * 3 + 8) % 7 - 3) * k2;
+          this.gfx.circle(x2 + ox, y2 + oy, (1.2 + i2 % 2 * 0.6) * k2);
+          this.gfx.fill({ color: 6689041, alpha: 0.45 });
         }
         break;
       }
       case "gold_pile": {
         for (let i2 = 0;i2 < 4; i2++) {
-          const ox = (s2 >>> i2 * 2) % 5 - 2;
-          const oy = (s2 >>> i2 * 2 + 6) % 5 - 2;
-          this.gfx.circle(x2 + ox, y2 + oy, 1);
-          this.gfx.fill({ color: 14329120, alpha: 0.6 });
+          const ox = ((s2 >>> i2 * 2) % 5 - 2) * k2;
+          const oy = ((s2 >>> i2 * 2 + 6) % 5 - 2) * k2;
+          this.gfx.circle(x2 + ox, y2 + oy, 1.5 * k2);
+          this.gfx.fill({ color: 14329120, alpha: 0.7 });
         }
         break;
       }
       case "open_chest": {
-        this.gfx.rect(x2 - 3, y2 - 1, 6, 4);
-        this.gfx.fill({ color: 7029286, alpha: 0.7 });
-        this.gfx.rect(x2 - 3, y2 - 3, 6, 2);
-        this.gfx.fill({ color: 13412898, alpha: 0.5 });
+        this.gfx.rect(x2 - 3 * k2, y2 - k2, 6 * k2, 4 * k2);
+        this.gfx.fill({ color: 7029286, alpha: 0.8 });
+        this.gfx.rect(x2 - 3 * k2, y2 - 3 * k2, 6 * k2, 2 * k2);
+        this.gfx.fill({ color: 13412898, alpha: 0.6 });
         break;
       }
       case "plant": {
-        this.gfx.circle(x2, y2, 2.5);
-        this.gfx.fill({ color: 4500036, alpha: 0.5 });
-        this.gfx.circle(x2 - 1, y2 - 1, 1.5);
-        this.gfx.fill({ color: 6736998, alpha: 0.4 });
+        this.gfx.circle(x2, y2, 3 * k2);
+        this.gfx.fill({ color: 4500036, alpha: 0.55 });
+        this.gfx.circle(x2 - k2, y2 - k2, 2 * k2);
+        this.gfx.fill({ color: 6736998, alpha: 0.5 });
         break;
       }
       case "bench": {
-        this.gfx.rect(x2 - 4, y2 - 1, 8, 3);
-        this.gfx.fill({ color: 8015920, alpha: 0.5 });
+        this.gfx.rect(x2 - 4 * k2, y2 - k2, 8 * k2, 3 * k2);
+        this.gfx.fill({ color: 8015920, alpha: 0.6 });
         break;
       }
       case "fountain": {
-        this.gfx.circle(x2, y2, 3);
-        this.gfx.fill({ color: 4491468, alpha: 0.35 });
-        this.gfx.circle(x2, y2, 1.5);
-        this.gfx.fill({ color: 6728430, alpha: 0.4 });
+        this.gfx.circle(x2, y2, 3.5 * k2);
+        this.gfx.fill({ color: 4491468, alpha: 0.4 });
+        this.gfx.circle(x2, y2, 1.8 * k2);
+        this.gfx.fill({ color: 6728430, alpha: 0.5 });
         break;
       }
       case "skull": {
-        this.gfx.circle(x2, y2, 2.5);
-        this.gfx.fill({ color: 13421755, alpha: 0.5 });
-        this.gfx.circle(x2 - 1, y2 - 0.5, 0.6);
-        this.gfx.fill({ color: 0, alpha: 0.6 });
-        this.gfx.circle(x2 + 1, y2 - 0.5, 0.6);
-        this.gfx.fill({ color: 0, alpha: 0.6 });
+        this.gfx.circle(x2, y2, 3 * k2);
+        this.gfx.fill({ color: 13421755, alpha: 0.6 });
+        this.gfx.circle(x2 - k2, y2 - 0.5 * k2, 0.8 * k2);
+        this.gfx.fill({ color: 0, alpha: 0.7 });
+        this.gfx.circle(x2 + k2, y2 - 0.5 * k2, 0.8 * k2);
+        this.gfx.fill({ color: 0, alpha: 0.7 });
         break;
       }
       case "cracked_floor": {
-        this.gfx.moveTo(x2 - 3, y2);
-        this.gfx.lineTo(x2, y2 - 2);
-        this.gfx.lineTo(x2 + 3, y2 + 1);
-        this.gfx.stroke({ color: 0, alpha: 0.2, width: 0.7 });
-        this.gfx.moveTo(x2, y2 - 2);
-        this.gfx.lineTo(x2 + 1, y2 + 3);
-        this.gfx.stroke({ color: 0, alpha: 0.15, width: 0.5 });
+        this.gfx.moveTo(x2 - 3 * k2, y2);
+        this.gfx.lineTo(x2, y2 - 2 * k2);
+        this.gfx.lineTo(x2 + 3 * k2, y2 + k2);
+        this.gfx.stroke({ color: 0, alpha: 0.25, width: k2 });
+        this.gfx.moveTo(x2, y2 - 2 * k2);
+        this.gfx.lineTo(x2 + k2, y2 + 3 * k2);
+        this.gfx.stroke({ color: 0, alpha: 0.2, width: 0.8 * k2 });
         break;
       }
       case "brazier": {
-        this.gfx.circle(x2, y2, 2);
-        this.gfx.fill({ color: 8934690, alpha: 0.6 });
+        this.gfx.circle(x2, y2, 2.5 * k2);
+        this.gfx.fill({ color: 8934690, alpha: 0.7 });
         const flicker = Math.sin(performance.now() / 200 + s2) * 0.3;
-        this.gfx.circle(x2, y2 - 2, 1.5 + flicker);
-        this.gfx.fill({ color: 16746530, alpha: 0.5 + flicker * 0.3 });
-        this.gfx.circle(x2, y2 - 2.5, 0.8);
-        this.gfx.fill({ color: 16763972, alpha: 0.4 });
+        this.gfx.circle(x2, y2 - 2.5 * k2, (1.8 + flicker) * k2);
+        this.gfx.fill({ color: 16746530, alpha: 0.6 + flicker * 0.3 });
+        this.gfx.circle(x2, y2 - 3 * k2, k2);
+        this.gfx.fill({ color: 16763972, alpha: 0.5 });
         break;
       }
       case "torch_sconce": {
-        this.gfx.circle(x2, y2, 1.5);
-        this.gfx.fill({ color: 13395456, alpha: 0.5 });
+        this.gfx.circle(x2, y2, 2 * k2);
+        this.gfx.fill({ color: 13395456, alpha: 0.6 });
         const flicker2 = Math.sin(performance.now() / 300 + s2) * 0.15;
-        this.gfx.circle(x2, y2, 4);
-        this.gfx.fill({ color: 16746496, alpha: 0.1 + flicker2 });
+        this.gfx.circle(x2, y2, 5 * k2);
+        this.gfx.fill({ color: 16746496, alpha: 0.12 + flicker2 });
+        break;
+      }
+      case "stalactite": {
+        this.gfx.moveTo(x2 - 2 * k2, y2 - 2 * k2);
+        this.gfx.lineTo(x2 + 2 * k2, y2 - 2 * k2);
+        this.gfx.lineTo(x2, y2 + 3 * k2);
+        this.gfx.closePath();
+        this.gfx.fill({ color: 8947831, alpha: 0.6 });
+        break;
+      }
+      case "mushroom": {
+        this.gfx.rect(x2 - 0.5 * k2, y2, k2, 3 * k2);
+        this.gfx.fill({ color: 9139029, alpha: 0.7 });
+        const capColor = s2 % 3 === 0 ? 13386820 : s2 % 3 === 1 ? 8960836 : 14535765;
+        this.gfx.circle(x2, y2, 2.5 * k2);
+        this.gfx.fill({ color: capColor, alpha: 0.55 });
+        break;
+      }
+      case "moss_patch": {
+        for (let i2 = 0;i2 < 3; i2++) {
+          const ox = ((s2 >>> i2 * 3) % 5 - 2) * k2;
+          const oy = ((s2 >>> i2 * 3 + 8) % 5 - 2) * k2;
+          this.gfx.circle(x2 + ox, y2 + oy, (1.5 + i2 % 2) * k2);
+          this.gfx.fill({ color: 2972190, alpha: 0.35 });
+        }
+        break;
+      }
+      case "cobweb": {
+        const angle0 = s2 % 4 * Math.PI / 2;
+        for (let i2 = 0;i2 < 3; i2++) {
+          const a2 = angle0 + (i2 - 1) * 0.4;
+          this.gfx.moveTo(x2, y2);
+          this.gfx.lineTo(x2 + Math.cos(a2) * 4 * k2, y2 + Math.sin(a2) * 4 * k2);
+          this.gfx.stroke({ color: 13421772, alpha: 0.25, width: 0.5 * k2 });
+        }
+        break;
+      }
+      case "pillar": {
+        this.gfx.circle(x2, y2, 3 * k2);
+        this.gfx.fill({ color: 6710886, alpha: 0.7 });
+        this.gfx.circle(x2, y2, 2 * k2);
+        this.gfx.fill({ color: 8947848, alpha: 0.5 });
+        break;
+      }
+      case "altar": {
+        this.gfx.rect(x2 - 3 * k2, y2 - 2 * k2, 6 * k2, 4 * k2);
+        this.gfx.fill({ color: 4473924, alpha: 0.8 });
+        this.gfx.circle(x2, y2, 4 * k2);
+        this.gfx.fill({ color: 8917265, alpha: 0.15 });
         break;
       }
     }
