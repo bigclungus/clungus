@@ -72,6 +72,7 @@ from activities.reminder_act import send_reminder
 from activities.simplify_act import run_simplify_review
 from activities.startup_act import (
     startup_check_disk,
+    startup_check_heartbeat,
     startup_check_services,
     startup_extract_directives,
     startup_fix_falkordb,
@@ -358,6 +359,7 @@ async def main() -> None:
             inject_email_notification,
             inject_message,
             startup_fix_falkordb,
+            startup_check_heartbeat,
             startup_check_services,
             startup_check_disk,
             startup_run_watchdog,
