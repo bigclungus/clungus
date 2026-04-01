@@ -1,5 +1,5 @@
 {
-  "name": "clungiverse-client-v2",
+  "name": "@clungiverse/client",
   "version": "0.2.0",
   "description": "Clungiverse roguelite dungeon crawler — PixiJS client",
   "type": "module",
@@ -8,6 +8,7 @@
     "dev": "bun build src/main.ts --outdir dist --watch"
   },
   "dependencies": {
+    "@clungiverse/shared": "workspace:*",
     "pixi.js": "^8.9.2"
   },
   "devDependencies": {

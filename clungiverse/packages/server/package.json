@@ -1,17 +1,17 @@
 {
-  "name": "commons-server",
+  "name": "@clungiverse/server",
   "version": "1.0.0",
   "description": "Commons Game Server — tile-aware NPC AI, SQLite persistence, Bun WS",
-  "main": "src/index.ts",
+  "type": "module",
   "scripts": {
     "start": "bun run src/index.ts",
     "dev": "bun --watch run src/index.ts"
   },
   "dependencies": {
+    "@clungiverse/shared": "workspace:*",
     "@temporalio/client": "^1.15.0"
   },
   "devDependencies": {
     "bun-types": "^1.3.11"
-  },
-  "type": "module"
+  }
 }

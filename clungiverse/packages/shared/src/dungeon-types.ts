@@ -1,4 +1,4 @@
-// Clungiverse Dungeon Protocol — client/server message types and game state interfaces
+// Clungiverse Dungeon Protocol — shared client/server message types and wire format interfaces
 
 // ─── Tile encoding ───────────────────────────────────────────────────────────
 
@@ -15,6 +15,38 @@ export const TILE = {
 
 export type TileType = (typeof TILE)[keyof typeof TILE];
 
+// ─── Behavior type ──────────────────────────────────────────────────────────
+
+export type MobBehavior = "melee_chase" | "ranged_pattern" | "slow_charge";
+
+// ─── Room shape type ────────────────────────────────────────────────────────
+
+export type RoomShape = "rect" | "L" | "circle" | "cross" | "cave";
+
+// ─── Rarity type ────────────────────────────────────────────────────────────
+
+export type Rarity = "common" | "uncommon" | "rare";
+
+// ─── Facing type ────────────────────────────────────────────────────────────
+
+export type Facing = "left" | "right";
+
+// ─── Pickup type ────────────────────────────────────────────────────────────
+
+export type PickupType = "temp_powerup" | "health";
+
+// ─── Run outcome type ───────────────────────────────────────────────────────
+
+export type RunOutcome = "victory" | "death" | "abandoned";
+
+// ─── Lobby status type ──────────────────────────────────────────────────────
+
+export type LobbyStatus = "waiting" | "starting" | "in_progress";
+
+// ─── Mob generation status type ─────────────────────────────────────────────
+
+export type MobGenStatus = "generating" | "complete" | "error";
+
 // ─── Client → Server messages ────────────────────────────────────────────────
 
 export interface DungeonMoveMessage {
@@ -22,7 +54,7 @@ export interface DungeonMoveMessage {
   seq: number;
   x: number;
   y: number;
-  facing: "left" | "right";
+  facing: Facing;
 }
 
 export interface DungeonAttackMessage {
@@ -66,7 +98,7 @@ export interface TempPowerupSnapshot {
 export interface FloorPickupSnapshot {
   id: string;
   templateId: string;
-  type: 'temp_powerup' | 'health';
+  type: PickupType;
   healAmount?: number;
   x: number;
   y: number;
@@ -103,7 +135,7 @@ export interface DungeonPowerupChoicesMessage {
 
 export interface DungeonResultsMessage {
   type: "d_results";
-  outcome: "victory" | "death" | "abandoned";
+  outcome: RunOutcome;
   floorReached: number;
   durationMs: number;
   players: PlayerResultSnapshot[];
@@ -114,7 +146,7 @@ export interface DungeonLobbyMessage {
   lobbyId: string;
   hostId: string;
   players: LobbyPlayerSnapshot[];
-  status: "waiting" | "starting" | "in_progress";
+  status: LobbyStatus;
 }
 
 export interface DungeonWelcomeMessage {
@@ -128,7 +160,7 @@ export interface DungeonMobProgressMessage {
   completed: number;
   total: number;
   currentEntity: string;
-  status: "generating" | "complete" | "error";
+  status: MobGenStatus;
 }
 
 export interface DungeonMobSpritesMessage {
@@ -138,16 +170,7 @@ export interface DungeonMobSpritesMessage {
 
 export interface DungeonMobRosterMessage {
   type: "d_mob_roster";
-  mobs: {
-    entityName: string;
-    displayName: string;
-    behavior: "melee_chase" | "ranged_pattern" | "slow_charge";
-    hp: number;
-    atk: number;
-    def: number;
-    spd: number;
-    flavorText: string | null;
-  }[];
+  mobs: MobRosterSnapshot[];
 }
 
 export type DungeonServerMessage =
@@ -169,7 +192,7 @@ export interface DungeonPlayerSnapshot {
   personaSlug: string;
   x: number;
   y: number;
-  facing: "left" | "right";
+  facing: Facing;
   hp: number;
   maxHp: number;
   iframeTicks: number;
@@ -184,7 +207,7 @@ export interface DungeonPlayerSnapshot {
 export interface EnemySnapshot {
   id: string;
   variantName: string;
-  behavior: "melee_chase" | "ranged_pattern" | "slow_charge";
+  behavior: MobBehavior;
   x: number;
   y: number;
   hp: number;
@@ -216,7 +239,7 @@ export interface RoomSnapshot {
   y: number;
   w: number;
   h: number;
-  shape?: "rect" | "L" | "circle" | "cross" | "cave";
+  shape?: RoomShape;
   tileSet?: { x: number; y: number }[];
 }
 
@@ -233,7 +256,7 @@ export interface PowerupChoiceSnapshot {
   slug: string;
   name: string;
   description: string;
-  rarity: "common" | "uncommon" | "rare";
+  rarity: Rarity;
   statModifier: Record<string, number>;
 }
 
@@ -255,134 +278,18 @@ export interface LobbyPlayerSnapshot {
   ready: boolean;
 }
 
+export interface MobRosterSnapshot {
+  entityName: string;
+  displayName: string;
+  behavior: MobBehavior;
+  hp: number;
+  atk: number;
+  def: number;
+  spd: number;
+  flavorText: string | null;
+}
+
 export interface TickEvent {
   type: "damage" | "kill" | "power_activate" | "door_open" | "pickup" | "player_death" | "boss_phase";
   payload: Record<string, unknown>;
-}
-
-// ─── Server-side game state interfaces ───────────────────────────────────────
-
-export interface DungeonInstance {
-  id: string;
-  lobbyId: string;
-  seed: string;
-  floor: number;
-  tick: number;
-  status: "lobby" | "running" | "between_floors" | "boss" | "completed";
-  startedAt: number;
-  players: Map<string, DungeonPlayer>;
-  enemies: Map<string, EnemyInstance>;
-  projectiles: Map<string, ProjectileInstance>;
-  aoeZones: Map<string, AoEZoneInstance>;
-  floorPickups: Map<string, import("./temp-powerups.ts").FloorPickup>;
-  layout: FloorLayout | null;
-  tickInterval: ReturnType<typeof setInterval> | null;
-  /** When true, mob selection is restricted to mobs that have rendered PNG images. */
-  skipGen: boolean;
-}
-
-export interface DungeonPlayer {
-  id: string;
-  socketId: string;
-  name: string;
-  personaSlug: string;
-  x: number;
-  y: number;
-  facing: "left" | "right";
-  hp: number;
-  maxHp: number;
-  atk: number;
-  def: number;
-  spd: number;
-  lck: number;
-  iframeTicks: number;
-  cooldownTicks: number;
-  cooldownMax: number;
-  /** Crundle Nervous Scramble: ticks remaining in scramble. 0 = inactive. */
-  scramblingTicks: number;
-  kills: number;
-  damageDealt: number;
-  damageTaken: number;
-  totalHealing: number;
-  diedOnFloor: number | null;
-  powerups: number[];
-  activeTempPowerups: import("./temp-powerups.ts").ActiveTempPowerup[];
-  inputQueue: DungeonMoveMessage[];
-  connected: boolean;
-  disconnectedAt: number | null;
-  lastProcessedSeq: number;
-}
-
-export interface EnemyInstance {
-  id: string;
-  variantId: number;
-  variantName: string;
-  behavior: "melee_chase" | "ranged_pattern" | "slow_charge";
-  x: number;
-  y: number;
-  hp: number;
-  maxHp: number;
-  atk: number;
-  def: number;
-  spd: number;
-  isBoss: boolean;
-  bossSpawned: boolean;
-  roomIndex: number;
-  targetPlayerId: string | null;
-  cooldownTicks: number;
-  telegraphing: boolean;
-  telegraphTicks: number;
-  // Boss-specific
-  phase: number;
-  phaseData: Record<string, unknown>;
-}
-
-export interface ProjectileInstance {
-  id: string;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  radius: number;
-  damage: number;
-  fromEnemy: boolean;
-  ownerId: string;
-  lifetimeTicks: number;
-}
-
-export interface AoEZoneInstance {
-  id: string;
-  x: number;
-  y: number;
-  radius: number;
-  ticksRemaining: number;
-  zoneType: string;
-  ownerId: string;
-  damagePerTick: number;
-  slowFactor: number;
-}
-
-export interface FloorLayout {
-  width: number;
-  height: number;
-  tiles: Uint8Array;
-  rooms: Room[];
-  corridors: Corridor[];
-}
-
-export interface Room {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  enemyIds: string[];
-  cleared: boolean;
-}
-
-export interface Corridor {
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-  width: number;
 }

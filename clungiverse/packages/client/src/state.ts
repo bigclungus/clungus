@@ -1,5 +1,21 @@
 // Client-side state for the dungeon crawler
 
+import type {
+  MobBehavior,
+  RoomShape,
+  Rarity,
+  RunOutcome,
+  PickupType,
+  TickEvent as SharedTickEvent,
+  MobRosterSnapshot,
+  PowerupChoiceSnapshot,
+} from '@clungiverse/shared';
+import { TILE } from '@clungiverse/shared';
+
+// Re-export shared types used by client modules
+export type { RoomShape, MobBehavior };
+export { TILE };
+
 export type SceneName = 'lobby' | 'mob_preview' | 'dungeon' | 'transition' | 'results';
 
 // === Persona Catalog ===
@@ -67,18 +83,18 @@ export const PERSONAS: Record<PersonaSlug, PersonaInfo> = {
 
 export const PERSONA_SLUGS: PersonaSlug[] = ['holden', 'broseidon', 'deckard_cain', 'galactus', 'crundle'];
 
-// === Tile Constants ===
+// === Tile Constants (derived from shared TILE) ===
 
 export const TILE_SIZE = 16;
 
-export const TILE_FLOOR = 0;
-export const TILE_WALL = 1;
-export const TILE_DOOR_CLOSED = 2;
-export const TILE_DOOR_OPEN = 3;
-export const TILE_SPAWN = 4;
-export const TILE_TREASURE = 5;
-export const TILE_SHRINE = 6;
-export const TILE_STAIRS = 7;
+export const TILE_FLOOR = TILE.FLOOR;
+export const TILE_WALL = TILE.WALL;
+export const TILE_DOOR_CLOSED = TILE.DOOR_CLOSED;
+export const TILE_DOOR_OPEN = TILE.DOOR_OPEN;
+export const TILE_SPAWN = TILE.SPAWN;
+export const TILE_TREASURE = TILE.TREASURE;
+export const TILE_SHRINE = TILE.SHRINE;
+export const TILE_STAIRS = TILE.STAIRS;
 
 // === Entity Types ===
 
@@ -203,7 +219,7 @@ export interface ClientPlayer {
 export interface ClientEnemy {
   id: string;
   type: string;
-  behavior: 'melee_chase' | 'ranged_pattern' | 'slow_charge';
+  behavior: MobBehavior;
   x: number;
   y: number;
   prevX: number;
@@ -238,7 +254,6 @@ export interface ClientAoEZone {
 }
 
 export type RoomTheme = 'start' | 'combat' | 'treasure' | 'rest' | 'boss';
-export type RoomShape = 'rect' | 'L' | 'circle' | 'cross' | 'cave';
 
 export interface ClientRoom {
   x: number;
@@ -252,17 +267,11 @@ export interface ClientRoom {
   tileSet?: { x: number; y: number }[];
 }
 
-export interface PowerupChoice {
-  id: number;
-  slug: string;
-  name: string;
-  description: string;
-  rarity: 'common' | 'uncommon' | 'rare';
-  statModifier: Record<string, number>;
-}
+// PowerupChoice uses shared PowerupChoiceSnapshot structure
+export type PowerupChoice = PowerupChoiceSnapshot;
 
 export interface RunResults {
-  outcome: 'victory' | 'death' | 'abandoned';
+  outcome: RunOutcome;
   floorReached: number;
   totalFloors: number;
   durationMs: number;
@@ -283,17 +292,10 @@ export interface RunPlayerResult {
   diedOnFloor: number | null;
 }
 
-export interface MobRosterEntry {
-  entityName: string;
-  displayName: string;
-  behavior: 'melee_chase' | 'ranged_pattern' | 'slow_charge';
-  hp: number;
-  atk: number;
-  def: number;
-  spd: number;
-  flavorText: string | null;
-}
+// MobRosterEntry uses shared MobRosterSnapshot structure
+export type MobRosterEntry = MobRosterSnapshot;
 
+// TickEvent — client uses a broader type string for the type field
 export interface TickEvent {
   type: string;
   payload: Record<string, unknown>;
@@ -307,7 +309,7 @@ export interface ClientTempPowerup {
 export interface ClientFloorPickup {
   id: string;
   templateId: string;
-  type: 'temp_powerup' | 'health';
+  type: PickupType;
   healAmount?: number;
   x: number;
   y: number;

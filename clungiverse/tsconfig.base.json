@@ -3,10 +3,12 @@
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": ["ESNext"],
     "strict": true,
     "skipLibCheck": true,
-    "types": ["bun-types"]
-  },
-  "include": ["src/**/*"]
+    "declaration": true,
+    "declarationMap": true,
+    "composite": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true
+  }
 }

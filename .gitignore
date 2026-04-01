@@ -63,6 +63,9 @@ discord-plugin/
 discord-server/
 local-marketplace/
 discord-bridge-marketplace/
+commons-server/
+clungiverse-client-v2/
+clungiverse-client/
 
 # Pruned stale files
 install.sh

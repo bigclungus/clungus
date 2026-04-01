@@ -15,144 +15,38 @@ import type {
   RoomTheme,
 } from '../state';
 
-// === Server Message Shapes (must match server's wire format exactly) ===
+import type {
+  DungeonPlayerSnapshot,
+  EnemySnapshot,
+  ProjectileSnapshot,
+  AoEZoneSnapshot,
+  FloorPickupSnapshot,
+  DungeonTickMessage,
+  DungeonFloorMessage,
+  DungeonWelcomeMessage,
+  DungeonLobbyMessage,
+  DungeonPowerupChoicesMessage,
+  DungeonResultsMessage,
+  DungeonMobProgressMessage,
+  DungeonMobSpritesMessage,
+  DungeonMobRosterMessage,
+} from '@clungiverse/shared';
 
-// Server sends DungeonPlayerSnapshot from dungeon-loop.ts buildPlayerSnapshots
-interface ServerPlayerSnapshot {
-  id: string;
-  name: string;
-  personaSlug: string;
-  x: number;
-  y: number;
-  facing: 'left' | 'right'; // server uses "left"/"right", not facingX/facingY
-  hp: number;
-  maxHp: number;
-  iframeTicks: number;
-  cooldownRemaining: number; // server field name for cooldown ticks left
-  scramblingTicks?: number;
-  activeTempPowerups?: { templateId: string; expiresAt: number }[];
-  spectating?: boolean; // dead but party still alive
-}
-
-// Server sends EnemySnapshot from dungeon-loop.ts buildEnemySnapshots
-interface ServerEnemySnapshot {
-  id: string;
-  variantName: string;
-  behavior: 'melee_chase' | 'ranged_pattern' | 'slow_charge';
-  x: number;
-  y: number;
-  hp: number;
-  maxHp: number;
-  isBoss: boolean;
-  telegraphing: boolean;
-}
-
-// Server sends ProjectileSnapshot
-interface ServerProjectileSnapshot {
-  id: string;
-  x: number;
-  y: number;
-  radius: number;
-  fromEnemy: boolean;
-  ownerId: string;
-}
-
-// Server sends AoEZoneSnapshot
-interface ServerAoEZoneSnapshot {
-  id: string;
-  x: number;
-  y: number;
-  radius: number;
-  ticksRemaining: number;
-  zoneType: string;
-}
-
-interface ServerFloorPickupSnapshot {
-  id: string;
-  templateId: string;
-  type?: 'temp_powerup' | 'health';
-  healAmount?: number;
-  x: number;
-  y: number;
-}
-
-interface ServerTickMsg {
-  type: 'd_tick';
-  tick: number;
-  t: number;
-  players: ServerPlayerSnapshot[];
-  enemies: ServerEnemySnapshot[];
-  projectiles: ServerProjectileSnapshot[];
-  aoeZones: ServerAoEZoneSnapshot[];
-  events: TickEvent[];
-  totalMobs?: number;
-  remainingMobs?: number;
-  floorPickups?: ServerFloorPickupSnapshot[];
-}
-
-interface ServerFloorMsg {
-  type: 'd_floor';
-  floor: number;
-  gridWidth: number;
-  gridHeight: number;
-  tiles: number[];
-  rooms: { x: number; y: number; w: number; h: number; shape?: string; tileSet?: { x: number; y: number }[] }[];
-  corridors: { x1: number; y1: number; x2: number; y2: number; width: number }[];
-}
-
-interface ServerWelcomeMsg {
-  type: 'd_welcome';
-  playerId: string;
-  lobbyId: string;
-}
-
-interface ServerLobbyMsg {
-  type: 'd_lobby';
-  lobbyId: string;
-  hostId: string;
-  players: { playerId: string; name: string; personaSlug: string | null; ready: boolean }[];
-  status: 'waiting' | 'starting' | 'in_progress';
-}
-
-interface ServerPowerupMsg {
-  type: 'd_powerup_choices';
-  choices: PowerupChoice[];
-}
-
-interface ServerResultsMsg {
-  type: 'd_results';
-  outcome: 'victory' | 'death' | 'abandoned';
-  floorReached: number;
-  durationMs: number;
-  players: { playerId: string; name: string; personaSlug: string; kills: number; damageDealt: number; damageTaken: number; totalHealing: number; diedOnFloor: number | null }[];
-}
-
-interface ServerMobProgressMsg {
-  type: 'd_mob_progress';
-  completed: number;
-  total: number;
-  currentEntity: string;
-  status: 'generating' | 'complete' | 'error';
-}
-
-interface ServerMobSpritesMsg {
-  type: 'd_mob_sprites';
-  sprites: { entityName: string; spritePng: string }[];
-}
-
-interface ServerMobRosterMsg {
-  type: 'd_mob_roster';
-  mobs: {
-    entityName: string;
-    displayName: string;
-    behavior: 'melee_chase' | 'ranged_pattern' | 'slow_charge';
-    hp: number;
-    atk: number;
-    def: number;
-    spd: number;
-    flavorText: string | null;
-  }[];
-}
+// Type aliases to keep internal code compatible
+type ServerPlayerSnapshot = DungeonPlayerSnapshot;
+type ServerEnemySnapshot = EnemySnapshot;
+type ServerProjectileSnapshot = ProjectileSnapshot;
+type ServerAoEZoneSnapshot = AoEZoneSnapshot;
+type ServerFloorPickupSnapshot = FloorPickupSnapshot;
+type ServerTickMsg = DungeonTickMessage;
+type ServerFloorMsg = DungeonFloorMessage;
+type ServerWelcomeMsg = DungeonWelcomeMessage;
+type ServerLobbyMsg = DungeonLobbyMessage;
+type ServerPowerupMsg = DungeonPowerupChoicesMessage;
+type ServerResultsMsg = DungeonResultsMessage;
+type ServerMobProgressMsg = DungeonMobProgressMessage;
+type ServerMobSpritesMsg = DungeonMobSpritesMessage;
+type ServerMobRosterMsg = DungeonMobRosterMessage;
 
 interface ServerErrorMsg {
   type: 'd_error';

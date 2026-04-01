@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/mnt/data/commons-server
+WorkingDirectory=/mnt/data/clungiverse/packages/server
 ExecStart=/home/clungus/.bun/bin/bun run src/index.ts
 Restart=always
 RestartSec=10

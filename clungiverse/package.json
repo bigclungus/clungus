@@ -1,0 +1,5 @@
+{
+  "name": "clungiverse",
+  "private": true,
+  "workspaces": ["packages/*"]
+}
