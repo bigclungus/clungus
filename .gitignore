@@ -25,6 +25,7 @@ secrets/
 # Build artifacts
 dist/
 *.js.map
+hello-world/static/clungiverse/main.js
 __pycache__/
 *.pyc
 .venv/
