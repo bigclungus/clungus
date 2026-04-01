@@ -29,6 +29,10 @@ from .utils import get_openai_key, get_discord_token
 DB_PATH = "/mnt/data/data/discord-history.db"
 EMBED_MODEL = "text-embedding-3-small"
 EMBED_DIMS = 1536
+
+# Local embeddings config
+LOCAL_EMBED_MODEL = "all-MiniLM-L6-v2"
+LOCAL_EMBED_DIMS = 384
 JSONL_GLOB = "/home/clungus/.claude/projects/*/*.jsonl"
 BATCH_SIZE = 100
 
@@ -68,6 +72,10 @@ def open_db() -> sqlite3.Connection:
 
         CREATE VIRTUAL TABLE IF NOT EXISTS messages_vec USING vec0(
             embedding float[{EMBED_DIMS}]
+        );
+
+        CREATE VIRTUAL TABLE IF NOT EXISTS messages_vec_local USING vec0(
+            embedding float[{LOCAL_EMBED_DIMS}]
         );
 
         CREATE TABLE IF NOT EXISTS ingest_state (
@@ -361,11 +369,31 @@ def describe_attachments(client, msg: dict, discord_token: str) -> str:
 # ---- Embeddings --------------------------------------------------------------
 
 def embed_batch(client, texts: list[str]) -> list[list[float]]:
+    """Legacy OpenAI embedding (kept for backward compat)."""
     response = client.embeddings.create(
         model=EMBED_MODEL,
         input=texts,
     )
     return [item.embedding for item in response.data]
+
+
+_local_model = None
+
+
+def _get_local_model():
+    """Lazy-load the local sentence-transformers model."""
+    global _local_model
+    if _local_model is None:
+        from sentence_transformers import SentenceTransformer
+        _local_model = SentenceTransformer(LOCAL_EMBED_MODEL)
+    return _local_model
+
+
+def embed_batch_local(texts: list[str]) -> list[list[float]]:
+    """Embed texts using local sentence-transformers model."""
+    model = _get_local_model()
+    embeddings = model.encode(texts, show_progress_bar=False)
+    return [emb.tolist() for emb in embeddings]
 
 
 # ---- Main ingest loop --------------------------------------------------------
@@ -414,21 +442,7 @@ def _clear_circuit_breaker():
 def _run_history_ingest_sync() -> str:
     import sqlite_vec
 
-    # Circuit breaker check
-    if _check_circuit_breaker():
-        activity.logger.info("Circuit breaker open, skipping history ingest run")
-        return "Circuit breaker open — skipping (will retry after cooldown)"
-
-    api_key = get_openai_key()
-    from openai import OpenAI
-    client = OpenAI(api_key=api_key)
     conn = open_db()
-
-    discord_token = None
-    try:
-        discord_token = get_discord_token()
-    except RuntimeError as e:
-        activity.logger.warning("%s - attachment descriptions disabled", e)
 
     jsonl_files = sorted(glob.glob(JSONL_GLOB))
     activity.logger.info("Found %d JSONL files", len(jsonl_files))
@@ -497,23 +511,12 @@ def _run_history_ingest_sync() -> str:
 
         for i in range(0, len(new_messages), BATCH_SIZE):
             batch = new_messages[i:i + BATCH_SIZE]
-            texts = []
-            for m in batch:
-                if m.get("attachment_count", 0) > 0 and discord_token:
-                    enhanced = describe_attachments(client, m, discord_token)
-                    m["content"] = enhanced
-                    texts.append(enhanced)
-                else:
-                    texts.append(m["content"])
+            texts = [m["content"] for m in batch]
+
             try:
-                embeddings = embed_batch(client, texts)
+                embeddings = embed_batch_local(texts)
             except Exception as e:
-                activity.logger.error("ERROR embedding batch: %s", e)
-                # Track 429 rate-limit errors for circuit breaker
-                err_str = str(e)
-                if "429" in err_str or "rate" in err_str.lower():
-                    _record_circuit_failure()
-                    activity.logger.warning("429 rate limit hit — circuit breaker failure recorded")
+                activity.logger.error("ERROR embedding batch locally: %s", e)
                 raise  # No silent failures
 
             for msg, emb in zip(batch, embeddings):
@@ -530,7 +533,7 @@ def _run_history_ingest_sync() -> str:
                 if row:
                     emb_bytes = sqlite_vec.serialize_float32(emb)
                     conn.execute(
-                        "INSERT OR IGNORE INTO messages_vec (rowid, embedding) VALUES (?, ?)",
+                        "INSERT OR IGNORE INTO messages_vec_local (rowid, embedding) VALUES (?, ?)",
                         (row[0], emb_bytes)
                     )
 
@@ -541,9 +544,9 @@ def _run_history_ingest_sync() -> str:
         conn.commit()
 
     total_messages = conn.execute("SELECT COUNT(*) FROM messages").fetchone()[0]
+    total_local_vecs = conn.execute("SELECT COUNT(*) FROM messages_vec_local").fetchone()[0]
     conn.close()
-    _clear_circuit_breaker()
-    summary = f"Ingest complete. New messages this run: {total_new}. Total in DB: {total_messages}."
+    summary = f"Ingest complete. New messages this run: {total_new}. Total in DB: {total_messages}. Local embeddings: {total_local_vecs}."
     activity.logger.info(summary)
     return summary
 

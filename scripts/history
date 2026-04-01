@@ -19,9 +19,8 @@ import sqlite3
 from datetime import datetime, timezone
 
 import sqlite_vec
-from openai import OpenAI
 
-from common import DB_PATH, EMBED_MODEL, EMBED_DIMS, get_openai_key
+from common import DB_PATH, LOCAL_EMBED_DIMS, USE_LOCAL_EMBEDDINGS, local_embed_query, get_openai_key
 
 
 def open_db() -> sqlite3.Connection:
@@ -36,7 +35,12 @@ def open_db() -> sqlite3.Connection:
     return conn
 
 
-def embed_query(client: OpenAI, query: str) -> bytes:
+def embed_query_openai(query: str) -> bytes:
+    """Embed using OpenAI (legacy fallback)."""
+    from openai import OpenAI
+    from common import EMBED_MODEL
+    api_key = get_openai_key()
+    client = OpenAI(api_key=api_key)
     response = client.embeddings.create(
         model=EMBED_MODEL,
         input=[query],
@@ -114,15 +118,27 @@ def chronological_search(limit: int = 5, author_filter: str = None,
 
 def search(query: str, limit: int = 5, author_filter: str = None,
            after: str = None, before: str = None):
-    api_key = get_openai_key()
-    client = OpenAI(api_key=api_key)
     conn = open_db()
 
-    query_emb = embed_query(client, query)
+    # Check if local vec table exists and has data
+    local_count = 0
+    try:
+        local_count = conn.execute("SELECT COUNT(*) FROM messages_vec_local").fetchone()[0]
+    except Exception:
+        pass
+
+    if local_count > 0:
+        # Use local embeddings
+        query_emb = local_embed_query(query)
+        vec_table = "messages_vec_local"
+    else:
+        # Fall back to OpenAI embeddings
+        query_emb = embed_query_openai(query)
+        vec_table = "messages_vec"
 
     k = limit * 20 if (author_filter or after or before) else limit
     rows = conn.execute(
-        """
+        f"""
         SELECT
             m.id,
             m.message_id,
@@ -131,7 +147,7 @@ def search(query: str, limit: int = 5, author_filter: str = None,
             m.ts,
             m.content,
             mv.distance
-        FROM messages_vec mv
+        FROM {vec_table} mv
         JOIN messages m ON m.id = mv.rowid
         WHERE mv.embedding MATCH ? AND k = ?
         ORDER BY mv.distance

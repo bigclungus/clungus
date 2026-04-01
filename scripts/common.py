@@ -1,8 +1,18 @@
 import os
+import struct
 
 DB_PATH = "/mnt/data/data/discord-history.db"
+
+# Legacy OpenAI embeddings (kept for backward compat)
 EMBED_MODEL = "text-embedding-3-small"
 EMBED_DIMS = 1536
+
+# Local embeddings (sentence-transformers)
+LOCAL_EMBED_MODEL = "all-MiniLM-L6-v2"
+LOCAL_EMBED_DIMS = 384
+
+# Default to local embeddings
+USE_LOCAL_EMBEDDINGS = True
 
 
 def get_openai_key() -> str:
@@ -26,3 +36,35 @@ def get_openai_key() -> str:
         "OPENAI_API_KEY not found in environment or any .env file\n"
         f"Checked: {env_paths}"
     )
+
+
+_local_model = None
+
+
+def get_local_model():
+    """Lazy-load the local sentence-transformers model."""
+    global _local_model
+    if _local_model is None:
+        from sentence_transformers import SentenceTransformer
+        _local_model = SentenceTransformer(LOCAL_EMBED_MODEL)
+    return _local_model
+
+
+def local_embed_texts(texts: list[str]) -> list[list[float]]:
+    """Embed texts using the local model. Returns list of float lists."""
+    model = get_local_model()
+    embeddings = model.encode(texts, show_progress_bar=False)
+    return [emb.tolist() for emb in embeddings]
+
+
+def local_embed_query(query: str) -> bytes:
+    """Embed a single query string and return sqlite-vec bytes."""
+    import sqlite_vec
+    model = get_local_model()
+    emb = model.encode([query], show_progress_bar=False)[0]
+    return sqlite_vec.serialize_float32(emb.tolist())
+
+
+def serialize_f32(vec: list[float]) -> bytes:
+    """Serialize a list of floats to bytes for sqlite-vec."""
+    return struct.pack(f"{len(vec)}f", *vec)
