@@ -3785,9 +3785,10 @@ chatProxyWss.on("connection", (clientWs: WebSocket, req: http.IncomingMessage) =
     });
   });
 
-  backendWs.on("message", (data) => {
+  backendWs.on("message", (data, isBinary) => {
     if (clientWs.readyState === WebSocket.OPEN) {
-      clientWs.send(data);
+      // Forward as text so the browser receives a string, not a Blob
+      clientWs.send(isBinary ? data.toString("utf-8") : data);
     }
   });
 
