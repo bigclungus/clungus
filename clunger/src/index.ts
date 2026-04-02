@@ -2910,6 +2910,51 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // ── /chat — Clungcord proxy ───────────────────────────────────────────────
+  if (pathname === "/chat") {
+    res.writeHead(301, { Location: "/chat/" });
+    res.end();
+    return;
+  }
+  if (pathname.startsWith("/chat/")) {
+    const subpath = pathname.slice("/chat".length);
+    const targetUrl = `http://127.0.0.1:8120${subpath}${url.search}`;
+    const headers = new Headers();
+    for (const [k, v] of Object.entries(req.headers)) {
+      if (typeof v === "string") headers.set(k, v);
+      else if (Array.isArray(v)) headers.set(k, v.join(", "));
+    }
+    headers.set("X-Forwarded-For", "127.0.0.1");
+    headers.delete("host");
+
+    let reqBody: ArrayBuffer | undefined;
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      reqBody = (await readBody(req)).buffer as ArrayBuffer;
+    }
+
+    try {
+      const upstream = await fetch(targetUrl, {
+        method: req.method ?? "GET",
+        headers,
+        body: reqBody,
+        signal: AbortSignal.timeout(30_000),
+      });
+      const upstreamBuf = Buffer.from(await upstream.arrayBuffer());
+      const responseHeaders: Record<string, string> = {};
+      upstream.headers.forEach((v, k) => { responseHeaders[k] = v; });
+      // Fix content-length for proxied responses
+      delete responseHeaders["content-encoding"];
+      responseHeaders["content-length"] = String(upstreamBuf.length);
+      res.writeHead(upstream.status, responseHeaders);
+      res.end(upstreamBuf);
+    } catch (err) {
+      console.error(`[chat-proxy] proxy error: ${err}`);
+      res.writeHead(502, { "Content-Type": "text/plain" });
+      res.end("Clungcord unreachable");
+    }
+    return;
+  }
+
   // ConnectRPC routes — identified by service package prefix
   if (
     pathname.startsWith("/persona.v1.") ||
@@ -3724,6 +3769,53 @@ commonsProxyWss.on("connection", (clientWs: WebSocket, req: http.IncomingMessage
   });
 });
 
+// ── Chat WebSocket proxy (/chat/ws → localhost:8120/ws) ─────────────────────
+const chatProxyWss = new WebSocketServer({ noServer: true });
+
+chatProxyWss.on("connection", (clientWs: WebSocket, req: http.IncomingMessage) => {
+  const cookieHeader = req.headers.cookie ?? "";
+  const backendUrl = `ws://127.0.0.1:8120/ws`;
+  const backendWs = new WebSocket(backendUrl, { headers: { cookie: cookieHeader } });
+
+  backendWs.on("open", () => {
+    clientWs.on("message", (data) => {
+      if (backendWs.readyState === WebSocket.OPEN) {
+        backendWs.send(data);
+      }
+    });
+  });
+
+  backendWs.on("message", (data) => {
+    if (clientWs.readyState === WebSocket.OPEN) {
+      clientWs.send(data);
+    }
+  });
+
+  backendWs.on("close", (code, reason) => {
+    if (clientWs.readyState === WebSocket.OPEN) {
+      clientWs.close(code, reason);
+    }
+  });
+
+  backendWs.on("error", (err) => {
+    console.error("[chat-proxy] backend ws error:", err.message);
+    if (clientWs.readyState === WebSocket.OPEN) {
+      clientWs.close(1011, "backend error");
+    }
+  });
+
+  clientWs.on("close", () => {
+    if (backendWs.readyState === WebSocket.OPEN || backendWs.readyState === WebSocket.CONNECTING) {
+      backendWs.close();
+    }
+  });
+
+  clientWs.on("error", (err) => {
+    console.error("[chat-proxy] client ws error:", err.message);
+    backendWs.close();
+  });
+});
+
 // ── Dungeon WebSocket proxy (/dungeon-ws → localhost:8090/dungeon-ws) ─────────
 const dungeonProxyWss = new WebSocketServer({ noServer: true });
 
@@ -3783,6 +3875,10 @@ server.on("upgrade", (req: http.IncomingMessage, socket, head) => {
   } else if (url.pathname === "/api/commons/ws") {
     commonsWss.handleUpgrade(req, socket, head, (ws) => {
       commonsWss.emit("connection", ws, req);
+    });
+  } else if (url.pathname === "/chat/ws") {
+    chatProxyWss.handleUpgrade(req, socket, head, (ws) => {
+      chatProxyWss.emit("connection", ws, req);
     });
   } else if (url.pathname === "/dungeon-ws") {
     dungeonProxyWss.handleUpgrade(req, socket, head, (ws) => {
