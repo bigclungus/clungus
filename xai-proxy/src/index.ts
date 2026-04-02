@@ -17,17 +17,24 @@ interface ToolDef {
   [key: string]: unknown;
 }
 
-function fixRequiredNull(obj: unknown): unknown {
+function fixSchemaFields(obj: unknown): unknown {
   if (obj === null || obj === undefined) return obj;
-  if (Array.isArray(obj)) return obj.map(fixRequiredNull);
+  if (Array.isArray(obj)) return obj.map(fixSchemaFields);
   if (typeof obj === "object") {
     const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+      // Replace "required": null with empty array (xAI rejects null, expects array)
       if (key === "required" && value === null) {
         result[key] = [];
-      } else {
-        result[key] = fixRequiredNull(value);
+        continue;
       }
+      result[key] = fixSchemaFields(value);
+    }
+    // xAI bug: if an object-type schema has no "required" field at all,
+    // xAI internally defaults it to null and then fails validation.
+    // Ensure every object-type schema has "required" as an array.
+    if ((result as Record<string, unknown>).type === "object" && !("required" in result)) {
+      result["required"] = [];
     }
     return result;
   }
@@ -68,10 +75,15 @@ const server = Bun.serve({
     body.model = mappedModel;
     console.log(`[proxy] ${originalModel} -> ${mappedModel} | stream=${!!body.stream}`);
 
-    // Fix required: null in tools
-    if (body.tools) {
-      body.tools = fixRequiredNull(body.tools);
-    }
+    // Fix schema fields: drop required:null, etc. (xAI rejects null required)
+    body = fixSchemaFields(body) as Record<string, unknown>;
+
+    // Strip Anthropic-specific fields that xAI doesn't support
+    delete body.thinking;
+    delete body.output_config;
+    delete body.metadata;
+
+
 
     // Determine auth header - prefer x-api-key, fall back to Authorization, then env
     const apiKey =
@@ -106,6 +118,15 @@ const server = Bun.serve({
         JSON.stringify({ error: "upstream request failed", detail: String(err) }),
         { status: 502, headers: { "Content-Type": "application/json" } }
       );
+    }
+
+    // Log error responses for debugging
+    if (upstreamResp.status >= 400) {
+      const errBody = await upstreamResp.text();
+      console.error(`[proxy] upstream ${upstreamResp.status}: ${errBody.substring(0, 500)}`);
+      const responseHeaders = new Headers();
+      responseHeaders.set("content-type", "application/json");
+      return new Response(errBody, { status: upstreamResp.status, headers: responseHeaders });
     }
 
     // Pass through response headers we care about
