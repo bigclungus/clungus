@@ -1,0 +1,8 @@
+{
+  "name": "xai-proxy",
+  "version": "1.0.0",
+  "description": "Anthropic-to-xAI translation proxy for Claude CLI",
+  "scripts": {
+    "start": "bun run src/index.ts"
+  }
+}
