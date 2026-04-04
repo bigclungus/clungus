@@ -4,53 +4,44 @@ Shared utility helpers for temporal-workflows activities.
 import os
 
 import aiohttp
-from temporalio.exceptions import ApplicationError
 
 DISCORD_TIMEOUT = aiohttp.ClientTimeout(total=10)
 
+# Standard .env search paths
+_ENV_PATHS = [
+    "/mnt/data/temporal-workflows/.env",
+    "/mnt/data/.env",
+    os.path.expanduser("~/.claude/channels/discord/.env"),
+]
 
-def get_openai_key() -> str:
-    key = os.environ.get("OPENAI_API_KEY")
+
+def load_env_key(var_name: str) -> str:
+    """Load a key from environment or .env files. Raises RuntimeError if not found."""
+    key = os.environ.get(var_name)
     if key:
         return key
-    env_paths = [
-        "/mnt/data/temporal-workflows/.env",
-        "/mnt/data/.env",
-        os.path.expanduser("~/.claude/channels/discord/.env"),
-    ]
-    for path in env_paths:
+    for path in _ENV_PATHS:
         try:
             with open(path) as f:
                 for line in f:
-                    if line.startswith("OPENAI_API_KEY="):
+                    line = line.strip()
+                    if line.startswith(f"{var_name}=") and not line.startswith("#"):
                         return line.split("=", 1)[1].strip()
         except FileNotFoundError:
             continue
-    raise RuntimeError("OPENAI_API_KEY not found in environment or any .env file")
+    raise RuntimeError(f"{var_name} not found in environment or any .env file")
+
+
+def get_openai_key() -> str:
+    return load_env_key("OPENAI_API_KEY")
 
 
 def get_discord_token() -> str:
-    env_file = "/home/clungus/.claude/channels/discord/.env"
-    env_vars: dict[str, str] = {}
-    if os.path.exists(env_file):
-        for line in open(env_file):
-            line = line.strip()
-            if "=" in line and not line.startswith("#"):
-                k, v = line.split("=", 1)
-                env_vars[k.strip()] = v.strip()
-    token = os.environ.get("DISCORD_BOT_TOKEN") or env_vars.get("DISCORD_BOT_TOKEN", "")
-    if not token:
-        raise RuntimeError("DISCORD_BOT_TOKEN not available")
-    return token
+    return load_env_key("DISCORD_BOT_TOKEN")
 
 
 def _discord_headers() -> dict:
     token = get_discord_token()
-    if not token:
-        raise ApplicationError(
-            "DISCORD_BOT_TOKEN is not set — cannot make Discord API calls",
-            non_retryable=True,
-        )
     return {
         "Authorization": f"Bot {token}",
         "Content-Type": "application/json",
