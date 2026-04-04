@@ -1,21 +1,22 @@
 """
 Local (pure logic) activities for the Model Scout workflow.
 
-These activities perform no I/O — they filter, parse, and transform data.
+Most activities perform no I/O — they filter, parse, and transform data.
+generate_model_description is the exception: it calls the xAI API (Grok)
+to synthesize a concise description of what makes a model unique.
 """
 
 import logging
+import os
 import re
 from datetime import datetime, timezone
 
+import aiohttp
 from temporalio import activity
 
-logger = logging.getLogger(__name__)
+from .utils import load_env_key
 
-# Models below this param count are skipped (too small to be interesting)
-MIN_PARAMS = 1_000_000_000  # 1B
-# Models above this are skipped (too expensive for together.ai budget)
-MAX_PARAMS = 180_000_000_000  # 180B
+logger = logging.getLogger(__name__)
 
 # Generic frontier models to skip — we want niche/interesting ones
 SKIP_PATTERNS = [
@@ -28,10 +29,18 @@ SKIP_PATTERNS = [
 
 _SKIP_RE = re.compile("|".join(SKIP_PATTERNS), re.IGNORECASE)
 
-# HuggingFace pipeline tags that indicate non-text-to-text models
-_MULTIMODAL_PIPELINE_TAGS = {
+# together.ai type values that are definitively not text models
+_NON_TEXT_TOGETHER_TYPES = {
+    "image",
+    "image_generation",
+    "image generation",
+    "audio",
+    "speech",
+}
+
+# HuggingFace pipeline tags that are definitively not text models
+_NON_TEXT_PIPELINE_TAGS = {
     "text-to-image",
-    "image-to-text",
     "image-to-image",
     "image-to-video",
     "text-to-video",
@@ -40,81 +49,82 @@ _MULTIMODAL_PIPELINE_TAGS = {
     "automatic-speech-recognition",
     "audio-to-audio",
     "audio-classification",
-    "audio-text-to-text",
+    "unconditional-image-generation",
+    # Vision / multimodal / image understanding — text-output but vision input
+    "image-to-text",
+    "image-text-to-text",
+    "vision-language",
     "visual-question-answering",
+    "document-question-answering",
     "image-classification",
     "image-segmentation",
     "object-detection",
+    "zero-shot-image-classification",
+    "zero-shot-object-detection",
     "video-classification",
     "depth-estimation",
     "image-feature-extraction",
     "mask-generation",
-    "zero-shot-image-classification",
-    "zero-shot-object-detection",
-    "unconditional-image-generation",
+    "audio-text-to-text",
 }
 
-# Name/ID patterns that indicate multimodal or non-text models
-_MULTIMODAL_NAME_PATTERNS = re.compile(
-    r"\b(vision|visual|vl\b|vlm|tts|stt|asr|image|img|audio|speech|voice|"
-    r"diffusion|sdxl|stable[-_]diffusion|whisper|voxtral|musicgen|audiogen|"
-    r"dalle|dall-e|flux|midjourney|clip|owl|blip|llava|bakllava|idefics|"
-    r"cogvlm|internvl|qwen[-_]?vl|pixtral|video[-_]?llm|videollm)\b",
+# Substrings in pipeline_tag that indicate non-text models.
+_VISION_OCR_TAG_SUBSTRINGS = {"ocr"}
+
+# Name/ID regex for definitively non-text model families.
+# These are explicit well-known video/image/audio/vision model families.
+# We do NOT match broad words like "vision" or "image" alone since many text
+# models use those in names (e.g. "CodeVision", "ImageBind-text").
+_NON_TEXT_NAME_RE = re.compile(
+    r"\b(wan2|wan-2|diffusion|sdxl|stable[-_]diffusion|"
+    r"dall[-_e]|flux\b|midjourney|whisper|voxtral|musicgen|audiogen|"
+    r"sora\b|kling\b|hunyuan[-_]?video|cogvideo|videollm|video[-_]llm|"
+    r"llava|bakllava|idefics|cogvlm|internvl|qwen[-_]?vl|pixtral|"
+    r"blip\b|clip\b|owl[-_]vit|ocr\b)\b",
     re.IGNORECASE,
 )
 
-# together.ai model type values that indicate non-text models
-_MULTIMODAL_TOGETHER_TYPES = {
-    "image",
-    "image_generation",
-    "image generation",
-    "audio",
-    "speech",
-    "embedding",
-    "rerank",
-    "moderation",
-}
 
+def _is_congress_model(model: dict) -> bool:
+    """Return True if this model is text-based and eligible for congress.
 
-def _is_text_only(model: dict) -> bool:
-    """Return True if this model appears to be a text-to-text (language) model.
-
-    Checks pipeline_tag, tags list, model type field, and name/ID patterns.
-    When in doubt, allows the model through — false positives are better than
-    discarding real text models.
+    Excludes models that are definitively non-text (image gen, audio, video, TTS,
+    vision/multimodal, OCR). Everything else — tiny models, domain-specific,
+    instruction-tuned, base models — passes. When in doubt, let it through.
     """
-    # Pipeline tag is the most reliable signal for HuggingFace models
-    pipeline_tag = (model.get("pipeline_tag") or "").lower().strip()
-    if pipeline_tag:
-        if pipeline_tag in _MULTIMODAL_PIPELINE_TAGS:
-            return False
-        # Explicitly text: allow through immediately
-        if pipeline_tag in {"text-generation", "text2text-generation", "conversational",
-                             "question-answering", "summarization", "translation",
-                             "fill-mask", "token-classification", "text-classification",
-                             "feature-extraction", "sentence-similarity"}:
-            return True
-
-    # together.ai has a "type" field
+    # together.ai "type" field is authoritative
     model_type = (model.get("type") or "").lower().strip()
-    if model_type and model_type in _MULTIMODAL_TOGETHER_TYPES:
+    if model_type in _NON_TEXT_TOGETHER_TYPES:
         return False
 
-    # Check HuggingFace tags list for multimodal indicators
-    tags = [t.lower() for t in (model.get("tags") or [])]
-    for tag in tags:
-        if tag in _MULTIMODAL_PIPELINE_TAGS:
-            return False
-        if tag in {"multimodal", "vision", "image-text-to-text"}:
-            return False
+    # HuggingFace pipeline_tag is authoritative when present
+    pipeline_tag = (model.get("pipeline_tag") or "").lower().strip()
+    if pipeline_tag in _NON_TEXT_PIPELINE_TAGS:
+        return False
 
-    # Name/ID pattern matching as a last resort
-    name = model.get("name", "")
-    model_id = model.get("model_id", "")
-    if _MULTIMODAL_NAME_PATTERNS.search(name) or _MULTIMODAL_NAME_PATTERNS.search(model_id):
+    # pipeline_tag substring checks (e.g. "ocr", future variants)
+    if any(sub in pipeline_tag for sub in _VISION_OCR_TAG_SUBSTRINGS):
+        return False
+
+    # pipeline_tag "vision" check — only exclude if the tag itself IS "vision"
+    # or starts with "vision-" to avoid catching "text-generation" models whose
+    # readme merely mentions vision.
+    if pipeline_tag == "vision" or pipeline_tag.startswith("vision-"):
+        return False
+
+    # Name/ID pattern check for well-known non-text model families.
+    # This is a last-resort filter for models whose pipeline_tag is missing or wrong
+    # (e.g. gated HF repos that return 401 before we can verify their tag).
+    model_id = (model.get("model_id") or "")
+    name = (model.get("name") or "")
+    if _NON_TEXT_NAME_RE.search(model_id) or _NON_TEXT_NAME_RE.search(name):
         return False
 
     return True
+
+
+# Keep the old name as an alias so the workflow's post-detail check still works
+_is_text_only = _is_congress_model
 
 
 @activity.defn
@@ -138,7 +148,6 @@ async def filter_candidates(raw_models: list[dict], known_ids: list[str] | set[s
     for model in raw_models:
         model_id = model.get("model_id", "")
         name = model.get("name", "")
-        params = model.get("params")
 
         # Skip if already scouted
         if model_id in known_ids:
@@ -148,33 +157,17 @@ async def filter_candidates(raw_models: list[dict], known_ids: list[str] | set[s
         if _SKIP_RE.search(name) or _SKIP_RE.search(model_id):
             continue
 
-        # Skip non-text-to-text models (vision, image gen, audio, TTS, etc.)
-        if not _is_text_only(model):
+        # Only gate on text-based; let everything else through
+        if not _is_congress_model(model):
             logger.debug("Skipping non-text model: %s (pipeline_tag=%s, type=%s)",
                          model_id, model.get("pipeline_tag"), model.get("type"))
             continue
-
-        # Filter by param count (if available)
-        if params is not None:
-            if params < MIN_PARAMS or params > MAX_PARAMS:
-                continue
 
         candidates.append(model)
 
     if not candidates:
         return None
 
-    # Prefer models with known param counts; among those, prefer mid-range (7B-70B)
-    def score(m: dict) -> float:
-        p = m.get("params")
-        if p is None:
-            return 0.0
-        # Sweet spot: 7B-70B gets highest score
-        if 7_000_000_000 <= p <= 70_000_000_000:
-            return 2.0
-        return 1.0
-
-    candidates.sort(key=score, reverse=True)
     return candidates[0]
 
 
@@ -332,3 +325,268 @@ async def build_persona_frontmatter(
         lines.append("")
 
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Grok-powered model description generation
+# ---------------------------------------------------------------------------
+
+_XAI_API_URL = "https://api.x.ai/v1/chat/completions"
+_DESCRIPTION_SYSTEM = (
+    "You are an AI model analyst writing for a technical audience who will use this "
+    "information to decide whether a model is worth deploying as a congress debate persona. "
+    "Given detailed metadata about an open-source language model, write exactly 3-5 sentences "
+    "that give a comprehensive, specific picture of the model. Cover: "
+    "(1) architecture type and parameter count, "
+    "(2) training method or key training data characteristics, "
+    "(3) any benchmark performance highlights, "
+    "(4) what tasks or domains it excels at, "
+    "(5) what makes it specifically useful — or not useful — for debate and reasoning tasks. "
+    "Be concrete and specific. No generic praise. No filler. "
+    "If benchmark data is absent, say so rather than inventing numbers. "
+    "Do not start with 'This model' — lead with the most distinctive fact."
+)
+
+
+def extract_model_card_details(hf_detail: dict) -> dict:
+    """Extract structured architecture and benchmark info from a HuggingFace model detail response.
+
+    Looks through cardData (front matter), model card readme sections, and top-level
+    fields to pull out: architecture type, training method, benchmark scores, dataset info,
+    context length, quantization, and any other structured facts.
+
+    Returns a dict with string values for any fields found. All fields are optional.
+    """
+    card_data = hf_detail.get("cardData") or {}
+    result: dict[str, str] = {}
+
+    # --- Architecture type ---
+    arch = (
+        card_data.get("model_type")
+        or card_data.get("architecture")
+        or hf_detail.get("config", {}).get("model_type")
+        or ""
+    )
+    if arch:
+        result["architecture"] = str(arch)
+
+    # --- Base model (was this fine-tuned from something?) ---
+    base_model = card_data.get("base_model") or card_data.get("finetuned_from") or ""
+    if isinstance(base_model, list):
+        base_model = ", ".join(base_model)
+    if base_model:
+        result["base_model"] = str(base_model)
+
+    # --- Training method / type ---
+    # "model_type" in cardData often means "mistral", "llama", etc.
+    # "license" gives us OSS-ness. Look for finetuning indicators.
+    finetune_tags = []
+    tags = hf_detail.get("tags") or card_data.get("tags") or []
+    for tag in tags:
+        tag_lower = tag.lower()
+        if any(kw in tag_lower for kw in ["rlhf", "dpo", "orpo", "sft", "instruct",
+                                            "chat", "gguf", "awq", "gptq", "quantized"]):
+            finetune_tags.append(tag)
+    if finetune_tags:
+        result["training_tags"] = ", ".join(finetune_tags[:6])
+
+    # --- Datasets used ---
+    datasets = card_data.get("datasets") or []
+    if isinstance(datasets, list) and datasets:
+        result["datasets"] = ", ".join(str(d) for d in datasets[:5])
+
+    # --- Language support ---
+    languages = card_data.get("language") or card_data.get("languages") or []
+    if isinstance(languages, str):
+        languages = [languages]
+    if languages and len(languages) > 1:
+        result["languages"] = ", ".join(languages[:8])
+
+    # --- License ---
+    license_val = card_data.get("license") or ""
+    if license_val:
+        result["license"] = str(license_val)
+
+    # --- Benchmark scores ---
+    # HF cardData sometimes has an "eval_results" list with benchmark entries
+    eval_results = card_data.get("eval_results") or []
+    if eval_results:
+        bench_parts = []
+        for ev in eval_results[:8]:
+            task = ev.get("task", {}).get("name") or ev.get("task_type") or ""
+            dataset_name = ev.get("dataset", {}).get("name") or ev.get("dataset_name") or ""
+            metric = ev.get("metrics", [{}])[0] if ev.get("metrics") else {}
+            metric_name = metric.get("name") or metric.get("type") or ""
+            metric_val = metric.get("value")
+            if metric_val is not None and task:
+                label = dataset_name or task
+                bench_parts.append(f"{label}: {metric_val:.1f}" if isinstance(metric_val, float)
+                                   else f"{label}: {metric_val}")
+        if bench_parts:
+            result["benchmarks"] = "; ".join(bench_parts)
+
+    # --- Mine the model card readme for benchmark tables / mentions ---
+    # The readme field (if present) often has benchmark tables in markdown
+    readme = hf_detail.get("cardData", {}).get("readme") or ""
+    if not readme:
+        # Some endpoints return the raw readme as a top-level field
+        readme = hf_detail.get("readme") or ""
+    if readme and len(readme) > 100:
+        # Extract lines that look like benchmark results: contain numbers and benchmark names
+        bench_keywords = [
+            "mmlu", "hellaswag", "arc", "truthfulqa", "gsm8k", "math", "humaneval",
+            "mbpp", "bbh", "ifeval", "gpqa", "mt-bench", "lm-eval", "big-bench",
+        ]
+        readme_lines = readme.split("\n")
+        bench_lines = []
+        for line in readme_lines:
+            line_lower = line.lower()
+            if any(kw in line_lower for kw in bench_keywords):
+                # Keep lines that have at least one number — likely a score
+                if re.search(r"\d+\.?\d*", line):
+                    bench_lines.append(line.strip())
+        if bench_lines and not result.get("benchmarks"):
+            # Deduplicate and cap
+            seen: set[str] = set()
+            unique_bench_lines = []
+            for line in bench_lines:
+                if line not in seen:
+                    seen.add(line)
+                    unique_bench_lines.append(line)
+            result["benchmark_mentions"] = " | ".join(unique_bench_lines[:6])
+
+    return result
+
+
+@activity.defn
+async def generate_model_description(
+    model_name: str,
+    model_id: str,
+    model_info: dict,
+) -> str:
+    """Use Grok to synthesize a 3-5 sentence description of what makes a model unique.
+
+    Args:
+        model_name: human-readable model name
+        model_id: source-qualified model identifier (e.g. "hf:org/ModelName")
+        model_info: dict with any combination of: params, source, description,
+                    pipeline_tag, tags, context_length, downloads, likes,
+                    architecture, base_model, training_tags, datasets, languages,
+                    license, benchmarks, benchmark_mentions
+
+    Returns:
+        A 3-5 sentence description string. Raises RuntimeError on API failure.
+    """
+    api_key = load_env_key("XAI_API_KEY")
+
+    # Build a structured prompt from available metadata
+    parts = [f"Model name: {model_name}", f"Model ID: {model_id}"]
+
+    params = model_info.get("params")
+    if params:
+        parts.append(f"Parameters: {params / 1e9:.1f}B")
+
+    source = model_info.get("source")
+    if source:
+        parts.append(f"Source: {source}")
+
+    architecture = model_info.get("architecture")
+    if architecture:
+        parts.append(f"Architecture type: {architecture}")
+
+    base_model = model_info.get("base_model")
+    if base_model:
+        parts.append(f"Fine-tuned from: {base_model}")
+
+    training_tags = model_info.get("training_tags")
+    if training_tags:
+        parts.append(f"Training/quantization tags: {training_tags}")
+
+    pipeline_tag = model_info.get("pipeline_tag")
+    if pipeline_tag:
+        parts.append(f"Task: {pipeline_tag}")
+
+    context_length = model_info.get("context_length")
+    if context_length:
+        parts.append(f"Context length: {context_length:,} tokens")
+
+    datasets = model_info.get("datasets")
+    if datasets:
+        parts.append(f"Training datasets: {datasets}")
+
+    languages = model_info.get("languages")
+    if languages:
+        parts.append(f"Languages: {languages}")
+
+    license_val = model_info.get("license")
+    if license_val:
+        parts.append(f"License: {license_val}")
+
+    benchmarks = model_info.get("benchmarks")
+    if benchmarks:
+        parts.append(f"Benchmark results: {benchmarks}")
+
+    benchmark_mentions = model_info.get("benchmark_mentions")
+    if benchmark_mentions and not benchmarks:
+        parts.append(f"Benchmark mentions from model card: {benchmark_mentions[:500]}")
+
+    tags = model_info.get("tags")
+    if tags:
+        relevant_tags = [t for t in tags[:12] if len(t) < 40 and t not in (training_tags or "")]
+        if relevant_tags:
+            parts.append(f"Tags: {', '.join(relevant_tags)}")
+
+    description = model_info.get("description") or ""
+    if description:
+        parts.append(f"Author description: {description[:500]}")
+
+    prompt = (
+        "\n".join(parts)
+        + "\n\nGiven this model's architecture, benchmarks, and description, "
+        "what makes it uniquely valuable (or not) for debate and reasoning tasks? "
+        "Write 3-5 sentences. Be specific about architecture, training, and performance. "
+        "If benchmark data is missing, say so explicitly."
+    )
+
+    payload = {
+        "model": "grok-3-mini",
+        "messages": [
+            {"role": "system", "content": _DESCRIPTION_SYSTEM},
+            {"role": "user", "content": prompt},
+        ],
+        "max_tokens": 350,
+        "temperature": 0.4,
+    }
+
+    timeout = aiohttp.ClientTimeout(total=30)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with session.post(
+            _XAI_API_URL,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+        ) as resp:
+            if resp.status != 200:
+                body = await resp.text()
+                raise RuntimeError(
+                    f"xAI API error generating description for {model_name} "
+                    f"(HTTP {resp.status}): {body[:300]}"
+                )
+            data = await resp.json()
+
+    choices = data.get("choices", [])
+    if not choices:
+        raise RuntimeError(
+            f"xAI API returned no choices for {model_name}: {data}"
+        )
+
+    text = choices[0]["message"]["content"].strip()
+    if not text:
+        raise RuntimeError(
+            f"xAI API returned empty description for {model_name}"
+        )
+
+    # Allow up to 1200 chars — enough for 3-5 meaty sentences
+    return text[:1200]
