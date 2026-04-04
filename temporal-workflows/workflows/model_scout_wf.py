@@ -30,7 +30,10 @@ with workflow.unsafe.imports_passed_through():
     from activities.scout_local import (
         build_persona_frontmatter,
         determine_vote,
+        extract_model_card_details,
         filter_candidates,
+        filter_non_text,
+        generate_model_description,
         parse_persona_drafts,
         pick_winner,
     )
@@ -265,7 +268,7 @@ class ModelScoutWorkflow:
             return {"status": "no_sources", "model": None}
 
         # Track models we've already tried this run (to avoid re-proposing skipped ones)
-        skipped_ids: list[str] = []
+        skipped_ids: set[str] = set()
 
         # ---- Candidate loop: propose, vote, skip if signalled, repeat ----
         while True:
@@ -281,7 +284,7 @@ class ModelScoutWorkflow:
             )
 
             # Combine DB-known IDs with ones skipped this run
-            exclude_ids = list(set(known_ids) | set(skipped_ids))
+            exclude_ids = list(set(known_ids) | skipped_ids)
 
             candidate = await workflow.execute_activity(
                 filter_candidates,
@@ -320,6 +323,23 @@ class ModelScoutWorkflow:
                         total_params = safetensors.get("total", 0)
                         if total_params:
                             candidate["params"] = total_params
+                    # Re-check text-only filter now that we have pipeline_tag from detail.
+                    # The initial filter_candidates pass runs before detail is fetched,
+                    # so ASR/audio models that lack pipeline_tag in trending data can slip through.
+                    is_text = await workflow.execute_activity(
+                        filter_non_text,
+                        args=[candidate],
+                        start_to_close_timeout=timedelta(seconds=5),
+                        retry_policy=LOCAL_RETRY,
+                    )
+                    if not is_text:
+                        workflow.logger.info(
+                            "Post-detail filter rejected non-text model: %s (pipeline_tag=%s)",
+                            candidate.get("model_id"), candidate.get("pipeline_tag"),
+                        )
+                        skipped_ids.add(candidate["model_id"])
+                        continue
+
                     # Extract the most useful description available:
                     # cardData has the structured model card front matter; modelId description
                     # field is often a short summary from the author.
@@ -343,6 +363,10 @@ class ModelScoutWorkflow:
                     if unique_desc:
                         # Trim to 600 chars — enough context, not a wall of text
                         candidate["unique_description"] = unique_desc[:600]
+
+                    # Extract structured architecture/benchmark details from the full card
+                    card_details = extract_model_card_details(detail)
+                    candidate["card_details"] = card_details
                 except Exception as exc:
                     workflow.logger.warning("HF model detail fetch failed for %s: %s",
                                            candidate.get("hf_repo_id"), exc)
@@ -354,6 +378,50 @@ class ModelScoutWorkflow:
                 desc = candidate.get("description") or ""
                 if desc:
                     candidate["unique_description"] = desc[:600]
+
+            # ---- Step 3c: Generate Grok description ----
+            # Ask Grok to synthesize what makes this model unique based on its metadata.
+            # This replaces or enriches whatever unique_description we have so far.
+            # card_details contains architecture/benchmark data extracted from the HF card.
+            card_details = candidate.get("card_details") or {}
+            try:
+                grok_description = await workflow.execute_activity(
+                    generate_model_description,
+                    args=[
+                        candidate["name"],
+                        candidate["model_id"],
+                        {
+                            "params": candidate.get("params"),
+                            "source": candidate.get("source"),
+                            "description": candidate.get("description"),
+                            "pipeline_tag": candidate.get("pipeline_tag"),
+                            "tags": candidate.get("tags"),
+                            "context_length": candidate.get("context_length"),
+                            # Structured card details (architecture, benchmarks, etc.)
+                            "architecture": card_details.get("architecture"),
+                            "base_model": card_details.get("base_model"),
+                            "training_tags": card_details.get("training_tags"),
+                            "datasets": card_details.get("datasets"),
+                            "languages": card_details.get("languages"),
+                            "license": card_details.get("license"),
+                            "benchmarks": card_details.get("benchmarks"),
+                            "benchmark_mentions": card_details.get("benchmark_mentions"),
+                        },
+                    ],
+                    start_to_close_timeout=timedelta(seconds=45),
+                    retry_policy=IO_RETRY,
+                )
+                candidate["unique_description"] = grok_description
+                workflow.logger.info(
+                    "Grok description for %s: %s", candidate["name"], grok_description[:100]
+                )
+            except Exception as exc:
+                # Non-fatal: fall back to whatever description we already have
+                workflow.logger.warning(
+                    "generate_model_description failed for %s: %s — keeping existing description",
+                    candidate["name"],
+                    exc,
+                )
 
             # ---- Step 4: Record in database as proposed ----
             now_iso = workflow.now().isoformat()
@@ -420,11 +488,9 @@ class ModelScoutWorkflow:
                 )
 
                 # Check for ⏭️ skip reactions (3/5 threshold)
+                # discord_poll_reactions returns [user_id_str, ...], not dicts
                 skip_emoji_decoded = "\u23ed\ufe0f"  # ⏭️
-                skip_voters = [
-                    u for u in reactions.get(skip_emoji_decoded, [])
-                    if not u.get("bot", False)
-                ]
+                skip_voters = reactions.get(skip_emoji_decoded, [])
                 if len(skip_voters) >= VOTE_THRESHOLD:
                     self._skip_requested = True
                     break
@@ -447,7 +513,7 @@ class ModelScoutWorkflow:
             # ---- Handle skip signal ----
             if self._skip_requested:
                 workflow.logger.info("Skip signal received for %s", candidate.get("name"))
-                skipped_ids.append(candidate["model_id"])
+                skipped_ids.add(candidate["model_id"])
                 await workflow.execute_activity(
                     db_update_status,
                     args=[candidate["model_id"], STATUS_SKIPPED],
@@ -677,27 +743,18 @@ class PersonaOnboardingWorkflow:
         final_reactions = {}
 
         while elapsed < PERSONA_VOTE_DEADLINE:
-            if self._refresh_requested:
-                workflow.logger.info("Refresh signal received, completing early")
-                return {"status": "refreshed", "model": model_name}
-            if self._skip_requested:
-                workflow.logger.info("Skip signal received, ending vote early for %s", model_name)
-                break
-
             # Use wait_condition so skip/refresh signals wake us immediately
             await workflow.wait_condition(
                 lambda: self._skip_requested or self._refresh_requested,
                 timeout=PERSONA_VOTE_POLL_INTERVAL,
             )
 
-            # If woken by signal, handle immediately — don't poll reactions
-            if self._skip_requested or self._refresh_requested:
-                if self._refresh_requested:
-                    workflow.logger.info("Refresh signal received, completing early")
-                    return {"status": "refreshed", "model": model_name}
-                if self._skip_requested:
-                    workflow.logger.info("Skip signal received, ending vote early for %s", model_name)
-                    break
+            if self._refresh_requested:
+                workflow.logger.info("Refresh signal received, completing early")
+                return {"status": "refreshed", "model": model_name}
+            if self._skip_requested:
+                workflow.logger.info("Skip signal received, ending vote early for %s", model_name)
+                break
 
             elapsed += PERSONA_VOTE_POLL_INTERVAL
 

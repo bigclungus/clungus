@@ -43,6 +43,8 @@ _NON_TEXT_PIPELINE_TAGS = {
     "text-to-image",
     "image-to-image",
     "image-to-video",
+    "image-editing",
+    "inpainting",
     "text-to-video",
     "text-to-audio",
     "text-to-speech",
@@ -69,7 +71,7 @@ _NON_TEXT_PIPELINE_TAGS = {
 }
 
 # Substrings in pipeline_tag that indicate non-text models.
-_VISION_OCR_TAG_SUBSTRINGS = {"ocr"}
+_VISION_OCR_TAG_SUBSTRINGS = {"ocr", "inpaint", "image-edit", "diffusion", "outpaint"}
 
 # Name/ID regex for definitively non-text model families.
 # These are explicit well-known video/image/audio/vision model families.
@@ -80,7 +82,10 @@ _NON_TEXT_NAME_RE = re.compile(
     r"dall[-_e]|flux\b|midjourney|whisper|voxtral|musicgen|audiogen|"
     r"sora\b|kling\b|hunyuan[-_]?video|cogvideo|videollm|video[-_]llm|"
     r"llava|bakllava|idefics|cogvlm|internvl|qwen[-_]?vl|pixtral|"
-    r"blip\b|clip\b|owl[-_]vit|ocr\b)\b",
+    r"blip\b|clip\b|owl[-_]vit|ocr\b|firered\b|image[-_]edit|"
+    r"inpaint|outpaint|upscal|coloriz|deblur|denois|superresolution|"
+    r"image[-_]gen|img[-_]gen|text[-_]to[-_]img|txt[-_]to[-_]img|"
+    r"img2img|image2image|pix2pix|controlnet|lora[-_]?train|dreambooth)\b",
     re.IGNORECASE,
 )
 
@@ -123,8 +128,14 @@ def _is_congress_model(model: dict) -> bool:
     return True
 
 
-# Keep the old name as an alias so the workflow's post-detail check still works
-_is_text_only = _is_congress_model
+@activity.defn
+async def filter_non_text(candidate: dict) -> bool:
+    """Return True if the candidate passes the text-only congress filter.
+
+    Used as a post-detail-fetch gate when pipeline_tag is only known after
+    the HuggingFace detail API call.
+    """
+    return _is_congress_model(candidate)
 
 
 @activity.defn
@@ -333,18 +344,10 @@ async def build_persona_frontmatter(
 
 _XAI_API_URL = "https://api.x.ai/v1/chat/completions"
 _DESCRIPTION_SYSTEM = (
-    "You are an AI model analyst writing for a technical audience who will use this "
-    "information to decide whether a model is worth deploying as a congress debate persona. "
-    "Given detailed metadata about an open-source language model, write exactly 3-5 sentences "
-    "that give a comprehensive, specific picture of the model. Cover: "
-    "(1) architecture type and parameter count, "
-    "(2) training method or key training data characteristics, "
-    "(3) any benchmark performance highlights, "
-    "(4) what tasks or domains it excels at, "
-    "(5) what makes it specifically useful — or not useful — for debate and reasoning tasks. "
-    "Be concrete and specific. No generic praise. No filler. "
-    "If benchmark data is absent, say so rather than inventing numbers. "
-    "Do not start with 'This model' — lead with the most distinctive fact."
+    "You write plain-English descriptions of AI models for non-technical people. "
+    "No jargon, no technical terms, no ML buzzwords. "
+    "Keep it to 1-2 short sentences. Focus on what the model can actually do, "
+    "not how it was built. Write like you're explaining it to a friend."
 )
 
 
@@ -427,10 +430,7 @@ def extract_model_card_details(hf_detail: dict) -> dict:
 
     # --- Mine the model card readme for benchmark tables / mentions ---
     # The readme field (if present) often has benchmark tables in markdown
-    readme = hf_detail.get("cardData", {}).get("readme") or ""
-    if not readme:
-        # Some endpoints return the raw readme as a top-level field
-        readme = hf_detail.get("readme") or ""
+    readme = card_data.get("readme") or hf_detail.get("readme") or ""
     if readme and len(readme) > 100:
         # Extract lines that look like benchmark results: contain numbers and benchmark names
         bench_keywords = [
@@ -475,7 +475,7 @@ async def generate_model_description(
                     license, benchmarks, benchmark_mentions
 
     Returns:
-        A 3-5 sentence description string. Raises RuntimeError on API failure.
+        A 2-3 sentence plain-English description. Raises RuntimeError on API failure.
     """
     api_key = load_env_key("XAI_API_KEY")
 
@@ -542,10 +542,11 @@ async def generate_model_description(
 
     prompt = (
         "\n".join(parts)
-        + "\n\nGiven this model's architecture, benchmarks, and description, "
-        "what makes it uniquely valuable (or not) for debate and reasoning tasks? "
-        "Write 3-5 sentences. Be specific about architecture, training, and performance. "
-        "If benchmark data is missing, say so explicitly."
+        + "\n\nIn 2-3 short, plain-English sentences, explain: "
+        "(1) what this model can do in everyday terms, "
+        "(2) what it's particularly good at, "
+        "(3) why it might make an interesting debate persona in an AI parliament. "
+        "No technical jargon. Write for someone who knows nothing about machine learning."
     )
 
     payload = {
@@ -554,7 +555,7 @@ async def generate_model_description(
             {"role": "system", "content": _DESCRIPTION_SYSTEM},
             {"role": "user", "content": prompt},
         ],
-        "max_tokens": 350,
+        "max_tokens": 175,
         "temperature": 0.4,
     }
 
@@ -588,5 +589,5 @@ async def generate_model_description(
             f"xAI API returned empty description for {model_name}"
         )
 
-    # Allow up to 1200 chars — enough for 3-5 meaty sentences
-    return text[:1200]
+    # Allow up to 600 chars — enough for 2-3 short sentences
+    return text[:600]
