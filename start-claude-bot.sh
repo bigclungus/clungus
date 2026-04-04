@@ -10,6 +10,9 @@ screen -dmS claude-bot bash -c "
 export PATH=\"\$HOME/.local/bin:\$HOME/.bun/bin:\$PATH\"
 cd /home/clungus/work
 
+# Claude proxy (model router & token tracker)
+export ANTHROPIC_BASE_URL=http://localhost:3456
+
 while true; do
     # Determine session name (Roman numeral based on JSONL count)
     export SESSION_NAME=\$(/mnt/data/scripts/session-number.sh)
