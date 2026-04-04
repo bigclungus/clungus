@@ -23,13 +23,11 @@ jobs:
         uses: oven-sh/setup-bun@v1
       - name: Install deps
         run: cd clungiverse && bun install
-      - name: Build frontend
-        run: cd clungiverse/packages/client && bun run build
       - name: Build Tauri
         run: |
           cd clungiverse/packages/clungcord-desktop
           bun add -D @tauri-apps/cli@next
-          npx @tauri-apps/cli build
+          bun run build
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
