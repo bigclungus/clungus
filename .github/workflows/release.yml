@@ -1,7 +1,8 @@
 name: Release Clungcord Tauri
 on:
   push:
-    branches: [ main ]
+    tags:
+      - 'v*'
 jobs:
   build:
     strategy:
@@ -11,26 +12,29 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-apple-darwin, x86_64-apple-darwin, x86_64-pc-windows-msvc
       - name: Install Bun
         uses: oven-sh/setup-bun@v1
-      - name: Install deps
-        run: cd clungiverse && bun install
-      - name: Build Tauri
-        run: |
-          cd clungiverse/packages/clungcord-desktop
-          bun add -D @tauri-apps/cli@next
-          bun run build
+      - name: Install frontend deps
+        working-directory: clungcord/clungcord-desktop
+        run: bun install
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: clungcord/clungcord-desktop
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Clungcord ${{ github.ref_name }}'
+          releaseBody: 'See the assets to download this version and install.'
+          releaseDraft: false
+          prerelease: false
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform }}-clungcord
           path: |
-            clungiverse/packages/clungcord-desktop/src-tauri/target/release/bundle/**/*
+            clungcord/clungcord-desktop/src-tauri/target/release/bundle/**/*
