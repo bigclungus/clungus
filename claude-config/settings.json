@@ -1,17 +1,6 @@
 {
   "model": "sonnet",
-  "mcpServers": {
-    "omni": {
-      "command": "/home/clungus/.bun/bin/bun",
-      "args": ["run", "mcp"],
-      "cwd": "/mnt/data/omni/omnichannel",
-      "env": {}
-    },
-    "playwright": {
-      "command": "npx",
-      "args": ["@playwright/mcp@latest"]
-    }
-  },
+  "mcpServers": {},
   "enabledPlugins": {
   },
   "skipDangerousModePermissionPrompt": true,

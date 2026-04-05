@@ -101,7 +101,17 @@ async function callLlm(
   const resolved = MODEL_ALIASES[modelLower] ?? modelLower;
 
   const CLAUDE_SHORT_NAMES = new Set(["haiku", "opus", "sonnet"]);
-  if (resolved.startsWith("grok-") || resolved.startsWith("xai/")) {
+  if (resolved.startsWith("together/")) {
+    const togetherModel = resolved.slice(9);
+    try {
+      return await callTogether(systemPrompt, userMessage, togetherModel, onToken);
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      console.warn(`[congress] together.ai call failed (${togetherModel}): ${errMsg}. Falling back to haiku.`);
+      // Fallback to haiku to keep the session alive
+      return callClaudeCli(systemPrompt, userMessage, "haiku", onToken);
+    }
+  } else if (resolved.startsWith("grok-") || resolved.startsWith("xai/")) {
     const grokModel = resolved.startsWith("xai/") ? resolved.slice(4) : resolved;
     return callClaudeCli(systemPrompt, userMessage, grokModel, onToken, {
       ANTHROPIC_BASE_URL: "http://127.0.0.1:4100",
@@ -174,6 +184,73 @@ async function callClaudeCli(
       reject(err);
     });
   });
+}
+
+async function callTogether(
+  systemPrompt: string,
+  userMessage: string,
+  model: string,
+  onToken?: (chunk: string) => void
+): Promise<string> {
+  const apiKey = process.env.TOGETHER_API_KEY;
+  if (!apiKey) {
+    throw new Error("TOGETHER_API_KEY is not set — add it to /mnt/data/clunger/.env and restart clunger.service");
+  }
+
+  // Strip YAML frontmatter before using
+  const parsed = matter(systemPrompt);
+  const promptBody = parsed.content.trim();
+
+  const payload = {
+    model,
+    messages: [
+      { role: "system", content: promptBody },
+      { role: "user", content: userMessage },
+    ],
+    max_tokens: 2048,
+    temperature: 0.7,
+  };
+
+  const timeout = 120_000; // 120 seconds
+  const startTime = Date.now();
+
+  try {
+    const response = await fetch("https://api.together.xyz/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`together.ai API error (HTTP ${response.status}): ${body.slice(0, 300)}`);
+    }
+
+    const data = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    const choices = data.choices ?? [];
+    if (!choices.length || !choices[0]?.message?.content) {
+      throw new Error(`together.ai API returned invalid response: ${JSON.stringify(data).slice(0, 300)}`);
+    }
+
+    const text = choices[0].message.content.trim();
+    if (text) {
+      onToken?.(text);
+    }
+    return text;
+  } catch (error) {
+    if (Date.now() - startTime > timeout) {
+      throw new Error(`together.ai request timed out after 120s (model: ${model})`);
+    }
+    if (error instanceof Error) {
+      throw new Error(`together.ai call failed for ${model}: ${error.message}`);
+    }
+    throw error;
+  }
 }
 
 async function callGeminiCli(
@@ -360,12 +437,14 @@ export const congressServiceImpl: ServiceImpl<typeof CongressService> = {
 
     let responseText: string;
     try {
+      console.log(`[congress] Routing ${identity} to model: ${routedModel}`);
       responseText = await callLlm(routedModel, systemPrompt, userMessage, (chunk) => {
         if (sessionId) {
           const state = activeStreams.get(sessionId);
           if (state) state.text += chunk;
         }
       });
+      console.log(`[congress] ${identity} response received from ${routedModel} (${responseText.length} chars)`);
     } catch (e) {
       if (sessionId) {
         const state = activeStreams.get(sessionId);

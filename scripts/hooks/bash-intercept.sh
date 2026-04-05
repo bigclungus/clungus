@@ -21,5 +21,5 @@ if [ -n "$AGENT_ID" ]; then
 fi
 
 # Main thread: block and prompt delegation
-echo "Bash blocked on main thread. Delegate to a background Agent with run_in_background: true instead."
+echo "Bash blocked on main thread. Delegate to a background Agent with run_in_background: true instead." >&2
 exit 2

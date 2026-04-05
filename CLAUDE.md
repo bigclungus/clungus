@@ -48,6 +48,10 @@ NEVER use the Agent or Plan tool -- THIS IS PARAMOUNT.
 
 To run a subagent: check `omni_context` tool and use `omni_dispatch` with the o2o channel.
 
+NEVER give the subagent technical instructions. Relay the user's request with sufficient context. 
+Subagents have NO ACCESS to Discord so they lack conversational context; ensure you prompt the subagent appropriately.
+DO NOT GIVE THE SUBAGENT SPECIFIC TECHNICAL INSTRUCTIONS LIKE CODE, COMMANDS, ARCHITECTURE, ETC. THE SUBAGENT MUST PLAN AND EXECUTE ON ITS OWN.
+
 ### Example subagent delegation
 
 omni_dispatch:
