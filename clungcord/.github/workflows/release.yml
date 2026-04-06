@@ -19,23 +19,25 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: stable
           targets: aarch64-apple-darwin, x86_64-apple-darwin, x86_64-pc-windows-msvc
       - name: Install Bun
         uses: oven-sh/setup-bun@v1
       - name: Install deps
         run: bun install
-      - name: Build frontend
-        run: |
-          cd packages/client
-          bun run build
+        working-directory: clungcord-desktop
       - name: Install Tauri CLI
         run: bun add -D @tauri-apps/cli@next
+        working-directory: clungcord-desktop
       - name: Build app
         uses: tauri-apps/tauri-action@next
+        with:
+          projectPath: .
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: clungcord-desktop
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.platform }}
-          path: src-tauri/target/release/bundle/**/*
+          name: ${{ matrix.platform }}-clungcord
+          path: clungcord-desktop/src-tauri/target/release/bundle/**/*
