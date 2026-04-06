@@ -1,19 +1,5 @@
 {
-  "$schema": "https://schema.tauri.app/config/2.0.0-alpha/desktop-schema.json",
-  "productName": "Clungcord",
-  "version": "0.1.0",
-  "identifier": "com.clungcord.app",
-  "description": "Clungcord Default",
-  "framework": "Tauri",
-  "permissions": [
-    "core:default"
-  ],
-  "windows": [
-    {
-      "title": "Clungcord",
-      "width": 1200,
-      "height": 800,
-      "resizable": true
-    }
-  ]
+  "identifier": "default",
+  "description": "Default capabilities",
+  "permissions": ["core:default"]
 }
