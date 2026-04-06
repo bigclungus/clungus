@@ -270,7 +270,7 @@ async def main():
     print(f'congress orphan check: {cleaned} orphaned session(s) cleaned up')
 
 try:
-    asyncio.wait_for(main(), timeout=15)
+    asyncio.run(asyncio.wait_for(main(), timeout=15))
 except asyncio.TimeoutError:
     print('congress orphan check: timed out (15s), skipping', file=sys.stderr)
 except Exception as e:
