@@ -135,7 +135,40 @@ echo "watchdog: $STALE_COUNT task(s) marked stale"
 
 # Check for stalled congress sessions (running > 2 hours) and terminate them
 # Wrapped in timeout to prevent watchdog hangs (GH#150)
-timeout 15 python3 - /dev/null
+timeout 15 python3 - <<'PYEOF'
+import json, sys, datetime, subprocess, os
+
+try:
+    result = subprocess.run(
+        ['temporal', 'workflow', 'list',
+         '--query', 'WorkflowType="CongressWorkflow" AND ExecutionStatus="Running"',
+         '--address', 'localhost:7233',
+         '--output', 'json'],
+        capture_output=True, text=True, timeout=10
+    )
+    if result.returncode != 0:
+        sys.exit(0)
+
+    workflows = json.loads(result.stdout) if result.stdout.strip() else []
+    now = datetime.datetime.now(datetime.timezone.utc)
+    for wf in workflows:
+        wf_id = wf.get('workflowId', '')
+        start_str = wf.get('startTime', '')
+        if not start_str:
+            continue
+        start = datetime.datetime.fromisoformat(start_str.replace('Z', '+00:00'))
+        age_hours = (now - start).total_seconds() / 3600
+        if age_hours > 2:
+            print(f'Terminating stalled congress {wf_id} (running {age_hours:.1f}h)', flush=True)
+            subprocess.run([
+                'temporal', 'workflow', 'terminate',
+                '--workflow-id', wf_id,
+                '--address', 'localhost:7233',
+                '--reason', f'Stalled: running {age_hours:.1f}h, terminated by watchdog'
+            ], capture_output=True)
+except Exception as e:
+    print(f'Congress stall check error: {e}', file=sys.stderr)
+PYEOF
 
 # Also mark session JSONs for terminated congresses
 python3 - <<'PYEOF'
