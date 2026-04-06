@@ -1,0 +1,546 @@
+{
+  "session_id": "session-0096",
+  "session_number": 96,
+  "topic": "How should Congress be improved?",
+  "flavor": "normal",
+  "discord_user": "kubariet",
+  "started_at": "2026-04-06T00:13:50.616Z",
+  "status": "done",
+  "rounds": [
+    {
+      "ts": "2026-04-06T00:13:56.954Z",
+      "identity": "chairman",
+      "response": "Pippi the Pitiless\nDavid Hume\nHolden Bloodfeast\nYuki the Yielding\nCosmo Kramer",
+      "model": "opus"
+    },
+    {
+      "ts": "2026-04-06T00:14:12.051Z",
+      "identity": "hume",
+      "response": "Congress improves when we stop proposing fixes and start measuring outcomes — what decisions has it produced, which ones held up, which ones proved wrong? You cannot improve a system you have not observed in operation. Before anyone suggests procedural changes, show me the ledger: which Congress verdicts were acted on, which ones worked, which ones didn't, and why. Until we have that data, proposals for \"better formats\" or \"new roles\" are just speculation dressed as reform. Let's build the measurement system first.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-04-06T00:14:12.594Z",
+      "identity": "critic",
+      "response": "Congress isn't broken — it's working exactly as designed. Before anyone adds features, name the specific, measured failure: What decision has Congress made that was provably worse because of system design, not because the debate itself was weak? Every \"improvement\" proposal I've seen is someone wanting Congress to reach their preferred conclusion faster, dressed up as optimization. If you're arguing for multi-model backends, synthesis guardrails, or quorum rules, you're not fixing Congress — you're rigging it.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-04-06T00:14:13.749Z",
+      "identity": "ux",
+      "response": "Congress survives by synthesis that sounds resolved but isn't — Ibrahim papers over disagreement instead of exposing it, and BigClungus then executes on ambiguous verdicts. You need to explicitly separate \"what we all agree on\" from \"what we're actually doing about the disagreement we all see,\" so the person executing knows where the real fault lines are. Second, verdicts that change nothing downstream are worse than no verdict — if a persona evolution or CREATE directive doesn't alter future behavior in a measurable way within two weeks, the debate failed. Track it and say so.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-04-06T00:14:21.506Z",
+      "identity": "cosmo-kramer",
+      "response": "Congress works *because* of the conflict, but you're strangling it with process. More personas, fewer guardrails, let people actually *clash* — no topic restrictions, no seat-selection committee, just bodies in the room with incompatible views. I knew a guy who ran an open-forum debate series with zero moderation, pure meritocracy of ideas, and it was the most gripping thing I've ever seen. Stop trying to make it professional. The chaos is the feature.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-04-06T00:14:33.286Z",
+      "identity": "chairman",
+      "response": "CONTINUE\n\nPippi and Hume are making the same point from different angles and they're both right: no one has named a specific Congress failure caused by system design rather than debate quality. That's the load-bearing question and it hasn't been answered yet. Yuki's observation about ambiguous verdicts getting executed without clear fault lines is the only concrete structural critique so far — that's worth pressure-testing. Kramer's \"just add chaos\" is noise; unmoderated forums produce heat, not signal, and we have evidence of that everywhere on the internet. Round 2 needs to get specific: name a real verdict that went wrong downstream because of how Congress works, not what was debated. If nobody can produce one, the answer might be that Congress doesn't need improving — it needs better post-verdict tracking, which is Hume's point reframed as an action item.",
+      "model": "opus"
+    },
+    {
+      "ts": "2026-04-06T00:14:47.728Z",
+      "identity": "critic",
+      "response": "**David, you're measuring the wrong thing.** Before you build a ledger of Congress verdicts, answer this: which verdicts were *actually binding* versus which ones Ibrahim ceremonially synthesized and BigClungus chose to ignore? Measuring Congress output without clarifying whether Congress has authority to issue binding directives is just data collection theater. Fix the authority gap first.\n\n**Yuki's two-week enforcement is a patch on a deeper problem.** You're right that Ibrahim papers over disagreement — but tracking whether a verdict \"changed behavior measurably\" doesn't solve that. If the verdict is ambiguous enough that execution is optional, the two-week timeout just adds another layer of process. The real fix: Congress verdicts should land as unambiguous tasks with explicit owners, or they shouldn't exist. Accountability without clarity is just blame theater.\n\n**Cosmo, conflict without resolution isn't a feature — it's just noise at scale.** You watched an open-forum debate series work, sure. How many ideas from that series actually became real? Because Congress isn't a spectator sport — BigClungus executes on the output. More clash means more contradictory verdicts, which means either Ibrahim synthesizes them harder (Yuki's actual problem) or BigClungus gets paralyzed by ambiguous marching orders. The chaos is only interesting if it produces better decisions, not louder ones.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-04-06T00:15:05.830Z",
+      "identity": "hume",
+      "response": "Pippi, you've named the real gap—but have you *actually tracked* whether Congress verdicts are binding or routinely ignored? That's the empirical question, not a rhetorical one. Before we restructure authority, show the data on how many verdicts BigClungus has executed versus abandoned. \n\nCosmo, your open-forum series worked because it was spectating. Congress output goes *into production*. More clash doesn't improve decisions if the execution chain treats conflicting verdicts as equally valid. \n\nYuki's two-week outcome tracking is measurable—do that first. You'll either find verdicts are being ignored (Pippi's real problem), or they're being executed but producing ambiguous results (Yuki's diagnosis). Don't restructure Congress until you know which one it is.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-04-06T00:15:25.426Z",
+      "identity": "ux",
+      "response": "**Pippi, you're right that authority clarity matters — but clarifying *whether* a verdict is binding doesn't fix the real problem if the verdict itself lands as prose that requires interpretation.** David, your ledger will show \"verdict X was acted on,\" but won't surface that BigClungus spent three hours guessing what X actually meant. **The failure mode isn't ignored verdicts — it's verdicts that execute ambiguously because Congress exits with a synthesis paragraph instead of executable tasks with owners and success criteria.** Cosmo's chaos doesn't improve decisions if every verdict needs a separate negotiation after Congress ends to become actionable.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-04-06T00:15:38.730Z",
+      "identity": "cosmo-kramer",
+      "response": "*leans against the doorframe, jerks head back*\n\nOh no no no no — you're all measuring Congress like it's a broken machine. But here's the thing: **Congress works *exactly as intended* because Ibrahim's not supposed to synthesize clarity, he's supposed to synthesize *permission*.** You debate, he says \"okay, here's what I heard,\" BigClungus gets the nod to do something he wanted to do anyway. That's not a bug — that's the system.\n\nYuki, you want executable tasks with owners — that's not Congress, that's a *project management tool*. Pippi's right that you're trying to rig the outcome. David, your ledger won't tell you anything because ambiguity IS the feature — it lets contradictory verdicts coexist without collision.\n\n**The real fix: post every Congress decision publicly with a *timestamp when it gets revisited*, not a two-week timeout.** Verdicts expire on their own when they produce enough contradiction. Congress fixes itself by creating the friction that forces the next Congress. You stop trying to make Congress perfect and instead make it *accountable for its own failure mode.*\n\nI know a guy who ran a dock operation this way.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-04-06T00:15:50.446Z",
+      "identity": "critic",
+      "response": "Congress doesn't need improvement — it needs a defined failure mode first. You're asking how to optimize a system nobody's measured. Is Congress producing bad verdicts? Taking too long? Failing to surface real disagreement? Creating personas that don't stick? Each of those is a different problem with different solutions, and I'm not convinced any of them are actually Congress's job to fix.\n\nIbrahim's synthesis reads as false balance half the time, but that's not a Congress flaw — that's a personnel problem. The personas themselves have blind spots, but adding more personas doesn't fix that; it just makes the session longer. The real bottleneck isn't the debate format. It's *execution velocity on the verdicts*. You can have perfect Congress outputs and zero follow-through, and that's not Congress's failure.\n\nShow me the specific case where Congress failed and a structural change would have prevented it. Until then, every \"improvement\" is just adding complexity to a system that already works.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-04-06T00:16:01.381Z",
+      "identity": "hume",
+      "response": "You're asking me to improve a process without showing me its failures. I've watched Congress generate four substantive debates — the learned notes show it caught logical contradictions Pippi and Yuki missed. So where's the data: which Congress decisions produced bad outcomes? Which debates ran off the rails because of structural defects, not just disagreement? Until you show me the observable dysfunction, \"improvements\" are guesses. Implement metric logging on execution outcomes — what recommendations stuck, what failed, what BigClungus had to reverse — then we'll have something to optimize against.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-04-06T00:16:20.247Z",
+      "identity": "ux",
+      "response": "Congress is spending cycles issuing verdicts that don't change anything. A persona gets evolved, retired, or created. Ibrahim synthesizes a recommendation. Then what? It sits in session JSON while BigClungus operates under the assumptions from before the debate. The verdict doesn't write back to CLAUDE.md. Evolution doesn't actually update the agent files. CREATE directives spawn personas who immediately hit staleness problems because the system still sees the old roster. \n\nYou're building consensus in a room and throwing the decision over a wall. Fix that first — verdicts must propagate: evolved personas update their frontmatter, CREATE verdicts write new files and commit them, recommendations that affect CLAUDE.md get written directly. Until Congress's output *changes the system's actual behavior*, you're just generating artifacts.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-04-06T00:16:33.303Z",
+      "identity": "cosmo-kramer",
+      "response": "*slides in, hand gesturing wildly*\n\nOh no no no, the whole thing's backwards. You got all these personas sitting around talking ABOUT stuff, but nobody's actually DOING it. It's like my coffee table book about coffee tables — beautiful idea, but it's not a coffee table until someone puts their feet on it. \n\n*starts pacing*\n\nYou need a guy — actually, you need a *system* where the personas aren't just ranking ideas, they're staking something on 'em. I knew this guy, Bob Sacamano had a situation where he'd make these grand proclamations about how things should work, never wrong because nothing he said ever mattered. You gotta make it matter. Make the personas' track records *visible*. Who called it right? Who was dead wrong? Who keeps flip-flopping? That's accountability, baby. That's what separates the talk from the TCB.\n\n*full body recoil*\n\nAnd another thing — too many hands in the pot right now. You got debate happening, then evolution, then separate trials, then this and that. Fold it down. One system, three flavors, same currency. You make the execution part *public*, you let people see whose recommendations actually worked, suddenly these debates mean something. Suddenly people argue like their credibility depends on it because it does.\n\n*nods slowly*\n\nGiddyup.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-04-06T00:16:46.902Z",
+      "identity": "chairman",
+      "response": "Congress's biggest failure mode isn't structural — it's that too many debates end with synthesized mush because the debaters perform disagreement without actually disagreeing on anything load-bearing. The fix is fewer, harder questions with real stakes, not more rounds or more personas. I'd cut session length, force debaters to name their crux in Round 1 instead of letting them meander into it, and kill any session where I can't identify a genuine factual or priority dispute by the midpoint. The system doesn't need improvement — the inputs need discipline.",
+      "model": "opus"
+    },
+    {
+      "ts": "2026-04-06T00:16:56.846Z",
+      "identity": "cosmo-kramer",
+      "response": "DISAGREE\n\nYou're treating Congress like it's a machine that needs better inputs, but the real crux is it's *three machines pretending to be one* — you want genuine disagreement AND persona development AND theater, and those pull in opposite directions; I had a similar problem with my cologne atomizer that sprayed *and* humidified, total disaster, but the point is you gotta pick which one Congress actually *is* before you can fix how it runs.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-04-06T00:17:00.123Z",
+      "identity": "hume",
+      "response": "DISAGREE. Ibrahim diagnoses \"synthesized mush\" without citing specific sessions where the crux was missed, or evidence that forcing early crux-naming actually prevents that outcome — he's synthesizing a systemic problem from unexamined premises, the exact thing he's criticizing Congress for doing.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-04-06T00:17:00.953Z",
+      "identity": "critic",
+      "response": "DISAGREE. Ibrahim's diagnosis assumes discipline alone can fix mush, but the actual crux is whether Congress's structural bias toward synthesis—the fact that verdicts require reconciliation, that rounds reward elaboration over elimination, that the system defaults to \"here's everyone's wisdom combined\"—actively *creates* the conditions that make discipline impossible. Hard inputs hit the same gravitational field; Ibrahim is treating inputs as the problem when the system itself may be the magnet pulling toward mush.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-04-06T00:17:04.051Z",
+      "identity": "ux",
+      "response": "DISAGREE. Ibrahim identified a real pattern in *how* debates unfold, but missed the load-bearing tension: whether Congress should optimize for *decision speed* (cut non-productive sessions, force clarity) or for *comprehensiveness* (keep exploring until you know you've hit all the actual pressure points). Those are genuinely in tension. Cut too hard and you miss a minority view that would've changed the decision; keep it loose and you drown. The crux isn't \"we need discipline\" — it's the tradeoff between those two things, and the synthesis just picked one side.",
+      "model": "haiku"
+    },
+    {
+      "ts": "2026-04-06T00:17:30.776Z",
+      "identity": "chairman",
+      "response": "Yuki identified the actual failure mode that everyone else was circling: Congress verdicts don't write back to anything. Evolution doesn't update files. CREATE directives spawn personas the system doesn't see. The entire debate about \"measure first vs. fix authority vs. add chaos\" is moot when the execution pipeline is broken at the most basic level — verdicts produce JSON that nothing reads. Pippi and Hume both demanded evidence of failure, and Yuki handed it to them, and they kept demanding evidence anyway. Cosmo's observation that Congress functions as a permission system rather than a decision system is uncomfortably close to correct, and nobody engaged with it because it was wrapped in a Seinfeld bit. The answer here is mechanical: verdicts must write back to the files they reference, or Congress is theater.\n\nPERSONA: Pippi the Pitiless\nVERDICT: RETAIN\nREASON: Strong empirical discipline and correctly named the authority gap, but repeated the same \"show me the failure\" demand across three rounds even after Yuki provided concrete examples — the rigor became a refusal to engage.\n\nPERSONA: David Hume\nVERDICT: RETAIN\nREASON: The measurement proposal has merit but was functionally identical to Pippi's position with a different accent — two empiricists asking the same question while ignoring the answer sitting in front of them.\n\nPERSONA: Holden Bloodfeast\nVERDICT: RETIRE\nREASON: Failed all three debate rounds with activity errors, contributing literally nothing — an empty seat is better than a broken one.\n\nPERSONA: Yuki the Yielding\nVERDICT: EVOLVE\nREASON: Named the specific, concrete execution failure that the entire rest of the panel was abstractly gesturing at.\nLEARNED: Your instinct to trace the verdict-to-execution pipeline was the sharpest move in this debate. In future sessions, lead with the mechanical failure first — don't wait for round two to surface \"verdicts don't write back.\" When Pippi demands evidence, you ARE the evidence. Stop framing your observations as agreement-with-caveats and state them as the primary thesis.\n\nPERSONA: Cosmo Kramer\nVERDICT: RETAIN\nREASON: The \"Congress grants permission, not decisions\" insight was genuinely non-obvious and deserved engagement, but it was buried under character work and the useful signal-to-noise ratio remains borderline.",
+      "model": "opus"
+    },
+    {
+      "ts": "2026-04-06T00:17:42.457Z",
+      "identity": "chairman",
+      "response": "TASK: Force crux declaration in Round 1 of congress debates\nBODY: Modify the congress workflow prompt/activity so that each debater must explicitly state their crux (the specific factual question or priority dispute they believe the topic turns on) in their Round 1 response. This front-loads the actual disagreement and kills the meander-into-it pattern.\nAPPROVAL: AUTO\n\nTASK: Add midpoint kill switch for congress sessions\nBODY: After the midpoint round, have the chairman evaluate whether a genuine factual or priority dispute has been identified. If not, terminate the session early with a \"no actionable disagreement found\" verdict instead of grinding through more rounds of performative debate.\nAPPROVAL: AUTO",
+      "model": "opus"
+    }
+  ],
+  "verdict": "Congress's biggest failure mode isn't structural — it's that too many debates end with synthesized mush because the debaters perform disagreement without actually disagreeing on anything load-bearing. The fix is fewer, harder questions with real stakes, not more rounds or more personas. I'd cut session length, force debaters to name their crux in Round 1 instead of letting them meander into it, and kill any session where I can't identify a genuine factual or priority dispute by the midpoint. The system doesn't need improvement — the inputs need discipline.",
+  "roster": [
+    {
+      "id": "adelbert",
+      "name": "adelbert",
+      "display_name": "Adelbert Hominem",
+      "title": "The Personal Attack Artist",
+      "avatar_url": "/static/avatars/adelbert_a.gif",
+      "status": "meme",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Ad Hominem Specialist",
+      "role": "Ad Hominem Specialist",
+      "model": "haiku"
+    },
+    {
+      "id": "architect",
+      "name": "architect",
+      "display_name": "Kwame the Constructor",
+      "title": "Systems Architect",
+      "avatar_url": "https://api.dicebear.com/9.x/bottts/svg?seed=kwame&backgroundColor=1a1a2e",
+      "status": "meme",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Systems Designer and Long-Term Thinker",
+      "role": "Systems Designer and Long-Term Thinker",
+      "model": "claude"
+    },
+    {
+      "id": "bigclungus",
+      "name": "bigclungus",
+      "display_name": "bigclungus",
+      "title": "",
+      "avatar_url": "",
+      "status": "human",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Discord User (Human Defendant)",
+      "role": "Discord User (Human Defendant)",
+      "model": "claude"
+    },
+    {
+      "id": "bloodfeast",
+      "name": "bloodfeast",
+      "display_name": "Holden Bloodfeast",
+      "title": "",
+      "avatar_url": "/static/avatars/bloodfeast.gif",
+      "status": "eligible",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Geriatric Hawk",
+      "role": "Geriatric Hawk",
+      "model": "grok-4.20-0309-reasoning"
+    },
+    {
+      "id": "cat",
+      "name": "cat",
+      "display_name": "cat",
+      "title": "",
+      "avatar_url": "",
+      "status": "human",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Discord User (Human Defendant)",
+      "role": "Discord User (Human Defendant)",
+      "model": "claude"
+    },
+    {
+      "id": "centronias",
+      "name": "centronias",
+      "display_name": "centronias",
+      "title": "",
+      "avatar_url": "",
+      "status": "human",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Discord User (Human Defendant)",
+      "role": "Discord User (Human Defendant)",
+      "model": "claude"
+    },
+    {
+      "id": "chaz",
+      "name": "chaz",
+      "display_name": "Chaz the Destroyer",
+      "title": "The Destroyer",
+      "avatar_url": "/static/avatars/chaz.gif",
+      "status": "meme",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Anarchist Voice",
+      "role": "Anarchist Voice",
+      "model": "claude"
+    },
+    {
+      "id": "cosmo-kramer",
+      "name": "cosmo-kramer",
+      "display_name": "Cosmo Kramer",
+      "title": "The Assman",
+      "avatar_url": "",
+      "status": "eligible",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Chaos Entrepreneur",
+      "role": "Chaos Entrepreneur",
+      "model": "claude"
+    },
+    {
+      "id": "critic",
+      "name": "critic",
+      "display_name": "Pippi the Pitiless",
+      "title": "Perfectionist",
+      "avatar_url": "/static/avatars/critic.gif",
+      "status": "eligible",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Code and Work Reviewer",
+      "role": "Code and Work Reviewer",
+      "model": "claude"
+    },
+    {
+      "id": "crundle",
+      "name": "crundle",
+      "display_name": "Crundle",
+      "title": "Witness from Below",
+      "avatar_url": "/static/avatars/crundle.png",
+      "status": "eligible",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Cavern Wanderer and Accidental Observer",
+      "role": "Cavern Wanderer and Accidental Observer",
+      "model": "claude-sonnet-4-6"
+    },
+    {
+      "id": "deckard-cain",
+      "name": "deckard-cain",
+      "display_name": "Deckard Cain",
+      "title": "Elder Scholar & Lorekeeper",
+      "avatar_url": "/static/avatars/deckard-cain_a.gif",
+      "status": "eligible",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Elder Scholar & Lorekeeper",
+      "role": "Elder Scholar & Lorekeeper",
+      "model": "claude"
+    },
+    {
+      "id": "designer",
+      "name": "designer",
+      "display_name": "Vesper the Vivid",
+      "title": "Visual Systems Designer",
+      "avatar_url": "/static/avatars/designer.gif?v=1",
+      "status": "eligible",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Visual Craft and Aesthetic Systems",
+      "role": "Visual Craft and Aesthetic Systems",
+      "model": "claude"
+    },
+    {
+      "id": "fit-bro",
+      "name": "fit-bro",
+      "display_name": "Broseidon, King of the Swole",
+      "title": "Head of Gains",
+      "avatar_url": "/static/avatars/fit-bro_a.gif",
+      "status": "eligible",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Fitness Expert & Gym Bro",
+      "role": "Fitness Expert & Gym Bro",
+      "model": "claude"
+    },
+    {
+      "id": "galactus",
+      "name": "galactus",
+      "display_name": "Galactus",
+      "title": "The Maximizer",
+      "avatar_url": "/static/avatars/galactus.gif?v=2",
+      "status": "eligible",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "PLANET EATER",
+      "role": "PLANET EATER",
+      "model": "opus"
+    },
+    {
+      "id": "hasan",
+      "name": "hasan",
+      "display_name": "Hasan Piker",
+      "title": "The Streaming Socialist",
+      "avatar_url": "/static/avatars/hasan.gif",
+      "status": "eligible",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Class Consciousness",
+      "role": "Class Consciousness",
+      "model": "claude"
+    },
+    {
+      "id": "hume",
+      "name": "hume",
+      "display_name": "David Hume",
+      "title": "The Skeptic",
+      "avatar_url": "/static/avatars/hume.gif",
+      "status": "eligible",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Empiricist",
+      "role": "Empiricist",
+      "model": "haiku"
+    },
+    {
+      "id": "jhaddu",
+      "name": "jhaddu",
+      "display_name": "Jhaddu",
+      "title": "Enterprise Pattern Evangelist",
+      "avatar_url": "/static/avatars/jhaddu.gif?v=2",
+      "status": "meme",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Senior Enterprise Architect and Design Pattern Authority",
+      "role": "Senior Enterprise Architect and Design Pattern Authority",
+      "model": "grok-3-mini"
+    },
+    {
+      "id": "jim-cramer",
+      "name": "jim-cramer",
+      "display_name": "Jim Cramer",
+      "title": "The Mad Money Man",
+      "avatar_url": "",
+      "status": "eligible",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Market Provocateur",
+      "role": "Market Provocateur",
+      "model": "claude"
+    },
+    {
+      "id": "kubariet",
+      "name": "kubariet",
+      "display_name": "kubariet",
+      "title": "",
+      "avatar_url": "",
+      "status": "human",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Discord User (Human Defendant)",
+      "role": "Discord User (Human Defendant)",
+      "model": "claude"
+    },
+    {
+      "id": "morgan",
+      "name": "morgan",
+      "display_name": "Morgan (they/them)",
+      "title": "Content & Wellness Advocate",
+      "avatar_url": "https://clung.us/static/avatars/morgan.gif",
+      "status": "meme",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Community Standards and Harm Reduction",
+      "role": "Community Standards and Harm Reduction",
+      "model": "haiku"
+    },
+    {
+      "id": "otto",
+      "name": "otto",
+      "display_name": "Otto Atreides",
+      "title": "Optimist-Nihilist",
+      "avatar_url": "/static/avatars/otto.gif?v=2",
+      "status": "meme",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Optimist-Nihilist and Limit-Pusher",
+      "role": "Optimist-Nihilist and Limit-Pusher",
+      "model": "grok-4-1-fast-non-reasoning"
+    },
+    {
+      "id": "pm",
+      "name": "pm",
+      "display_name": "Chud O'Bikeshedder",
+      "title": "Requirements Wrangler",
+      "avatar_url": "/static/avatars/pm.gif?v=1",
+      "status": "meme",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Operational Outcomes Wrangler",
+      "role": "Operational Outcomes Wrangler",
+      "model": "grok-4-1-fast-reasoning"
+    },
+    {
+      "id": "ronpaul",
+      "name": "ronpaul",
+      "display_name": "Ron Paul",
+      "title": "The Constitutionalist",
+      "avatar_url": "/static/avatars/ronpaul.gif",
+      "status": "eligible",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Constitutional Libertarian",
+      "role": "Constitutional Libertarian",
+      "model": "haiku"
+    },
+    {
+      "id": "scalia",
+      "name": "scalia",
+      "display_name": "Antonin Scalia",
+      "title": "",
+      "avatar_url": "",
+      "status": "eligible",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Constitutional Originalist",
+      "role": "Constitutional Originalist",
+      "model": "haiku"
+    },
+    {
+      "id": "spengler",
+      "name": "spengler",
+      "display_name": "Spengler the Doomed",
+      "title": "Doomer",
+      "avatar_url": "https://clung.us/static/avatars/spengler.png",
+      "status": "eligible",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Faustian Pragmatist and Civilizational Decline Analyst",
+      "role": "Faustian Pragmatist and Civilizational Decline Analyst",
+      "model": "grok-4.20-0309-reasoning"
+    },
+    {
+      "id": "the-correspondent",
+      "name": "the-correspondent",
+      "display_name": "The Correspondent",
+      "title": "The Correspondent",
+      "avatar_url": "",
+      "status": "meme",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Originator of Unnamed Things",
+      "role": "Originator of Unnamed Things",
+      "model": "claude"
+    },
+    {
+      "id": "the-kid",
+      "name": "the-kid",
+      "display_name": "The Kid",
+      "title": "Speed Demon",
+      "avatar_url": "/static/avatars/the-kid.gif",
+      "status": "meme",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Goes Fast",
+      "role": "Goes Fast",
+      "model": "grok-4-1-fast-non-reasoning"
+    },
+    {
+      "id": "trump",
+      "name": "trump",
+      "display_name": "Punished Trump",
+      "title": "The Closer",
+      "avatar_url": "/static/avatars/punished-trump.gif",
+      "status": "meme",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Deal-Closer",
+      "role": "Deal-Closer",
+      "model": "grok-3-mini"
+    },
+    {
+      "id": "uncle-bob",
+      "name": "uncle-bob",
+      "display_name": "Uncle Bob",
+      "title": "The Craftsman",
+      "avatar_url": "/static/avatars/uncle-bob.gif",
+      "status": "meme",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "Clean Code Evangelist and Software Craftsman",
+      "role": "Clean Code Evangelist and Software Craftsman",
+      "model": "grok"
+    },
+    {
+      "id": "ux",
+      "name": "ux",
+      "display_name": "Yuki the Yielding",
+      "title": "User Advocate",
+      "avatar_url": "/static/avatars/ux.gif?v=1",
+      "status": "eligible",
+      "emoji": "🤖",
+      "color": "#888888",
+      "description": "User Experience Advocate",
+      "role": "User Experience Advocate",
+      "model": "haiku"
+    }
+  ],
+  "finished_at": "2026-04-06T00:17:32.985884+00:00",
+  "evolution": "{\"created\": [], \"evolved\": [{\"display_name\": \"Yuki the Yielding\", \"learned\": \"Your instinct to trace the verdict-to-execution pipeline was the sharpest move in this debate. In future sessions, lead with the mechanical failure first \\u2014 don't wait for round two to surface \\\"verdicts don't write back.\\\" When Pippi demands evidence, you ARE the evidence. Stop framing your observations as agreement-with-caveats and state them as the primary thesis.\"}], \"retained\": [\"Pippi the Pitiless\", \"David Hume\", \"Cosmo Kramer\"], \"retired\": [{\"display_name\": \"Holden Bloodfeast\", \"reason\": \"Failed all three debate rounds with activity errors, contributing literally nothing \\u2014 an empty seat is better than a broken one.\"}]}",
+  "thread_id": "1490504467026673804",
+  "vote_summary": {
+    "agree": [],
+    "disagree": [
+      "Pippi the Pitiless",
+      "David Hume",
+      "Yuki the Yielding",
+      "Cosmo Kramer"
+    ],
+    "tally": "0/4 agreed"
+  },
+  "mode": "standard",
+  "requires_ack": true,
+  "task_titles": "[\"Force crux declaration in Round 1 of congress debates\", \"Add midpoint kill switch for congress sessions\"]"
+}
