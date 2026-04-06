@@ -1,28 +1,28 @@
 {
-  \"$schema\": \"https://schema.tauri.app/config/2.0.0-alpha/desktop-schema.json\",
-  \"productName\": \"Clungcord\",
-  \"version\": \"0.1.0\",
-  \"identifier\": \"com.clungcord.app\",
-  \"description\": \"Clungcord Desktop\",
-  \"framework\": \"Tauri\",
-  \"permissions\": [
-    \"core:default\",
+  "$schema": "https://schema.tauri.app/config/2.0.0-alpha/desktop-schema.json",
+  "productName": "Clungcord",
+  "version": "0.1.0",
+  "identifier": "com.clungcord.app",
+  "description": "Clungcord Desktop",
+  "framework": "Tauri",
+  "permissions": [
+    "core:default",
     {
-      \"identifier\": \"shell:allow-execute\",
-      \"allow\": [
+      "identifier": "shell:allow-execute",
+      "allow": [
         {
-          \"path\": \"bun\",
-          \"args\": true
+          "path": "bun",
+          "args": true
         }
       ]
     }
   ],
-  \"windows\": [
+  "windows": [
     {
-      \"title\": \"Clungcord\",
-      \"width\": 1200,
-      \"height\": 800,
-      \"resizable\": true
+      "title": "Clungcord",
+      "width": 1200,
+      "height": 800,
+      "resizable": true
     }
   ]
 }
