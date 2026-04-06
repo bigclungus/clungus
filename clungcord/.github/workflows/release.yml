@@ -3,6 +3,8 @@ on:
   push:
     tags:
       - 'v*'
+permissions:
+  contents: write
 jobs:
   build:
     strategy:
@@ -30,9 +32,25 @@ jobs:
         run: bun run build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Clungcord ${{ github.ref_name }}
+          draft: false
+          prerelease: true
+          generate_release_notes: true
+          files: |
+            clungcord-desktop/src-tauri/target/release/bundle/**/*.dmg
+            clungcord-desktop/src-tauri/target/release/bundle/**/*.exe
+            clungcord-desktop/src-tauri/target/release/bundle/**/*.msi
+            clungcord-desktop/src-tauri/target/release/bundle/**/*.app
+            clungcord-desktop/src-tauri/target/release/bundle/**/*.AppImage
       - name: Upload artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.platform }}-clungcord
+          name: ${{ matrix.platform }}-bundle
           path: clungcord-desktop/src-tauri/target/release/bundle/
           retention-days: 14
