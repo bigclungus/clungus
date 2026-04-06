@@ -768,9 +768,7 @@ class SessionWorkflow:
                         schedule_to_start_timeout=timedelta(minutes=3),
                         retry_policy=RetryPolicy(maximum_attempts=2),
                     )
-                    verdict = _trim_synthesis(synthesis_text) if synthesis_text else synthesis_text
-                    if not synthesis_text:
-                        verdict = synthesis_text
+                    verdict = _trim_synthesis(synthesis_text) if synthesis_text else ""
                 except Exception as _e:
                     workflow.logger.warning(f"Synthesis activity failed: {_e}")
                     verdict = "Synthesis activity failed — see logs for details."
