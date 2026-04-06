@@ -634,6 +634,8 @@ class SessionWorkflow:
         verdict = "NO VERDICT"
         has_anti_ibrahim = any(d.get("name") == "anti-ibrahim" for d in debaters)
         duel_mode = has_anti_ibrahim and hiring_managers
+        ibrahim_verdict = ""
+        anti_verdict = ""
 
         if aborted:
             verdict = abort_verdict
