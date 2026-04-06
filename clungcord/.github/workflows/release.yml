@@ -1,4 +1,4 @@
-name: 'Release'
+name: 'Release Clungcord Tauri'
 on:
   push:
     tags:
@@ -20,57 +20,19 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-          targets: aarch64-apple-darwin, x86_64-apple-darwin, x86_64-pc-windows-msvc
       - name: Install Bun
         uses: oven-sh/setup-bun@v1
       - name: Install deps
-        run: bun --cwd clungcord-desktop install
-      - name: Build app
-        run: bun tauri build
-        working-directory: clungcord-desktop/src-tauri
+        working-directory: clungcord-desktop
+        run: bun install
+      - name: Build Tauri app
+        working-directory: clungcord-desktop
+        run: bun run build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Create release
-        run: |
-          gh release create "${GITHUB_REF_NAME}" \
-            --repo "${GITHUB_REPOSITORY}" \
-            --title "Clungcord ${GITHUB_REF_NAME}" \
-            --generate-notes
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload macOS app
-        if: matrix.platform == 'macos-latest'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: clungcord/clungcord-desktop/src-tauri/target/release/bundle/dmg/Clungcord_${GITHUB_REF_NAME}_aarch64.dmg
-          asset_name: Clungcord_macOS.dmg
-          asset_content_type: application/octet-stream
-      - name: Upload macOS app (x64)
-        if: matrix.platform == 'macos-latest'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: clungcord/clungcord-desktop/src-tauri/target/release/bundle/dmg/Clungcord_${GITHUB_REF_NAME}_x64.dmg
-          asset_name: Clungcord_macOS_x64.dmg
-          asset_content_type: application/octet-stream
-      - name: Upload Windows installer
-        if: matrix.platform == 'windows-latest'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: clungcord/clungcord-desktop/src-tauri/target/release/bundle/nsis/Clungcord_${GITHUB_REF_NAME}_x64-setup.exe
-          asset_name: Clungcord_Setup.exe
-          asset_content_type: application/octet-stream
-      - name: Upload artifacts (debug)
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform }}-clungcord
-          path: |
-            clungcord/clungcord-desktop/src-tauri/target/release/bundle/
+          path: clungcord-desktop/src-tauri/target/release/bundle/
+          retention-days: 14
