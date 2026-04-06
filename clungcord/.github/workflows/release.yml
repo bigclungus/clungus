@@ -32,7 +32,7 @@ jobs:
       - name: Build app
         uses: tauri-apps/tauri-action@next
         with:
-          projectPath: .
+          projectPath: src-tauri
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         working-directory: clungcord-desktop
