@@ -1,0 +1,8 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - heading "Clungcord" [level=1] [ref=e6]
+    - generic [ref=e8]:
+      - generic [ref=e9]: Channels
+      - button "Create channel" [ref=e10] [cursor=pointer]:
+        - img [ref=e11]
+  - paragraph [ref=e13]: Select a channel to start chatting

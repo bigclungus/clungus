@@ -1,0 +1,10 @@
+[Unit]
+Description=BigClungus heartbeat timer — every 15 minutes
+
+[Timer]
+OnCalendar=*-*-* *:00,15,30,45:00
+Persistent=true
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

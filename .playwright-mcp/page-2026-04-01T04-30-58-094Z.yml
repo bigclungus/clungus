@@ -1,0 +1,3 @@
+- generic [ref=e3]:
+  - checkbox "⚡ Use cached mobs (skip generation)" [checked] [ref=e4] [cursor=pointer]
+  - generic [ref=e5] [cursor=pointer]: ⚡ Use cached mobs (skip generation)

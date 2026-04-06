@@ -1,0 +1,9 @@
+[Unit]
+Description=BigClungus heartbeat health check
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /mnt/data/scripts/heartbeat.sh
+StandardOutput=append:/tmp/heartbeat.log
+StandardError=append:/tmp/heartbeat.log

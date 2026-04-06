@@ -1,0 +1,53 @@
+{
+  "listen": { "hostname": "127.0.0.1", "port": 3456 },
+  "logging": {
+    "incomingRequest": false,
+    "outgoingRequest": false,
+    "response": false,
+    "maxBodyBytes": 1048576
+  },
+  "victoriaMetrics": {
+    "enabled": true,
+    "host": "127.0.0.1",
+    "port": 8428
+  },
+  "upstreamBaseUrl": "https://openrouter.ai/api",
+  "models": {
+    "agent": "minimax/minimax-m2.7",
+    "default": "minimax/minimax-m2.7"
+  },
+  "stripAdaptiveThinkingForModels": [
+    "claude-haiku-4-5-20251001",
+    "claude-haiku-4-5"
+  ],
+  "toolAllowlists": {
+    "agent": [
+    ],
+    "default": [
+      "Plan",
+      "AskUserQuestion",
+      "Bash",
+      "Edit",
+      "Glob",
+      "Grep",
+      "LSP",
+      "Read",
+      "TaskCreate",
+      "TaskGet",
+      "TaskList",
+      "TaskOutput",
+      "TaskStop",
+      "TaskUpdate",
+      "WebFetch",
+      "WebSearch",
+      "Write",
+      "mcp__omni__omni_context",
+      "mcp__omni__omni_dispatch",
+      "mcp__graphiti-memory__add_memory",
+      "mcp__graphiti-memory__search_nodes",
+      "mcp__graphiti-memory__search_memory_facts",
+      "mcp__graphiti-memory__delete_entity_edge",
+      "mcp__graphiti-memory__delete_episode"
+    ]
+  }
+}

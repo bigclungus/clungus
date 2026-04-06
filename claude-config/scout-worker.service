@@ -1,0 +1,14 @@
+[Unit]
+Description=Temporal Scout Worker (model discovery)
+After=temporal.service
+
+[Service]
+Type=simple
+WorkingDirectory=/mnt/data/temporal-workflows
+ExecStart=/usr/bin/python3 scout_worker.py
+EnvironmentFile=/home/clungus/.claude/channels/discord/.env
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,5 @@
+- generic [ref=e3]:
+  - heading "Clungcord" [level=1] [ref=e4]
+  - paragraph [ref=e5]: Sign in with GitHub to continue
+  - link "Sign in with GitHub" [ref=e6] [cursor=pointer]:
+    - /url: https://clung.us/auth/github?next=https%3A%2F%2Fclung.us%2Fchat%2F
