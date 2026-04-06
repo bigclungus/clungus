@@ -737,12 +737,16 @@ class SessionWorkflow:
                     schedule_to_start_timeout=timedelta(minutes=3),
                     retry_policy=RetryPolicy(maximum_attempts=2),
                 )
-                results = await asyncio.gather(ibrahim_task, anti_task, return_exceptions=True)
-                ibrahim_raw = results[0] if not isinstance(results[0], Exception) else ""
-                anti_raw = results[1] if not isinstance(results[1], Exception) else ""
-
-                ibrahim_verdict = _trim_synthesis(ibrahim_raw) if ibrahim_raw else ""
-                anti_verdict = _trim_synthesis(anti_raw) if anti_raw else ""
+                try:
+                    results = await asyncio.gather(ibrahim_task, anti_task, return_exceptions=True)
+                    ibrahim_raw = results[0] if not isinstance(results[0], Exception) else ""
+                    anti_raw = results[1] if not isinstance(results[1], Exception) else ""
+                    ibrahim_verdict = _trim_synthesis(ibrahim_raw) if ibrahim_raw else ""
+                    anti_verdict = _trim_synthesis(anti_raw) if anti_raw else ""
+                except Exception as _e:
+                    workflow.logger.warning(f"Synthesis duel activity failed: {_e}")
+                    ibrahim_verdict = ""
+                    anti_verdict = ""
 
                 debate_summaries.append({"identity": hm_display, "snippet": (ibrahim_verdict[:300] + "...") if len(ibrahim_verdict) > 300 else ibrahim_verdict})
                 debate_summaries.append({"identity": anti_display, "snippet": (anti_verdict[:300] + "...") if len(anti_verdict) > 300 else anti_verdict})
@@ -756,16 +760,20 @@ class SessionWorkflow:
                     )
             else:
                 # Normal single-Ibrahim synthesis
-                synthesis_text: str = await workflow.execute_activity(
-                    congress_debate,
-                    args=[topic, hm_name, session_id, thread_id, hm_display, 1, None, synthesis_context],
-                    start_to_close_timeout=_DEBATE_TIMEOUT,
-                    schedule_to_start_timeout=timedelta(minutes=3),
-                    retry_policy=RetryPolicy(maximum_attempts=2),
-                )
-                verdict = _trim_synthesis(synthesis_text) if synthesis_text else synthesis_text
-                if not synthesis_text:
-                    verdict = synthesis_text
+                try:
+                    synthesis_text: str = await workflow.execute_activity(
+                        congress_debate,
+                        args=[topic, hm_name, session_id, thread_id, hm_display, 1, None, synthesis_context],
+                        start_to_close_timeout=_DEBATE_TIMEOUT,
+                        schedule_to_start_timeout=timedelta(minutes=3),
+                        retry_policy=RetryPolicy(maximum_attempts=2),
+                    )
+                    verdict = _trim_synthesis(synthesis_text) if synthesis_text else synthesis_text
+                    if not synthesis_text:
+                        verdict = synthesis_text
+                except Exception as _e:
+                    workflow.logger.warning(f"Synthesis activity failed: {_e}")
+                    verdict = "Synthesis activity failed — see logs for details."
                 debate_summaries.append({"identity": hm_display, "snippet": (verdict[:300] + "...") if len(verdict) > 300 else verdict})
 
         # ------------------------------------------------------------------ #
