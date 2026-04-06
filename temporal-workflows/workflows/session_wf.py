@@ -699,7 +699,7 @@ class SessionWorkflow:
             def _trim_synthesis(text: str) -> str:
                 """Trim synthesis to a safe length."""
                 if not text:
-                    return text
+                    return ""
                 if len(text) <= 1800:
                     return text.strip()
                 cut = text[:1800].rfind('. ')

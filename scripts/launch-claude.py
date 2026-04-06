@@ -2,14 +2,16 @@
 """Launch Claude CLI, auto-dismiss dev-channel prompt, transparent pty proxy."""
 import pty, os, sys, time, select, struct, fcntl, termios, signal
 
-#cmd = "/home/clungus/.local/bin/claude"
-cmd = "/home/clungus/.local/share/claude/versions/2.1.87"
+cmd = "/home/clungus/.local/bin/claude"
+#cmd = "/home/clungus/.local/share/claude/versions/2.1.87"
 args = [
     cmd,
     "--debug",
     "--dangerously-skip-permissions",
 #    "--dangerously-load-development-channels", "plugin:discord-clungus@inline",
     "--dangerously-load-development-channels", "server:omni",
+    "--model", "qwen/qwen3.6-plus:free",
+#    "--model", "minimax/minimax-m2.7"
 ]
 
 pid, fd = pty.fork()

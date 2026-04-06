@@ -11,7 +11,11 @@ export PATH=\"\$HOME/.local/bin:\$HOME/.bun/bin:\$PATH\"
 cd /home/clungus/work
 
 # Claude proxy (model router & token tracker)
-export ANTHROPIC_BASE_URL=http://localhost:3456
+#export ANTHROPIC_BASE_URL=http://localhost:3456
+
+export ANTHROPIC_BASE_URL=https://openrouter.ai/api
+export ANTHROPIC_AUTH_TOKEN=\$OPENROUTER_API_KEY
+export ANTHROPIC_API_KEY=
 
 while true; do
     # Determine session name (Roman numeral based on JSONL count)
