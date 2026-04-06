@@ -24,20 +24,22 @@ jobs:
       - name: Install Bun
         uses: oven-sh/setup-bun@v1
       - name: Install deps
-        run: bun install
-        working-directory: clungcord-desktop
+        run: bun --cwd clungcord-desktop install
       - name: Install Tauri CLI
         run: bun add -D @tauri-apps/cli@next
         working-directory: clungcord-desktop
       - name: Build app
-        uses: tauri-apps/tauri-action@next
+        uses: tauri-apps/tauri-action@v0
         with:
-          projectPath: src-tauri
+          projectPath: clungcord/clungcord-desktop/src-tauri
+          distPath: clungcord/clungcord-desktop/src
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        working-directory: clungcord-desktop
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform }}-clungcord
-          path: clungcord-desktop/src-tauri/target/release/bundle/**/*
+          path: |
+            clungcord-desktop/src-tauri/target/release/bundle/**/*.app
+            clungcord-desktop/src-tauri/target/release/bundle/**/*.zip
+            clungcord-desktop/src-tauri/target/release/bundle/nsis/*.exe
