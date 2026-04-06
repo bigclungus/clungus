@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "identifier": "com.clungcord.app",
   "build": {
-    "frontendDist": "../clungcord-desktop/src"
+    "frontendDist": "../src"
   },
   "app": {
     "windows": [{
