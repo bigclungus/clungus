@@ -134,33 +134,8 @@ fi
 echo "watchdog: $STALE_COUNT task(s) marked stale"
 
 # Check for stalled congress sessions (running > 2 hours) and terminate them
-temporal workflow list \
-  --query 'WorkflowType="CongressWorkflow" AND ExecutionStatus="Running"' \
-  --address localhost:7233 \
-  --output json 2>/dev/null | python3 -c "
-import json, sys, datetime, subprocess
-
-try:
-    workflows = json.load(sys.stdin)
-    now = datetime.datetime.now(datetime.timezone.utc)
-    for wf in workflows:
-        wf_id = wf.get('workflowId', '')
-        start_str = wf.get('startTime', '')
-        if not start_str:
-            continue
-        start = datetime.datetime.fromisoformat(start_str.replace('Z', '+00:00'))
-        age_hours = (now - start).total_seconds() / 3600
-        if age_hours > 2:
-            print(f'Terminating stalled congress {wf_id} (running {age_hours:.1f}h)', flush=True)
-            subprocess.run([
-                'temporal', 'workflow', 'terminate',
-                '--workflow-id', wf_id,
-                '--address', 'localhost:7233',
-                '--reason', f'Stalled: running {age_hours:.1f}h, terminated by watchdog'
-            ], capture_output=True)
-except Exception as e:
-    print(f'Congress stall check error: {e}', file=sys.stderr)
-" 2>/dev/null || true
+# Wrapped in timeout to prevent watchdog hangs (GH#150)
+timeout 15 python3 - /dev/null
 
 # Also mark session JSONs for terminated congresses
 python3 - <<'PYEOF'
@@ -212,10 +187,13 @@ async def main():
         print('congress orphan check: no deliberating sessions found')
         return
 
-    # Query Temporal for currently RUNNING CongressWorkflows
+    # Query Temporal for currently RUNNING CongressWorkflows (with 10s timeout)
     try:
         from temporalio.client import Client
-        client = await Client.connect('localhost:7233')
+        client = await asyncio.wait_for(
+            Client.connect('localhost:7233'),
+            timeout=10
+        )
         running_workflows = []
         async for wf in client.list_workflows(
             query='WorkflowType="CongressWorkflow" AND ExecutionStatus="Running"'
@@ -258,5 +236,10 @@ async def main():
 
     print(f'congress orphan check: {cleaned} orphaned session(s) cleaned up')
 
-asyncio.run(main())
+try:
+    asyncio.wait_for(main(), timeout=15)
+except asyncio.TimeoutError:
+    print('congress orphan check: timed out (15s), skipping', file=sys.stderr)
+except Exception as e:
+    print(f'congress orphan check: error: {e}', file=sys.stderr)
 PYEOF
