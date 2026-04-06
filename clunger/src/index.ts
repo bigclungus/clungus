@@ -770,6 +770,7 @@ const COCKPIT_SERVICES = [
   "temporal.service",
   "temporal-worker.service",
   "grok-proxy.service",
+  "gigaclungus.service",
 ];
 
 // ── Cockpit: GET /api/cockpit/status ─────────────────────────────────────────
