@@ -44,10 +44,12 @@ with workflow.unsafe.imports_passed_through():
         congress_alert_failure,
         congress_announce,
         congress_check_ibrahim,
+        congress_check_midpoint,
         congress_commit_evolutions,
         congress_create_tasks,
         congress_create_thread,
         congress_debate,
+        congress_duel_vote,
         congress_evolve,
         congress_finalize,
         congress_frame_topic,
@@ -61,7 +63,7 @@ with workflow.unsafe.imports_passed_through():
         congress_start,
         congress_vote,
     )
-    from activities.constants import MAIN_CHANNEL_ID, SIGNAL_ABORT, SIGNAL_CONTINUE, SIGNAL_REFRAME
+    from activities.constants import MAIN_CHANNEL_ID, SIGNAL_ABORT, SIGNAL_CONTINUE, SIGNAL_NO_DISPUTE, SIGNAL_REFRAME
     from activities.trial_act import (
         trial_alert_failure,
         trial_announce,
@@ -600,10 +602,39 @@ class SessionWorkflow:
                     await self._run_debate_round(topic, debaters, session_id, thread_id, debater_display_names, round_num, pre_debate_context, parallel=False)
                 )
 
+                # Midpoint kill switch: after Round 2, check if there's a genuine dispute
+                midpoint = (MAX_ROUNDS + 1) // 2
+                if round_num == midpoint and not is_meme:
+                    ibrahim_midpoint: dict = await workflow.execute_activity(
+                        congress_check_midpoint,
+                        args=[topic, debate_summaries, session_id],
+                        start_to_close_timeout=_DEBATE_TIMEOUT,
+                        schedule_to_start_timeout=timedelta(minutes=3),
+                        retry_policy=RetryPolicy(maximum_attempts=1),
+                    )
+                    mid_signal: str = ibrahim_midpoint.get("signal", SIGNAL_CONTINUE)
+                    mid_reason: str = ibrahim_midpoint.get("reason", "")
+
+                    if mid_signal == SIGNAL_NO_DISPUTE:
+                        if thread_id:
+                            await workflow.execute_activity(
+                                congress_post_separator,
+                                args=[thread_id, f"**Ibrahim finds no actionable disagreement:** {mid_reason}"],
+                                start_to_close_timeout=_ALERT_TIMEOUT,
+                                retry_policy=RetryPolicy(maximum_attempts=1),
+                            )
+                        aborted = True
+                        abort_verdict = f"No actionable disagreement found: {mid_reason}"
+                        workflow.logger.info(f"Midpoint kill switch triggered: {mid_reason}")
+                        break
+
         # ------------------------------------------------------------------ #
         # 5. Chairman synthesis (skipped if aborted)
         # ------------------------------------------------------------------ #
         verdict = "NO VERDICT"
+        has_anti_ibrahim = any(d.get("name") == "anti-ibrahim" for d in debaters)
+        duel_mode = has_anti_ibrahim and hiring_managers
+
         if aborted:
             verdict = abort_verdict
         elif hiring_managers:
@@ -663,28 +694,146 @@ class SessionWorkflow:
             )
             synthesis_context = no_evolution_instruction + (graphiti_ctx + dissent_note if (graphiti_ctx or dissent_note) else "") + pre_debate_section
 
-            synthesis_text: str = await workflow.execute_activity(
-                congress_debate,
-                args=[topic, hm_name, session_id, thread_id, hm_display, 1, None, synthesis_context],
-                start_to_close_timeout=_DEBATE_TIMEOUT,
-                schedule_to_start_timeout=timedelta(minutes=3),
-                retry_policy=RetryPolicy(maximum_attempts=2),
-            )
-            if synthesis_text:
-                if len(synthesis_text) <= 1800:
-                    verdict = synthesis_text.strip()
-                else:
-                    cut = synthesis_text[:1800].rfind('. ')
-                    verdict = (synthesis_text[:cut + 1] if cut > 0 else synthesis_text[:1800]).strip()
+            def _trim_synthesis(text: str) -> str:
+                """Trim synthesis to a safe length."""
+                if not text:
+                    return text
+                if len(text) <= 1800:
+                    return text.strip()
+                cut = text[:1800].rfind('. ')
+                return (text[:cut + 1] if cut > 0 else text[:1800]).strip()
+
+            if duel_mode:
+                # --- SYNTHESIS DUEL ---
+                # Both Ibrahim and anti-ibrahim produce competing verdicts.
+                # Debaters vote on whose synthesis is better.
+                anti_obj = next(d for d in debaters if d.get("name") == "anti-ibrahim")
+                anti_name: str = "anti-ibrahim"
+                anti_display: str = anti_obj.get("display_name") or anti_name
+
+                # Add duel instruction to both synthesis contexts
+                duel_instruction = (
+                    "## SYNTHESIS DUEL:\n"
+                    "Ibraheem the Unruly is also producing a competing synthesis of this debate. "
+                    "The debaters will vote on whose verdict is better. "
+                    "Bring your best work — you are competing for the soul of this verdict.\n\n"
+                )
+                full_context = duel_instruction + synthesis_context
+
+                # Run both syntheses concurrently
+                ibrahim_task = workflow.execute_activity(
+                    congress_debate,
+                    args=[topic, hm_name, session_id, thread_id, hm_display, 1, None, full_context],
+                    start_to_close_timeout=_DEBATE_TIMEOUT,
+                    schedule_to_start_timeout=timedelta(minutes=3),
+                    retry_policy=RetryPolicy(maximum_attempts=2),
+                )
+                anti_task = workflow.execute_activity(
+                    congress_debate,
+                    args=[topic, anti_name, session_id, thread_id, anti_display, 1, None, full_context],
+                    start_to_close_timeout=_DEBATE_TIMEOUT,
+                    schedule_to_start_timeout=timedelta(minutes=3),
+                    retry_policy=RetryPolicy(maximum_attempts=2),
+                )
+                results = await asyncio.gather(ibrahim_task, anti_task, return_exceptions=True)
+                ibrahim_raw = results[0] if not isinstance(results[0], Exception) else ""
+                anti_raw = results[1] if not isinstance(results[1], Exception) else ""
+
+                ibrahim_verdict = _trim_synthesis(ibrahim_raw) if ibrahim_raw else ""
+                anti_verdict = _trim_synthesis(anti_raw) if anti_raw else ""
+
+                debate_summaries.append({"identity": hm_display, "snippet": (ibrahim_verdict[:300] + "...") if len(ibrahim_verdict) > 300 else ibrahim_verdict})
+                debate_summaries.append({"identity": anti_display, "snippet": (anti_verdict[:300] + "...") if len(anti_verdict) > 300 else anti_verdict})
+
+                if thread_id:
+                    await workflow.execute_activity(
+                        congress_post_separator,
+                        args=[thread_id, "--- **Duel Verdicts Posted** ---"],
+                        start_to_close_timeout=_ALERT_TIMEOUT,
+                        retry_policy=RetryPolicy(maximum_attempts=1),
+                    )
             else:
-                verdict = synthesis_text
-            debate_summaries.append({"identity": hm_display, "snippet": (verdict[:300] + "...") if len(verdict) > 300 else verdict})
+                # Normal single-Ibrahim synthesis
+                synthesis_text: str = await workflow.execute_activity(
+                    congress_debate,
+                    args=[topic, hm_name, session_id, thread_id, hm_display, 1, None, synthesis_context],
+                    start_to_close_timeout=_DEBATE_TIMEOUT,
+                    schedule_to_start_timeout=timedelta(minutes=3),
+                    retry_policy=RetryPolicy(maximum_attempts=2),
+                )
+                verdict = _trim_synthesis(synthesis_text) if synthesis_text else synthesis_text
+                if not synthesis_text:
+                    verdict = synthesis_text
+                debate_summaries.append({"identity": hm_display, "snippet": (verdict[:300] + "...") if len(verdict) > 300 else verdict})
 
         # ------------------------------------------------------------------ #
-        # 5b. Post-synthesis vote
+        # 5b. Duel vote or post-synthesis vote
         # ------------------------------------------------------------------ #
         vote_summary: dict = {}
-        if not aborted and debaters and verdict and verdict != "NO VERDICT":
+        if duel_mode:
+            # SYNTHESIS DUEL: debaters vote whose synthesis is better
+            if thread_id:
+                await workflow.execute_activity(
+                    congress_post_separator,
+                    args=[thread_id, "--- **Synthesis Duel Vote** ---"],
+                    start_to_close_timeout=_ALERT_TIMEOUT,
+                    retry_policy=RetryPolicy(maximum_attempts=1),
+                )
+
+            duel_vote_tasks = [
+                workflow.execute_activity(
+                    congress_duel_vote,
+                    args=[
+                        identity_obj.get("name", str(identity_obj)),
+                        ibrahim_verdict,
+                        anti_verdict,
+                        session_id,
+                        thread_id,
+                        identity_obj.get("display_name") or identity_obj.get("name", str(identity_obj)),
+                    ],
+                    start_to_close_timeout=timedelta(minutes=2),
+                    schedule_to_start_timeout=timedelta(minutes=3),
+                    retry_policy=RetryPolicy(maximum_attempts=1),
+                )
+                for identity_obj in debaters
+            ]
+            raw_duel_votes = await asyncio.gather(*duel_vote_tasks, return_exceptions=True)
+
+            ibrahim_votes = []
+            anti_votes = []
+            for result in raw_duel_votes:
+                if isinstance(result, Exception):
+                    workflow.logger.warning(f"congress_duel_vote task failed: {result}")
+                    continue
+                if result.get("vote") == "anti-ibrahim":
+                    anti_votes.append(result["name"])
+                else:
+                    ibrahim_votes.append(result["name"])
+
+            total_votes = len(ibrahim_votes) + len(anti_votes)
+            tally = f"ibrahim={len(ibrahim_votes)} anti-ibrahim={len(anti_votes)}" if total_votes > 0 else "0 votes cast"
+            vote_summary = {"ibrahim": ibrahim_votes, "anti-ibrahim": anti_votes, "tally": tally, "duel": True}
+
+            # The winner's verdict becomes the official verdict
+            if len(anti_votes) > len(ibrahim_votes):
+                verdict = anti_verdict
+                workflow.logger.info(f"Synthesis duel: anti-ibrahim wins ({len(anti_votes)}-{len(ibrahim_votes)})")
+            else:
+                verdict = ibrahim_verdict
+                workflow.logger.info(f"Synthesis duel: ibrahim wins ({len(ibrahim_votes)}-{len(anti_votes)})")
+
+            if thread_id and total_votes > 0:
+                ibrahim_str = ", ".join(ibrahim_votes) if ibrahim_votes else "none"
+                anti_str = ", ".join(anti_votes) if anti_votes else "none"
+                tally_msg = f"**Duel result:** {tally} — Ibrahim: {ibrahim_str} | Ibraheem: {anti_str}"
+                await workflow.execute_activity(
+                    congress_post_separator,
+                    args=[thread_id, tally_msg],
+                    start_to_close_timeout=_ALERT_TIMEOUT,
+                    retry_policy=RetryPolicy(maximum_attempts=1),
+                )
+        elif not aborted and debaters and verdict and verdict != "NO VERDICT":
+            # Normal post-synthesis vote
             if thread_id:
                 await workflow.execute_activity(
                     congress_post_separator,

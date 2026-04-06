@@ -16,6 +16,7 @@ CLUNGER_BASE_URL = os.environ.get("CLUNGER_BASE_URL", "http://localhost:8081")
 SIGNAL_CONTINUE = "CONTINUE"
 SIGNAL_ABORT = "ABORT"
 SIGNAL_REFRAME = "REFRAME"
+SIGNAL_NO_DISPUTE = "NO_DISPUTE"
 
 # Filesystem paths shared across activities
 META_REPO_PATH = "/home/clungus/work/bigclungus-meta"

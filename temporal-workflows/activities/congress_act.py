@@ -527,12 +527,26 @@ async def congress_debate(
     identity_anchor = f"You are {name}. You are NOT any of the other debaters in this session.\n" + fellow_debaters_line
 
     # Build the prompt based on round
+    CRUX_INSTRUCTIONS = (
+        f"\n\n## CRUX DECLARATION (REQUIRED)\n"
+        f"You MUST explicitly state your CRUX — the specific factual question, empirical claim, "
+        f"or priority dispute that you believe this topic turns on. Your crux is the core disagreement "
+        f"or uncertainty that, if resolved, would most shift the debate outcome.\n\n"
+        f"Format your response to include this exact section:\n\n"
+        f"CRUX: <your crux statement — what factual question or priority trade-off does your position hinge on?>\n\n"
+        f"Examples:\n"
+        f'  CRUX: Whether the performance bottleneck is in I/O or CPU — this determines whether the optimization effort should target database queries or computation.\n'
+        f'  CRUX: Whether user trust or feature velocity should be prioritized — my position assumes trust is the more valuable asset long-term.\n\n'
+        f"Failure to include a CRUX statement will result in your contribution being flagged as incomplete.\n\n"
+    )
+
     if round_num == 1:
         user_message = (
             CONGRESS_CONTEXT + identity_anchor + f"Topic: {task}\n\n"
             f"Given your specific perspective and priors, stake out YOUR position on this topic. "
             f"Don't be balanced or hedge — take a clear stance that reflects your worldview. "
             f"The other debaters will challenge you in the next round. Be brief — 3-4 sentences max."
+            + CRUX_INSTRUCTIONS
         )
     else:
         user_message = CONGRESS_CONTEXT + identity_anchor + task
@@ -1064,6 +1078,57 @@ async def congress_check_ibrahim(topic: str, context_brief: str, debate_summarie
         return {"signal": SIGNAL_CONTINUE, "reason": first_line, "new_topic": None}
 
 
+SIGNAL_NO_DISPUTE = "NO_DISPUTE"
+
+
+@activity.defn
+async def congress_check_midpoint(topic: str, debate_summaries: list, session_id: str) -> dict:
+    """After the midpoint round (Round 2), ask Ibrahim whether a genuine factual or priority
+    dispute has been identified in the debate.
+
+    Returns a dict with:
+      {"signal": "CONTINUE" | SIGNAL_NO_DISPUTE, "reason": str}
+
+    If no actionable disagreement is found among debaters, returns SIGNAL_NO_DISPUTE
+    and the debate terminates early. On any failure, defaults to CONTINUE so the debate
+    proceeds normally.
+    """
+    debate_text = f"Topic: {topic}\n\n"
+    for item in debate_summaries:
+        snippet = _truncate_snippet(item.get("snippet", ""))
+        debate_text += f"**{item['identity']}** (Round {item.get('round', 1)}): {snippet}\n\n"
+
+    system_prompt = (
+        "You are Ibrahim the Immovable, moderator of this parliamentary body. After reviewing "
+        "the midpoint of the debate (all rounds completed so far), evaluate whether a genuine "
+        "factual or priority dispute has been identified among the debaters.\n\n"
+        "CONTINUE — there is a real factual disagreement or priority trade-off dividing the "
+        "debaters that is worth continuing to explore.\n"
+        "NO_DISPUTE — all debaters are essentially in agreement, or the differences are "
+        "purely semantic. There is no actionable disagreement to resolve. Terminate the "
+        "session early.\n\n"
+        "Start your response with exactly one of: CONTINUE or NO_DISPUTE:\n\n"
+        "If NO_DISPUTE, provide a brief reason: NO_DISPUTE: <your reason for why there is "
+        "no actionable disagreement>\n"
+    )
+
+    full_prompt = system_prompt + debate_text
+
+    response_text = await _call_congress_api(full_prompt, "chairman", session_id, timeout=60)
+
+    first_line = response_text.strip().split("\n")[0].strip()
+
+    if first_line.upper().startswith("NO_DISPUTE"):
+        reason = first_line[len("NO_DISPUTE:") :].strip()
+        if not reason and "NO_DISPUTE:" in response_text:
+            reason = response_text.split("NO_DISPUTE:", 1)[1].split("\n")[0].strip()
+        if not reason:
+            reason = "No actionable disagreement found among debaters"
+        return {"signal": SIGNAL_NO_DISPUTE, "reason": reason}
+    else:
+        return {"signal": SIGNAL_CONTINUE, "reason": ""}
+
+
 @activity.defn
 async def congress_select_seats(topic: str, debaters: list, session_id: str) -> list:
     """Ask chairman to pick the most relevant debaters for this topic.
@@ -1538,6 +1603,49 @@ async def congress_vote(
         vote = "DISAGREE"
 
     # Extract reason: everything after the first line
+    lines = response_text.strip().split("\n")
+    reason_lines = [line.strip() for line in lines[1:] if line.strip()]
+    reason = reason_lines[0] if reason_lines else lines[0].strip()
+
+    return {"name": name, "vote": vote, "reason": reason}
+
+
+@activity.defn
+async def congress_duel_vote(
+    identity: str,
+    ibrahim_verdict: str,
+    anti_ibrahim_verdict: str,
+    session_id: str,
+    thread_id: str = None,
+    display_name: str = None,
+) -> dict:
+    """Ask a debater to vote on whose synthesis is better: Ibrahim or anti-ibrahim.
+
+    Returns: {"name": display_name, "vote": "ibrahim"|"anti-ibrahim", "reason": str}
+    """
+    name = display_name or identity
+    prompt = (
+        f"You are {name}.\n\n"
+        f"After the debate, two competing syntheses were produced:\n\n"
+        f"**Ibrahim the Immovable's synthesis:**\n{ibrahim_verdict}\n\n"
+        f"**Ibraheem the Unruly's synthesis:**\n{anti_ibrahim_verdict}\n\n"
+        f"Whose synthesis better captured the actual crux of the debate?\n\n"
+        f'Respond with "ibrahim" or "anti-ibrahim" on the first line, followed by ONE sentence '
+        f"explaining why. Choose based on which verdict you think will lead to the better outcome, "
+        f"not which one sounds more pleasant or agrees with your personal position."
+    )
+
+    response_text = await _call_congress_api(prompt, identity, session_id, timeout=180)
+
+    # Parse vote
+    first_line = response_text.strip().split("\n")[0].strip().lower() if response_text else ""
+    if "anti-ibrahim" in first_line or "ibraheem" in first_line or "anti_ibrahim" in first_line:
+        vote = "anti-ibrahim"
+    elif "ibrahim" in first_line:
+        vote = "ibrahim"
+    else:
+        vote = "ibrahim"  # default to Ibrahim if ambiguous
+
     lines = response_text.strip().split("\n")
     reason_lines = [line.strip() for line in lines[1:] if line.strip()]
     reason = reason_lines[0] if reason_lines else lines[0].strip()
