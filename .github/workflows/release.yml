@@ -13,8 +13,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: stable
           targets: aarch64-apple-darwin, x86_64-apple-darwin, x86_64-pc-windows-msvc
       - name: Install Bun
         uses: oven-sh/setup-bun@v1
@@ -22,13 +23,14 @@ jobs:
         working-directory: clungcord/clungcord-desktop
         run: bun install
       - name: Build Tauri app
-        uses: tauri-apps/tauri-action@v0
+        run: bun tauri build
+        working-directory: clungcord/clungcord-desktop/src-tauri
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload release artifact
+        uses: softprops/action-gh-release@v2
         with:
-          projectPath: clungcord/clungcord-desktop
-          tagName: ${{ github.ref_name }}
-          releaseName: 'Clungcord ${{ github.ref_name }}'
-          releaseBody: 'See the assets to download this version and install.'
-          releaseDraft: false
-          prerelease: false
+          tag_name: ${{ github.ref_name }}
+          files: clungcord/clungcord-desktop/src-tauri/target/release/bundle/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
