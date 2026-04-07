@@ -1183,6 +1183,7 @@ function parseSubagentFile(fpath: string, agentId: string): SubagentInfo {
 }
 
 function restServeSubagents(res: http.ServerResponse): void {
+  res.setHeader("Access-Control-Allow-Origin", "*");
   const taskDir = findMostRecentTaskDir();
   if (!taskDir) {
     jsonResponse(res, []);
@@ -1244,8 +1245,9 @@ async function restStreamSubagent(req: http.IncomingMessage, res: http.ServerRes
     } catch { /* client disconnected */ }
   };
 
-  // Send existing content
-  try {
+  // Read from `offset` to EOF, send each non-empty line, return new offset.
+  // onBytesRead is called whenever bytes are read (used to update lastChangeAt).
+  const drainFile = (onBytesRead?: () => void): void => {
     const fd = openSync(outputPath, "r");
     try {
       const buf = Buffer.alloc(65536);
@@ -1254,16 +1256,18 @@ async function restStreamSubagent(req: http.IncomingMessage, res: http.ServerRes
       while ((bytes = readSync(fd, buf, 0, buf.length, offset)) > 0) {
         offset += bytes;
         accumulated += buf.slice(0, bytes).toString("utf-8");
+        onBytesRead?.();
       }
-      // Send line by line
-      const lines = accumulated.split("\n");
-      for (const line of lines) {
+      for (const line of accumulated.split("\n")) {
         if (line.trim()) send(line);
       }
     } finally {
       closeSync(fd);
     }
-  } catch { /* file disappeared */ }
+  };
+
+  // Send existing content
+  try { drainFile(); } catch { /* file disappeared */ }
 
   // Poll for new content
   const cleanup = () => {
@@ -1282,23 +1286,7 @@ async function restStreamSubagent(req: http.IncomingMessage, res: http.ServerRes
     try {
       const st = statSync(outputPath);
       if (st.size <= offset) return;
-      const fd = openSync(outputPath, "r");
-      try {
-        const buf = Buffer.alloc(65536);
-        let bytes: number;
-        let accumulated = "";
-        while ((bytes = readSync(fd, buf, 0, buf.length, offset)) > 0) {
-          offset += bytes;
-          accumulated += buf.slice(0, bytes).toString("utf-8");
-          lastChangeAt = Date.now();
-        }
-        const lines = accumulated.split("\n");
-        for (const line of lines) {
-          if (line.trim()) send(line);
-        }
-      } finally {
-        closeSync(fd);
-      }
+      drainFile(() => { lastChangeAt = Date.now(); });
     } catch { /* file may have disappeared */ }
   }, POLL_INTERVAL_MS);
 }

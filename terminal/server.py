@@ -372,9 +372,9 @@ HTML = r"""<!DOCTYPE html>
     }
     /* Subagent grid panel */
     #agents-header {
-      padding: 8px 14px;
+      padding: 0.5em 0.9em;
       color: #4ecca3;
-      font-size: 11px;
+      font-size: 0.75em;
       font-weight: bold;
       border-bottom: 1px solid #2a2a4e;
       border-left: 3px solid #4ecca3;
@@ -383,13 +383,13 @@ HTML = r"""<!DOCTYPE html>
       text-transform: uppercase;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 0.5em;
       background: #0d1117;
     }
     #agents-token-total {
       margin-left: auto;
       color: #4ecca3;
-      font-size: 10px;
+      font-size: 0.9em;
       font-weight: normal;
       text-transform: none;
       letter-spacing: 0;
@@ -398,10 +398,10 @@ HTML = r"""<!DOCTYPE html>
     #agents-list {
       flex: 1;
       overflow-y: auto;
-      padding: 8px;
+      padding: 0.5em;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 0.4em;
     }
     #agents-list::-webkit-scrollbar { width: 4px; }
     #agents-list::-webkit-scrollbar-track { background: #0d1117; }
@@ -411,17 +411,17 @@ HTML = r"""<!DOCTYPE html>
     .xterm-viewport::-webkit-scrollbar-thumb { background: #4ecca3; border-radius: 2px; }
     #agents-empty {
       color: #444;
-      font-size: 11px;
+      font-size: 0.85em;
       text-align: center;
-      padding: 24px 8px;
+      padding: 1.5em 0.5em;
     }
     /* Subagent cards */
     .sa-card {
       background: #0d1117;
       border: 1px solid #1e2a3a;
       border-radius: 4px;
-      padding: 8px 10px;
-      font-size: 11px;
+      padding: 0.55em 0.7em;
+      font-size: 0.85em;
       flex-shrink: 0;
       transition: opacity 0.3s;
     }
@@ -431,12 +431,12 @@ HTML = r"""<!DOCTYPE html>
     .sa-top {
       display: flex;
       align-items: center;
-      gap: 6px;
-      margin-bottom: 5px;
+      gap: 0.4em;
+      margin-bottom: 0.35em;
     }
     .sa-dot {
-      width: 8px;
-      height: 8px;
+      width: 0.6em;
+      height: 0.6em;
       border-radius: 50%;
       flex-shrink: 0;
     }
@@ -454,7 +454,7 @@ HTML = r"""<!DOCTYPE html>
     .sa-name {
       color: #c0c0d0;
       font-weight: bold;
-      font-size: 10px;
+      font-size: 1em;
       flex: 1;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -462,15 +462,15 @@ HTML = r"""<!DOCTYPE html>
     }
     .sa-age {
       color: #444;
-      font-size: 9px;
+      font-size: 0.85em;
       flex-shrink: 0;
     }
     .sa-meta {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 5px;
-      font-size: 9px;
+      gap: 0.65em;
+      margin-bottom: 0.35em;
+      font-size: 0.85em;
       color: #555;
     }
     .sa-tokens {
@@ -482,11 +482,11 @@ HTML = r"""<!DOCTYPE html>
       background: #060a10;
       border: 1px solid #1a2232;
       border-radius: 3px;
-      padding: 5px 7px;
-      max-height: 180px;
+      padding: 0.35em 0.5em;
+      max-height: 12em;
       overflow-y: auto;
       font-family: 'Consolas', 'Courier New', monospace;
-      font-size: 9px;
+      font-size: 0.85em;
       color: #8899aa;
       white-space: pre-wrap;
       word-break: break-all;
@@ -699,22 +699,30 @@ HTML = r"""<!DOCTYPE html>
           const parts = [];
           for (const block of msgContent) {
             if (block.type === 'text' && block.text) {
-              parts.push(block.text.trim());
+              // Strip AI trope phrases, trim whitespace
+              const txt = block.text.trim();
+              if (txt) parts.push(txt.slice(0, 200));
             } else if (block.type === 'tool_use') {
               const inp = block.input || {};
-              const desc = inp.description || inp.command || '';
-              parts.push('[' + (block.name || 'tool') + '] ' + (desc ? desc.slice(0, 80) : ''));
+              // Prefer description for readability, fall back to command/file_path/etc
+              const desc = inp.description || inp.command || inp.file_path || inp.pattern || '';
+              const toolName = block.name || 'tool';
+              parts.push('\u25b6 ' + toolName + (desc ? ': ' + desc.slice(0, 80) : ''));
             }
           }
-          if (parts.length) return parts.join(' | ').slice(0, 120);
+          if (parts.length) return parts.join(' | ').slice(0, 220);
         }
 
         if (type === 'user' && Array.isArray(msgContent)) {
           for (const block of msgContent) {
             if (block.type === 'tool_result') {
-              const c = Array.isArray(block.content) ? block.content[0]?.text : block.content;
+              let c = Array.isArray(block.content) ? block.content[0]?.text : block.content;
               if (typeof c === 'string' && c.trim()) {
-                return '\u21aa ' + c.trim().slice(0, 120);
+                // Strip [rerun: bN] noise appended by harness
+                c = c.replace(/\[rerun: b\d+\]\s*$/m, '').trim();
+                if (!c) return null;
+                const prefix = block.is_error ? '\u2717 ' : '\u21aa ';
+                return prefix + c.slice(0, 200);
               }
             }
           }
@@ -722,7 +730,7 @@ HTML = r"""<!DOCTYPE html>
 
         // First user message — show task prompt snippet
         if (type === 'user' && typeof msgContent === 'string' && msgContent.trim()) {
-          return msgContent.trim().slice(0, 120);
+          return '\uD83D\uDCCC ' + msgContent.trim().slice(0, 150);
         }
       } catch { /* ignore */ }
       return null;
@@ -1282,15 +1290,20 @@ async def tasks_handler(request):
 
         agent_id = fname[:-7]  # strip .output
         status = 'running' if mtime >= thirty_secs_ago else 'completed'
-        description = get_task_description(agent_id, fpath)
 
+        # Read meta file once; fall back to parsing the output file for description.
         requester = ''
+        meta_description = ''
         meta_path = os.path.join(task_dir, agent_id + '.meta.json')
         try:
             with open(meta_path) as f:
-                requester = json.load(f).get('requester', '')
+                meta = json.load(f)
+            meta_description = meta.get('description', '').strip()
+            requester = meta.get('requester', '')
         except (OSError, json.JSONDecodeError):
             pass
+
+        description = meta_description or get_task_description(agent_id, fpath)
 
         tasks.append({
             'id': agent_id,
