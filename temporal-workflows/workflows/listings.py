@@ -8,6 +8,7 @@ with workflow.unsafe.imports_passed_through():
     from activities.discord_act import post_listings_summary
     from activities.redfin import fetch_redfin_listings
     from activities.storage import load_seen_ids, save_seen_ids
+    from activities.constants import TEMPORAL_WORKFLOWS_DIR
 
 
 @_activity.defn(name="filter_new_listings")
@@ -35,7 +36,7 @@ class ListingsWorkflow:
           - Post to Discord as normal
           - Do NOT update seen_listings.db
         """
-        db_path = "/mnt/data/temporal-workflows/seen_listings.db"
+        db_path = f"{TEMPORAL_WORKFLOWS_DIR}/seen_listings.db"
         dry_run: bool = search.get("dry_run", False)
 
         # Fetch listings for each location (remote activity)

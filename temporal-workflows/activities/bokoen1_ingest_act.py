@@ -16,13 +16,13 @@ from pathlib import Path
 
 from temporalio import activity
 
-from .constants import GRAPHITI_ENV
+from .constants import BASE_DIR, GRAPHITI_ENV
 from .utils import get_openai_key
 
 logger = logging.getLogger(__name__)
 
-TRANSCRIPTS_DIR = Path("/mnt/data/data/bokoen1-transcripts")
-STATUS_FILE = Path("/mnt/data/data/bokoen1-ingestion-status.json")
+TRANSCRIPTS_DIR = Path(BASE_DIR) / "data/bokoen1-transcripts"
+STATUS_FILE = Path(BASE_DIR) / "data/bokoen1-ingestion-status.json"
 DATABASE_NAME = "bokoen1_transcripts"
 YT_DLP = os.path.expanduser("~/.local/bin/yt-dlp")
 

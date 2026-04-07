@@ -10,7 +10,9 @@ from pathlib import Path
 
 from temporalio import activity
 
-DB_PATH = "/mnt/data/data/scouted-models.db"
+from .constants import BASE_DIR
+
+DB_PATH = f"{BASE_DIR}/data/scouted-models.db"
 
 # Status constants
 STATUS_PROPOSED = "proposed"

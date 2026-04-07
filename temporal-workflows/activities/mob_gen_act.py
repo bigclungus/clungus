@@ -19,14 +19,14 @@ import falkordb as _falkordb
 import openai
 from temporalio import activity
 
-from .constants import HELLO_WORLD_DIR, SCRIPTS_DIR
+from .constants import BASE_DIR, HELLO_WORLD_DIR, SCRIPTS_DIR
 
 _falkordb_client = _falkordb.FalkorDB(
     host=os.environ.get("FALKORDB_HOST", "localhost"),
     port=int(os.environ.get("FALKORDB_PORT", "6379")),
 )
 
-CLUNGIVERSE_DB = Path("/mnt/data/commons-server/db/commons.db")
+CLUNGIVERSE_DB = Path(BASE_DIR) / "commons-server/db/commons.db"
 MOB_SPRITES_JS = Path(HELLO_WORLD_DIR) / "static/clungiverse/mob-sprites.js"
 MOB_IMAGES_DIR = Path(HELLO_WORLD_DIR) / "static/mob-images"
 RENDER_SPRITE_SCRIPT = Path(SCRIPTS_DIR) / "render-mob-sprite.js"

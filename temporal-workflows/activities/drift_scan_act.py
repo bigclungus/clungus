@@ -10,10 +10,10 @@ import glob
 
 from temporalio import activity
 
-from .constants import MAIN_CHANNEL_ID
+from .constants import BASE_DIR, MAIN_CHANNEL_ID
 from .inject_act import _do_inject
 
-LABS_DIR = "/mnt/data/labs"
+LABS_DIR = f"{BASE_DIR}/labs"
 STALE_DAYS = 14
 
 
@@ -32,7 +32,7 @@ def _run_drift_scan_sync() -> str | None:
             )
             if result.returncode != 0 or not result.stdout.strip():
                 result = subprocess.run(
-                    ["git", "-C", "/mnt/data", "log", "--oneline", "-1", "--format=%ct", "--", f"labs/{lab_name}/"],
+                    ["git", "-C", BASE_DIR, "log", "--oneline", "-1", "--format=%ct", "--", f"labs/{lab_name}/"],
                     capture_output=True, text=True, timeout=10
                 )
             if result.stdout.strip():
