@@ -139,15 +139,14 @@ HEARTBEAT_MAX_AGE=1200  # 20 minutes
 if [ -f "$HEARTBEAT_FILE" ]; then
     LAST_HB=$(cat "$HEARTBEAT_FILE" 2>/dev/null || echo "0")
     HB_AGE=$(python3 -c "import time; print(int(time.time() - $LAST_HB))" 2>/dev/null || echo "9999")
+    HB_MIN=$(python3 -c "print(round($HB_AGE / 60, 1))" 2>/dev/null || echo "?")
     if [ "$HB_AGE" -gt "$HEARTBEAT_MAX_AGE" ]; then
-        HB_MIN=$(python3 -c "print(round($HB_AGE / 60, 1))" 2>/dev/null || echo "?")
         echo "watchdog: ALERT — no heartbeat in ${HB_MIN} minutes (last: ${HB_AGE}s ago)" >&2
         curl -s -X POST http://127.0.0.1:8085/webhooks/bigclungus-main \
           -H "Content-Type: application/json" \
           -d "{\"content\": \"⚠️ heartbeat watchdog: no [heartbeat] inject in ${HB_MIN}min. omni-gateway or heartbeat workflow may be down.\", \"user\": \"watchdog\"}" \
           > /dev/null || true
     else
-        HB_MIN=$(python3 -c "print(round($HB_AGE / 60, 1))" 2>/dev/null || echo "?")
         echo "watchdog: heartbeat OK (last ${HB_MIN}min ago)"
     fi
 else
