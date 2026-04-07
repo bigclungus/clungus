@@ -46,6 +46,7 @@ with workflow.unsafe.imports_passed_through():
         STATUS_REJECTED,
         STATUS_SKIPPED,
     )
+    from activities.constants import AGENTS_DIR
 
 # #congress-hall channel ID
 CONGRESS_HALL_CHANNEL = "1383689218861039686"
@@ -806,8 +807,7 @@ class PersonaOnboardingWorkflow:
         )
 
         slug = winner.get("slug", "unknown-persona")
-        agents_dir = "/home/clungus/work/bigclungus-meta/agents"
-        file_path = f"{agents_dir}/{slug}.md"
+        file_path = f"{AGENTS_DIR}/{slug}.md"
 
         await workflow.execute_activity(
             write_file,
