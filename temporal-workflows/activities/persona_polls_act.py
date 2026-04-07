@@ -15,11 +15,11 @@ from pathlib import Path
 from temporalio import activity
 
 from .inject_act import _do_inject
-from .constants import AGENTS_DIR, MAIN_CHANNEL_ID, SCRIPTS_DIR
+from .constants import AGENTS_DIR, HELLO_WORLD_DIR, MAIN_CHANNEL_ID, SCRIPTS_DIR
 
-POLLS_DIR = "/mnt/data/hello-world/polls"
-AVATARS_DIR = "/mnt/data/hello-world/static/avatars"
-SPRITES_DIR = "/mnt/data/hello-world"
+POLLS_DIR = f"{HELLO_WORLD_DIR}/polls"
+AVATARS_DIR = f"{HELLO_WORLD_DIR}/static/avatars"
+SPRITES_DIR = HELLO_WORLD_DIR
 
 
 def _read_persona(slug: str) -> dict:

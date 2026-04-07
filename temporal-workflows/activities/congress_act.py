@@ -40,6 +40,7 @@ from .constants import (
     AGENTS_DIR,
     CLUNGER_BASE_URL,
     DISCORD_API,
+    HELLO_WORLD_DIR,
     HELLO_WORLD_SESSIONS_DIR,
     MAIN_CHANNEL_ID,
     META_REPO_PATH,
@@ -1468,7 +1469,7 @@ def _codebase_search(topic_text: str) -> str:
     # Search only specific code directories to keep it fast and relevant
     SEARCH_DIRS = [
         "/mnt/data/clunger",
-        "/mnt/data/hello-world",
+        HELLO_WORLD_DIR,
         "/mnt/data/temporal-workflows",
         SCRIPTS_DIR,
         AGENTS_DIR,

@@ -22,6 +22,7 @@ SIGNAL_NO_DISPUTE = "NO_DISPUTE"
 META_REPO_PATH = "/home/clungus/work/bigclungus-meta"
 AGENTS_DIR = META_REPO_PATH + "/agents"
 TASKS_DIR = META_REPO_PATH + "/tasks"
+HELLO_WORLD_DIR = "/mnt/data/hello-world"
 HELLO_WORLD_SESSIONS_DIR = "/home/clungus/work/hello-world/sessions"
 SCRIPTS_DIR = "/mnt/data/scripts"
 
