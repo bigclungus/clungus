@@ -3,7 +3,7 @@ import subprocess
 
 from temporalio import activity
 
-from .constants import SCRIPTS_DIR
+from .constants import BASE_DIR, SCRIPTS_DIR
 
 
 @activity.defn
@@ -59,7 +59,7 @@ async def startup_check_disk() -> dict:
         root_usage = shutil.disk_usage("/")
         root_pct = int(root_usage.used / root_usage.total * 100)
         try:
-            data_usage = shutil.disk_usage("/mnt/data")
+            data_usage = shutil.disk_usage(BASE_DIR)
             data_pct = int(data_usage.used / data_usage.total * 100)
         except Exception:
             data_pct = 0

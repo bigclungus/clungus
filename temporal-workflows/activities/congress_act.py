@@ -1886,7 +1886,7 @@ async def congress_preflight_check(debaters: list) -> list:
                         elif status == 401:
                             errors.append(
                                 f"Grok API rejected the API key (HTTP 401). "
-                                f"Check XAI_API_KEY in /mnt/data/temporal-workflows/.env — "
+                                f"Check XAI_API_KEY in {TEMPORAL_WORKFLOWS_DIR}/.env — "
                                 f"Grok personas: {', '.join(grok_personas)}"
                             )
                         elif status not in (200, 400, 429):
