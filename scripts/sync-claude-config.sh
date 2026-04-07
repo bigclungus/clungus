@@ -20,6 +20,12 @@ if [ -d "$STAGING/skills" ]; then
   echo "Synced skills/"
 fi
 
+if [ -d "$STAGING/agents" ]; then
+  mkdir -p "$DEST/agents"
+  rsync -a "$STAGING/agents/" "$DEST/agents/"
+  echo "Synced agents/"
+fi
+
 if [ -f "$STAGING/CLAUDE.md" ]; then
   cp "$STAGING/CLAUDE.md" "$DEST/CLAUDE.md"
   echo "Synced CLAUDE.md"

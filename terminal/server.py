@@ -357,18 +357,28 @@ HTML = r"""<!DOCTYPE html>
       min-height: 0;
     }
     #terminal {
-      width: 70%;
+      width: 40%;
       padding: 4px;
       overflow: hidden;
       flex-shrink: 0;
+      min-width: 100px;
     }
+    #resizer {
+      width: 4px;
+      cursor: col-resize;
+      background: #21262d;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    #resizer:hover { background: #388bfd; }
     #agents {
-      width: 30%;
+      flex: 1;
       background: #1a1a2e;
-      border-left: 1px solid #2a2a4e;
+      border-left: none;
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      min-width: 100px;
     }
     /* Subagent grid panel */
     #agents-header {
@@ -399,8 +409,9 @@ HTML = r"""<!DOCTYPE html>
       flex: 1;
       overflow-y: auto;
       padding: 0.5em;
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-content: start;
       gap: 0.4em;
     }
     #agents-list::-webkit-scrollbar { width: 4px; }
@@ -422,12 +433,18 @@ HTML = r"""<!DOCTYPE html>
       border-radius: 4px;
       padding: 0.55em 0.7em;
       font-size: 0.85em;
-      flex-shrink: 0;
+      min-width: 0;
       transition: opacity 0.3s;
     }
     .sa-card:hover { border-color: #4ecca3; }
-    .sa-card.done { opacity: 0.65; }
-    .sa-card.done:hover { opacity: 1; }
+    .sa-card.done {
+      opacity: 0.4;
+      filter: grayscale(70%);
+      background: #080c10;
+      border-color: #151f2a;
+      transition: opacity 0.3s, filter 0.3s;
+    }
+    .sa-card.done:hover { opacity: 0.75; filter: grayscale(30%); }
     .sa-top {
       display: flex;
       align-items: center;
@@ -445,7 +462,7 @@ HTML = r"""<!DOCTYPE html>
       box-shadow: 0 0 5px #f0c040;
       animation: pulse 1.5s infinite;
     }
-    .sa-dot.complete { background: #4ecca3; }
+    .sa-dot.complete { background: #666; }
     .sa-dot.failed { background: #e94560; }
     @keyframes pulse {
       0%, 100% { box-shadow: 0 0 3px #f0c040; }
@@ -483,10 +500,10 @@ HTML = r"""<!DOCTYPE html>
       border: 1px solid #1a2232;
       border-radius: 3px;
       padding: 0.35em 0.5em;
-      max-height: 12em;
+      max-height: 10em;
       overflow-y: auto;
       font-family: 'Consolas', 'Courier New', monospace;
-      font-size: 0.85em;
+      font-size: 0.78em;
       color: #8899aa;
       white-space: pre-wrap;
       word-break: break-all;
@@ -595,6 +612,7 @@ HTML = r"""<!DOCTYPE html>
   </div>
   <div id="main">
     <div id="terminal"></div>
+    <div id="resizer"></div>
     <div id="agents">
       <div id="agents-header">
         &#x26A1; Subagents
@@ -656,6 +674,52 @@ HTML = r"""<!DOCTYPE html>
     }
     connect();
 
+    // ── Resizable split ────────────────────────────────────────────────────────
+
+    (function initResizer() {
+      const resizer = document.getElementById('resizer');
+      const termPane = document.getElementById('terminal');
+      const main = document.getElementById('main');
+
+      const STORAGE_KEY = 'terminal_split';
+      const DEFAULT_PCT = 40;
+
+      function applyPct(pct) {
+        pct = Math.min(85, Math.max(10, pct));
+        termPane.style.width = pct + '%';
+      }
+
+      // Restore saved split
+      const saved = parseFloat(localStorage.getItem(STORAGE_KEY));
+      applyPct(isNaN(saved) ? DEFAULT_PCT : saved);
+
+      resizer.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        const startX = e.clientX;
+        const startW = termPane.getBoundingClientRect().width;
+        const containerW = main.getBoundingClientRect().width;
+
+        function onMove(ev) {
+          const delta = ev.clientX - startX;
+          const newPct = ((startW + delta) / containerW) * 100;
+          applyPct(newPct);
+          fitAddon.fit();
+        }
+
+        function onUp(ev) {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+          const finalW = termPane.getBoundingClientRect().width;
+          const finalPct = (finalW / containerW) * 100;
+          localStorage.setItem(STORAGE_KEY, finalPct.toFixed(2));
+          fitAddon.fit();
+        }
+
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+    })();
+
     // ── Subagent grid ──────────────────────────────────────────────────────────
 
     const CLUNGER_BASE = 'https://clung.us';
@@ -678,6 +742,13 @@ HTML = r"""<!DOCTYPE html>
       if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
       if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
       return String(n);
+    }
+
+    function fmtCost(dollars) {
+      if (!dollars || dollars <= 0) return '$0.00';
+      if (dollars >= 1) return '$' + dollars.toFixed(2);
+      if (dollars >= 0.01) return '$' + dollars.toFixed(3);
+      return '$' + dollars.toFixed(4);
     }
 
     // Maps agentId → { card, outputEl, sse, lines, lastLineCount }
@@ -784,7 +855,7 @@ HTML = r"""<!DOCTYPE html>
           <div class="sa-age">${escHtml(age)}</div>
         </div>
         <div class="sa-meta">
-          <span class="sa-tokens">&#x25CB; ${escHtml(fmtTokens(agent.tokens))} tok</span>
+          <span class="sa-tokens">&#x25CB; ${escHtml(fmtCost(agent.cost))}</span>
           <span class="sa-tools">&#x1F527; ${agent.toolUses} calls</span>
         </div>
         <div class="sa-output"></div>
@@ -805,7 +876,7 @@ HTML = r"""<!DOCTYPE html>
       else card.classList.remove('done');
       // Update meta
       const tokEl = card.querySelector('.sa-tokens');
-      if (tokEl) tokEl.textContent = '\u25CB ' + fmtTokens(agent.tokens) + ' tok';
+      if (tokEl) tokEl.textContent = '\u25CB ' + fmtCost(agent.cost);
       const toolEl = card.querySelector('.sa-tools');
       if (toolEl) toolEl.textContent = '\uD83D\uDD27 ' + agent.toolUses + ' calls';
       // Update age
@@ -820,10 +891,10 @@ HTML = r"""<!DOCTYPE html>
       // Filter out hook_* and very short IDs with no data
       const interesting = agents.filter(a => !a.id.startsWith('hook_') && a.tokens > 0 || a.status === 'in_progress');
 
-      // Update token total
-      const totalTokens = interesting.reduce((s, a) => s + (a.tokens || 0), 0);
+      // Update cost total
+      const totalCost = interesting.reduce((s, a) => s + (a.cost || 0), 0);
       const totalEl = document.getElementById('agents-token-total');
-      if (totalEl) totalEl.textContent = fmtTokens(totalTokens) + ' tok total';
+      if (totalEl) totalEl.textContent = fmtCost(totalCost) + ' total';
 
       if (!interesting.length) {
         emptyEl.style.display = '';
