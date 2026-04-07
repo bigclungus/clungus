@@ -3,6 +3,8 @@ import subprocess
 
 from temporalio import activity
 
+from .constants import SCRIPTS_DIR
+
 
 @activity.defn
 async def startup_fix_falkordb() -> str:
@@ -75,7 +77,7 @@ async def startup_run_watchdog() -> str:
     """Run the stale task watchdog. Returns output summary."""
     try:
         result = subprocess.run(
-            ["bash", "/mnt/data/scripts/hooks/watchdog-stale-tasks.sh"],
+            ["bash", f"{SCRIPTS_DIR}/hooks/watchdog-stale-tasks.sh"],
             capture_output=True,
             text=True,
             timeout=60,
@@ -90,7 +92,7 @@ async def startup_check_heartbeat() -> str:
     """Check if heartbeat inject has landed recently. Returns 'ok' or a warning message."""
     try:
         result = subprocess.run(
-            ["bash", "/mnt/data/scripts/watchdog-heartbeat.sh"],
+            ["bash", f"{SCRIPTS_DIR}/watchdog-heartbeat.sh"],
             capture_output=True,
             text=True,
             timeout=15,
@@ -108,7 +110,7 @@ async def startup_extract_directives() -> str:
     """Extract congress directives into learned-directives.md. Returns status."""
     try:
         result = subprocess.run(
-            ["python3", "/mnt/data/scripts/extract-congress-directives.py"],
+            ["python3", f"{SCRIPTS_DIR}/extract-congress-directives.py"],
             capture_output=True,
             text=True,
             timeout=60,

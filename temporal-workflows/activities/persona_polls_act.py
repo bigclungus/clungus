@@ -340,11 +340,10 @@ def _create_sprite_poll(slug: str, persona: dict, sprite_code: str) -> str:
 
 def _git_commit_and_push() -> None:
     """Commit and push hello-world changes (polls, avatars, sprites)."""
-    hw_dir = "/mnt/data/hello-world"
     subprocess.run(
         ["git", "add", "polls/", "static/avatars/", "sprites-batch*.js",
          "sprites-vote.html", "grazing.html", "refinery.html"],
-        cwd=hw_dir,
+        cwd=SPRITES_DIR,
         check=False,
         timeout=30,
     )
@@ -352,7 +351,7 @@ def _git_commit_and_push() -> None:
     if result.returncode != 0:
         subprocess.run(
             ["git", "commit", "-m", "auto: new persona avatar + sprite polls"],
-            cwd=hw_dir,
+            cwd=SPRITES_DIR,
             check=True,
             timeout=30,
         )
