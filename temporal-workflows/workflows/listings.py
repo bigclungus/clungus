@@ -35,7 +35,7 @@ class ListingsWorkflow:
           - Post to Discord as normal
           - Do NOT update seen_listings.db
         """
-        db_path = "/home/clungus/work/temporal-workflows/seen_listings.db"
+        db_path = "/mnt/data/temporal-workflows/seen_listings.db"
         dry_run: bool = search.get("dry_run", False)
 
         # Fetch listings for each location (remote activity)

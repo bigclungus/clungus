@@ -43,6 +43,7 @@ from .constants import (
     HELLO_WORLD_SESSIONS_DIR,
     MAIN_CHANNEL_ID,
     META_REPO_PATH,
+    SCRIPTS_DIR,
     SESSION_MODE_MEME,
     SIGNAL_ABORT,
     SIGNAL_CONTINUE,
@@ -971,7 +972,7 @@ async def congress_evolve(session_id: str, topic: str, debate_summaries: list) -
             # minutes (LLM calls for avatar/sprite art) and must not stall evolution.
             try:
                 subprocess.Popen(
-                    [sys.executable, "/mnt/data/scripts/create_persona_polls.py", slug],
+                    [sys.executable, f"{SCRIPTS_DIR}/create_persona_polls.py", slug],
                     stdout=open(f"/tmp/persona-polls-{slug}.log", "w"),
                     stderr=subprocess.STDOUT,
                 )
@@ -1005,7 +1006,7 @@ async def congress_commit_evolutions(session_id: str) -> None:
         activity.logger.warning(f"Failed to push evolution changes: {e}")
         await _inject_alert(f"congress_commit_evolutions: git push failed for {session_id} — {str(e)[:200]}")
 
-    sync_script = "/mnt/data/scripts/sync_personas_db.py"
+    sync_script = f"{SCRIPTS_DIR}/sync_personas_db.py"
     if os.path.exists(sync_script):
         try:
             sync_result = subprocess.run(["python3", sync_script], capture_output=True, text=True, timeout=30)
@@ -1469,7 +1470,7 @@ def _codebase_search(topic_text: str) -> str:
         "/mnt/data/clunger",
         "/mnt/data/hello-world",
         "/mnt/data/temporal-workflows",
-        "/mnt/data/scripts",
+        SCRIPTS_DIR,
         AGENTS_DIR,
     ]
     found_files: dict = {}  # path -> first matching line snippet
