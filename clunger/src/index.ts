@@ -1972,6 +1972,35 @@ interface TokenUsageRow {
   created_at: string;
 }
 
+/** Process one parsed assistant JSONL object, updating accumulator state in place. */
+function accumulateAssistantEntry(
+  obj: Record<string, unknown>,
+  toolUseSet: Set<string>,
+  outputByRequestId: Map<string, number>,
+  maxInputRef: { value: number },
+): void {
+  const msg = (obj.message ?? {}) as Record<string, unknown>;
+  const usage = (msg.usage ?? {}) as Record<string, unknown>;
+  const msgContent = msg.content;
+  if (Array.isArray(msgContent)) {
+    for (const block of msgContent) {
+      const b = block as Record<string, unknown>;
+      if (b.type === "tool_use" && typeof b.id === "string") toolUseSet.add(b.id);
+    }
+  }
+  if (usage.output_tokens !== undefined) {
+    const inp = (usage.input_tokens as number) ?? 0;
+    const cacheCreate = (usage.cache_creation_input_tokens as number) ?? 0;
+    const cacheRead = (usage.cache_read_input_tokens as number) ?? 0;
+    const totalInp = inp + cacheCreate + cacheRead;
+    if (totalInp > maxInputRef.value) maxInputRef.value = totalInp;
+    const requestId = (obj.requestId as string) ?? Math.random().toString();
+    const out = (usage.output_tokens as number) ?? 0;
+    const existing = outputByRequestId.get(requestId) ?? 0;
+    if (out > existing) outputByRequestId.set(requestId, out);
+  }
+}
+
 // Parse a subagent output file and extract cumulative token usage
 function parseSubagentTokens(fpath: string): {
   inputTokens: number;
@@ -2007,8 +2036,7 @@ function parseSubagentTokens(fpath: string): {
       const chunkSize = 65536;
       let offset = 0;
       let leftover = "";
-      // Track max input tokens seen (they're cumulative per conversation)
-      let maxInputTokens = 0;
+      const maxInputRef = { value: 0 };
       // Track per-request output tokens (each request has its own output count)
       const outputByRequestId = new Map<string, number>();
       const toolUseSet = new Set<string>(); // deduplicate tool uses by tool_use id
@@ -2027,31 +2055,7 @@ function parseSubagentTokens(fpath: string): {
           try {
             const obj = JSON.parse(line) as Record<string, unknown>;
             if (obj.type !== "assistant") continue;
-            const msg = (obj.message ?? {}) as Record<string, unknown>;
-            const usage = (msg.usage ?? {}) as Record<string, unknown>;
-            const msgContent = msg.content;
-            // Count tool uses (deduplicated by tool_use id)
-            if (Array.isArray(msgContent)) {
-              for (const block of msgContent) {
-                const b = block as Record<string, unknown>;
-                if (b.type === "tool_use" && typeof b.id === "string") {
-                  toolUseSet.add(b.id);
-                }
-              }
-            }
-            // Accumulate tokens
-            if (usage.output_tokens !== undefined) {
-              const inp = (usage.input_tokens as number) ?? 0;
-              const cacheCreate = (usage.cache_creation_input_tokens as number) ?? 0;
-              const cacheRead = (usage.cache_read_input_tokens as number) ?? 0;
-              const totalInp = inp + cacheCreate + cacheRead;
-              if (totalInp > maxInputTokens) maxInputTokens = totalInp;
-              // Output tokens: accumulate per unique request ID to handle parallelism correctly
-              const requestId = (obj.requestId as string) ?? Math.random().toString();
-              const out = (usage.output_tokens as number) ?? 0;
-              const existing = outputByRequestId.get(requestId) ?? 0;
-              if (out > existing) outputByRequestId.set(requestId, out);
-            }
+            accumulateAssistantEntry(obj, toolUseSet, outputByRequestId, maxInputRef);
           } catch { /* ignore malformed lines */ }
         }
       }
@@ -2061,31 +2065,12 @@ function parseSubagentTokens(fpath: string): {
         try {
           const obj = JSON.parse(leftover.trim()) as Record<string, unknown>;
           if (obj.type === "assistant") {
-            const msg = (obj.message ?? {}) as Record<string, unknown>;
-            const usage = (msg.usage ?? {}) as Record<string, unknown>;
-            const msgContent = msg.content;
-            if (Array.isArray(msgContent)) {
-              for (const block of msgContent) {
-                const b = block as Record<string, unknown>;
-                if (b.type === "tool_use" && typeof b.id === "string") toolUseSet.add(b.id);
-              }
-            }
-            if (usage.output_tokens !== undefined) {
-              const inp = (usage.input_tokens as number) ?? 0;
-              const cacheCreate = (usage.cache_creation_input_tokens as number) ?? 0;
-              const cacheRead = (usage.cache_read_input_tokens as number) ?? 0;
-              const totalInp = inp + cacheCreate + cacheRead;
-              if (totalInp > maxInputTokens) maxInputTokens = totalInp;
-              const requestId = (obj.requestId as string) ?? Math.random().toString();
-              const out = (usage.output_tokens as number) ?? 0;
-              const existing = outputByRequestId.get(requestId) ?? 0;
-              if (out > existing) outputByRequestId.set(requestId, out);
-            }
+            accumulateAssistantEntry(obj, toolUseSet, outputByRequestId, maxInputRef);
           }
         } catch { /* ignore malformed final line */ }
       }
 
-      inputTokens = maxInputTokens;
+      inputTokens = maxInputRef.value;
       for (const v of outputByRequestId.values()) outputTokens += v;
       toolUses = toolUseSet.size;
     } finally {
