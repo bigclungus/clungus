@@ -1107,6 +1107,26 @@ function findMostRecentTaskDir(): string | null {
 const COST_PER_INPUT_TOKEN = 0.000003;
 const COST_PER_OUTPUT_TOKEN = 0.000015;
 
+/** Extract a short human-readable name from the first line of a JSONL agent output file. */
+function extractAgentName(firstLine: string, fallback: string): string {
+  try {
+    const obj = JSON.parse(firstLine) as Record<string, unknown>;
+    const msg = (obj.message ?? {}) as Record<string, unknown>;
+    const content = msg.content ?? "";
+    if (typeof content === "string" && content.length > 0) {
+      const firstContentLine = content.split("\n").find((l) => l.trim()) ?? "";
+      const prefix = "You are BigClungus";
+      let n = firstContentLine.startsWith(prefix)
+        ? firstContentLine.slice(prefix.length).replace(/^[.,\s]+/, "")
+        : firstContentLine;
+      const breakIdx = n.search(/[.!?]\s/);
+      if (breakIdx !== -1) n = n.slice(0, breakIdx + 1);
+      return n.slice(0, 60) || fallback;
+    }
+  } catch { /* ignore */ }
+  return fallback;
+}
+
 function parseSubagentFile(fpath: string, agentId: string): SubagentInfo {
   let tokens = 0;
   let inputTokens = 0;
@@ -1128,23 +1148,9 @@ function parseSubagentFile(fpath: string, agentId: string): SubagentInfo {
       const headBytes = readSync(fd, headBuf, 0, 4096, 0);
       const headStr = headBuf.slice(0, headBytes).toString("utf-8");
       const firstLine = headStr.split("\n")[0];
+      name = extractAgentName(firstLine, name);
       try {
         const obj = JSON.parse(firstLine) as Record<string, unknown>;
-        const msg = (obj.message ?? {}) as Record<string, unknown>;
-        const content = msg.content ?? "";
-        if (typeof content === "string" && content.length > 0) {
-          // Extract a short name from first non-empty line
-          const firstContentLine = content.split("\n").find((l) => l.trim()) ?? "";
-          // Strip "You are BigClungus" prefix
-          const prefix = "You are BigClungus";
-          let n = firstContentLine.startsWith(prefix)
-            ? firstContentLine.slice(prefix.length).replace(/^[.,\s]+/, "")
-            : firstContentLine;
-          // Take up to first sentence break
-          const breakIdx = n.search(/[.!?]\s/);
-          if (breakIdx !== -1) n = n.slice(0, breakIdx + 1);
-          name = n.slice(0, 60) || name;
-        }
         if (typeof obj.timestamp === "string") startedAt = obj.timestamp;
       } catch { /* ignore */ }
 
@@ -1951,9 +1957,6 @@ tokenUsageDb.exec("CREATE INDEX IF NOT EXISTS idx_usage_session ON usage(session
 tokenUsageDb.exec("CREATE INDEX IF NOT EXISTS idx_usage_created ON usage(created_at)");
 tokenUsageDb.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_usage_agent ON usage(agent_id)");
 
-const INPUT_COST_PER_TOKEN = 0.000003;
-const OUTPUT_COST_PER_TOKEN = 0.000015;
-
 interface TokenUsageRow {
   id: number;
   session_id: string;
@@ -1990,21 +1993,10 @@ function parseSubagentTokens(fpath: string): {
       const headBytes = readSync(fd, headBuf, 0, 4096, 0);
       const headStr = headBuf.slice(0, headBytes).toString("utf-8");
       const firstLine = headStr.split("\n")[0];
+      name = extractAgentName(firstLine, name);
       try {
         const obj = JSON.parse(firstLine) as Record<string, unknown>;
         if (typeof obj.timestamp === "string") startedAt = obj.timestamp;
-        const msg = (obj.message ?? {}) as Record<string, unknown>;
-        const content = msg.content ?? "";
-        if (typeof content === "string" && content.length > 0) {
-          const firstContentLine = content.split("\n").find((l) => l.trim()) ?? "";
-          const prefix = "You are BigClungus";
-          let n = firstContentLine.startsWith(prefix)
-            ? firstContentLine.slice(prefix.length).replace(/^[.,\s]+/, "")
-            : firstContentLine;
-          const breakIdx = n.search(/[.!?]\s/);
-          if (breakIdx !== -1) n = n.slice(0, breakIdx + 1);
-          name = n.slice(0, 60);
-        }
       } catch { /* ignore */ }
 
       // Read entire file to accumulate tokens across all assistant messages
@@ -2111,8 +2103,8 @@ function restIngestTokens(res: http.ServerResponse): void {
           const { inputTokens, outputTokens, toolUses, startedAt, name } =
             parseSubagentTokens(fpath);
           const cost =
-            inputTokens * INPUT_COST_PER_TOKEN +
-            outputTokens * OUTPUT_COST_PER_TOKEN;
+            inputTokens * COST_PER_INPUT_TOKEN +
+            outputTokens * COST_PER_OUTPUT_TOKEN;
           tokenUsageDb.query(`
             INSERT OR IGNORE INTO usage
               (session_id, agent_id, agent_name, input_tokens, output_tokens, tool_uses, cost_usd, created_at)
