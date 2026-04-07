@@ -1,5 +1,5 @@
 import http from "node:http";
-import { existsSync, readFileSync, readdirSync, writeFileSync, unlinkSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync, unlinkSync, statSync, openSync, readSync, closeSync } from "node:fs";
 import { extname, join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { Database } from "bun:sqlite";
@@ -1062,6 +1062,237 @@ function restServeAgents(res: http.ServerResponse): void {
   });
   const moderator = visible.find((a) => (a as Record<string, unknown>).is_moderator) ?? null;
   jsonResponse(res, { eligible, meme, moderator });
+}
+
+// ── Native REST: GET /api/subagents — list current session subagent output files ──
+
+const SUBAGENTS_BASE = "/tmp/claude-1001/-mnt-data";
+
+interface SubagentInfo {
+  id: string;
+  name: string;
+  status: "in_progress" | "complete";
+  tokens: number;
+  toolUses: number;
+  outputPath: string;
+  startedAt: string | null;
+  lastModified: string;
+}
+
+function findMostRecentTaskDir(): string | null {
+  try {
+    const entries = readdirSync(SUBAGENTS_BASE);
+    let best: { dir: string; mtime: number } | null = null;
+    for (const entry of entries) {
+      const taskDir = join(SUBAGENTS_BASE, entry, "tasks");
+      try {
+        const st = statSync(taskDir);
+        if (st.isDirectory()) {
+          if (!best || st.mtimeMs > best.mtime) {
+            best = { dir: taskDir, mtime: st.mtimeMs };
+          }
+        }
+      } catch { /* skip */ }
+    }
+    return best?.dir ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function parseSubagentFile(fpath: string, agentId: string): SubagentInfo {
+  let tokens = 0;
+  let toolUses = 0;
+  let startedAt: string | null = null;
+  let name = agentId.slice(0, 12);
+
+  try {
+    const st = statSync(fpath);
+    const lastModified = new Date(st.mtimeMs).toISOString();
+    const thirtySecsAgo = Date.now() - 30_000;
+    const status: "in_progress" | "complete" = st.mtimeMs >= thirtySecsAgo ? "in_progress" : "complete";
+
+    // Read first ~4KB to get name/description and startedAt
+    const fd = openSync(fpath, "r");
+    try {
+      const headBuf = Buffer.alloc(4096);
+      const headBytes = readSync(fd, headBuf, 0, 4096, 0);
+      const headStr = headBuf.slice(0, headBytes).toString("utf-8");
+      const firstLine = headStr.split("\n")[0];
+      try {
+        const obj = JSON.parse(firstLine) as Record<string, unknown>;
+        const msg = (obj.message ?? {}) as Record<string, unknown>;
+        const content = msg.content ?? "";
+        if (typeof content === "string" && content.length > 0) {
+          // Extract a short name from first non-empty line
+          const firstContentLine = content.split("\n").find((l) => l.trim()) ?? "";
+          // Strip "You are BigClungus" prefix
+          const prefix = "You are BigClungus";
+          let n = firstContentLine.startsWith(prefix)
+            ? firstContentLine.slice(prefix.length).replace(/^[.,\s]+/, "")
+            : firstContentLine;
+          // Take up to first sentence break
+          const breakIdx = n.search(/[.!?]\s/);
+          if (breakIdx !== -1) n = n.slice(0, breakIdx + 1);
+          name = n.slice(0, 60) || name;
+        }
+        if (typeof obj.timestamp === "string") startedAt = obj.timestamp;
+      } catch { /* ignore */ }
+
+      // Read last ~8KB to find token usage and tool use counts
+      const tailSize = Math.min(st.size, 8192);
+      const tailBuf = Buffer.alloc(tailSize);
+      const tailBytes = readSync(fd, tailBuf, 0, tailSize, Math.max(0, st.size - tailSize));
+      const tailStr = tailBuf.slice(0, tailBytes).toString("utf-8");
+
+      for (const rawLine of tailStr.split("\n")) {
+        const line = rawLine.trim();
+        if (!line) continue;
+        try {
+          const obj = JSON.parse(line) as Record<string, unknown>;
+          const msg = (obj.message ?? {}) as Record<string, unknown>;
+          // Count tool uses
+          const msgContent = msg.content;
+          if (Array.isArray(msgContent)) {
+            for (const block of msgContent) {
+              if ((block as Record<string, unknown>).type === "tool_use") toolUses++;
+            }
+          }
+          // Extract token usage
+          const usage = (msg.usage ?? {}) as Record<string, unknown>;
+          if (usage.output_tokens !== undefined) {
+            const inp = (usage.input_tokens as number) ?? 0;
+            const out = (usage.output_tokens as number) ?? 0;
+            const cacheCreate = (usage.cache_creation_input_tokens as number) ?? 0;
+            const cacheRead = (usage.cache_read_input_tokens as number) ?? 0;
+            tokens = Math.max(tokens, inp + out + cacheCreate + cacheRead);
+          }
+        } catch { /* ignore malformed lines */ }
+      }
+    } finally {
+      closeSync(fd);
+    }
+
+    return { id: agentId, name, status, tokens, toolUses, outputPath: fpath, startedAt, lastModified };
+  } catch {
+    return {
+      id: agentId, name, status: "complete", tokens: 0, toolUses: 0,
+      outputPath: fpath, startedAt: null, lastModified: new Date().toISOString(),
+    };
+  }
+}
+
+function restServeSubagents(res: http.ServerResponse): void {
+  const taskDir = findMostRecentTaskDir();
+  if (!taskDir) {
+    jsonResponse(res, []);
+    return;
+  }
+  const result: SubagentInfo[] = [];
+  try {
+    const files = readdirSync(taskDir).filter((f) => f.endsWith(".output"));
+    const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
+    for (const fname of files) {
+      const fpath = join(taskDir, fname);
+      try {
+        const st = statSync(fpath);
+        if (st.mtimeMs < twoHoursAgo) continue;
+        const agentId = fname.slice(0, -7); // strip .output
+        result.push(parseSubagentFile(fpath, agentId));
+      } catch { /* skip */ }
+    }
+  } catch { /* skip */ }
+  result.sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
+  jsonResponse(res, result);
+}
+
+async function restStreamSubagent(req: http.IncomingMessage, res: http.ServerResponse, outputPath: string): Promise<void> {
+  if (!outputPath || !outputPath.startsWith("/tmp/claude-1001/-mnt-data/")) {
+    res.writeHead(400, { "Content-Type": "text/plain" });
+    res.end("Invalid path");
+    return;
+  }
+  if (!existsSync(outputPath)) {
+    res.writeHead(404, { "Content-Type": "text/plain" });
+    res.end("File not found");
+    return;
+  }
+
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    "Connection": "keep-alive",
+    "Access-Control-Allow-Origin": "*",
+  });
+
+  let offset = 0;
+  let lastChangeAt = Date.now();
+  const IDLE_TIMEOUT_MS = 30_000;
+  const POLL_INTERVAL_MS = 500;
+
+  const send = (line: string) => {
+    try {
+      res.write(`data: ${line}\n\n`);
+    } catch { /* client disconnected */ }
+  };
+
+  // Send existing content
+  try {
+    const fd = openSync(outputPath, "r");
+    try {
+      const buf = Buffer.alloc(65536);
+      let bytes: number;
+      let accumulated = "";
+      while ((bytes = readSync(fd, buf, 0, buf.length, offset)) > 0) {
+        offset += bytes;
+        accumulated += buf.slice(0, bytes).toString("utf-8");
+      }
+      // Send line by line
+      const lines = accumulated.split("\n");
+      for (const line of lines) {
+        if (line.trim()) send(line);
+      }
+    } finally {
+      closeSync(fd);
+    }
+  } catch { /* file disappeared */ }
+
+  // Poll for new content
+  const cleanup = () => {
+    clearInterval(timer);
+  };
+
+  req.on("close", cleanup);
+  req.on("error", cleanup);
+
+  const timer = setInterval(() => {
+    if (Date.now() - lastChangeAt > IDLE_TIMEOUT_MS) {
+      cleanup();
+      try { res.end(); } catch { /* ignore */ }
+      return;
+    }
+    try {
+      const st = statSync(outputPath);
+      if (st.size <= offset) return;
+      const fd = openSync(outputPath, "r");
+      try {
+        const buf = Buffer.alloc(65536);
+        let bytes: number;
+        let accumulated = "";
+        while ((bytes = readSync(fd, buf, 0, buf.length, offset)) > 0) {
+          offset += bytes;
+          accumulated += buf.slice(0, bytes).toString("utf-8");
+          lastChangeAt = Date.now();
+        }
+        const lines = accumulated.split("\n");
+        for (const line of lines) {
+          if (line.trim()) send(line);
+        }
+      } finally {
+        closeSync(fd);
+      }
+    } catch { /* file may have disappeared */ }
+  }, POLL_INTERVAL_MS);
 }
 
 function restServeCongressIdentities(res: http.ServerResponse): void {
@@ -3039,6 +3270,19 @@ const server = http.createServer(async (req, res) => {
     // GET /api/agents — public
     if (pathname === "/api/agents" && req.method === "GET") {
       restServeAgents(res);
+      return;
+    }
+
+    // GET /api/subagents — list current session subagent output files (public)
+    if (pathname === "/api/subagents" && req.method === "GET") {
+      restServeSubagents(res);
+      return;
+    }
+
+    // GET /api/subagents/stream?path=<encoded-path> — SSE tail of an output file (public)
+    if (pathname === "/api/subagents/stream" && req.method === "GET") {
+      const outputPath = url.searchParams.get("path") ?? "";
+      await restStreamSubagent(req, res, outputPath);
       return;
     }
 

@@ -370,13 +370,14 @@ HTML = r"""<!DOCTYPE html>
       flex-direction: column;
       overflow: hidden;
     }
+    /* Subagent grid panel */
     #agents-header {
       padding: 8px 14px;
-      color: #e94560;
+      color: #4ecca3;
       font-size: 11px;
       font-weight: bold;
       border-bottom: 1px solid #2a2a4e;
-      border-left: 3px solid #e94560;
+      border-left: 3px solid #4ecca3;
       flex-shrink: 0;
       letter-spacing: 0.05em;
       text-transform: uppercase;
@@ -385,271 +386,116 @@ HTML = r"""<!DOCTYPE html>
       gap: 8px;
       background: #0d1117;
     }
-    #agents-header .panel-refresh {
+    #agents-token-total {
       margin-left: auto;
-      cursor: pointer;
-      color: #555;
-      font-size: 13px;
-      line-height: 1;
-      padding: 0 2px;
+      color: #4ecca3;
+      font-size: 10px;
+      font-weight: normal;
       text-transform: none;
       letter-spacing: 0;
-      font-weight: normal;
-      user-select: none;
+      opacity: 0.8;
     }
-    #agents-header .panel-refresh:hover { color: #e94560; }
-    #gh-tasks-panel {
-      flex-shrink: 0;
-      border-bottom: 2px solid #2a2a4e;
-      display: flex;
-      flex-direction: column;
-      max-height: 55%;
-      overflow: hidden;
-    }
-    #gh-tasks-header {
-      padding: 8px 14px;
-      color: #58a6ff;
-      font-size: 11px;
-      font-weight: bold;
-      border-bottom: 1px solid #2a2a4e;
-      border-left: 3px solid #58a6ff;
-      flex-shrink: 0;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: #0d1117;
-    }
-    #gh-tasks-refresh {
-      margin-left: auto;
-      cursor: pointer;
-      color: #555;
-      font-size: 13px;
-      line-height: 1;
-      padding: 0 2px;
-      user-select: none;
-    }
-    #gh-tasks-refresh:hover { color: #58a6ff; }
-    #gh-tasks-list {
-      overflow-y: auto;
-      padding: 6px;
-      background: #0d0d1a;
-    }
-    #gh-tasks-list::-webkit-scrollbar { width: 4px; }
-    #gh-tasks-list::-webkit-scrollbar-track { background: #0d0d1a; }
-    #gh-tasks-list::-webkit-scrollbar-thumb { background: #58a6ff; border-radius: 2px; }
-    .gh-group-label {
-      color: #555;
-      font-size: 9px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      padding: 4px 4px 2px;
-      font-weight: bold;
-    }
-    .gh-item {
-      background: #111122;
-      border: 1px solid #1e2236;
-      border-radius: 3px;
-      padding: 5px 8px;
-      margin-bottom: 4px;
-      font-size: 10px;
-      display: flex;
-      align-items: flex-start;
-      gap: 6px;
-    }
-    .gh-item:hover { border-color: #58a6ff; }
-    .gh-badge {
-      font-size: 9px;
-      border-radius: 3px;
-      padding: 1px 5px;
-      font-weight: bold;
-      flex-shrink: 0;
-      margin-top: 1px;
-    }
-    .gh-badge.inprogress { background: #7c3aed22; color: #a78bfa; border: 1px solid #7c3aed; }
-    .gh-badge.todo { background: #1e3a5f22; color: #58a6ff; border: 1px solid #1e3a5f; }
-    .gh-badge.done { background: #14532d22; color: #4caf50; border: 1px solid #14532d; }
-    .gh-badge.other { background: #3a2a0022; color: #f0c040; border: 1px solid #3a2a00; }
-    .gh-title {
-      flex: 1;
-      color: #c0c0d0;
-      line-height: 1.4;
-      overflow: hidden;
-    }
-    .gh-title a {
-      color: #c0c0d0;
-      text-decoration: none;
-    }
-    .gh-title a:hover { color: #58a6ff; text-decoration: underline; }
-    .gh-age {
-      color: #444;
-      font-size: 9px;
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
-    .gh-user-badge {
-      font-size: 9px;
-      color: #f0c040;
-      border: 1px solid #3a3000;
-      background: #2a2000;
-      border-radius: 3px;
-      padding: 1px 5px;
-      flex-shrink: 0;
-      font-weight: bold;
-      white-space: nowrap;
-    }
-    .gh-summary {
-      color: #555;
-      font-size: 9px;
-      margin-top: 3px;
-      line-height: 1.4;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .gh-item-meta {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
-      margin-top: 3px;
-    }
-    .gh-empty {
-      color: #444;
-      font-size: 11px;
-      text-align: center;
-      padding: 16px 8px;
-    }
-    .gh-done-toggle {
-      color: #444;
-      font-size: 9px;
-      cursor: pointer;
-      text-align: center;
-      padding: 3px;
-    }
-    .gh-done-toggle:hover { color: #58a6ff; }
     #agents-list {
       flex: 1;
       overflow-y: auto;
       padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
     #agents-list::-webkit-scrollbar { width: 4px; }
-    #agents-list::-webkit-scrollbar-track { background: #1a1a2e; }
-    #agents-list::-webkit-scrollbar-thumb { background: #e94560; border-radius: 2px; }
+    #agents-list::-webkit-scrollbar-track { background: #0d1117; }
+    #agents-list::-webkit-scrollbar-thumb { background: #4ecca3; border-radius: 2px; }
     .xterm-viewport::-webkit-scrollbar { width: 4px; }
     .xterm-viewport::-webkit-scrollbar-track { background: #1a1a2e; }
-    .xterm-viewport::-webkit-scrollbar-thumb { background: #e94560; border-radius: 2px; }
-    .task-card {
-      background: #0d0d1a;
-      border: 1px solid #2a2a4e;
-      border-radius: 4px;
-      padding: 8px 10px;
-      margin-bottom: 6px;
-      font-size: 11px;
-    }
-    .task-card:hover { border-color: #e94560; }
-    .task-top {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-bottom: 4px;
-    }
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-    .dot.running { background: #f0c040; box-shadow: 0 0 4px #f0c040; }
-    .dot.completed { background: #4caf50; }
-    .task-id {
-      color: #c0c0d0;
-      font-weight: bold;
-      font-size: 11px;
-      flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .task-age {
-      color: #555;
-      font-size: 10px;
-      flex-shrink: 0;
-    }
-    .task-description {
-      color: #aaa;
-      font-size: 11px;
-      margin-bottom: 4px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .task-requester {
-      color: #6b5ce7;
-      font-size: 10px;
-      flex-shrink: 0;
-    }
-    .task-summary {
-      color: #777;
-      font-size: 10px;
-      line-height: 1.4;
-      word-break: break-all;
-      white-space: pre-wrap;
-      max-height: 48px;
-      overflow: hidden;
-    }
-    .task-card {
-      cursor: pointer;
-    }
-    .task-card.expanded {
-      border-color: #e94560;
-    }
-    .task-expand {
-      display: none;
-      margin-top: 8px;
-      background: #060610;
-      border: 1px solid #2a2a4e;
-      border-radius: 3px;
-      padding: 8px;
-      max-height: 300px;
-      overflow-y: auto;
-      font-size: 10px;
-      color: #bbb;
-      white-space: pre-wrap;
-      word-break: break-all;
-      line-height: 1.5;
-    }
-    .task-expand::-webkit-scrollbar { width: 4px; }
-    .task-expand::-webkit-scrollbar-track { background: #0d0d1a; }
-    .task-expand::-webkit-scrollbar-thumb { background: #e94560; border-radius: 2px; }
-    .task-expand.visible { display: block; }
-    .task-expand-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
-      color: #e94560;
-      font-size: 10px;
-      font-weight: bold;
-    }
-    .task-expand-close {
-      cursor: pointer;
-      padding: 0 4px;
-      color: #e94560;
-      font-size: 13px;
-      line-height: 1;
-    }
-    .task-expand-close:hover { color: #fff; }
+    .xterm-viewport::-webkit-scrollbar-thumb { background: #4ecca3; border-radius: 2px; }
     #agents-empty {
       color: #444;
       font-size: 11px;
       text-align: center;
       padding: 24px 8px;
     }
+    /* Subagent cards */
+    .sa-card {
+      background: #0d1117;
+      border: 1px solid #1e2a3a;
+      border-radius: 4px;
+      padding: 8px 10px;
+      font-size: 11px;
+      flex-shrink: 0;
+      transition: opacity 0.3s;
+    }
+    .sa-card:hover { border-color: #4ecca3; }
+    .sa-card.done { opacity: 0.65; }
+    .sa-card.done:hover { opacity: 1; }
+    .sa-top {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 5px;
+    }
+    .sa-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .sa-dot.in_progress {
+      background: #f0c040;
+      box-shadow: 0 0 5px #f0c040;
+      animation: pulse 1.5s infinite;
+    }
+    .sa-dot.complete { background: #4ecca3; }
+    .sa-dot.failed { background: #e94560; }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 3px #f0c040; }
+      50% { box-shadow: 0 0 8px #f0c040; }
+    }
+    .sa-name {
+      color: #c0c0d0;
+      font-weight: bold;
+      font-size: 10px;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .sa-age {
+      color: #444;
+      font-size: 9px;
+      flex-shrink: 0;
+    }
+    .sa-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 5px;
+      font-size: 9px;
+      color: #555;
+    }
+    .sa-tokens {
+      color: #4ecca3;
+      font-weight: bold;
+    }
+    .sa-tools { color: #a78bfa; }
+    .sa-output {
+      background: #060a10;
+      border: 1px solid #1a2232;
+      border-radius: 3px;
+      padding: 5px 7px;
+      max-height: 180px;
+      overflow-y: auto;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 9px;
+      color: #8899aa;
+      white-space: pre-wrap;
+      word-break: break-all;
+      line-height: 1.45;
+    }
+    .sa-output::-webkit-scrollbar { width: 3px; }
+    .sa-output::-webkit-scrollbar-track { background: #060a10; }
+    .sa-output::-webkit-scrollbar-thumb { background: #4ecca3; border-radius: 2px; }
+    .sa-output-line { display: block; }
     /* Action button/link shared ghost style */
     #graph-link, #edit-claude-link, #restart-btn {
       color: #8b949e;
@@ -750,18 +596,12 @@ HTML = r"""<!DOCTYPE html>
   <div id="main">
     <div id="terminal"></div>
     <div id="agents">
-      <div id="gh-tasks-panel">
-        <div id="gh-tasks-header">
-          <span id="gh-tasks-header-text">&#x1F3AF; Goals</span>
-          <span id="gh-tasks-refresh" title="Refresh">&#x21BB;</span>
-        </div>
-        <div id="gh-tasks-list">
-          <div class="gh-empty">Loading...</div>
-        </div>
+      <div id="agents-header">
+        &#x26A1; Subagents
+        <span id="agents-token-total"></span>
       </div>
-      <div id="agents-header">&#x26A1; Activity</div>
       <div id="agents-list">
-        <div id="agents-empty">No recent tasks</div>
+        <div id="agents-empty">No active subagents</div>
       </div>
     </div>
   </div>
@@ -816,8 +656,15 @@ HTML = r"""<!DOCTYPE html>
     }
     connect();
 
-    // Tasks panel
-    function ghRelativeTime(isoStr) {
+    // ── Subagent grid ──────────────────────────────────────────────────────────
+
+    const CLUNGER_BASE = 'http://localhost:8081';
+
+    function escHtml(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function relativeTime(isoStr) {
       if (!isoStr) return '';
       const secs = Math.floor((Date.now() - new Date(isoStr).getTime()) / 1000);
       if (secs < 60) return secs + 's ago';
@@ -826,282 +673,205 @@ HTML = r"""<!DOCTYPE html>
       return Math.floor(secs / 86400) + 'd ago';
     }
 
-    function ghBadgeClass(status) {
-      const s = (status || '').toLowerCase();
-      if (s === 'in progress') return 'inprogress';
-      if (s === 'todo') return 'todo';
-      if (s === 'done') return 'done';
-      return 'other';
+    function fmtTokens(n) {
+      if (!n) return '0';
+      if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+      if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+      return String(n);
     }
 
-    let ghDoneExpanded = false;
+    // Maps agentId → { card, outputEl, sse, lines, lastLineCount }
+    const agentCards = new Map();
+    // Maps agentId → EventSource
+    const agentStreams = new Map();
 
-    function renderGhTasks(items) {
-      const list = document.getElementById('gh-tasks-list');
-      const headerText = document.getElementById('gh-tasks-header-text');
-
-      const goals = items || [];
-
-      // Update header count
-      if (headerText) {
-        headerText.textContent = goals.length > 0
-          ? `\uD83C\uDFAF Goals (${goals.length})`
-          : `\uD83C\uDFAF Goals`;
-      }
-
-      if (!goals.length) {
-        list.innerHTML = '<div class="gh-empty">No tasks yet</div>';
-        return;
-      }
-
-      const groups = { 'In Progress': [], 'Todo': [], 'Done': [], 'Stale': [], 'Failed': [], '_other': [] };
-      for (const item of goals) {
-        const s = item.status || 'No Status';
-        if (s === 'In Progress') groups['In Progress'].push(item);
-        else if (s === 'Todo') groups['Todo'].push(item);
-        else if (s === 'Done') groups['Done'].push(item);
-        else if (s === 'Stale') groups['Stale'].push(item);
-        else if (s === 'Failed') groups['Failed'].push(item);
-        else groups['_other'].push(item);
-      }
-
-      let html = '';
-
-      function renderGoalGroup(label, groupItems, badgeCls) {
-        if (!groupItems.length) return '';
-        let out = `<div class="gh-group-label">${escHtml(label)} (${groupItems.length})</div>`;
-        for (const item of groupItems) {
-          const age = ghRelativeTime(item.updatedAt || item.createdAt);
-          const rawTitle = item.title || '';
-          const shortTitle = rawTitle.length > 60 ? rawTitle.slice(0, 60) + '\u2026' : rawTitle;
-          const titleHtml = item.url
-            ? `<a href="${escHtml(item.url)}" target="_blank">${escHtml(shortTitle)}</a>`
-            : escHtml(shortTitle);
-          const userBadge = item.discord_user
-            ? `<span class="gh-user-badge">@${escHtml(item.discord_user)}</span>`
-            : '';
-          const rawSummary = (item.summary || '').replace(/\s+/g, ' ').trim();
-          const shortSummary = rawSummary.length > 80 ? rawSummary.slice(0, 80) + '\u2026' : rawSummary;
-          const summaryHtml = shortSummary
-            ? `<div class="gh-summary">${escHtml(shortSummary)}</div>`
-            : '';
-          out += `<div class="gh-item" style="flex-direction:column; align-items:stretch;">
-            <div style="display:flex; align-items:center; gap:6px;">
-              <span class="gh-badge ${badgeCls}">${escHtml(item.status || '?')}</span>
-              <span class="gh-title" style="flex:1;">${titleHtml}</span>
-              <span class="gh-age">${escHtml(age)}</span>
-            </div>
-            <div class="gh-item-meta">${userBadge}</div>
-            ${summaryHtml}
-          </div>`;
-        }
-        return out;
-      }
-
-      html += renderGoalGroup('In Progress', groups['In Progress'], 'inprogress');
-      html += renderGoalGroup('Todo', groups['Todo'], 'todo');
-      html += renderGoalGroup('Stale', groups['Stale'], 'other');
-      html += renderGoalGroup('Failed', groups['Failed'], 'other');
-      if (groups['_other'].length) html += renderGoalGroup('Other', groups['_other'], 'other');
-
-      // Done: collapsed by default, show last 5
-      if (groups['Done'].length) {
-        const shown = ghDoneExpanded ? groups['Done'] : groups['Done'].slice(0, 5);
-        html += renderGoalGroup('Done', shown, 'done');
-        if (groups['Done'].length > 5) {
-          const label = ghDoneExpanded
-            ? '\u25B2 collapse done'
-            : `\u25BC show all ${groups['Done'].length} done`;
-          html += `<div class="gh-done-toggle" id="gh-done-toggle">${label}</div>`;
-        }
-      }
-
-      list.innerHTML = html;
-
-      const toggle = document.getElementById('gh-done-toggle');
-      if (toggle) {
-        toggle.addEventListener('click', () => {
-          ghDoneExpanded = !ghDoneExpanded;
-          renderGhTasks(lastGhItems);
-        });
-      }
-    }
-
-    let lastGhItems = null;
-
-    async function pollGhTasks() {
+    function parseOutputLine(rawLine) {
+      // Each line is a JSONL entry; extract human-readable text from it
+      const line = rawLine.trim();
+      if (!line) return null;
       try {
-        const resp = await fetch('/github-tasks');
-        if (resp.ok) {
-          lastGhItems = await resp.json();
-          renderGhTasks(lastGhItems);
-        }
-      } catch (e) {
-        // silently ignore
-      }
-    }
+        const obj = JSON.parse(line);
+        const type = obj.type;
+        const msg = obj.message || {};
+        const msgContent = msg.content;
 
-    document.getElementById('gh-tasks-refresh').addEventListener('click', () => {
-      if (window.GCSounds) GCSounds.click();
-      pollGhTasks();
-    });
-
-    pollGhTasks();
-    setInterval(pollGhTasks, 15000);
-
-    // Agent task panel
-    function relativeTime(mtime) {
-      const secs = Math.floor(Date.now() / 1000) - mtime;
-      if (secs < 60) return secs + 's ago';
-      if (secs < 3600) return Math.floor(secs / 60) + 'm ago';
-      return Math.floor(secs / 3600) + 'h ago';
-    }
-
-    function stripAnsi(str) {
-      return str.replace(/\x1B\[[0-9;]*[mGKHF]/g, '').replace(/\x1B\][^\x07]*\x07/g, '');
-    }
-
-    function escHtml(s) {
-      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    }
-
-    const expandedCards = new Set();
-
-    async function toggleCardExpand(card) {
-      const agentId = card.dataset.id;
-      const expandEl = card.querySelector('.task-expand');
-      if (!expandEl) return;
-
-      if (expandedCards.has(agentId)) {
-        expandedCards.delete(agentId);
-        card.classList.remove('expanded');
-        expandEl.classList.remove('visible');
-        return;
-      }
-
-      expandedCards.add(agentId);
-      card.classList.add('expanded');
-      expandEl.classList.add('visible');
-
-      const contentEl = expandEl.querySelector('.task-expand-content');
-      if (contentEl && contentEl.dataset.loaded !== 'true') {
-        contentEl.textContent = 'Loading...';
-        try {
-          const resp = await fetch('/task-output/' + agentId);
-          if (resp.ok) {
-            const text = await resp.text();
-            contentEl.textContent = stripAnsi(text).trim() || '(empty)';
-          } else {
-            contentEl.textContent = 'Error: ' + resp.status;
+        if (type === 'assistant' && Array.isArray(msgContent)) {
+          const parts = [];
+          for (const block of msgContent) {
+            if (block.type === 'text' && block.text) {
+              parts.push(block.text.trim());
+            } else if (block.type === 'tool_use') {
+              const inp = block.input || {};
+              const desc = inp.description || inp.command || '';
+              parts.push('[' + (block.name || 'tool') + '] ' + (desc ? desc.slice(0, 80) : ''));
+            }
           }
-        } catch (e) {
-          contentEl.textContent = 'Fetch error: ' + e.message;
+          if (parts.length) return parts.join(' | ').slice(0, 120);
         }
-        contentEl.dataset.loaded = 'true';
-        // Scroll to bottom of output
-        expandEl.scrollTop = expandEl.scrollHeight;
-      }
+
+        if (type === 'user' && Array.isArray(msgContent)) {
+          for (const block of msgContent) {
+            if (block.type === 'tool_result') {
+              const c = Array.isArray(block.content) ? block.content[0]?.text : block.content;
+              if (typeof c === 'string' && c.trim()) {
+                return '\u21aa ' + c.trim().slice(0, 120);
+              }
+            }
+          }
+        }
+
+        // First user message — show task prompt snippet
+        if (type === 'user' && typeof msgContent === 'string' && msgContent.trim()) {
+          return msgContent.trim().slice(0, 120);
+        }
+      } catch { /* ignore */ }
+      return null;
     }
 
-    function renderTasks(tasks) {
+    function startStream(agentId, outputPath, outputEl) {
+      if (agentStreams.has(agentId)) return;
+      const url = CLUNGER_BASE + '/api/subagents/stream?path=' + encodeURIComponent(outputPath);
+      const sse = new EventSource(url);
+      agentStreams.set(agentId, sse);
+
+      let lineBuffer = agentCards.get(agentId)?.lines || [];
+
+      sse.onmessage = (e) => {
+        const text = parseOutputLine(e.data);
+        if (!text) return;
+        lineBuffer.push(text);
+        // Keep last 200 lines
+        if (lineBuffer.length > 200) lineBuffer = lineBuffer.slice(-200);
+        const cardState = agentCards.get(agentId);
+        if (cardState) cardState.lines = lineBuffer;
+        // Re-render output pane
+        renderOutputPane(outputEl, lineBuffer);
+      };
+
+      sse.onerror = () => {
+        sse.close();
+        agentStreams.delete(agentId);
+      };
+    }
+
+    function renderOutputPane(outputEl, lines) {
+      const atBottom = outputEl.scrollHeight - outputEl.scrollTop <= outputEl.clientHeight + 20;
+      outputEl.innerHTML = lines.map(l => `<span class="sa-output-line">${escHtml(l)}</span>`).join('\n');
+      if (atBottom) outputEl.scrollTop = outputEl.scrollHeight;
+    }
+
+    function makeCard(agent) {
+      const card = document.createElement('div');
+      const statusClass = agent.status === 'in_progress' ? 'in_progress' : 'complete';
+      card.className = 'sa-card' + (agent.status === 'complete' ? ' done' : '');
+      card.dataset.id = agent.id;
+
+      const nameShort = (agent.name || agent.id).slice(0, 55);
+      const age = relativeTime(agent.lastModified);
+
+      card.innerHTML = `
+        <div class="sa-top">
+          <div class="sa-dot ${statusClass}"></div>
+          <div class="sa-name" title="${escHtml(agent.name || agent.id)}">${escHtml(nameShort)}</div>
+          <div class="sa-age">${escHtml(age)}</div>
+        </div>
+        <div class="sa-meta">
+          <span class="sa-tokens">&#x25CB; ${escHtml(fmtTokens(agent.tokens))} tok</span>
+          <span class="sa-tools">&#x1F527; ${agent.toolUses} calls</span>
+        </div>
+        <div class="sa-output"></div>
+      `;
+
+      const outputEl = card.querySelector('.sa-output');
+      return { card, outputEl };
+    }
+
+    function updateCard(card, outputEl, agent) {
+      // Update status dot
+      const dot = card.querySelector('.sa-dot');
+      if (dot) {
+        dot.className = 'sa-dot ' + (agent.status === 'in_progress' ? 'in_progress' : 'complete');
+      }
+      // Update fade
+      if (agent.status === 'complete') card.classList.add('done');
+      else card.classList.remove('done');
+      // Update meta
+      const tokEl = card.querySelector('.sa-tokens');
+      if (tokEl) tokEl.textContent = '\u25CB ' + fmtTokens(agent.tokens) + ' tok';
+      const toolEl = card.querySelector('.sa-tools');
+      if (toolEl) toolEl.textContent = '\uD83D\uDD27 ' + agent.toolUses + ' calls';
+      // Update age
+      const ageEl = card.querySelector('.sa-age');
+      if (ageEl) ageEl.textContent = relativeTime(agent.lastModified);
+    }
+
+    function renderSubagents(agents) {
       const list = document.getElementById('agents-list');
-      const empty = document.getElementById('agents-empty');
-      if (!tasks || tasks.length === 0) {
-        empty.style.display = '';
-        // Remove any existing cards
-        Array.from(list.querySelectorAll('.task-card')).forEach(c => c.remove());
+      const emptyEl = document.getElementById('agents-empty');
+
+      // Filter out hook_* and very short IDs with no data
+      const interesting = agents.filter(a => !a.id.startsWith('hook_') && a.tokens > 0 || a.status === 'in_progress');
+
+      // Update token total
+      const totalTokens = interesting.reduce((s, a) => s + (a.tokens || 0), 0);
+      const totalEl = document.getElementById('agents-token-total');
+      if (totalEl) totalEl.textContent = fmtTokens(totalTokens) + ' tok total';
+
+      if (!interesting.length) {
+        emptyEl.style.display = '';
+        // Remove stale cards
+        for (const [id, state] of agentCards.entries()) {
+          state.card.remove();
+          agentCards.delete(id);
+          const sse = agentStreams.get(id);
+          if (sse) { sse.close(); agentStreams.delete(id); }
+        }
         return;
       }
-      empty.style.display = 'none';
-
-      // Build a map of current task ids in DOM
-      const existing = {};
-      list.querySelectorAll('.task-card').forEach(c => { existing[c.dataset.id] = c; });
+      emptyEl.style.display = 'none';
 
       const seen = new Set();
-      tasks.forEach((task, idx) => {
-        seen.add(task.id);
-        let card = existing[task.id];
-        const isNew = !card;
-        if (isNew) {
-          card = document.createElement('div');
-          card.className = 'task-card';
-          card.dataset.id = task.id;
-        }
-        const summary = stripAnsi(task.summary || '').trim();
-        const requesterHtml = task.requester ? `<span class="task-requester">@${escHtml(task.requester)}</span>` : '';
-        const desc = task.description ? `<div class="task-description">${task.description}${requesterHtml}</div>` : '';
-        const wasExpanded = expandedCards.has(task.id);
-        // Preserve loaded content across re-renders
-        let loadedContent = null;
-        let wasLoaded = false;
-        if (!isNew) {
-          const old = card.querySelector('.task-expand-content');
-          if (old && old.dataset.loaded === 'true') {
-            loadedContent = old.textContent;
-            wasLoaded = true;
-          }
-        }
-        card.innerHTML = `
-          ${desc}
-          <div class="task-top">
-            <div class="dot ${task.status}"></div>
-            <div class="task-id">${task.id.substring(0, 8)}</div>
-            <div class="task-age">${relativeTime(task.mtime)}</div>
-          </div>
-          <div class="task-summary">${summary.substring(summary.length - 300)}</div>
-          <div class="task-expand${wasExpanded ? ' visible' : ''}">
-            <div class="task-expand-header">
-              <span>Full Output</span>
-              <span class="task-expand-close" title="Close">&times;</span>
-            </div>
-            <div class="task-expand-content"${wasLoaded ? ' data-loaded="true"' : ''}>${wasLoaded ? loadedContent.replace(/&/g,'&amp;').replace(/</g,'&lt;') : ''}</div>
-          </div>
-        `;
-        if (wasExpanded) card.classList.add('expanded');
 
-        // Close button
-        card.querySelector('.task-expand-close').addEventListener('click', (e) => {
-          e.stopPropagation();
-          expandedCards.delete(task.id);
-          card.classList.remove('expanded');
-          card.querySelector('.task-expand').classList.remove('visible');
-        });
-
-        // Card click to expand
-        if (isNew) {
-          card.addEventListener('click', () => toggleCardExpand(card));
+      for (const agent of interesting) {
+        seen.add(agent.id);
+        if (agentCards.has(agent.id)) {
+          // Update existing card
+          const state = agentCards.get(agent.id);
+          updateCard(state.card, state.outputEl, agent);
+        } else {
+          // Create new card
+          const { card, outputEl } = makeCard(agent);
+          agentCards.set(agent.id, { card, outputEl, lines: [] });
+          list.insertBefore(card, list.firstChild);
+          startStream(agent.id, agent.outputPath, outputEl);
         }
-
-        // Insert in order
-        const cards = list.querySelectorAll('.task-card');
-        if (cards.length === 0 || idx >= cards.length) {
-          list.appendChild(card);
-        } else if (cards[idx] !== card) {
-          list.insertBefore(card, cards[idx]);
-        }
-      });
+      }
 
       // Remove stale cards
-      Object.keys(existing).forEach(id => {
-        if (!seen.has(id)) existing[id].remove();
-      });
-    }
-
-    async function pollTasks() {
-      try {
-        const resp = await fetch('/tasks');
-        if (resp.ok) {
-          const tasks = await resp.json();
-          renderTasks(tasks);
+      for (const [id, state] of agentCards.entries()) {
+        if (!seen.has(id)) {
+          state.card.remove();
+          agentCards.delete(id);
+          const sse = agentStreams.get(id);
+          if (sse) { sse.close(); agentStreams.delete(id); }
         }
-      } catch (e) {
-        // silently ignore
       }
     }
 
-    pollTasks();
-    setInterval(pollTasks, 3000);
+    async function pollSubagents() {
+      try {
+        const resp = await fetch(CLUNGER_BASE + '/api/subagents');
+        if (resp.ok) {
+          const agents = await resp.json();
+          renderSubagents(agents);
+        }
+      } catch (e) {
+        // silently ignore network errors
+      }
+    }
+
+    pollSubagents();
+    setInterval(pollSubagents, 3000);
 
     // Health bar
     function setBar(barId, valId, pct, label) {
