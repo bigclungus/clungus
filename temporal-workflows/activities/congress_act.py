@@ -38,6 +38,7 @@ from persona.v1.persona_pb2 import PostVerdictRequest  # noqa: E402
 
 from .constants import (
     AGENTS_DIR,
+    BASE_DIR,
     CLUNGER_BASE_URL,
     CLUNGER_DIR,
     DISCORD_API,
@@ -1515,7 +1516,7 @@ def _codebase_search(topic_text: str) -> str:
                         except Exception as exc:
                             logger.debug("snippet grep failed for %s: %s", fpath, exc)
                             snippet = ""
-                        rel_path = os.path.relpath(fpath, "/mnt/data")
+                        rel_path = os.path.relpath(fpath, BASE_DIR)
                         found_files[fpath] = (rel_path, snippet)
                     if len(found_files) >= 8:
                         break

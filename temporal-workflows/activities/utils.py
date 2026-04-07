@@ -5,12 +5,14 @@ import os
 
 import aiohttp
 
+from .constants import BASE_DIR, TEMPORAL_WORKFLOWS_DIR
+
 DISCORD_TIMEOUT = aiohttp.ClientTimeout(total=10)
 
 # Standard .env search paths
 _ENV_PATHS = [
-    "/mnt/data/temporal-workflows/.env",
-    "/mnt/data/.env",
+    TEMPORAL_WORKFLOWS_DIR + "/.env",
+    BASE_DIR + "/.env",
     os.path.expanduser("~/.claude/channels/discord/.env"),
 ]
 

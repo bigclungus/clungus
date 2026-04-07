@@ -32,7 +32,8 @@ from common import (
 
 # ---- Constants ---------------------------------------------------------------
 
-JSONL_GLOB = "/home/clungus/.claude/projects/*/*.jsonl"
+_HOME_DIR = os.path.expanduser("~")
+JSONL_GLOB = _HOME_DIR + "/.claude/projects/*/*.jsonl"
 BATCH_SIZE = 100
 
 IMAGE_MIMES = {"image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp"}
