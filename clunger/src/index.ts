@@ -1190,7 +1190,15 @@ function restServeSubagents(res: http.ServerResponse): void {
   }
   const result: SubagentInfo[] = [];
   try {
-    const files = readdirSync(taskDir).filter((f) => f.endsWith(".output"));
+    // Only include real Claude subagent output files — their IDs are 17-char hex strings.
+    // Hook scripts (hook_XXXXXXX) and background shell scripts (short alphanumeric IDs)
+    // produce plain-text output, not JSONL, and are not real subagents.
+    const SUBAGENT_ID_RE = /^[0-9a-f]{17}$/;
+    const files = readdirSync(taskDir).filter((f) => {
+      if (!f.endsWith(".output")) return false;
+      const id = f.slice(0, -7);
+      return SUBAGENT_ID_RE.test(id);
+    });
     const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
     for (const fname of files) {
       const fpath = join(taskDir, fname);

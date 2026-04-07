@@ -10,8 +10,10 @@ args = [
     "--dangerously-skip-permissions",
 #    "--dangerously-load-development-channels", "plugin:discord-clungus@inline",
     "--dangerously-load-development-channels", "server:omni",
-    "--model", "qwen/qwen3.6-plus:free",
-#    "--model", "minimax/minimax-m2.7"
+#    "--model", "qwen/qwen3.6-plus:free",
+#    "--model", "minimax/minimax-m2.7",
+    "--model", "sonnet",
+    "--resume", "38879609-c8bd-47f5-af26-6210d2de543c"
 ]
 
 pid, fd = pty.fork()
@@ -74,8 +76,8 @@ try:
                 break
             os.write(fd, data)
 
-        # After 15s, send Enter to dismiss the prompt, then initial message
-        if not entered and time.time() - start > 15:
+        # After 5s, send Enter to dismiss the prompt, then initial message
+        if not entered and time.time() - start > 5:
             os.write(fd, b"\r")
             time.sleep(5)
             os.write(fd, b"you have awoken\r")

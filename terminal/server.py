@@ -658,7 +658,7 @@ HTML = r"""<!DOCTYPE html>
 
     // ── Subagent grid ──────────────────────────────────────────────────────────
 
-    const CLUNGER_BASE = 'http://localhost:8081';
+    const CLUNGER_BASE = 'https://clung.us';
 
     function escHtml(s) {
       return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
