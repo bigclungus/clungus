@@ -186,6 +186,13 @@ def is_notable(message: str, is_tagged: bool, is_first: bool) -> tuple[bool, str
     if first_line.startswith("simplify:"):
         return False, ""
 
+    # Skip individual congress/trial/session commits (e.g. "add congress session 42 thread")
+    # Only system-level changes go on the timeline, not per-session entries.
+    if re.search(r"\bcongress-\d+\b|\btrial-\d+\b|\bsession-\d+\b", first_line, re.IGNORECASE):
+        return False, ""
+    if re.search(r"\bsession\b.*\d+|\d+.*\bsession\b", first_line, re.IGNORECASE):
+        return False, ""
+
     # Skip conventional commit prefixes for non-feature work
     lower = first_line.lower()
     for prefix in ("fix:", "refactor:", "chore:", "docs:", "style:", "test:", "ci:", "build:", "perf:", "cleanup:"):
