@@ -1107,6 +1107,9 @@ function findMostRecentTaskDir(): string | null {
 const COST_PER_INPUT_TOKEN = 0.000003;
 const COST_PER_OUTPUT_TOKEN = 0.000015;
 
+/** Matches 17-char hex IDs used by Claude subagent output files. */
+const SUBAGENT_ID_RE = /^[0-9a-f]{17}$/;
+
 /** Extract a short human-readable name from the first line of a JSONL agent output file. */
 function extractAgentName(firstLine: string, fallback: string): string {
   try {
@@ -1224,7 +1227,6 @@ function restServeSubagents(res: http.ServerResponse): void {
     // Only include real Claude subagent output files — their IDs are 17-char hex strings.
     // Hook scripts (hook_XXXXXXX) and background shell scripts (short alphanumeric IDs)
     // produce plain-text output, not JSONL, and are not real subagents.
-    const SUBAGENT_ID_RE = /^[0-9a-f]{17}$/;
     const files = readdirSync(taskDir).filter((f) => {
       if (!f.endsWith(".output")) return false;
       const id = f.slice(0, -7);
@@ -2066,7 +2068,6 @@ function parseSubagentTokens(fpath: string): {
 }
 
 function restIngestTokens(res: http.ServerResponse): void {
-  const SUBAGENT_ID_RE = /^[0-9a-f]{17}$/;
   let ingested = 0;
   let skipped = 0;
   let errors = 0;
