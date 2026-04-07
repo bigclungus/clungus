@@ -77,6 +77,7 @@ with workflow.unsafe.imports_passed_through():
 
 _DEBATE_TIMEOUT = timedelta(minutes=3)
 _SPEECH_TIMEOUT = timedelta(minutes=3)
+_VOTE_TIMEOUT = timedelta(minutes=2)
 _SHORT_TIMEOUT = timedelta(seconds=30)
 _ALERT_TIMEOUT = timedelta(seconds=15)
 _VERDICT_TIMEOUT = timedelta(minutes=4)
@@ -447,7 +448,7 @@ class SessionWorkflow:
         debaters = await workflow.execute_activity(
             congress_preflight_check,
             args=[debaters],
-            start_to_close_timeout=timedelta(seconds=30),
+            start_to_close_timeout=_SHORT_TIMEOUT,
             retry_policy=RetryPolicy(maximum_attempts=1),
         )
 
@@ -800,7 +801,7 @@ class SessionWorkflow:
                         thread_id,
                         identity_obj.get("display_name") or identity_obj.get("name", str(identity_obj)),
                     ],
-                    start_to_close_timeout=timedelta(minutes=2),
+                    start_to_close_timeout=_VOTE_TIMEOUT,
                     schedule_to_start_timeout=_SCHEDULE_TO_START,
                     retry_policy=RetryPolicy(maximum_attempts=1),
                 )
@@ -861,7 +862,7 @@ class SessionWorkflow:
                         thread_id,
                         identity_obj.get("display_name") or identity_obj.get("name", str(identity_obj)),
                     ],
-                    start_to_close_timeout=timedelta(minutes=2),
+                    start_to_close_timeout=_VOTE_TIMEOUT,
                     schedule_to_start_timeout=_SCHEDULE_TO_START,
                     retry_policy=RetryPolicy(maximum_attempts=1),
                 )
@@ -916,7 +917,7 @@ class SessionWorkflow:
             await workflow.execute_activity(
                 congress_commit_evolutions,
                 session_id,
-                start_to_close_timeout=timedelta(minutes=2),
+                start_to_close_timeout=_VOTE_TIMEOUT,
                 schedule_to_start_timeout=_SCHEDULE_TO_START,
                 retry_policy=RetryPolicy(maximum_attempts=1),
             )
