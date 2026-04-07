@@ -4,7 +4,6 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as crypto from "crypto";
-import * as childProcess from "child_process";
 import type { AuditionWalker, WorldState } from "./protocol.ts";
 
 const AGENTS_DIR = "/mnt/data/bigclungus-meta/agents";
@@ -49,19 +48,18 @@ interface GeneratedPersona {
   description: string;
 }
 
-const CLAUDE_CLI = "/home/clungus/.local/bin/claude";
-
-async function callClaude(existingNames: string[]): Promise<GeneratedPersona> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+async function callLLM(existingNames: string[]): Promise<GeneratedPersona> {
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  const xaiKey = process.env.XAI_API_KEY;
   const prompt = getGenerationPrompt(existingNames);
 
-  if (apiKey) {
-    // Direct API call — preferred when key is available
+  if (anthropicKey) {
+    // Preferred: Anthropic Claude Haiku
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": apiKey,
+        "x-api-key": anthropicKey,
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
@@ -81,29 +79,36 @@ async function callClaude(existingNames: string[]): Promise<GeneratedPersona> {
     return parsePersonaJson(msg.content[0].text);
   }
 
-  // Fallback: use claude CLI (OAuth-based, no API key needed)
-  const text = await new Promise<string>((resolve, reject) => {
-    const proc = childProcess.spawn(
-      CLAUDE_CLI,
-      ["-p", "You generate JSON persona definitions. Return only raw JSON, no markdown.", "--output-format", "text"],
-      { stdio: ["pipe", "pipe", "pipe"] }
-    );
-    let stdout = "";
-    let stderr = "";
-    proc.stdout.on("data", (chunk: Buffer) => { stdout += chunk.toString(); });
-    proc.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString(); });
-    proc.stdin.write(prompt);
-    proc.stdin.end();
-    proc.on("close", (code) => {
-      if (code !== 0) {
-        reject(new Error(`claude CLI exited ${String(code)}: ${stderr.slice(0, 300)}`));
-      } else {
-        resolve(stdout.trim());
-      }
+  if (xaiKey) {
+    // Fallback: xAI Grok (OpenAI-compatible API)
+    console.log("[audition] ANTHROPIC_API_KEY missing, falling back to XAI_API_KEY");
+    const response = await fetch("https://api.x.ai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${xaiKey}`,
+      },
+      body: JSON.stringify({
+        model: "grok-3-mini",
+        max_tokens: 200,
+        messages: [
+          { role: "system", content: "You generate JSON persona definitions. Return only raw JSON, no markdown." },
+          { role: "user", content: prompt },
+        ],
+      }),
+      signal: AbortSignal.timeout(30_000),
     });
-  });
 
-  return parsePersonaJson(text);
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`xAI API error ${String(response.status)}: ${body.slice(0, 300)}`);
+    }
+
+    const msg = (await response.json()) as { choices: { message: { content: string } }[] };
+    return parsePersonaJson(msg.choices[0].message.content);
+  }
+
+  throw new Error("No LLM API key available (ANTHROPIC_API_KEY or XAI_API_KEY required)");
 }
 
 function parsePersonaJson(text: string): GeneratedPersona {
@@ -135,7 +140,7 @@ export async function spawnWalker(world: WorldState): Promise<AuditionWalker> {
   let persona: GeneratedPersona | null = null;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    const candidate = await callClaude(existingNames);
+    const candidate = await callLLM(existingNames);
     const candidateFirst = candidate.name.split(" ")[0].toLowerCase();
     const duplicate = existingNames.some(
       (n) => n.split(" ")[0].toLowerCase() === candidateFirst
