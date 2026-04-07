@@ -80,6 +80,7 @@ _SPEECH_TIMEOUT = timedelta(minutes=3)
 _SHORT_TIMEOUT = timedelta(seconds=30)
 _ALERT_TIMEOUT = timedelta(seconds=15)
 _VERDICT_TIMEOUT = timedelta(minutes=4)
+_SCHEDULE_TO_START = timedelta(minutes=3)
 
 
 def _resolve_flavor(input: dict) -> str:
@@ -249,7 +250,7 @@ class SessionWorkflow:
                     congress_debate,
                     args=[topic, i.get("name", str(i)), session_id, thread_id, i.get("display_name") or i.get("name", str(i)), round_num, debater_display_names, pre_debate_context],
                     start_to_close_timeout=_DEBATE_TIMEOUT,
-                    schedule_to_start_timeout=timedelta(minutes=3),
+                    schedule_to_start_timeout=_SCHEDULE_TO_START,
                     retry_policy=RetryPolicy(maximum_attempts=3),
                 )
                 for i in debaters
@@ -273,7 +274,7 @@ class SessionWorkflow:
                         congress_debate,
                         args=[topic, identity_name, session_id, thread_id, display_name, round_num, debater_display_names, pre_debate_context],
                         start_to_close_timeout=_DEBATE_TIMEOUT,
-                        schedule_to_start_timeout=timedelta(minutes=3),
+                        schedule_to_start_timeout=_SCHEDULE_TO_START,
                         retry_policy=RetryPolicy(maximum_attempts=3),
                     )
                 except Exception as exc:
@@ -300,7 +301,7 @@ class SessionWorkflow:
             congress_start,
             {"topic": topic, "discord_user": discord_user},
             start_to_close_timeout=_SHORT_TIMEOUT,
-            schedule_to_start_timeout=timedelta(minutes=3),
+            schedule_to_start_timeout=_SCHEDULE_TO_START,
             retry_policy=RetryPolicy(maximum_attempts=1),
         )
         session_id: str = session_info["session_id"]
@@ -315,7 +316,7 @@ class SessionWorkflow:
                 congress_load_session,
                 session_number,
                 start_to_close_timeout=_SHORT_TIMEOUT,
-                schedule_to_start_timeout=timedelta(minutes=3),
+                schedule_to_start_timeout=_SCHEDULE_TO_START,
                 retry_policy=RetryPolicy(maximum_attempts=1),
             )
             if existing.get("status") == "done":
@@ -344,7 +345,7 @@ class SessionWorkflow:
                         existing_vote_summary, existing_mode,
                     ],
                     start_to_close_timeout=_SHORT_TIMEOUT,
-                    schedule_to_start_timeout=timedelta(minutes=3),
+                    schedule_to_start_timeout=_SCHEDULE_TO_START,
                     retry_policy=RetryPolicy(maximum_attempts=1),
                 )
                 return {"session_id": session_id, "verdict": existing_verdict}
@@ -356,7 +357,7 @@ class SessionWorkflow:
             congress_identities,
             mode,
             start_to_close_timeout=_SHORT_TIMEOUT,
-            schedule_to_start_timeout=timedelta(minutes=3),
+            schedule_to_start_timeout=_SCHEDULE_TO_START,
             retry_policy=RetryPolicy(maximum_attempts=1),
         )
 
@@ -385,7 +386,7 @@ class SessionWorkflow:
                 congress_select_seats,
                 args=[topic, all_candidates, session_id],
                 start_to_close_timeout=_DEBATE_TIMEOUT,
-                schedule_to_start_timeout=timedelta(minutes=3),
+                schedule_to_start_timeout=_SCHEDULE_TO_START,
                 retry_policy=RetryPolicy(maximum_attempts=1),
             )
 
@@ -470,7 +471,7 @@ class SessionWorkflow:
                     congress_create_thread,
                     args=[chat_id, message_id, session_number, topic],
                     start_to_close_timeout=_SHORT_TIMEOUT,
-                    schedule_to_start_timeout=timedelta(minutes=3),
+                    schedule_to_start_timeout=_SCHEDULE_TO_START,
                     retry_policy=RetryPolicy(maximum_attempts=1),
                 )
             except ActivityError as _thread_err:
@@ -493,7 +494,7 @@ class SessionWorkflow:
                 congress_frame_topic,
                 args=[topic],
                 start_to_close_timeout=_SHORT_TIMEOUT,
-                schedule_to_start_timeout=timedelta(minutes=3),
+                schedule_to_start_timeout=_SCHEDULE_TO_START,
                 retry_policy=RetryPolicy(maximum_attempts=1),
             )
         except ActivityError as _err:
@@ -536,7 +537,7 @@ class SessionWorkflow:
                         congress_check_ibrahim,
                         args=[topic, pre_debate_context, debate_summaries, session_id],
                         start_to_close_timeout=_DEBATE_TIMEOUT,
-                        schedule_to_start_timeout=timedelta(minutes=3),
+                        schedule_to_start_timeout=_SCHEDULE_TO_START,
                         retry_policy=RetryPolicy(maximum_attempts=1),
                     )
                     signal: str = ibrahim_check.get("signal", SIGNAL_CONTINUE)
@@ -572,7 +573,7 @@ class SessionWorkflow:
                             congress_frame_topic,
                             args=[topic],
                             start_to_close_timeout=_SHORT_TIMEOUT,
-                            schedule_to_start_timeout=timedelta(minutes=3),
+                            schedule_to_start_timeout=_SCHEDULE_TO_START,
                             retry_policy=RetryPolicy(maximum_attempts=1),
                         )
                     except ActivityError as _err:
@@ -609,7 +610,7 @@ class SessionWorkflow:
                         congress_check_midpoint,
                         args=[topic, debate_summaries, session_id],
                         start_to_close_timeout=_DEBATE_TIMEOUT,
-                        schedule_to_start_timeout=timedelta(minutes=3),
+                        schedule_to_start_timeout=_SCHEDULE_TO_START,
                         retry_policy=RetryPolicy(maximum_attempts=1),
                     )
                     mid_signal: str = ibrahim_midpoint.get("signal", SIGNAL_CONTINUE)
@@ -650,7 +651,7 @@ class SessionWorkflow:
                     congress_graphiti_context,
                     args=[topic],
                     start_to_close_timeout=_SHORT_TIMEOUT,
-                    schedule_to_start_timeout=timedelta(minutes=3),
+                    schedule_to_start_timeout=_SCHEDULE_TO_START,
                     retry_policy=RetryPolicy(maximum_attempts=1),
                 )
             except ActivityError as _err:
@@ -727,14 +728,14 @@ class SessionWorkflow:
                     congress_debate,
                     args=[topic, hm_name, session_id, thread_id, hm_display, 1, None, full_context],
                     start_to_close_timeout=_DEBATE_TIMEOUT,
-                    schedule_to_start_timeout=timedelta(minutes=3),
+                    schedule_to_start_timeout=_SCHEDULE_TO_START,
                     retry_policy=RetryPolicy(maximum_attempts=3),
                 )
                 anti_task = workflow.execute_activity(
                     congress_debate,
                     args=[topic, anti_name, session_id, thread_id, anti_display, 1, None, full_context],
                     start_to_close_timeout=_DEBATE_TIMEOUT,
-                    schedule_to_start_timeout=timedelta(minutes=3),
+                    schedule_to_start_timeout=_SCHEDULE_TO_START,
                     retry_policy=RetryPolicy(maximum_attempts=3),
                 )
                 try:
@@ -765,7 +766,7 @@ class SessionWorkflow:
                         congress_debate,
                         args=[topic, hm_name, session_id, thread_id, hm_display, 1, None, synthesis_context],
                         start_to_close_timeout=_DEBATE_TIMEOUT,
-                        schedule_to_start_timeout=timedelta(minutes=3),
+                        schedule_to_start_timeout=_SCHEDULE_TO_START,
                         retry_policy=RetryPolicy(maximum_attempts=3),
                     )
                     verdict = _trim_synthesis(synthesis_text) if synthesis_text else ""
@@ -800,7 +801,7 @@ class SessionWorkflow:
                         identity_obj.get("display_name") or identity_obj.get("name", str(identity_obj)),
                     ],
                     start_to_close_timeout=timedelta(minutes=2),
-                    schedule_to_start_timeout=timedelta(minutes=3),
+                    schedule_to_start_timeout=_SCHEDULE_TO_START,
                     retry_policy=RetryPolicy(maximum_attempts=1),
                 )
                 for identity_obj in debaters
@@ -861,7 +862,7 @@ class SessionWorkflow:
                         identity_obj.get("display_name") or identity_obj.get("name", str(identity_obj)),
                     ],
                     start_to_close_timeout=timedelta(minutes=2),
-                    schedule_to_start_timeout=timedelta(minutes=3),
+                    schedule_to_start_timeout=_SCHEDULE_TO_START,
                     retry_policy=RetryPolicy(maximum_attempts=1),
                 )
                 for identity_obj in debaters
@@ -904,7 +905,7 @@ class SessionWorkflow:
                     congress_evolve,
                     args=[session_id, topic, debate_summaries],
                     start_to_close_timeout=_DEBATE_TIMEOUT,
-                    schedule_to_start_timeout=timedelta(minutes=3),
+                    schedule_to_start_timeout=_SCHEDULE_TO_START,
                     retry_policy=RetryPolicy(maximum_attempts=1),
                 )
             except ActivityError as _err:
@@ -916,7 +917,7 @@ class SessionWorkflow:
                 congress_commit_evolutions,
                 session_id,
                 start_to_close_timeout=timedelta(minutes=2),
-                schedule_to_start_timeout=timedelta(minutes=3),
+                schedule_to_start_timeout=_SCHEDULE_TO_START,
                 retry_policy=RetryPolicy(maximum_attempts=1),
             )
 
@@ -933,7 +934,7 @@ class SessionWorkflow:
             congress_finalize,
             args=[session_id, verdict, evolution_results or {}, thread_id, vote_summary or {}, mode],
             start_to_close_timeout=_SHORT_TIMEOUT,
-            schedule_to_start_timeout=timedelta(minutes=3),
+            schedule_to_start_timeout=_SCHEDULE_TO_START,
             retry_policy=RetryPolicy(maximum_attempts=3),
         )
 
@@ -947,7 +948,7 @@ class SessionWorkflow:
                     congress_create_tasks,
                     args=[session_id, session_number, topic, verdict],
                     start_to_close_timeout=_DEBATE_TIMEOUT,
-                    schedule_to_start_timeout=timedelta(minutes=3),
+                    schedule_to_start_timeout=_SCHEDULE_TO_START,
                     retry_policy=RetryPolicy(maximum_attempts=1),
                 )
             except ActivityError as _err:
@@ -961,7 +962,7 @@ class SessionWorkflow:
             congress_report,
             args=[chat_id, session_id, session_number, verdict, topic, debate_summaries, thread_id, main_channel_id, evolution_results, task_urls, vote_summary or {}, mode],
             start_to_close_timeout=_SHORT_TIMEOUT,
-            schedule_to_start_timeout=timedelta(minutes=3),
+            schedule_to_start_timeout=_SCHEDULE_TO_START,
             retry_policy=RetryPolicy(maximum_attempts=1),
         )
 
@@ -986,7 +987,7 @@ class SessionWorkflow:
             congress_identities,
             "show_trial",
             start_to_close_timeout=_SHORT_TIMEOUT,
-            schedule_to_start_timeout=timedelta(minutes=3),
+            schedule_to_start_timeout=_SCHEDULE_TO_START,
             retry_policy=RetryPolicy(maximum_attempts=1),
         )
 
@@ -1003,7 +1004,7 @@ class SessionWorkflow:
                 trial_load_defendant,
                 defendant,
                 start_to_close_timeout=_SHORT_TIMEOUT,
-                schedule_to_start_timeout=timedelta(minutes=3),
+                schedule_to_start_timeout=_SCHEDULE_TO_START,
                 retry_policy=RetryPolicy(maximum_attempts=1),
             )
 
@@ -1044,7 +1045,7 @@ class SessionWorkflow:
             trial_announce,
             args=[chat_id, message_id, defendant_display, charges, prosecutor_displays, jury_displays, advocate_display],
             start_to_close_timeout=_SHORT_TIMEOUT,
-            schedule_to_start_timeout=timedelta(minutes=3),
+            schedule_to_start_timeout=_SCHEDULE_TO_START,
             retry_policy=RetryPolicy(maximum_attempts=1),
         )
         thread_id: str = session_info["thread_id"]
@@ -1079,7 +1080,7 @@ class SessionWorkflow:
                     "",
                 ],
                 start_to_close_timeout=_SPEECH_TIMEOUT,
-                schedule_to_start_timeout=timedelta(minutes=3),
+                schedule_to_start_timeout=_SCHEDULE_TO_START,
                 retry_policy=RetryPolicy(maximum_attempts=3),
             )
             prosecution_speeches.append({"speaker": prosecutor_display, "text": speech, "role": "prosecutor"})
@@ -1111,7 +1112,7 @@ class SessionWorkflow:
                 prosecution_summary,
             ],
             start_to_close_timeout=_SPEECH_TIMEOUT,
-            schedule_to_start_timeout=timedelta(minutes=3),
+            schedule_to_start_timeout=_SCHEDULE_TO_START,
             retry_policy=RetryPolicy(maximum_attempts=3),
         )
 
@@ -1143,7 +1144,7 @@ class SessionWorkflow:
                     f"You are cross-examining {prosecutor_display}. Defense speech: {defense_speech[:400]}",
                 ],
                 start_to_close_timeout=_SPEECH_TIMEOUT,
-                schedule_to_start_timeout=timedelta(minutes=3),
+                schedule_to_start_timeout=_SCHEDULE_TO_START,
                 retry_policy=RetryPolicy(maximum_attempts=3),
             )
 
@@ -1160,7 +1161,7 @@ class SessionWorkflow:
                     f"You are being cross-examined by {defendant_display}. Their question: {cross_question[:400]}",
                 ],
                 start_to_close_timeout=_SPEECH_TIMEOUT,
-                schedule_to_start_timeout=timedelta(minutes=3),
+                schedule_to_start_timeout=_SCHEDULE_TO_START,
                 retry_policy=RetryPolicy(maximum_attempts=3),
             )
             cross_exam_speeches.append({
@@ -1197,7 +1198,7 @@ class SessionWorkflow:
                 witness_context,
             ],
             start_to_close_timeout=_SPEECH_TIMEOUT,
-            schedule_to_start_timeout=timedelta(minutes=3),
+            schedule_to_start_timeout=_SCHEDULE_TO_START,
             retry_policy=RetryPolicy(maximum_attempts=3),
         )
 
@@ -1235,7 +1236,7 @@ class SessionWorkflow:
                     full_trial_context,
                 ],
                 start_to_close_timeout=_SPEECH_TIMEOUT,
-                schedule_to_start_timeout=timedelta(minutes=3),
+                schedule_to_start_timeout=_SCHEDULE_TO_START,
                 retry_policy=RetryPolicy(maximum_attempts=3),
             )
             vote = _parse_jury_vote(vote_speech)
@@ -1268,7 +1269,7 @@ class SessionWorkflow:
                 session_id,
             ],
             start_to_close_timeout=_VERDICT_TIMEOUT,
-            schedule_to_start_timeout=timedelta(minutes=3),
+            schedule_to_start_timeout=_SCHEDULE_TO_START,
             retry_policy=RetryPolicy(maximum_attempts=3),
         )
 
@@ -1284,7 +1285,7 @@ class SessionWorkflow:
                 trial_apply_retire_verdict,
                 args=[defendant, defendant_display, mode, is_roleplay],
                 start_to_close_timeout=_SHORT_TIMEOUT,
-                schedule_to_start_timeout=timedelta(minutes=3),
+                schedule_to_start_timeout=_SCHEDULE_TO_START,
                 retry_policy=RetryPolicy(maximum_attempts=3),
             )
 
@@ -1316,7 +1317,7 @@ class SessionWorkflow:
             trial_save_session,
             args=[session_id, trial_data],
             start_to_close_timeout=_SHORT_TIMEOUT,
-            schedule_to_start_timeout=timedelta(minutes=3),
+            schedule_to_start_timeout=_SCHEDULE_TO_START,
             retry_policy=RetryPolicy(maximum_attempts=3),
         )
 
