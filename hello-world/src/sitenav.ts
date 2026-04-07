@@ -27,6 +27,7 @@
     { href: 'https://temporal.clung.us', label: 'temporal', external: true, toolHost: 'temporal.clung.us' },
     { href: 'https://terminal.clung.us/topology', label: 'topology', external: true },
     { href: 'https://clung.us/cockpit', label: 'cockpit', path: '/cockpit' },
+    { href: 'https://clung.us/costs', label: 'costs', path: '/costs' },
   ];
 
   function normalizePath(p: string): string {

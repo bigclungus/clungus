@@ -1073,6 +1073,9 @@ interface SubagentInfo {
   name: string;
   status: "in_progress" | "complete";
   tokens: number;
+  inputTokens: number;
+  outputTokens: number;
+  cost: number;
   toolUses: number;
   outputPath: string;
   startedAt: string | null;
@@ -1100,8 +1103,14 @@ function findMostRecentTaskDir(): string | null {
   }
 }
 
+// Sonnet 4.x pricing per token (not per 1k)
+const COST_PER_INPUT_TOKEN = 0.000003;
+const COST_PER_OUTPUT_TOKEN = 0.000015;
+
 function parseSubagentFile(fpath: string, agentId: string): SubagentInfo {
   let tokens = 0;
+  let inputTokens = 0;
+  let outputTokens = 0;
   let toolUses = 0;
   let startedAt: string | null = null;
   let name = agentId.slice(0, 12);
@@ -1145,6 +1154,11 @@ function parseSubagentFile(fpath: string, agentId: string): SubagentInfo {
       const tailBytes = readSync(fd, tailBuf, 0, tailSize, Math.max(0, st.size - tailSize));
       const tailStr = tailBuf.slice(0, tailBytes).toString("utf-8");
 
+      // Track the highest cumulative values seen (last turn has cumulative totals)
+      let maxTotalTokens = 0;
+      let maxInp = 0;
+      let maxOut = 0;
+
       for (const rawLine of tailStr.split("\n")) {
         const line = rawLine.trim();
         if (!line) continue;
@@ -1165,18 +1179,28 @@ function parseSubagentFile(fpath: string, agentId: string): SubagentInfo {
             const out = (usage.output_tokens as number) ?? 0;
             const cacheCreate = (usage.cache_creation_input_tokens as number) ?? 0;
             const cacheRead = (usage.cache_read_input_tokens as number) ?? 0;
-            tokens = Math.max(tokens, inp + out + cacheCreate + cacheRead);
+            const total = inp + out + cacheCreate + cacheRead;
+            if (total > maxTotalTokens) {
+              maxTotalTokens = total;
+              maxInp = inp + cacheCreate + cacheRead;
+              maxOut = out;
+            }
           }
         } catch { /* ignore malformed lines */ }
       }
+
+      tokens = maxTotalTokens;
+      inputTokens = maxInp;
+      outputTokens = maxOut;
     } finally {
       closeSync(fd);
     }
 
-    return { id: agentId, name, status, tokens, toolUses, outputPath: fpath, startedAt, lastModified };
+    const cost = (inputTokens * COST_PER_INPUT_TOKEN) + (outputTokens * COST_PER_OUTPUT_TOKEN);
+    return { id: agentId, name, status, tokens, inputTokens, outputTokens, cost, toolUses, outputPath: fpath, startedAt, lastModified };
   } catch {
     return {
-      id: agentId, name, status: "complete", tokens: 0, toolUses: 0,
+      id: agentId, name, status: "complete", tokens: 0, inputTokens: 0, outputTokens: 0, cost: 0, toolUses: 0,
       outputPath: fpath, startedAt: null, lastModified: new Date().toISOString(),
     };
   }
@@ -1211,7 +1235,10 @@ function restServeSubagents(res: http.ServerResponse): void {
       } catch { /* skip */ }
     }
   } catch { /* skip */ }
-  result.sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
+  result.sort((a, b) => {
+    if (a.status === b.status) return new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime();
+    return a.status === 'in_progress' ? -1 : 1;
+  });
   jsonResponse(res, result);
 }
 
@@ -1899,6 +1926,292 @@ function restStreamCongress(req: http.IncomingMessage, res: http.ServerResponse,
   };
 
   tick();
+}
+
+// ── Token Usage SQLite ────────────────────────────────────────────────────
+
+const TOKEN_USAGE_DB_PATH = "/mnt/data/data/token-usage.db";
+const tokenUsageDb = new Database(TOKEN_USAGE_DB_PATH);
+tokenUsageDb.exec("PRAGMA journal_mode=WAL");
+tokenUsageDb.exec(`
+  CREATE TABLE IF NOT EXISTS usage (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT NOT NULL,
+    agent_id TEXT NOT NULL,
+    agent_name TEXT,
+    input_tokens INTEGER NOT NULL DEFAULT 0,
+    output_tokens INTEGER NOT NULL DEFAULT 0,
+    tool_uses INTEGER NOT NULL DEFAULT 0,
+    duration_ms INTEGER,
+    cost_usd REAL NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )
+`);
+tokenUsageDb.exec("CREATE INDEX IF NOT EXISTS idx_usage_session ON usage(session_id)");
+tokenUsageDb.exec("CREATE INDEX IF NOT EXISTS idx_usage_created ON usage(created_at)");
+tokenUsageDb.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_usage_agent ON usage(agent_id)");
+
+const INPUT_COST_PER_TOKEN = 0.000003;
+const OUTPUT_COST_PER_TOKEN = 0.000015;
+
+interface TokenUsageRow {
+  id: number;
+  session_id: string;
+  agent_id: string;
+  agent_name: string | null;
+  input_tokens: number;
+  output_tokens: number;
+  tool_uses: number;
+  duration_ms: number | null;
+  cost_usd: number;
+  created_at: string;
+}
+
+// Parse a subagent output file and extract cumulative token usage
+function parseSubagentTokens(fpath: string): {
+  inputTokens: number;
+  outputTokens: number;
+  toolUses: number;
+  startedAt: string | null;
+  name: string;
+} {
+  let inputTokens = 0;
+  let outputTokens = 0;
+  let toolUses = 0;
+  let startedAt: string | null = null;
+  let name = "";
+
+  try {
+    const st = statSync(fpath);
+    const fd = openSync(fpath, "r");
+    try {
+      // Read first 4KB for name/startedAt
+      const headBuf = Buffer.alloc(4096);
+      const headBytes = readSync(fd, headBuf, 0, 4096, 0);
+      const headStr = headBuf.slice(0, headBytes).toString("utf-8");
+      const firstLine = headStr.split("\n")[0];
+      try {
+        const obj = JSON.parse(firstLine) as Record<string, unknown>;
+        if (typeof obj.timestamp === "string") startedAt = obj.timestamp;
+        const msg = (obj.message ?? {}) as Record<string, unknown>;
+        const content = msg.content ?? "";
+        if (typeof content === "string" && content.length > 0) {
+          const firstContentLine = content.split("\n").find((l) => l.trim()) ?? "";
+          const prefix = "You are BigClungus";
+          let n = firstContentLine.startsWith(prefix)
+            ? firstContentLine.slice(prefix.length).replace(/^[.,\s]+/, "")
+            : firstContentLine;
+          const breakIdx = n.search(/[.!?]\s/);
+          if (breakIdx !== -1) n = n.slice(0, breakIdx + 1);
+          name = n.slice(0, 60);
+        }
+      } catch { /* ignore */ }
+
+      // Read entire file to accumulate tokens across all assistant messages
+      // We need to scan all lines because usage accumulates per-request
+      const totalSize = st.size;
+      const chunkSize = 65536;
+      let offset = 0;
+      let leftover = "";
+      // Track max input tokens seen (they're cumulative per conversation)
+      let maxInputTokens = 0;
+      // Track per-request output tokens (each request has its own output count)
+      const outputByRequestId = new Map<string, number>();
+      const toolUseSet = new Set<string>(); // deduplicate tool uses by tool_use id
+
+      while (offset < totalSize) {
+        const buf = Buffer.alloc(chunkSize);
+        const bytesRead = readSync(fd, buf, 0, chunkSize, offset);
+        if (bytesRead === 0) break;
+        offset += bytesRead;
+        const chunk = leftover + buf.slice(0, bytesRead).toString("utf-8");
+        const lines = chunk.split("\n");
+        leftover = lines.pop() ?? "";
+        for (const rawLine of lines) {
+          const line = rawLine.trim();
+          if (!line) continue;
+          try {
+            const obj = JSON.parse(line) as Record<string, unknown>;
+            if (obj.type !== "assistant") continue;
+            const msg = (obj.message ?? {}) as Record<string, unknown>;
+            const usage = (msg.usage ?? {}) as Record<string, unknown>;
+            const msgContent = msg.content;
+            // Count tool uses (deduplicated by tool_use id)
+            if (Array.isArray(msgContent)) {
+              for (const block of msgContent) {
+                const b = block as Record<string, unknown>;
+                if (b.type === "tool_use" && typeof b.id === "string") {
+                  toolUseSet.add(b.id);
+                }
+              }
+            }
+            // Accumulate tokens
+            if (usage.output_tokens !== undefined) {
+              const inp = (usage.input_tokens as number) ?? 0;
+              const cacheCreate = (usage.cache_creation_input_tokens as number) ?? 0;
+              const cacheRead = (usage.cache_read_input_tokens as number) ?? 0;
+              const totalInp = inp + cacheCreate + cacheRead;
+              if (totalInp > maxInputTokens) maxInputTokens = totalInp;
+              // Output tokens: accumulate per unique request ID to handle parallelism correctly
+              const requestId = (obj.requestId as string) ?? Math.random().toString();
+              const out = (usage.output_tokens as number) ?? 0;
+              const existing = outputByRequestId.get(requestId) ?? 0;
+              if (out > existing) outputByRequestId.set(requestId, out);
+            }
+          } catch { /* ignore malformed lines */ }
+        }
+      }
+
+      inputTokens = maxInputTokens;
+      for (const v of outputByRequestId.values()) outputTokens += v;
+      toolUses = toolUseSet.size;
+    } finally {
+      closeSync(fd);
+    }
+  } catch { /* ignore */ }
+
+  return { inputTokens, outputTokens, toolUses, startedAt, name };
+}
+
+function restIngestTokens(res: http.ServerResponse): void {
+  const SUBAGENT_ID_RE = /^[0-9a-f]{17}$/;
+  let ingested = 0;
+  let skipped = 0;
+  let errors = 0;
+
+  try {
+    const sessionDirs = readdirSync(SUBAGENTS_BASE);
+    for (const sessionDirName of sessionDirs) {
+      const taskDir = join(SUBAGENTS_BASE, sessionDirName, "tasks");
+      let files: string[];
+      try {
+        files = readdirSync(taskDir).filter((f) => {
+          if (!f.endsWith(".output")) return false;
+          const id = f.slice(0, -7);
+          return SUBAGENT_ID_RE.test(id);
+        });
+      } catch { continue; }
+
+      for (const fname of files) {
+        const agentId = fname.slice(0, -7);
+        // Check if already in DB
+        const existing = tokenUsageDb
+          .query("SELECT id FROM usage WHERE agent_id = ?")
+          .get(agentId);
+        if (existing) { skipped++; continue; }
+
+        const fpath = join(taskDir, fname);
+        // Only process files that aren't actively being written (modified > 60s ago)
+        try {
+          const st = statSync(fpath);
+          if (Date.now() - st.mtimeMs < 60_000) { skipped++; continue; }
+        } catch { continue; }
+
+        try {
+          const { inputTokens, outputTokens, toolUses, startedAt, name } =
+            parseSubagentTokens(fpath);
+          const cost =
+            inputTokens * INPUT_COST_PER_TOKEN +
+            outputTokens * OUTPUT_COST_PER_TOKEN;
+          tokenUsageDb.query(`
+            INSERT OR IGNORE INTO usage
+              (session_id, agent_id, agent_name, input_tokens, output_tokens, tool_uses, cost_usd, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            sessionDirName,
+            agentId,
+            name || null,
+            inputTokens,
+            outputTokens,
+            toolUses,
+            cost,
+            startedAt ?? new Date().toISOString(),
+          );
+          ingested++;
+        } catch { errors++; }
+      }
+    }
+  } catch (e) {
+    jsonResponse(res, { error: String(e) }, 500);
+    return;
+  }
+
+  jsonResponse(res, { ingested, skipped, errors });
+}
+
+interface TokenStats {
+  today: { cost: number; inputTokens: number; outputTokens: number };
+  last7days: { date: string; cost: number }[];
+  topAgents: { name: string; totalCost: number; count: number }[];
+  sessions: { sessionId: string; cost: number; agentCount: number }[];
+}
+
+function restServeTokenStats(res: http.ServerResponse): void {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  const todayRow = tokenUsageDb.query(`
+    SELECT
+      COALESCE(SUM(cost_usd), 0) as cost,
+      COALESCE(SUM(input_tokens), 0) as input_tokens,
+      COALESCE(SUM(output_tokens), 0) as output_tokens
+    FROM usage
+    WHERE date(created_at) = date('now')
+  `).get() as { cost: number; input_tokens: number; output_tokens: number };
+
+  const last7rows = tokenUsageDb.query(`
+    SELECT date(created_at) as date, COALESCE(SUM(cost_usd), 0) as cost
+    FROM usage
+    WHERE created_at >= date('now', '-6 days')
+    GROUP BY date(created_at)
+    ORDER BY date ASC
+  `).all() as { date: string; cost: number }[];
+
+  // Fill in missing days with 0
+  const last7days: { date: string; cost: number }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().slice(0, 10);
+    const found = last7rows.find((r) => r.date === dateStr);
+    last7days.push({ date: dateStr, cost: found?.cost ?? 0 });
+  }
+
+  const topAgents = tokenUsageDb.query(`
+    SELECT
+      COALESCE(agent_name, agent_id) as name,
+      COALESCE(SUM(cost_usd), 0) as totalCost,
+      COUNT(*) as count
+    FROM usage
+    GROUP BY COALESCE(agent_name, agent_id)
+    ORDER BY totalCost DESC
+    LIMIT 20
+  `).all() as { name: string; totalCost: number; count: number }[];
+
+  const sessions = tokenUsageDb.query(`
+    SELECT
+      session_id as sessionId,
+      COALESCE(SUM(cost_usd), 0) as cost,
+      COUNT(*) as agentCount
+    FROM usage
+    GROUP BY session_id
+    ORDER BY MAX(created_at) DESC
+    LIMIT 30
+  `).all() as { sessionId: string; cost: number; agentCount: number }[];
+
+  const stats: TokenStats = {
+    today: {
+      cost: todayRow?.cost ?? 0,
+      inputTokens: todayRow?.input_tokens ?? 0,
+      outputTokens: todayRow?.output_tokens ?? 0,
+    },
+    last7days,
+    topAgents,
+    sessions,
+  };
+
+  jsonResponse(res, stats);
 }
 
 // ── Timeline SQLite ────────────────────────────────────────────────────────
@@ -3201,6 +3514,19 @@ const server = http.createServer(async (req, res) => {
       nightowlCleanup();
       const entry = nightowlTasks.get(taskId);
       jsonResponse(res, { task_id: taskId, done: entry?.done ?? false });
+      return;
+    }
+
+    // ── Token Usage API ───────────────────────────────────────────────────
+    // POST /api/tokens/ingest — scan output files and log completed agents
+    if (pathname === "/api/tokens/ingest" && req.method === "POST") {
+      restIngestTokens(res);
+      return;
+    }
+
+    // GET /api/tokens/stats — return aggregated token usage stats
+    if (pathname === "/api/tokens/stats" && req.method === "GET") {
+      restServeTokenStats(res);
       return;
     }
 
