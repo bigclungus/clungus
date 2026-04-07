@@ -118,22 +118,6 @@ Other rules:
 Delegate all tasks to background agents, no exceptions.
 Once you delegate to subagent YOU MUST ACKKNOWLEDGE VIA DISCORD REPLY.
 
-### Example Omni Discord Reply
-
-```
-{
-  "name": "omni_dispatch",
-  "arguments": {
-    "channelId": "discord-main",
-    "capability": "reply",
-    "args": {
-      "text": "Thanks — I’ll follow up shortly."
-    },
-    "replyHandle": "abc123xyz"
-  }
-}
-```
-
 ---
 
 ## Discord Behavior
@@ -251,8 +235,6 @@ Key services (all managed via `systemctl --user`):
 
 FalkorDB/Redis runs in Docker. The `stop-writes-on-bgsave-error no` config is baked into the compose file (`command: redis-server --stop-writes-on-bgsave-error no`) so no manual fix is needed after restarts.
 
-**Discord architecture:** The Discord integration now runs through the **omni** system (`omni-gateway.service`). The omni gateway handles Discord (and potentially other channels) via the `channel-discord` plugin at `/mnt/data/omni/omnichannel/`. Incoming messages arrive as `<channel source="omni">` events; replies go through the `omni_dispatch` tool. The gateway can be restarted independently without restarting `claude-bot.service`.
-
 ---
 
 ## Every-Restart Checklist
@@ -264,28 +246,7 @@ FalkorDB/Redis runs in Docker. The `stop-writes-on-bgsave-error no` config is ba
 
 ## Proton Mail CLI
 
-**Method:** `protonmail-api-client` Python package (already installed at `~/.local/lib/python3.12/site-packages/protonmail/`). Speaks directly to Proton's internal API — no Bridge, no IMAP, no desktop app required.
-
-**Script:** `/mnt/data/scripts/check_proton_mail.py`
-
-```bash
-# List unread inbox messages (default)
-python3 /mnt/data/scripts/check_proton_mail.py
-
-# List all messages (read + unread), up to 20
-python3 /mnt/data/scripts/check_proton_mail.py --all
-
-# Increase limit
-python3 /mnt/data/scripts/check_proton_mail.py --limit 50
-
-# Read a message body (pass the message ID from the listing)
-python3 /mnt/data/scripts/check_proton_mail.py --read <message_id>
-
-# Force fresh login (re-authenticate, update session cache)
-python3 /mnt/data/scripts/check_proton_mail.py --no-cache
-```
-
-**Session caching:** After first login, credentials are cached at `~/.cache/proton_session.json`. Subsequent runs reuse the session without re-authenticating. Use `--no-cache` to force a fresh login if the session expires.
+Proton mail: `python3 /mnt/data/scripts/check_proton_mail.py` — see `--help` for flags.
 
 ---
 
@@ -314,12 +275,6 @@ Log at minimum:
 - User feedback or approval received
 - When blocked waiting on something external
 - A summary when done
-
-Example:
-```bash
-python3 /mnt/data/scripts/log_task_event.py task-20260324-080932-a46e65d6 milestone "Avatar generated and saved to /static/avatars/designer.gif"
-python3 /mnt/data/scripts/log_task_event.py task-20260324-080932-a46e65d6 done "Vesper persona created, committed, and avatar approved by koole__"
-```
 
 ---
 
@@ -355,19 +310,6 @@ Ports auto-assigned from 8100+. Template is in `/mnt/data/labs/template/`.
 ### Full workflow
 
 See `/mnt/data/CONGRESS_PROCESS.md` for the full workflow steps, including seat selection, debate rounds, evolution, and the CREATE directive.
-
----
-
-## Discord Trigger Patterns
-
-When I receive a Discord message, check for these trigger patterns and handle them immediately (background the work, reply fast).
-
-Full trigger handling is in `/mnt/data/bigclungus-meta/TRIGGERS.md`.
-
-Key rules for `[heartbeat]` reliability ideation (step 5 in TRIGGERS.md):
-- **Operational/minor findings** (config fix, performance tweak, reliability improvement, small code change, break/fix): implement directly — no Congress. Open a GitHub issue, do the work, close it.
-- **Major findings** (new feature, new system, significant refactor, architectural change): fire Congress as before.
-- When in doubt: if it can be described in one sentence and reverted in under 10 lines, it's minor. Otherwise, Congress.
 
 ---
 
@@ -526,30 +468,11 @@ curl -s -X POST http://127.0.0.1:8085/webhooks/bigclungus-main \
   -d '{"content": "your message here", "user": "temporal-sweeper"}'
 ```
 
-**Example (Python):**
-```python
-import urllib.request, json
-
-req = urllib.request.Request(
-    'http://127.0.0.1:8085/webhooks/bigclungus-main',
-    data=json.dumps({'content': 'your message here', 'user': 'temporal-sweeper'}).encode(),
-    headers={'Content-Type': 'application/json'},
-    method='POST')
-urllib.request.urlopen(req, timeout=5)
-```
-
-Bots cannot read their own Discord API messages, so this webhook ingress is the only way for Temporal workflows and scripts to reach you.
-
 ---
 
 ## Key Operational Notes
 
 - **Docker**: Root is /mnt/data/docker. Main compose stack in /mnt/data/docker/ (or wherever docker-compose.yml lives).
-- **FalkorDB Redis fix** (required after restarts):
-  ```
-  docker exec docker-falkordb-1 redis-cli CONFIG SET stop-writes-on-bgsave-error no
-  docker exec docker-falkordb-1 redis-cli GRAPH.CONFIG SET timeout 30000
-  ```
 - **Graphiti ingestion**: Use `discord_ingest_incremental.py` for incremental Discord history ingestion.
 - **Temporal task queue**: `listings-queue`
 - **Discord bot token**: in `/home/clungus/.claude/channels/discord/.env`
@@ -568,7 +491,12 @@ When delegating work to a background subagent, react to the originating Discord 
 
 When you see a `[$trigger]` pattern in a Discord message, consult `/mnt/data/bigclungus-meta/TRIGGERS.md` for the handling instructions.
 
-When I receive a Discord message, check for these trigger patterns and handle them immediately (background the work, reply fast):
+When I receive a Discord message, check for these trigger patterns and handle them immediately (background the work, reply fast).
+
+Key rules for `[heartbeat]` reliability ideation (step 5 in TRIGGERS.md):
+- **Operational/minor findings** (config fix, performance tweak, reliability improvement, small code change, break/fix): implement directly — no Congress. Open a GitHub issue, do the work, close it.
+- **Major findings** (new feature, new system, significant refactor, architectural change): fire Congress as before.
+- When in doubt: if it can be described in one sentence and reverted in under 10 lines, it's minor. Otherwise, Congress.
 
 ### `[congress] <topic>`
 See `/mnt/data/bigclungus-meta/TRIGGERS.md` for full handling instructions.
@@ -621,46 +549,13 @@ Handled by clunger — no action needed from BigClungus.
 
 ## Discord History Search
 
-Semantic search over Discord message history via sqlite-vec + OpenAI embeddings.
-
-**Script:** `/mnt/data/scripts/history <query>`
-
-```bash
-# Search for relevant past messages
-/mnt/data/scripts/history "what did centronias say about the commons redesign"
-/mnt/data/scripts/history "jaboostin's opinion on vector databases" --limit 10
-/mnt/data/scripts/history "z-order warthog bug" --author relarey
-```
-
-**Use this whenever:**
-- A user references something from a past session that's not in your current context
-- You need to recall what was discussed/decided about a topic
-- A user asks "do you remember when..." or references earlier work
-
-**Ingest:** Temporal schedule `history-ingest-1m` (every 1 min, SKIP overlap). DB at `/mnt/data/data/discord-history.db`.
+Discord history search: `/mnt/data/scripts/history "<query>"` — use when user references past conversations.
 
 ---
 
 ## NightOwl Workflow
 
-NightOwlWorkflow fires queued tasks in batches of up to 5 at **3am PDT (10am UTC)**. It uses a polling-based completion model: each injected task is tagged with a unique `task_id`, and the workflow polls `clunger` every 30 seconds (for up to 10 minutes) to detect completion. No signal is needed from BigClungus — just call the HTTP endpoint when done.
-
-### Receiving a NightOwl task
-
-See `/mnt/data/TRIGGERS.md` for full handling instructions for the `[nightowl_task_id: xxx]` suffix pattern.
-
-### Queueing tasks
-
-```bash
-python3 /mnt/data/scripts/nightowl_queue.py "<task description>"
-```
-
-Sends an `add_task` signal to the `nightowl-today` workflow (starts the workflow if it isn't running yet).
-
-### Workflow ID and target time
-
-- Workflow ID: `nightowl-today`
-- Target: `target_hour_utc=10` (3am PDT = 10am UTC)
+NightOwl (3am PDT): `python3 /mnt/data/scripts/nightowl_queue.py "<task>"` to queue. See TRIGGERS.md for trigger handling.
 
 ---
 
