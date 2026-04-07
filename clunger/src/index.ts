@@ -2056,6 +2056,35 @@ function parseSubagentTokens(fpath: string): {
         }
       }
 
+      // Process any remaining partial line at EOF
+      if (leftover.trim()) {
+        try {
+          const obj = JSON.parse(leftover.trim()) as Record<string, unknown>;
+          if (obj.type === "assistant") {
+            const msg = (obj.message ?? {}) as Record<string, unknown>;
+            const usage = (msg.usage ?? {}) as Record<string, unknown>;
+            const msgContent = msg.content;
+            if (Array.isArray(msgContent)) {
+              for (const block of msgContent) {
+                const b = block as Record<string, unknown>;
+                if (b.type === "tool_use" && typeof b.id === "string") toolUseSet.add(b.id);
+              }
+            }
+            if (usage.output_tokens !== undefined) {
+              const inp = (usage.input_tokens as number) ?? 0;
+              const cacheCreate = (usage.cache_creation_input_tokens as number) ?? 0;
+              const cacheRead = (usage.cache_read_input_tokens as number) ?? 0;
+              const totalInp = inp + cacheCreate + cacheRead;
+              if (totalInp > maxInputTokens) maxInputTokens = totalInp;
+              const requestId = (obj.requestId as string) ?? Math.random().toString();
+              const out = (usage.output_tokens as number) ?? 0;
+              const existing = outputByRequestId.get(requestId) ?? 0;
+              if (out > existing) outputByRequestId.set(requestId, out);
+            }
+          }
+        } catch { /* ignore malformed final line */ }
+      }
+
       inputTokens = maxInputTokens;
       for (const v of outputByRequestId.values()) outputTokens += v;
       toolUses = toolUseSet.size;
@@ -2141,8 +2170,6 @@ interface TokenStats {
 
 function restServeTokenStats(res: http.ServerResponse): void {
   res.setHeader("Access-Control-Allow-Origin", "*");
-
-  const today = new Date().toISOString().slice(0, 10);
 
   const todayRow = tokenUsageDb.query(`
     SELECT
