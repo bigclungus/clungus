@@ -1,0 +1,17 @@
+[Unit]
+Description=Terminal WebSocket Server
+After=network.target
+
+[Service]
+EnvironmentFile=/mnt/data/.env.shared
+EnvironmentFile=/mnt/data/terminal/.env
+ExecStart=python3 /mnt/data/terminal/server.py
+Restart=always
+RestartSec=3
+KillMode=mixed
+TimeoutStopSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
