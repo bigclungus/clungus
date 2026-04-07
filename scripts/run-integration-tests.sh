@@ -7,14 +7,13 @@ EXIT_CODE=$?
 
 if [ $EXIT_CODE -ne 0 ]; then
     # Alert Discord via inject endpoint
-    python3 -c "
-import urllib.request, json, sys
-msg = '🚨 **Integration tests FAILED**\n\`\`\`\n' + sys.argv[1][:1500] + '\n\`\`\`'
-req = urllib.request.Request('http://127.0.0.1:8085/webhooks/bigclungus-main',
-  data=json.dumps({'content': msg, 'chat_id': '1485343472952148008', 'user': 'integration-test'}).encode(),
-  headers={'Content-Type': 'application/json'}, method='POST')
-urllib.request.urlopen(req, timeout=5)
-" "$OUTPUT"
+    python3 - "$OUTPUT" <<'EOF'
+import sys, pathlib
+sys.path.insert(0, str(pathlib.Path("/mnt/data/scripts")))
+from omni_inject import inject
+msg = '\U0001f6a8 **Integration tests FAILED**\n```\n' + sys.argv[1][:1500] + '\n```'
+inject(msg, user="integration-test", chat_id="1485343472952148008")
+EOF
 fi
 
 exit $EXIT_CODE

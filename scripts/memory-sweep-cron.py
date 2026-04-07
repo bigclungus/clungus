@@ -17,14 +17,15 @@ import os
 import sys
 import json
 import re
-import urllib.request
 import urllib.error
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent))
+from omni_inject import inject as omni_inject
+
 MEMORY_DIR = Path("/home/clungus/.claude/projects/-mnt-data/memory")
 CHECKED_FILE = Path("/tmp/memory-sweep-checked.json")
-OMNI_WEBHOOK = "http://127.0.0.1:8085/webhooks/bigclungus-main"
 
 # Thresholds
 MIN_AGE_DAYS = 1       # file must be at least this old (by mtime)
@@ -83,41 +84,21 @@ def save_checked_today(filenames: set) -> None:
 
 
 def inject(filename: str, content: str) -> None:
-    payload = {
-        "content": f"[memory-sweep] file={filename}\n\nMEMORY CONTENT:\n{content}",
-        "user": "memory-sweeper",
-    }
-    data = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(
-        OMNI_WEBHOOK,
-        data=data,
-        headers={"Content-Type": "application/json"},
-        method="POST",
+    omni_inject(
+        f"[memory-sweep] file={filename}\n\nMEMORY CONTENT:\n{content}",
+        user="memory-sweeper",
+        timeout=10,
     )
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        status = resp.status
-        if status not in (200, 201, 202, 204):
-            raise RuntimeError(f"Unexpected HTTP status from omni webhook: {status}")
 
 
 def inject_batch_complete(filenames: list[str]) -> None:
     """Send a single [memory-sweep-complete] message listing all dispatched files."""
     file_list = ", ".join(filenames)
-    payload = {
-        "content": f"[memory-sweep-complete] count={len(filenames)} files: {file_list}",
-        "user": "memory-sweeper",
-    }
-    data = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(
-        OMNI_WEBHOOK,
-        data=data,
-        headers={"Content-Type": "application/json"},
-        method="POST",
+    omni_inject(
+        f"[memory-sweep-complete] count={len(filenames)} files: {file_list}",
+        user="memory-sweeper",
+        timeout=10,
     )
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        status = resp.status
-        if status not in (200, 201, 202, 204):
-            raise RuntimeError(f"Unexpected HTTP status sending batch-complete: {status}")
 
 
 def main() -> None:

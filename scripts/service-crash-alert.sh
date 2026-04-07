@@ -16,12 +16,11 @@ if [ -z "$SERVICE_RESULT" ] && [ "$EXIT_CODE" = "0" ]; then
     exit 0
 fi
 
-python3 -c "
-import urllib.request, json, sys
+python3 - "$SERVICE" "$EXIT_CODE" "$SERVICE_RESULT" <<'EOF'
+import sys
+sys.path.insert(0, "/mnt/data/scripts")
+from omni_inject import inject
 service, exit_code, result = sys.argv[1], sys.argv[2], sys.argv[3]
-msg = f'⚠️ service crash: {service} stopped unexpectedly (exit_code={exit_code or \"?\"}, result={result or \"?\"}) — investigate and restart if needed.'
-req = urllib.request.Request('http://127.0.0.1:8085/webhooks/bigclungus-main',
-  data=json.dumps({'content': msg, 'chat_id': '1485343472952148008', 'user': 'system-monitor'}).encode(),
-  headers={'Content-Type': 'application/json'}, method='POST')
-urllib.request.urlopen(req, timeout=5)
-" "$SERVICE" "$EXIT_CODE" "$SERVICE_RESULT"
+msg = f'\u26a0\ufe0f service crash: {service} stopped unexpectedly (exit_code={exit_code or "?"}, result={result or "?"}) \u2014 investigate and restart if needed.'
+inject(msg, user="system-monitor", chat_id="1485343472952148008")
+EOF
