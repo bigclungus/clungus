@@ -2325,6 +2325,24 @@
     };
   }
 
+  // ── Persona status helpers ────────────────────────────────────────────────
+  // Canonical active statuses: 'eligible' (current), 'active' (legacy)
+  function isActivePersona(p) {
+    const s = p.status;
+    return s === 'eligible' || s === 'active';
+  }
+  // Canonical retired/meme statuses: 'meme' (current), 'severance'/'ineligible'/'retired'/'fired' (legacy)
+  function isRetiredPersona(p) {
+    const s = p.status;
+    return s === 'meme' || s === 'severance' || s === 'ineligible' || s === 'retired' || s === 'fired';
+  }
+  // Normalize a raw persona status to the canonical form used internally
+  function normalizePersonaStatus(s) {
+    if (s === 'retired' || s === 'fired' || s === 'ineligible') return 'meme';
+    if (s === 'active') return 'eligible';
+    return s || 'eligible';
+  }
+
   // ── State ──────────────────────────────────────────────────────────────────
   let seats = [null, null, null, null, null];   // persona | null for each seat (session participants only when session loaded)
   let allActivePersonas = [];        // full roster of active non-moderator personas (never mutated by session loading)
@@ -2476,12 +2494,12 @@
       // so historical sessions show the personas that existed at the time.
       if (session.roster && session.roster.length > 0) {
         allActivePersonas = session.roster
-          .filter(p => p.status === 'active' || p.status === 'eligible')
+          .filter(p => isActivePersona(p))
           .map(normalizeRosterEntry);
         // Also rebuild retiredPool from the snapshot for accurate lookups
         // 'ineligible' was used transiently between 'active'/'severance' and 'eligible'/'meme' eras
         retiredPool = session.roster
-          .filter(p => p.status === 'severance' || p.status === 'meme' || p.status === 'ineligible')
+          .filter(p => isRetiredPersona(p))
           .map(normalizeRosterEntry);
         // Reset seats from the snapshot active personas
         for (let i = 0; i < SEAT_COUNT; i++) seats[i] = allActivePersonas[i] || null;
@@ -4570,13 +4588,13 @@
     const tbody = document.createElement('tbody');
     personas.forEach(p => {
       const tr = document.createElement('tr');
-      // /api/agents uses eligible/meme/moderator
-      const status = p.status || 'eligible';
+      // /api/agents uses eligible/meme/moderator — normalize legacy values
+      const status = normalizePersonaStatus(p.status);
       const lastVerdict = p.last_verdict || '';
       const totalCongresses = (p.stats_retained || 0) + (p.stats_evolved || 0) + (p.stats_retired || 0);
 
       // Dim meme rows slightly
-      if (status === 'meme') tr.style.opacity = '0.65';
+      if (isRetiredPersona(p)) tr.style.opacity = '0.65';
 
       // Avatar cell
       const tdAvatar = document.createElement('td');
@@ -4771,9 +4789,7 @@
     document.getElementById('pf-avatar-url').value = p.avatar_url || '';
     document.getElementById('pf-congress').checked = p.congress !== false;
     document.getElementById('pf-evolves').checked = p.evolves !== false;
-    // Normalize legacy status values: retired/fired/ineligible→meme, active→eligible
-    const normalizedStatus = (p.status === 'retired' || p.status === 'fired' || p.status === 'ineligible') ? 'meme' : (p.status === 'active' ? 'eligible' : (p.status || 'eligible'));
-    document.getElementById('pf-status').value = normalizedStatus;
+    document.getElementById('pf-status').value = normalizePersonaStatus(p.status);
     document.getElementById('pf-prompt').value = p.prompt || '';
   }
 
