@@ -39,6 +39,7 @@ from persona.v1.persona_pb2 import PostVerdictRequest  # noqa: E402
 from .constants import (
     AGENTS_DIR,
     CLUNGER_BASE_URL,
+    CLUNGER_DIR,
     DISCORD_API,
     HELLO_WORLD_DIR,
     HELLO_WORLD_SESSIONS_DIR,
@@ -51,6 +52,7 @@ from .constants import (
     SIGNAL_NO_DISPUTE,
     SIGNAL_REFRAME,
     TASKS_DIR,
+    TEMPORAL_WORKFLOWS_DIR,
 )
 from .inject_act import _do_inject
 from .utils import DISCORD_TIMEOUT, _discord_headers
@@ -1468,9 +1470,9 @@ def _codebase_search(topic_text: str) -> str:
 
     # Search only specific code directories to keep it fast and relevant
     SEARCH_DIRS = [
-        "/mnt/data/clunger",
+        CLUNGER_DIR,
         HELLO_WORLD_DIR,
-        "/mnt/data/temporal-workflows",
+        TEMPORAL_WORKFLOWS_DIR,
         SCRIPTS_DIR,
         AGENTS_DIR,
     ]

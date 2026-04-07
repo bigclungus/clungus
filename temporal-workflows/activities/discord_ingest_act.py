@@ -16,7 +16,7 @@ import requests
 
 from temporalio import activity
 
-from .constants import MAIN_CHANNEL_ID, DISCORD_API
+from .constants import DISCORD_API, GRAPHITI_ENV, MAIN_CHANNEL_ID
 from .utils import get_discord_token, get_openai_key
 
 logger = logging.getLogger(__name__)
@@ -162,7 +162,7 @@ def _extract_entities(messages: list) -> list:
 
 async def _ingest_into_graphiti(groups: dict, openai_api_key: str) -> int:
     from dotenv import load_dotenv
-    load_dotenv("/mnt/data/graphiti/repo/mcp_server/.env")
+    load_dotenv(GRAPHITI_ENV)
 
     from graphiti_core import Graphiti
     from graphiti_core.nodes import EpisodeType

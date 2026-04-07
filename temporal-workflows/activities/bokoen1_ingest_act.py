@@ -16,6 +16,7 @@ from pathlib import Path
 
 from temporalio import activity
 
+from .constants import GRAPHITI_ENV
 from .utils import get_openai_key
 
 logger = logging.getLogger(__name__)
@@ -159,7 +160,7 @@ def _download_transcripts(video_ids: list[str], limit: int = 100) -> int:
 
 async def _ingest_transcripts(limit: int = 0) -> int:
     from dotenv import load_dotenv
-    load_dotenv("/mnt/data/graphiti/repo/mcp_server/.env")
+    load_dotenv(GRAPHITI_ENV)
 
     from graphiti_core import Graphiti
     from graphiti_core.driver.falkordb_driver import FalkorDriver

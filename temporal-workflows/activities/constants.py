@@ -19,12 +19,16 @@ SIGNAL_REFRAME = "REFRAME"
 SIGNAL_NO_DISPUTE = "NO_DISPUTE"
 
 # Filesystem paths shared across activities
+BASE_DIR = "/mnt/data"
 META_REPO_PATH = "/home/clungus/work/bigclungus-meta"
 AGENTS_DIR = META_REPO_PATH + "/agents"
 TASKS_DIR = META_REPO_PATH + "/tasks"
-HELLO_WORLD_DIR = "/mnt/data/hello-world"
-HELLO_WORLD_SESSIONS_DIR = "/home/clungus/work/hello-world/sessions"
-SCRIPTS_DIR = "/mnt/data/scripts"
+HELLO_WORLD_DIR = BASE_DIR + "/hello-world"
+HELLO_WORLD_SESSIONS_DIR = HELLO_WORLD_DIR + "/sessions"
+CLUNGER_DIR = BASE_DIR + "/clunger"
+TEMPORAL_WORKFLOWS_DIR = BASE_DIR + "/temporal-workflows"
+GRAPHITI_ENV = BASE_DIR + "/graphiti/repo/mcp_server/.env"
+SCRIPTS_DIR = BASE_DIR + "/scripts"
 
 # Discord REST API base URL
 DISCORD_API = "https://discord.com/api/v10"
