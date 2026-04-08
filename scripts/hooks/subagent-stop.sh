@@ -65,9 +65,9 @@ echo "$UPDATED" > "$TASK_FILE"
 rm -f "$AGENT_STATE_FILE"
 
 # Mark agent completed in agents.db via clunger HTTP endpoint
-curl -sf -X POST http://localhost:8081/api/agents/complete \
+curl -sf -X POST "http://localhost:8081/api/agents/${AGENT_ID}/complete" \
   -H "Content-Type: application/json" \
-  -d "{\"id\": \"$AGENT_ID\", \"status\": \"completed\"}" \
+  -d '{"status": "completed"}' \
   || true  # non-fatal
 
 # Async background git commit+push (zero blocking)

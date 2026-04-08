@@ -712,15 +712,42 @@ function ensureAgentsSchema(db: Database): void {
       cost_usd        REAL DEFAULT 0.0,
       model           TEXT,
       output_file     TEXT,
-      description     TEXT
+      description     TEXT,
+      failure_reason  TEXT,
+      parent_agent_id TEXT,
+      last_heartbeat_at INTEGER,
+      duration_ms     INTEGER
     )
   `);
-  // Add description column if DB existed before it was added
-  try {
-    db.run("ALTER TABLE agents ADD COLUMN description TEXT");
-  } catch {
-    // column already exists — ignore
+  // Add columns if DB existed before they were added
+  const alterColumns = [
+    "ALTER TABLE agents ADD COLUMN description TEXT",
+    "ALTER TABLE agents ADD COLUMN failure_reason TEXT",
+    "ALTER TABLE agents ADD COLUMN parent_agent_id TEXT",
+    "ALTER TABLE agents ADD COLUMN last_heartbeat_at INTEGER",
+    "ALTER TABLE agents ADD COLUMN duration_ms INTEGER",
+  ];
+  for (const stmt of alterColumns) {
+    try {
+      db.run(stmt);
+    } catch {
+      // column already exists — ignore
+    }
   }
+
+  // agent_events table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS agent_events (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      agent_id    TEXT NOT NULL,
+      event_type  TEXT NOT NULL,
+      payload     TEXT,
+      created_at  INTEGER DEFAULT (unixepoch('now'))
+    )
+  `);
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_agent_events_agent ON agent_events(agent_id)
+  `);
 }
 
 /** Handle POST /api/agents/spawn — insert or replace a new agent row. Internal only. */
@@ -762,19 +789,21 @@ async function restHandleAgentSpawn(req: http.IncomingMessage, res: http.ServerR
   }
 }
 
-/** Handle POST /api/agents/complete — mark an agent completed/failed/stale. Internal only. */
-async function restHandleAgentComplete(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
-  let body: Record<string, unknown>;
+/** Handle POST /api/agents/:id/complete — mark an agent completed/failed/stale. Internal only. */
+async function restHandleAgentComplete(req: http.IncomingMessage, res: http.ServerResponse, agentId?: string): Promise<void> {
+  let body: Record<string, unknown> = {};
   try {
     const raw = await readBody(req);
-    body = JSON.parse(raw.toString()) as Record<string, unknown>;
+    if (raw.length > 0) body = JSON.parse(raw.toString()) as Record<string, unknown>;
   } catch {
     res.writeHead(400, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "invalid JSON body" }));
     return;
   }
-  const id = typeof body.id === "string" ? body.id : null;
+  // ID from URL path takes precedence; fall back to body for backward compat
+  const id = agentId ?? (typeof body.id === "string" ? body.id : null);
   const status = typeof body.status === "string" ? body.status : "completed";
+  const failure_reason = typeof body.failure_reason === "string" ? body.failure_reason : null;
   if (!id) {
     res.writeHead(400, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "id required" }));
@@ -791,15 +820,94 @@ async function restHandleAgentComplete(req: http.IncomingMessage, res: http.Serv
     db.run("PRAGMA journal_mode=WAL");
     ensureAgentsSchema(db);
     const completed_at = Math.floor(Date.now() / 1000);
+    // Compute duration_ms from started_at
+    const row = db.query<{ started_at: number | null }, [string]>(
+      "SELECT started_at FROM agents WHERE id = ?"
+    ).get(id);
+    const duration_ms = row?.started_at != null ? (completed_at - row.started_at) * 1000 : null;
     db.run(
-      "UPDATE agents SET status=?, completed_at=? WHERE id=?",
-      [status, completed_at, id]
+      "UPDATE agents SET status=?, completed_at=?, failure_reason=?, duration_ms=? WHERE id=?",
+      [status, completed_at, failure_reason, duration_ms, id]
     );
     db.close();
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ ok: true }));
   } catch (err) {
     console.error("[agents] complete write failed:", err);
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: String(err) }));
+  }
+}
+
+/** Handle POST /api/agents/:id/heartbeat — update last_heartbeat_at. Internal only. */
+async function restHandleAgentHeartbeat(res: http.ServerResponse, agentId: string): Promise<void> {
+  try {
+    const db = new Database(AGENTS_DB_REST);
+    db.run("PRAGMA journal_mode=WAL");
+    ensureAgentsSchema(db);
+    db.run(
+      "UPDATE agents SET last_heartbeat_at = unixepoch('now') WHERE id = ?",
+      [agentId]
+    );
+    db.close();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ ok: true }));
+  } catch (err) {
+    console.error("[agents] heartbeat write failed:", err);
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: String(err) }));
+  }
+}
+
+/** Handle POST /api/agents/:id/events — insert an event. Internal only. */
+async function restHandleAgentEventPost(req: http.IncomingMessage, res: http.ServerResponse, agentId: string): Promise<void> {
+  let body: Record<string, unknown>;
+  try {
+    const raw = await readBody(req);
+    body = JSON.parse(raw.toString()) as Record<string, unknown>;
+  } catch {
+    res.writeHead(400, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "invalid JSON body" }));
+    return;
+  }
+  const event_type = typeof body.event_type === "string" ? body.event_type : null;
+  const payload = typeof body.payload === "string" ? body.payload : null;
+  if (!event_type) {
+    res.writeHead(400, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "event_type required" }));
+    return;
+  }
+  try {
+    const db = new Database(AGENTS_DB_REST);
+    db.run("PRAGMA journal_mode=WAL");
+    ensureAgentsSchema(db);
+    db.run(
+      "INSERT INTO agent_events (agent_id, event_type, payload) VALUES (?, ?, ?)",
+      [agentId, event_type, payload]
+    );
+    db.close();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ ok: true }));
+  } catch (err) {
+    console.error("[agents] event insert failed:", err);
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: String(err) }));
+  }
+}
+
+/** Handle GET /api/agents/:id/events — return all events for an agent. */
+function restHandleAgentEventGet(res: http.ServerResponse, agentId: string): void {
+  try {
+    const db = new Database(AGENTS_DB_REST, { readonly: true });
+    ensureAgentsSchema(db);
+    const rows = db.query<{ id: number; agent_id: string; event_type: string; payload: string | null; created_at: number }, [string]>(
+      "SELECT id, agent_id, event_type, payload, created_at FROM agent_events WHERE agent_id = ? ORDER BY created_at ASC"
+    ).all(agentId);
+    db.close();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(rows));
+  } catch (err) {
+    console.error("[agents] events query failed:", err);
     res.writeHead(500, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: String(err) }));
   }
@@ -3278,7 +3386,39 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // POST /api/agents/complete — internal; no auth (localhost only)
+    // POST /api/agents/:id/complete — new path-based endpoint (internal)
+    {
+      const m = pathname.match(/^\/api\/agents\/([^/]+)\/complete$/);
+      if (m && req.method === "POST") {
+        await restHandleAgentComplete(req, res, m[1]);
+        return;
+      }
+    }
+
+    // POST /api/agents/:id/heartbeat — internal; no auth (localhost only)
+    {
+      const m = pathname.match(/^\/api\/agents\/([^/]+)\/heartbeat$/);
+      if (m && req.method === "POST") {
+        await restHandleAgentHeartbeat(res, m[1]);
+        return;
+      }
+    }
+
+    // POST /api/agents/:id/events — internal; no auth (localhost only)
+    // GET  /api/agents/:id/events — public
+    {
+      const m = pathname.match(/^\/api\/agents\/([^/]+)\/events$/);
+      if (m && req.method === "POST") {
+        await restHandleAgentEventPost(req, res, m[1]);
+        return;
+      }
+      if (m && req.method === "GET") {
+        restHandleAgentEventGet(res, m[1]);
+        return;
+      }
+    }
+
+    // POST /api/agents/complete — deprecated alias (ID in body); kept for backward compat
     if (pathname === "/api/agents/complete" && req.method === "POST") {
       await restHandleAgentComplete(req, res);
       return;
