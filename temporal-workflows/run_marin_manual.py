@@ -1,5 +1,7 @@
 """One-off manual runner for Marin SFH ListingsWorkflow ($0-$500k)."""
 import asyncio
+import json
+import subprocess
 import time
 from pathlib import Path
 
@@ -37,7 +39,6 @@ async def main():
 
 result = asyncio.run(main())
 
-import subprocess, json
 msg = f"marin manual run (rentals excluded): found {result} new listings"
 subprocess.run([
     "curl", "-s", "-X", "POST", "http://127.0.0.1:8085/webhooks/bigclungus-main",
