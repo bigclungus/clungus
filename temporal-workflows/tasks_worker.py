@@ -24,8 +24,10 @@ load_dotenv(Path(__file__).parent / ".env")
 
 from activities.agent_executor import wait_for_completion, run_xai_agent
 from activities.task_db import create_task_record, finalize_task, record_error
+from activities.context_snapshot import generate_context_snapshot
 from agent_types import AgentTaskInput  # noqa: F401 — needed for Temporal dataclass serialization
 from workflows.agent_task_workflow import AgentTaskWorkflow
+from workflows.context_snapshot_wf import ContextSnapshotWorkflow
 
 logging.basicConfig(
     level=logging.INFO,
@@ -45,8 +47,8 @@ async def main() -> None:
     worker = Worker(
         client,
         task_queue=TASK_QUEUE,
-        workflows=[AgentTaskWorkflow],
-        activities=[wait_for_completion, run_xai_agent, create_task_record, finalize_task, record_error],
+        workflows=[AgentTaskWorkflow, ContextSnapshotWorkflow],
+        activities=[wait_for_completion, run_xai_agent, create_task_record, finalize_task, record_error, generate_context_snapshot],
     )
 
     logger.info("Worker started on task queue %r (namespace=%r)", TASK_QUEUE, NAMESPACE)
