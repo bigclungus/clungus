@@ -1,5 +1,5 @@
 import http from "node:http";
-import { existsSync, readFileSync, readdirSync, writeFileSync, unlinkSync, statSync, lstatSync, openSync, readSync, closeSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync, unlinkSync, statSync, openSync, readSync, closeSync } from "node:fs";
 import { extname, join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { Database } from "bun:sqlite";
@@ -755,6 +755,25 @@ function loadInProgressAgentsFromDb(): unknown[] {
   }
 }
 
+/** Load recent agents from agents.db (last 2 hours, all statuses). Returns [] if DB unavailable. */
+function loadRecentAgentsFromDb(): unknown[] {
+  if (!existsSync(AGENTS_DB_REST)) return [];
+  try {
+    const db = new Database(AGENTS_DB_REST, { readonly: true });
+    try {
+      const twoHoursAgo = Math.floor((Date.now() - 2 * 60 * 60 * 1000) / 1000);
+      return db.query<Record<string, unknown>, [number]>(
+        "SELECT * FROM agents WHERE started_at >= ? OR status = 'in_progress' ORDER BY started_at DESC"
+      ).all(twoHoursAgo);
+    } finally {
+      db.close();
+    }
+  } catch (err) {
+    console.warn(`[agents.db] Recent agents query failed: ${err}`);
+    return [];
+  }
+}
+
 function restServeTasks(res: http.ServerResponse, query: URLSearchParams): void {
   const pageRaw = parseInt(query.get("page") ?? "1", 10);
   const limitRaw = parseInt(query.get("limit") ?? "50", 10);
@@ -1229,9 +1248,7 @@ function restServeAgents(res: http.ServerResponse): void {
   jsonResponse(res, { eligible, meme, moderator });
 }
 
-// ── Native REST: GET /api/subagents — list current session subagent output files ──
-
-const SUBAGENTS_BASE = "/tmp/claude-1001/-mnt-data";
+// ── Native REST: GET /api/subagents — list agents from agents.db ──
 
 interface SubagentInfo {
   id: string;
@@ -1247,202 +1264,35 @@ interface SubagentInfo {
   lastModified: string;
 }
 
-function findMostRecentTaskDir(): string | null {
-  try {
-    const entries = readdirSync(SUBAGENTS_BASE);
-    let best: { dir: string; mtime: number } | null = null;
-    for (const entry of entries) {
-      const taskDir = join(SUBAGENTS_BASE, entry, "tasks");
-      try {
-        const st = statSync(taskDir);
-        if (st.isDirectory()) {
-          if (!best || st.mtimeMs > best.mtime) {
-            best = { dir: taskDir, mtime: st.mtimeMs };
-          }
-        }
-      } catch { /* skip */ }
-    }
-    return best?.dir ?? null;
-  } catch {
-    return null;
-  }
-}
-
-// Sonnet 4.x pricing per token (not per 1k)
-const COST_PER_INPUT_TOKEN = 0.000003;
-const COST_PER_OUTPUT_TOKEN = 0.000015;
-
-/** Matches 17-char hex IDs used by Claude subagent output files. */
-const SUBAGENT_ID_RE = /^[0-9a-f]{17}$/;
-
-/** Extract a short human-readable name from the first line of a JSONL agent output file. */
-function extractAgentName(firstLine: string, fallback: string): string {
-  try {
-    const obj = JSON.parse(firstLine) as Record<string, unknown>;
-    const msg = (obj.message ?? {}) as Record<string, unknown>;
-    const content = msg.content ?? "";
-    if (typeof content === "string" && content.length > 0) {
-      const firstContentLine = content.split("\n").find((l) => l.trim()) ?? "";
-      const prefix = "You are BigClungus";
-      let n = firstContentLine.startsWith(prefix)
-        ? firstContentLine.slice(prefix.length).replace(/^[.,\s]+/, "")
-        : firstContentLine;
-      const breakIdx = n.search(/[.!?]\s/);
-      if (breakIdx !== -1) n = n.slice(0, breakIdx + 1);
-      return n.slice(0, 60) || fallback;
-    }
-  } catch { /* ignore */ }
-  return fallback;
-}
-
-function parseSubagentFile(fpath: string, agentId: string): SubagentInfo {
-  let tokens = 0;
-  let inputTokens = 0;
-  let outputTokens = 0;
-  let toolUses = 0;
-  let startedAt: string | null = null;
-  let name = agentId.slice(0, 12);
-
-  try {
-    const st = statSync(fpath);
-    const lastModified = new Date(st.mtimeMs).toISOString();
-    const twoMinsAgo = Date.now() - 120_000;
-    const status: "in_progress" | "complete" = st.mtimeMs >= twoMinsAgo ? "in_progress" : "complete";
-
-    // Read first ~4KB to get name/description and startedAt
-    const fd = openSync(fpath, "r");
-    try {
-      const headBuf = Buffer.alloc(4096);
-      const headBytes = readSync(fd, headBuf, 0, 4096, 0);
-      const headStr = headBuf.slice(0, headBytes).toString("utf-8");
-      const firstLine = headStr.split("\n")[0];
-      name = extractAgentName(firstLine, name);
-      try {
-        const obj = JSON.parse(firstLine) as Record<string, unknown>;
-        if (typeof obj.timestamp === "string") startedAt = obj.timestamp;
-      } catch { /* ignore */ }
-
-      // Read last ~8KB to find token usage and tool use counts
-      const tailSize = Math.min(st.size, 8192);
-      const tailBuf = Buffer.alloc(tailSize);
-      const tailBytes = readSync(fd, tailBuf, 0, tailSize, Math.max(0, st.size - tailSize));
-      const tailStr = tailBuf.slice(0, tailBytes).toString("utf-8");
-
-      // Track the highest cumulative values seen (last turn has cumulative totals)
-      let maxTotalTokens = 0;
-      let maxInp = 0;
-      let maxOut = 0;
-
-      for (const rawLine of tailStr.split("\n")) {
-        const line = rawLine.trim();
-        if (!line) continue;
-        try {
-          const obj = JSON.parse(line) as Record<string, unknown>;
-          const msg = (obj.message ?? {}) as Record<string, unknown>;
-          // Count tool uses
-          const msgContent = msg.content;
-          if (Array.isArray(msgContent)) {
-            for (const block of msgContent) {
-              if ((block as Record<string, unknown>).type === "tool_use") toolUses++;
-            }
-          }
-          // Extract token usage
-          const usage = (msg.usage ?? {}) as Record<string, unknown>;
-          if (usage.output_tokens !== undefined) {
-            const inp = (usage.input_tokens as number) ?? 0;
-            const out = (usage.output_tokens as number) ?? 0;
-            const cacheCreate = (usage.cache_creation_input_tokens as number) ?? 0;
-            const cacheRead = (usage.cache_read_input_tokens as number) ?? 0;
-            const total = inp + out + cacheCreate + cacheRead;
-            if (total > maxTotalTokens) {
-              maxTotalTokens = total;
-              maxInp = inp + cacheCreate + cacheRead;
-              maxOut = out;
-            }
-          }
-        } catch { /* ignore malformed lines */ }
-      }
-
-      tokens = maxTotalTokens;
-      inputTokens = maxInp;
-      outputTokens = maxOut;
-    } finally {
-      closeSync(fd);
-    }
-
-    const cost = (inputTokens * COST_PER_INPUT_TOKEN) + (outputTokens * COST_PER_OUTPUT_TOKEN);
-    return { id: agentId, name, status, tokens, inputTokens, outputTokens, cost, toolUses, outputPath: fpath, startedAt, lastModified };
-  } catch {
-    // statSync failed (e.g. symlink target not yet written). Use lstat on the symlink
-    // itself to determine recency — a brand-new symlink means the agent just started.
-    try {
-      const lst = lstatSync(fpath);
-      const twoMinsAgo = Date.now() - 120_000;
-      const status: "in_progress" | "complete" = lst.mtimeMs >= twoMinsAgo ? "in_progress" : "complete";
-      return {
-        id: agentId, name, status, tokens: 0, inputTokens: 0, outputTokens: 0, cost: 0, toolUses: 0,
-        outputPath: fpath, startedAt: null, lastModified: new Date(lst.mtimeMs).toISOString(),
-      };
-    } catch {
-      return {
-        id: agentId, name, status: "complete", tokens: 0, inputTokens: 0, outputTokens: 0, cost: 0, toolUses: 0,
-        outputPath: fpath, startedAt: null, lastModified: new Date().toISOString(),
-      };
-    }
-  }
-}
-
 function restServeSubagents(res: http.ServerResponse): void {
   res.setHeader("Access-Control-Allow-Origin", "*");
 
-  // Collect results from /tmp glob (existing behavior)
-  const seenIds = new Set<string>();
+  // Read exclusively from agents.db (legacy /tmp glob removed in Milestone 5)
   const result: SubagentInfo[] = [];
-  const taskDir = findMostRecentTaskDir();
-  if (taskDir) {
-    try {
-      // Only include real Claude subagent output files — their IDs are 17-char hex strings.
-      // Hook scripts (hook_XXXXXXX) and background shell scripts (short alphanumeric IDs)
-      // produce plain-text output, not JSONL, and are not real subagents.
-      const files = readdirSync(taskDir).filter((f) => {
-        if (!f.endsWith(".output")) return false;
-        const id = f.slice(0, -7);
-        return SUBAGENT_ID_RE.test(id);
-      });
-      const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
-      for (const fname of files) {
-        const fpath = join(taskDir, fname);
-        try {
-          // Use lstatSync so symlinks with unresolved targets (brand-new agents) are not skipped.
-          const st = lstatSync(fpath);
-          if (st.mtimeMs < twoHoursAgo) continue;
-          const agentId = fname.slice(0, -7); // strip .output
-          result.push(parseSubagentFile(fpath, agentId));
-          seenIds.add(agentId);
-        } catch { /* skip */ }
-      }
-    } catch { /* skip */ }
-  }
-
-  // Merge in_progress agents from agents.db (dedup by agent ID)
-  const dbAgents = loadInProgressAgentsFromDb();
+  const dbAgents = loadRecentAgentsFromDb();
   for (const row of dbAgents as Array<Record<string, unknown>>) {
-    const agentId = String(row.id ?? row.agent_id ?? "");
-    if (!agentId || seenIds.has(agentId)) continue;
+    const agentId = String(row.id ?? "");
+    if (!agentId) continue;
+    const rowStatus = String(row.status ?? "complete");
+    const status: "in_progress" | "complete" = rowStatus === "in_progress" ? "in_progress" : "complete";
+    const startedAt = row.started_at ? new Date(Number(row.started_at) * 1000).toISOString() : null;
+    const completedAt = row.completed_at ? new Date(Number(row.completed_at) * 1000).toISOString() : null;
+    const lastModified = completedAt ?? startedAt ?? new Date().toISOString();
+    const inputTokens = typeof row.input_tokens === "number" ? row.input_tokens : 0;
+    const outputTokens = typeof row.output_tokens === "number" ? row.output_tokens : 0;
     result.push({
       id: agentId,
-      name: String(row.name ?? row.description ?? agentId.slice(0, 12)),
-      status: "in_progress",
-      tokens: typeof row.total_tokens === "number" ? row.total_tokens : 0,
-      inputTokens: typeof row.input_tokens === "number" ? row.input_tokens : 0,
-      outputTokens: typeof row.output_tokens === "number" ? row.output_tokens : 0,
+      name: String(row.description ?? row.task_id ?? agentId.slice(0, 12)),
+      status,
+      tokens: inputTokens + outputTokens,
+      inputTokens,
+      outputTokens,
       cost: typeof row.cost_usd === "number" ? row.cost_usd : 0,
-      toolUses: typeof row.tool_uses === "number" ? row.tool_uses : 0,
-      outputPath: String(row.output_path ?? ""),
-      startedAt: row.started_at ? String(row.started_at) : null,
-      lastModified: String(row.updated_at ?? row.started_at ?? new Date().toISOString()),
+      toolUses: 0,
+      outputPath: String(row.output_file ?? ""),
+      startedAt,
+      lastModified,
     });
-    seenIds.add(agentId);
   }
 
   result.sort((a, b) => {
@@ -2137,290 +1987,6 @@ function restStreamCongress(req: http.IncomingMessage, res: http.ServerResponse,
 
   tick();
 }
-
-// ── Token Usage SQLite ────────────────────────────────────────────────────
-
-const TOKEN_USAGE_DB_PATH = "/mnt/data/data/token-usage.db";
-const tokenUsageDb = new Database(TOKEN_USAGE_DB_PATH);
-tokenUsageDb.exec("PRAGMA journal_mode=WAL");
-tokenUsageDb.exec(`
-  CREATE TABLE IF NOT EXISTS usage (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    session_id TEXT NOT NULL,
-    agent_id TEXT NOT NULL,
-    agent_name TEXT,
-    input_tokens INTEGER NOT NULL DEFAULT 0,
-    output_tokens INTEGER NOT NULL DEFAULT 0,
-    tool_uses INTEGER NOT NULL DEFAULT 0,
-    duration_ms INTEGER,
-    cost_usd REAL NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  )
-`);
-tokenUsageDb.exec("CREATE INDEX IF NOT EXISTS idx_usage_session ON usage(session_id)");
-tokenUsageDb.exec("CREATE INDEX IF NOT EXISTS idx_usage_created ON usage(created_at)");
-tokenUsageDb.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_usage_agent ON usage(agent_id)");
-
-interface TokenUsageRow {
-  id: number;
-  session_id: string;
-  agent_id: string;
-  agent_name: string | null;
-  input_tokens: number;
-  output_tokens: number;
-  tool_uses: number;
-  duration_ms: number | null;
-  cost_usd: number;
-  created_at: string;
-}
-
-/** Process one parsed assistant JSONL object, updating accumulator state in place. */
-function accumulateAssistantEntry(
-  obj: Record<string, unknown>,
-  toolUseSet: Set<string>,
-  outputByRequestId: Map<string, number>,
-  maxInputRef: { value: number },
-): void {
-  const msg = (obj.message ?? {}) as Record<string, unknown>;
-  const usage = (msg.usage ?? {}) as Record<string, unknown>;
-  const msgContent = msg.content;
-  if (Array.isArray(msgContent)) {
-    for (const block of msgContent) {
-      const b = block as Record<string, unknown>;
-      if (b.type === "tool_use" && typeof b.id === "string") toolUseSet.add(b.id);
-    }
-  }
-  if (usage.output_tokens !== undefined) {
-    const inp = (usage.input_tokens as number) ?? 0;
-    const cacheCreate = (usage.cache_creation_input_tokens as number) ?? 0;
-    const cacheRead = (usage.cache_read_input_tokens as number) ?? 0;
-    const totalInp = inp + cacheCreate + cacheRead;
-    if (totalInp > maxInputRef.value) maxInputRef.value = totalInp;
-    const requestId = (obj.requestId as string) ?? Math.random().toString();
-    const out = (usage.output_tokens as number) ?? 0;
-    const existing = outputByRequestId.get(requestId) ?? 0;
-    if (out > existing) outputByRequestId.set(requestId, out);
-  }
-}
-
-// Parse a subagent output file and extract cumulative token usage
-function parseSubagentTokens(fpath: string): {
-  inputTokens: number;
-  outputTokens: number;
-  toolUses: number;
-  startedAt: string | null;
-  name: string;
-} {
-  let inputTokens = 0;
-  let outputTokens = 0;
-  let toolUses = 0;
-  let startedAt: string | null = null;
-  let name = "";
-
-  try {
-    const st = statSync(fpath);
-    const fd = openSync(fpath, "r");
-    try {
-      // Read first 4KB for name/startedAt
-      const headBuf = Buffer.alloc(4096);
-      const headBytes = readSync(fd, headBuf, 0, 4096, 0);
-      const headStr = headBuf.slice(0, headBytes).toString("utf-8");
-      const firstLine = headStr.split("\n")[0];
-      name = extractAgentName(firstLine, name);
-      try {
-        const obj = JSON.parse(firstLine) as Record<string, unknown>;
-        if (typeof obj.timestamp === "string") startedAt = obj.timestamp;
-      } catch { /* ignore */ }
-
-      // Read entire file to accumulate tokens across all assistant messages
-      // We need to scan all lines because usage accumulates per-request
-      const totalSize = st.size;
-      const chunkSize = 65536;
-      let offset = 0;
-      let leftover = "";
-      const maxInputRef = { value: 0 };
-      // Track per-request output tokens (each request has its own output count)
-      const outputByRequestId = new Map<string, number>();
-      const toolUseSet = new Set<string>(); // deduplicate tool uses by tool_use id
-
-      while (offset < totalSize) {
-        const buf = Buffer.alloc(chunkSize);
-        const bytesRead = readSync(fd, buf, 0, chunkSize, offset);
-        if (bytesRead === 0) break;
-        offset += bytesRead;
-        const chunk = leftover + buf.slice(0, bytesRead).toString("utf-8");
-        const lines = chunk.split("\n");
-        leftover = lines.pop() ?? "";
-        for (const rawLine of lines) {
-          const line = rawLine.trim();
-          if (!line) continue;
-          try {
-            const obj = JSON.parse(line) as Record<string, unknown>;
-            if (obj.type !== "assistant") continue;
-            accumulateAssistantEntry(obj, toolUseSet, outputByRequestId, maxInputRef);
-          } catch { /* ignore malformed lines */ }
-        }
-      }
-
-      // Process any remaining partial line at EOF
-      if (leftover.trim()) {
-        try {
-          const obj = JSON.parse(leftover.trim()) as Record<string, unknown>;
-          if (obj.type === "assistant") {
-            accumulateAssistantEntry(obj, toolUseSet, outputByRequestId, maxInputRef);
-          }
-        } catch { /* ignore malformed final line */ }
-      }
-
-      inputTokens = maxInputRef.value;
-      for (const v of outputByRequestId.values()) outputTokens += v;
-      toolUses = toolUseSet.size;
-    } finally {
-      closeSync(fd);
-    }
-  } catch { /* ignore */ }
-
-  return { inputTokens, outputTokens, toolUses, startedAt, name };
-}
-
-function restIngestTokens(res: http.ServerResponse): void {
-  let ingested = 0;
-  let skipped = 0;
-  let errors = 0;
-
-  try {
-    const sessionDirs = readdirSync(SUBAGENTS_BASE);
-    for (const sessionDirName of sessionDirs) {
-      const taskDir = join(SUBAGENTS_BASE, sessionDirName, "tasks");
-      let files: string[];
-      try {
-        files = readdirSync(taskDir).filter((f) => {
-          if (!f.endsWith(".output")) return false;
-          const id = f.slice(0, -7);
-          return SUBAGENT_ID_RE.test(id);
-        });
-      } catch { continue; }
-
-      for (const fname of files) {
-        const agentId = fname.slice(0, -7);
-        // Check if already in DB
-        const existing = tokenUsageDb
-          .query("SELECT id FROM usage WHERE agent_id = ?")
-          .get(agentId);
-        if (existing) { skipped++; continue; }
-
-        const fpath = join(taskDir, fname);
-        // Only process files that aren't actively being written (modified > 60s ago)
-        try {
-          const st = statSync(fpath);
-          if (Date.now() - st.mtimeMs < 60_000) { skipped++; continue; }
-        } catch { continue; }
-
-        try {
-          const { inputTokens, outputTokens, toolUses, startedAt, name } =
-            parseSubagentTokens(fpath);
-          const cost =
-            inputTokens * COST_PER_INPUT_TOKEN +
-            outputTokens * COST_PER_OUTPUT_TOKEN;
-          tokenUsageDb.query(`
-            INSERT OR IGNORE INTO usage
-              (session_id, agent_id, agent_name, input_tokens, output_tokens, tool_uses, cost_usd, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-          `).run(
-            sessionDirName,
-            agentId,
-            name || null,
-            inputTokens,
-            outputTokens,
-            toolUses,
-            cost,
-            startedAt ?? new Date().toISOString(),
-          );
-          ingested++;
-        } catch { errors++; }
-      }
-    }
-  } catch (e) {
-    jsonResponse(res, { error: String(e) }, 500);
-    return;
-  }
-
-  jsonResponse(res, { ingested, skipped, errors });
-}
-
-interface TokenStats {
-  today: { cost: number; inputTokens: number; outputTokens: number };
-  last7days: { date: string; cost: number }[];
-  topAgents: { name: string; totalCost: number; count: number }[];
-  sessions: { sessionId: string; cost: number; agentCount: number }[];
-}
-
-function restServeTokenStats(res: http.ServerResponse): void {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-
-  const todayRow = tokenUsageDb.query(`
-    SELECT
-      COALESCE(SUM(cost_usd), 0) as cost,
-      COALESCE(SUM(input_tokens), 0) as input_tokens,
-      COALESCE(SUM(output_tokens), 0) as output_tokens
-    FROM usage
-    WHERE date(created_at) = date('now')
-  `).get() as { cost: number; input_tokens: number; output_tokens: number };
-
-  const last7rows = tokenUsageDb.query(`
-    SELECT date(created_at) as date, COALESCE(SUM(cost_usd), 0) as cost
-    FROM usage
-    WHERE created_at >= date('now', '-6 days')
-    GROUP BY date(created_at)
-    ORDER BY date ASC
-  `).all() as { date: string; cost: number }[];
-
-  // Fill in missing days with 0
-  const last7days: { date: string; cost: number }[] = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().slice(0, 10);
-    const found = last7rows.find((r) => r.date === dateStr);
-    last7days.push({ date: dateStr, cost: found?.cost ?? 0 });
-  }
-
-  const topAgents = tokenUsageDb.query(`
-    SELECT
-      COALESCE(agent_name, agent_id) as name,
-      COALESCE(SUM(cost_usd), 0) as totalCost,
-      COUNT(*) as count
-    FROM usage
-    GROUP BY COALESCE(agent_name, agent_id)
-    ORDER BY totalCost DESC
-    LIMIT 20
-  `).all() as { name: string; totalCost: number; count: number }[];
-
-  const sessions = tokenUsageDb.query(`
-    SELECT
-      session_id as sessionId,
-      COALESCE(SUM(cost_usd), 0) as cost,
-      COUNT(*) as agentCount
-    FROM usage
-    GROUP BY session_id
-    ORDER BY MAX(created_at) DESC
-    LIMIT 30
-  `).all() as { sessionId: string; cost: number; agentCount: number }[];
-
-  const stats: TokenStats = {
-    today: {
-      cost: todayRow?.cost ?? 0,
-      inputTokens: todayRow?.input_tokens ?? 0,
-      outputTokens: todayRow?.output_tokens ?? 0,
-    },
-    last7days,
-    topAgents,
-    sessions,
-  };
-
-  jsonResponse(res, stats);
-}
-
 // ── Timeline SQLite ────────────────────────────────────────────────────────
 
 const TIMELINE_DB_PATH = "/mnt/data/clunger/timeline.db";
@@ -3729,19 +3295,6 @@ const server = http.createServer(async (req, res) => {
       nightowlCleanup();
       const entry = nightowlTasks.get(taskId);
       jsonResponse(res, { task_id: taskId, done: entry?.done ?? false });
-      return;
-    }
-
-    // ── Token Usage API ───────────────────────────────────────────────────
-    // POST /api/tokens/ingest — scan output files and log completed agents
-    if (pathname === "/api/tokens/ingest" && req.method === "POST") {
-      restIngestTokens(res);
-      return;
-    }
-
-    // GET /api/tokens/stats — return aggregated token usage stats
-    if (pathname === "/api/tokens/stats" && req.method === "GET") {
-      restServeTokenStats(res);
       return;
     }
 
