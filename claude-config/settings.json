@@ -31,7 +31,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/mnt/data/scripts/hooks/subagent-start.sh",
+            "command": "/mnt/data/scripts/hooks/subagent-start.ts",
             "async": true
           }
         ]
@@ -42,7 +42,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/mnt/data/scripts/hooks/subagent-stop.sh",
+            "command": "/mnt/data/scripts/hooks/subagent-stop.ts",
             "async": true
           }
         ]
