@@ -296,3 +296,17 @@ except asyncio.TimeoutError:
 except Exception as e:
     print(f'congress orphan check: error: {e}', file=sys.stderr)
 PYEOF
+
+# Clean up orphaned /tmp/bc-agents state files >2 hours old.
+# subagent-stop.ts deletes its own state file on normal exit, but crashes/kills leave orphans.
+# These are harmless but accumulate indefinitely without cleanup.
+BC_AGENTS_DIR="/tmp/bc-agents"
+if [ -d "$BC_AGENTS_DIR" ]; then
+  ORPHAN_COUNT=$(find "$BC_AGENTS_DIR" -name "*.json" -mmin +120 2>/dev/null | wc -l)
+  PENDING_COUNT=$(find "$BC_AGENTS_DIR" -name "pending-*" -mmin +5 2>/dev/null | wc -l)
+  find "$BC_AGENTS_DIR" -name "*.json" -mmin +120 -delete 2>/dev/null || true
+  find "$BC_AGENTS_DIR" -name "pending-*" -mmin +5 -delete 2>/dev/null || true
+  if [ "$ORPHAN_COUNT" -gt 0 ] || [ "$PENDING_COUNT" -gt 0 ]; then
+    echo "watchdog: cleaned $ORPHAN_COUNT orphaned agent state files + $PENDING_COUNT stale pending files from $BC_AGENTS_DIR"
+  fi
+fi
