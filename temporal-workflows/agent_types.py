@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Any, Literal
 
 AgentType = Literal["claude", "gemini", "gpt", "custom"]
+Provider = Literal["claude", "xai"]
 
 
 @dataclass
@@ -20,3 +21,7 @@ class AgentTaskInput:
     is_foreground: bool = True
     metadata: dict[str, Any] = field(default_factory=dict)
     started_at: datetime | None = None
+    # provider controls execution path: "xai" runs the API call directly;
+    # "claude" (default) uses the tracker/signal pattern.
+    # Inferred from model name if not specified (grok-* → xai).
+    provider: Provider | None = None
