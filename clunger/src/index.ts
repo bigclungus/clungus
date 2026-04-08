@@ -1,5 +1,5 @@
 import http from "node:http";
-import { existsSync, readFileSync, readdirSync, writeFileSync, unlinkSync, statSync, openSync, readSync, closeSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync, unlinkSync, statSync, openSync, readSync, closeSync, globSync } from "node:fs";
 import { extname, join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { Database } from "bun:sqlite";
@@ -1133,9 +1133,18 @@ function restServeTasks(res: http.ServerResponse, query: URLSearchParams): void 
       };
       return durationMs(tb) - durationMs(ta);
     }
-    // Default: "recent" — newest started_at first
-    const sa = String(ta.started_at ?? "");
-    const sb = String(tb.started_at ?? "");
+    // Default: "recent" — status priority (running/in_progress > open/stale > done/failed/closed), then newest first within group
+    const statusPriority = (task: Record<string, unknown>): number => {
+      const s = String(task.status ?? "");
+      if (s === "running" || s === "in_progress") return 0;
+      if (s === "open" || s === "stale") return 1;
+      return 2; // done, failed, closed, anything else
+    };
+    const pa = statusPriority(ta);
+    const pb = statusPriority(tb);
+    if (pa !== pb) return pa - pb;
+    const sa = String(ta.created_at ?? ta.started_at ?? "");
+    const sb = String(tb.created_at ?? tb.started_at ?? "");
     return sb.localeCompare(sa);
   });
 
@@ -1565,6 +1574,26 @@ function parseAgentTs(v: unknown): string | null {
   return isNaN(d.getTime()) ? null : d.toISOString();
 }
 
+/**
+ * Given an agentId and optional sessionId from tasks.db, find the .output file
+ * at /tmp/claude-1001/-mnt-data/{sessionId}/tasks/{agentId}.output.
+ * Falls back to globbing all sessions if sessionId is missing or path not found.
+ */
+function resolveAgentOutputPath(agentId: string, sessionId?: string): string {
+  if (!agentId) return "";
+  // Try direct path first (fast path using known sessionId)
+  if (sessionId && sessionId !== "unknown") {
+    const direct = `/tmp/claude-1001/-mnt-data/${sessionId}/tasks/${agentId}.output`;
+    if (existsSync(direct)) return direct;
+  }
+  // Fallback: glob across all sessions
+  try {
+    const matches = globSync(`/tmp/claude-1001/-mnt-data/*/tasks/${agentId}.output`);
+    if (matches.length > 0) return matches[0];
+  } catch { /* ignore */ }
+  return "";
+}
+
 function restServeSubagents(res: http.ServerResponse): void {
   res.setHeader("Access-Control-Allow-Origin", "*");
 
@@ -1598,6 +1627,10 @@ function restServeSubagents(res: http.ServerResponse): void {
       const finishedAt = parseAgentTs(blobData.finished_at ?? row.updated_at);
       const lastModified = (rowStatus === "done" || rowStatus === "failed") ? (finishedAt ?? startedAt ?? new Date().toISOString()) : (startedAt ?? new Date().toISOString());
 
+      const agentId = String(blobData.agent_id ?? "");
+      const sessionId = String(blobData.session_id ?? "");
+      const outputPath = resolveAgentOutputPath(agentId, sessionId);
+
       result.push({
         id: taskId,
         name: String(row.title ?? taskId.slice(0, 12)),
@@ -1609,7 +1642,7 @@ function restServeSubagents(res: http.ServerResponse): void {
         cacheReadTokens: 0,
         cost: 0,
         toolUses: 0,
-        outputPath: "",
+        outputPath,
         startedAt,
         lastModified,
         traceId: null,

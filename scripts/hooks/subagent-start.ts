@@ -30,7 +30,7 @@ const provider = (input.provider as string | undefined) ?? "";
 
 if (!agentId) process.exit(0);
 
-// Determine provider suffix for workflow ID
+// Determine provider for tracking (not used in workflow ID)
 const providerSuffix =
   model.startsWith("grok-") || provider === "xai" ? "xai" : "claude";
 
@@ -72,7 +72,7 @@ if (!title) {
 
 const datePart = new Date().toISOString().slice(0, 19).replace(/[-T:]/g, "").replace(/(\d{8})(\d{6})/, "$1-$2");
 const taskId = `task-${datePart}-${agentId.slice(0, 8)}`;
-const workflowId = `agent-task-${agentId}-${providerSuffix}`;
+const workflowId = `agent-task-${agentId}`;
 
 // Save state for subagent-stop.ts to pick up
 await Bun.write(

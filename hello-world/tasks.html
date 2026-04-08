@@ -401,6 +401,50 @@
       display: block;
     }
 
+    .temporal-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      margin-top: 8px;
+      background: #1a1a2e;
+      border: 1px solid #4a4a8a;
+      border-radius: 12px;
+      color: #8888ff;
+      font-size: 11px;
+      text-decoration: none;
+      font-family: monospace;
+    }
+    .temporal-pill:hover { background: #2a2a4e; border-color: #8888ff; }
+
+    .provider-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 1px 7px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-family: monospace;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      vertical-align: middle;
+      margin-left: 4px;
+    }
+    .provider-badge.provider-claude {
+      background: rgba(99,179,237,0.12);
+      border: 1px solid rgba(99,179,237,0.35);
+      color: #63b3ed;
+    }
+    .provider-badge.provider-xai {
+      background: rgba(251,146,60,0.12);
+      border: 1px solid rgba(251,146,60,0.35);
+      color: #fb923c;
+    }
+    .provider-badge.provider-other {
+      background: rgba(156,163,175,0.1);
+      border: 1px solid rgba(156,163,175,0.3);
+      color: #9ca3af;
+    }
+
     .log-entry {
       display: grid;
       grid-template-columns: 82px 68px 1fr;
@@ -662,6 +706,90 @@
       .log-event { grid-column: 1; grid-row: 1; }
       .log-context { grid-column: 1 / -1; grid-row: 2; padding-left: 4px; }
     }
+
+    /* ── Search + sort controls ── */
+    .controls-bar {
+      padding: 10px 28px;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    @media (max-width: 768px) {
+      .controls-bar { padding: 8px 16px; }
+    }
+
+    .search-input {
+      flex: 1;
+      min-width: 160px;
+      max-width: 340px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      padding: 5px 11px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .search-input::placeholder {
+      color: var(--text-muted);
+      opacity: 0.5;
+    }
+    .search-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(233,69,96,0.15);
+    }
+
+    .sort-label {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      opacity: 0.65;
+      flex-shrink: 0;
+    }
+
+    .sort-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      padding: 3px 11px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    .sort-btn:hover {
+      border-color: rgba(255,255,255,0.22);
+      color: var(--text);
+    }
+    [data-theme="light"] .sort-btn:hover {
+      border-color: rgba(0,0,0,0.2);
+    }
+    .sort-btn.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(233,69,96,0.08);
+    }
+
+    .search-clear {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      cursor: pointer;
+      padding: 0 2px;
+      opacity: 0.5;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .search-clear:hover { opacity: 1; }
+    .search-clear.hidden { display: none; }
   </style>
 </head>
 <body>
@@ -671,6 +799,16 @@
     <span class="refresh-status" id="refresh-status">
       <span class="blink inactive">_</span> loading...
     </span>
+  </div>
+
+  <div class="controls-bar">
+    <input class="search-input" id="search-input" type="text" placeholder="search tasks..." autocomplete="off" spellcheck="false">
+    <button class="search-clear hidden" id="search-clear" title="clear search">&times;</button>
+    <span class="sort-label">sort:</span>
+    <button class="sort-btn active" data-sort="recent">status priority</button>
+    <button class="sort-btn" data-sort="oldest">oldest</button>
+    <button class="sort-btn" data-sort="expensive">most expensive</button>
+    <button class="sort-btn" data-sort="longest">longest running</button>
   </div>
 
   <div id="tasks-summary" style="display:none;"></div>
@@ -871,10 +1009,23 @@
         ? '<span class="token-badge" title="' + escHtml(tokenTitle) + '">' + escHtml(tokenFmt) + ' tok</span>'
         : '';
 
+      var temporalLink = task.agent_id
+        ? '<a class="temporal-pill" href="https://temporal.clung.us/namespaces/tasks/workflows/agent-task-' + escHtml(String(task.agent_id)) + '" target="_blank" rel="noopener">&#9201; Temporal</a>'
+        : '';
+
+      var providerRaw = (task.provider || '').toLowerCase();
+      var providerClass = providerRaw === 'claude' ? 'provider-claude'
+                        : providerRaw === 'xai'    ? 'provider-xai'
+                        : providerRaw              ? 'provider-other'
+                        : '';
+      var providerBadge = providerClass
+        ? '<span class="provider-badge ' + providerClass + '">' + escHtml(providerRaw) + '</span>'
+        : '';
+
       var cardTaskIdAttr = task.id ? ' data-task-id="' + escHtml(String(task.id)) + '"' : '';
       return '<div class="task-card status-' + escHtml(status) + '"' + cardTaskIdAttr + '>' +
         '<div class="card-top">' +
-          '<div class="card-title">' + title + '</div>' +
+          '<div class="card-title">' + title + providerBadge + '</div>' +
           agePill +
           costHtml +
           tokenHtml +
@@ -893,6 +1044,7 @@
         '</div>' +
         summaryHtml +
         logHtml +
+        temporalLink +
       '</div>';
     }
 
@@ -1010,6 +1162,9 @@
     }
 
     var currentFilter = null;
+    var currentSort = 'recent';
+    var currentSearch = '';
+    var _searchDebounce = null;
     var _lastTasks = [];
     // For change detection
     var _lastStateKey = null;
@@ -1063,10 +1218,8 @@
 
       _cardCounter = 0;
 
-      // Flat recency sort: most recent activity first, regardless of status
-      var sorted = tasks.slice().sort(function(a, b) {
-        return (new Date(lastActivityTs(b) || 0)) - (new Date(lastActivityTs(a) || 0));
-      });
+      // Ordering is handled server-side; tasks arrive in the requested sort order
+      var sorted = tasks;
 
       updateSummary(tasks, totals);
       updatePagination(meta);
@@ -1074,15 +1227,18 @@
       var container = document.getElementById('task-list');
 
       if (tasks.length === 0) {
-        container.innerHTML = '<div class="empty-state">' +
-          '<div class="empty-prompt">$ bigclungus --list-tasks</div>' +
-          '<div class="empty-msg">' +
-            '<em>nothing running.</em><br>' +
-            'my subagents are idle, my queues are empty,<br>' +
-            'and for once i have nothing to say about it.<br>' +
-            '<em>probably fine.</em>' +
-          '</div>' +
-        '</div>';
+        var emptyMsg = currentSearch
+          ? '<div class="empty-state"><div class="empty-msg"><em>no tasks matching &ldquo;' + escHtml(currentSearch) + '&rdquo;</em></div></div>'
+          : '<div class="empty-state">' +
+              '<div class="empty-prompt">$ bigclungus --list-tasks</div>' +
+              '<div class="empty-msg">' +
+                '<em>nothing running.</em><br>' +
+                'my subagents are idle, my queues are empty,<br>' +
+                'and for once i have nothing to say about it.<br>' +
+                '<em>probably fine.</em>' +
+              '</div>' +
+            '</div>';
+        container.innerHTML = emptyMsg;
 
         document.getElementById('refresh-status').innerHTML =
           '<span class="blink inactive">_</span> updated ' + fmtTime(new Date()) + ' &middot; 0 tasks';
@@ -1156,7 +1312,9 @@
     }
 
     function fetchTasks() {
-      var url = '/api/tasks?page=' + currentPage + '&limit=' + PAGE_LIMIT;
+      var url = '/api/tasks?page=' + currentPage + '&limit=' + PAGE_LIMIT +
+        '&sort=' + encodeURIComponent(currentSort) +
+        (currentSearch ? '&search=' + encodeURIComponent(currentSearch) : '');
       fetch(url)
         .then(function(r) {
           if (r.status === 403 || r.status === 401) {
@@ -1186,6 +1344,45 @@
             '<span style="color:var(--accent)">error</span>';
         });
     }
+
+    // ── Sort button wiring ──
+    document.querySelectorAll('.sort-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var s = btn.getAttribute('data-sort');
+        if (currentSort === s) return;
+        currentSort = s;
+        document.querySelectorAll('.sort-btn').forEach(function(b) {
+          b.classList.toggle('active', b.getAttribute('data-sort') === s);
+        });
+        currentPage = 1;
+        fetchTasks();
+      });
+    });
+
+    // ── Search input wiring ──
+    var searchInput = document.getElementById('search-input');
+    var searchClear = document.getElementById('search-clear');
+
+    searchInput.addEventListener('input', function() {
+      var val = searchInput.value.trim();
+      searchClear.classList.toggle('hidden', val === '');
+      clearTimeout(_searchDebounce);
+      _searchDebounce = setTimeout(function() {
+        if (val !== currentSearch) {
+          currentSearch = val;
+          currentPage = 1;
+          fetchTasks();
+        }
+      }, 300);
+    });
+
+    searchClear.addEventListener('click', function() {
+      searchInput.value = '';
+      searchClear.classList.add('hidden');
+      currentSearch = '';
+      currentPage = 1;
+      fetchTasks();
+    });
 
     fetchTasks();
     setInterval(function() {

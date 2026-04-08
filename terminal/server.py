@@ -618,6 +618,28 @@ HTML = r"""<!DOCTYPE html>
       font-size: 10px;
       font-family: var(--font-mono);
     }
+    .sa-temporal-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: rgba(96,165,250,0.08);
+      color: rgba(96,165,250,0.7);
+      border: 1px solid rgba(96,165,250,0.25);
+      border-radius: 10px;
+      padding: 1px 7px;
+      font-size: 10px;
+      font-weight: 500;
+      font-family: var(--font-mono);
+      text-decoration: none;
+      letter-spacing: 0.02em;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      margin-left: auto;
+    }
+    .sa-temporal-pill:hover {
+      background: rgba(96,165,250,0.18);
+      color: #60a5fa;
+      border-color: rgba(96,165,250,0.5);
+    }
     .sa-output {
       background: rgba(8,11,16,0.7);
       border: 1px solid rgba(48,54,61,0.6);
@@ -1176,6 +1198,7 @@ HTML = r"""<!DOCTYPE html>
         <div class="sa-meta">
           <span class="sa-cost-badge">${escHtml(fmtCost(agent.cost))}</span>
           <span class="sa-tools">&#x1F527; ${agent.toolUses} calls</span>
+          <a class="sa-temporal-pill" href="https://temporal.clung.us/namespaces/tasks/workflows/agent-task-${escHtml(agent.id)}" target="_blank" rel="noopener">&#x23F1; temporal &#x2197;</a>
         </div>
         <div class="sa-output"></div>
       `;

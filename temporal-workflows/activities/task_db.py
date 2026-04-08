@@ -12,6 +12,7 @@ Schema:
   task_events(id INTEGER PK, task_id TEXT, event TEXT, message TEXT, ts TEXT)
 """
 
+import glob
 import json
 import sqlite3
 import time
@@ -53,6 +54,7 @@ async def create_task_record(input: AgentTaskInput) -> None:
         "source": "agent-hook",
         "agent_id": input.agent_id,
         "model": input.model,
+        "provider": input.provider,
         "log": [{"ts": now, "event": "started", "context": title}],
     })
 
@@ -78,11 +80,88 @@ async def create_task_record(input: AgentTaskInput) -> None:
         conn.commit()
 
 
+def _parse_jsonl_tokens(agent_id: str) -> dict:
+    """
+    Parse token usage from the agent's output JSONL file.
+    Globs for /tmp/claude-1001/**/tasks/<agent_id>.output
+    Deduplicates by message.id (last occurrence wins), sums tokens.
+    Pricing: $3/1M input, $15/1M output, $0.30/1M cache_read.
+    Returns dict with input_tokens, output_tokens, cache_read_tokens, cost_usd (all 0 on failure).
+    """
+    empty = {"input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0, "cost_usd": 0.0}
+    if not agent_id:
+        return empty
+
+    matches = glob.glob(f"/tmp/claude-1001/**/tasks/{agent_id}.output", recursive=True)
+    if not matches:
+        return empty
+
+    output_path = matches[0]
+    try:
+        with open(output_path, "r", encoding="utf-8") as f:
+            raw = f.read()
+    except OSError:
+        return empty
+
+    usage_by_msg_id: dict[str, dict] = {}
+    for line in raw.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+
+        # Support both top-level agentId check and plain assistant messages
+        entry_agent_id = entry.get("agentId", "")
+        if entry_agent_id and entry_agent_id != agent_id:
+            continue
+
+        msg = entry.get("message")
+        if not isinstance(msg, dict):
+            continue
+        if msg.get("role") != "assistant":
+            continue
+
+        usage = msg.get("usage")
+        if not isinstance(usage, dict):
+            continue
+
+        msg_id = msg.get("id", "")
+        if not msg_id:
+            continue
+
+        usage_by_msg_id[msg_id] = {
+            "input": int(usage.get("input_tokens", 0)),
+            "output": int(usage.get("output_tokens", 0)),
+            "cache_read": int(usage.get("cache_read_input_tokens", 0)),
+        }
+
+    total_input = sum(u["input"] for u in usage_by_msg_id.values())
+    total_output = sum(u["output"] for u in usage_by_msg_id.values())
+    total_cache_read = sum(u["cache_read"] for u in usage_by_msg_id.values())
+
+    cost = (
+        (total_input * 3) / 1_000_000
+        + (total_output * 15) / 1_000_000
+        + (total_cache_read * 0.30) / 1_000_000
+    )
+
+    return {
+        "input_tokens": total_input,
+        "output_tokens": total_output,
+        "cache_read_tokens": total_cache_read,
+        "cost_usd": round(cost, 6),
+    }
+
+
 @activity.defn
 async def finalize_task(input: AgentTaskInput, result: dict) -> None:
     """
-    UPDATE tasks row with final status and updated_at.
+    UPDATE tasks row with final status, updated_at, and token usage.
     Appends a 'done' entry to the log blob.
+    Token usage is parsed from the agent's output JSONL file.
     Idempotent — safe to call multiple times.
     """
     now = _iso_now()
@@ -98,6 +177,9 @@ async def finalize_task(input: AgentTaskInput, result: dict) -> None:
     last_preview = result.get("last_message_preview", "")
     context = (last_preview[:500] + "...(truncated)") if len(last_preview) > 500 else last_preview
 
+    # Parse token usage from JSONL output file
+    token_data = _parse_jsonl_tokens(input.agent_id)
+
     with _get_conn() as conn:
         row = conn.execute(
             "SELECT data FROM tasks WHERE id = ?", (input.task_id,)
@@ -109,6 +191,10 @@ async def finalize_task(input: AgentTaskInput, result: dict) -> None:
                 blob = json.loads(row[0])
                 blob["status"] = status
                 blob["finished_at"] = now
+                blob["input_tokens"] = token_data["input_tokens"]
+                blob["output_tokens"] = token_data["output_tokens"]
+                blob["cache_read_tokens"] = token_data["cache_read_tokens"]
+                blob["cost_usd"] = token_data["cost_usd"]
                 if isinstance(blob.get("log"), list):
                     blob["log"].append({"ts": now, "event": status, "context": context or "agent finished"})
                 updated_data = json.dumps(blob)
