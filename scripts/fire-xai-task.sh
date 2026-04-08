@@ -15,7 +15,7 @@ fi
 TIMESTAMP=$(date +%s)
 SLUG=$(echo "$PROMPT" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | cut -c1-20 | sed 's/-$//')
 TASK_ID="xai-${SLUG}-${TIMESTAMP}"
-WORKFLOW_ID="xai-task-${TIMESTAMP}"
+WORKFLOW_ID="agent-task-${SLUG}-${TIMESTAMP}-xai"
 
 INPUT=$(python3 -c "
 import json, sys
