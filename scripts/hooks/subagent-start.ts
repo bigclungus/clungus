@@ -2,7 +2,9 @@
 /**
  * Hook: SubagentStart
  * Fires when a subagent is spawned.
- * INSERTs into tasks.db + POSTs to clunger /api/agents/spawn
+ *
+ * TEMPORAL_SHADOW=true  → INSERT tasks.db + start Temporal workflow (no clunger HTTP)
+ * TEMPORAL_SHADOW=false/unset → INSERT tasks.db + POST to clunger /api/agents/spawn (no Temporal)
  *
  * Stdin: JSON with agent_id, agent_type, session_id, hook_event_name
  */
@@ -68,7 +70,9 @@ if (!title) {
 const datePart = new Date().toISOString().slice(0, 19).replace(/[-T:]/g, "").replace(/(\d{8})(\d{6})/, "$1-$2");
 const taskId = `task-${datePart}-${agentId.slice(0, 8)}`;
 
-// INSERT into tasks.db
+const useTemporalPath = process.env.TEMPORAL_SHADOW === "true";
+
+// INSERT into tasks.db — both paths need a record
 try {
   const db = new Database(DEFAULT_DB);
   db.run("PRAGMA journal_mode=WAL");
@@ -97,27 +101,8 @@ try {
 // Store task ID in agent state file for subagent-stop.ts
 await Bun.write(`${STATE_DIR}/${agentId}.json`, JSON.stringify({ task_id: taskId, agent_id: agentId, session_id: sessionId }));
 
-// POST spawn record to clunger
-const outputFile = `/tmp/claude-1001/-mnt-data/${sessionId}/tasks/${agentId}.output`;
-try {
-  const res = await fetch("http://localhost:8081/api/agents/spawn", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id: agentId, description: title, output_file: outputFile, task_id: taskId }),
-  });
-  if (!res.ok) {
-    process.stderr.write(`subagent-start: clunger spawn returned ${res.status}\n`);
-  }
-} catch (err) {
-  process.stderr.write(`subagent-start: clunger POST failed: ${err}\n`);
-}
-
-process.stderr.write(`subagent-start: created task ${taskId} for agent ${agentId} (${agentType})\n`);
-
-// ── Shadow mode: fire Temporal AgentTaskWorkflow ──────────────────────────
-// Enabled only when TEMPORAL_SHADOW=true. All Temporal calls are non-blocking
-// and wrapped in try/catch — they MUST NOT affect hook exit code.
-if (process.env.TEMPORAL_SHADOW === "true") {
+if (useTemporalPath) {
+  // ── Temporal path ──────────────────────────────────────────────────────────
   const workflowId = `agent-task-${taskId}`;
   const temporalInput = {
     task_id: taskId,
@@ -154,6 +139,23 @@ if (process.env.TEMPORAL_SHADOW === "true") {
     }
     process.stderr.write(`subagent-start: temporal workflow started ${workflowId}\n`);
   } catch (err) {
-    process.stderr.write(`subagent-start: temporal shadow error (non-fatal): ${err}\n`);
+    process.stderr.write(`subagent-start: temporal error: ${err}\n`);
+  }
+} else {
+  // ── Old path: POST spawn record to clunger ─────────────────────────────────
+  const outputFile = `/tmp/claude-1001/-mnt-data/${sessionId}/tasks/${agentId}.output`;
+  try {
+    const res = await fetch("http://localhost:8081/api/agents/spawn", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: agentId, description: title, output_file: outputFile, task_id: taskId }),
+    });
+    if (!res.ok) {
+      process.stderr.write(`subagent-start: clunger spawn returned ${res.status}\n`);
+    }
+  } catch (err) {
+    process.stderr.write(`subagent-start: clunger POST failed: ${err}\n`);
   }
 }
+
+process.stderr.write(`subagent-start: created task ${taskId} for agent ${agentId} (${agentType})\n`);

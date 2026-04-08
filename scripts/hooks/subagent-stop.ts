@@ -2,7 +2,9 @@
 /**
  * Hook: SubagentStop
  * Fires when a subagent finishes.
- * UPDATEs tasks.db status to done + POSTs to clunger /api/agents/:id/complete
+ *
+ * TEMPORAL_SHADOW=true  → UPDATE tasks.db + signal Temporal workflow (no clunger HTTP)
+ * TEMPORAL_SHADOW=false/unset → UPDATE tasks.db + POST to clunger /api/agents/:id/complete (no Temporal)
  *
  * Stdin: JSON with agent_id, agent_type, last_assistant_message, hook_event_name
  */
@@ -51,7 +53,9 @@ if (!taskId) {
 
 const context = lastMsg.length > 500 ? lastMsg.slice(0, 500) + "...(truncated)" : lastMsg;
 
-// UPDATE tasks.db — update both status column and data blob
+const useTemporalPath = process.env.TEMPORAL_SHADOW === "true";
+
+// UPDATE tasks.db — both paths need the record updated
 // (clunger reads task status from the blob, not the column)
 try {
   const db = new Database(DEFAULT_DB);
@@ -100,27 +104,8 @@ try {
 // Clean up agent state file
 try { unlinkSync(agentStateFile); } catch { /* non-fatal */ }
 
-// POST complete to clunger
-try {
-  const res = await fetch(`http://localhost:8081/api/agents/${agentId}/complete`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ status: "completed", exit_reason: "completed" }),
-  });
-  if (!res.ok) {
-    process.stderr.write(`subagent-stop: clunger complete returned ${res.status}\n`);
-  }
-} catch (err) {
-  process.stderr.write(`subagent-stop: clunger POST failed: ${err}\n`);
-}
-
-process.stderr.write(`subagent-stop: marked task ${taskId} done for agent ${agentId}\n`);
-
-// ── Shadow mode: signal Temporal workflow with final metadata ─────────────
-// Enabled only when TEMPORAL_SHADOW=true. Non-blocking, never affects exit code.
-if (process.env.TEMPORAL_SHADOW === "true") {
-  // Workflow ID was stored alongside task_id in the state file (before it was deleted above)
-  // Re-derive it from taskId since state file is already cleaned up
+if (useTemporalPath) {
+  // ── Temporal path ──────────────────────────────────────────────────────────
   const workflowId = `agent-task-${taskId}`;
   const metadataPayload = {
     completed_at: timestamp,
@@ -141,6 +126,22 @@ if (process.env.TEMPORAL_SHADOW === "true") {
     );
     process.stderr.write(`subagent-stop: temporal mark_complete signal sent to ${workflowId}\n`);
   } catch (err) {
-    process.stderr.write(`subagent-stop: temporal shadow error (non-fatal): ${err}\n`);
+    process.stderr.write(`subagent-stop: temporal error: ${err}\n`);
+  }
+} else {
+  // ── Old path: POST complete to clunger ─────────────────────────────────────
+  try {
+    const res = await fetch(`http://localhost:8081/api/agents/${agentId}/complete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "completed", exit_reason: "completed" }),
+    });
+    if (!res.ok) {
+      process.stderr.write(`subagent-stop: clunger complete returned ${res.status}\n`);
+    }
+  } catch (err) {
+    process.stderr.write(`subagent-stop: clunger POST failed: ${err}\n`);
   }
 }
+
+process.stderr.write(`subagent-stop: marked task ${taskId} done for agent ${agentId}\n`);
