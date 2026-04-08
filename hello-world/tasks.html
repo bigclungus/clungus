@@ -928,7 +928,7 @@
 
     function makeCard(task) {
       var title = escHtml(task.title || '(no title)');
-      var agentType = escHtml(task.agent_type || '?');
+      var agentType = escHtml(task.agent_type || (task.source === 'agent-hook' ? 'subagent' : task.source) || '?');
       var status = task.status || 'stale';
       var badgeClass = status === 'open'        ? 'open'
                      : status === 'in_progress' ? 'in_progress'
@@ -1009,8 +1009,12 @@
         ? '<span class="token-badge" title="' + escHtml(tokenTitle) + '">' + escHtml(tokenFmt) + ' tok</span>'
         : '';
 
-      var temporalLink = task.agent_id
-        ? '<a class="temporal-pill" href="https://temporal.clung.us/namespaces/tasks/workflows/agent-task-' + escHtml(String(task.agent_id)) + '" target="_blank" rel="noopener">&#9201; Temporal</a>'
+      // Temporal workflow ID = agent-task-{agent_id} (set by subagent-start.ts hook).
+      // xAI tasks have empty agent_id (their workflow IDs use a slug+timestamp pattern),
+      // so no temporal link is shown for them.
+      var temporalAgentId = task.agent_id || '';
+      var temporalLink = temporalAgentId
+        ? '<a class="temporal-pill" href="https://temporal.clung.us/namespaces/tasks/workflows/agent-task-' + escHtml(temporalAgentId) + '" target="_blank" rel="noopener">&#9201; Temporal</a>'
         : '';
 
       var providerRaw = (task.provider || '').toLowerCase();
