@@ -104,8 +104,8 @@ def _load_context_cache(topic: str) -> "str | None":
         if data.get("topic_hash") != expected_hash:
             return None
         return data["brief"]
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("[congress] failed to load context cache: %s", e)
     return None
 
 

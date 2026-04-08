@@ -42,7 +42,8 @@ async def _do_inject(
                 try:
                     data = await resp.json()
                     return data.get("message_id") or data.get("id")
-                except Exception:
+                except Exception as e:
+                    logging.warning("[inject] failed to parse message_id from response: %s", e)
                     return None
     return None
 

@@ -13,6 +13,7 @@ Steps:
 """
 
 import json
+import logging
 import os
 import subprocess
 from collections import Counter
@@ -83,7 +84,8 @@ def _read_file_safe(path: str, max_chars: int = MAX_FILE_CHARS) -> tuple[str, bo
         if len(text) > max_chars:
             return (text[:max_chars], True)
         return (text, False)
-    except Exception:
+    except Exception as e:
+        logging.warning("[context_snapshot] failed to read file %s: %s", p, e)
         return ("", False)
 
 
