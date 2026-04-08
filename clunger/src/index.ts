@@ -1029,17 +1029,47 @@ function restServeTasks(res: http.ServerResponse, query: URLSearchParams): void 
     try {
       const db = new Database(TASKS_DB_REST, { readonly: true });
       try {
-        const rows = db.query<{ id: string; data: string }, []>(
-          "SELECT id, data FROM tasks ORDER BY created_at DESC"
+        const rows = db.query<{ id: string; status: string | null; created_at: string | null; updated_at: string | null; data: string }, []>(
+          "SELECT id, status, created_at, updated_at, data FROM tasks ORDER BY created_at DESC"
         ).all();
         for (const row of rows) {
           try {
             const task = JSON.parse(row.data) as Record<string, unknown>;
+            // Column status is authoritative — override stale blob value
+            if (row.status) task.status = row.status;
+            // Derive started_at / finished_at / summary from log (mirrors JSON fallback logic)
+            const log = Array.isArray(task.log) ? task.log as Array<Record<string, string>> : [];
+            if (log.length > 0) {
+              if (!task.started_at) {
+                for (const entry of log) {
+                  if (entry.event === "started") { task.started_at = entry.ts ?? ""; break; }
+                }
+              }
+              if (!task.finished_at) {
+                for (let i = log.length - 1; i >= 0; i--) {
+                  if (log[i].event !== "started") { task.finished_at = log[i].ts ?? ""; break; }
+                }
+              }
+              if (!task.summary) {
+                for (let i = log.length - 1; i >= 0; i--) {
+                  if (log[i].event !== "started" && log[i].context) {
+                    task.summary = log[i].context ?? ""; break;
+                  }
+                }
+              }
+            }
+            // Fall back to DB row timestamps if log derivation yielded nothing
+            if (!task.started_at && row.created_at) task.started_at = row.created_at;
+            if (!task.finished_at && row.updated_at) task.finished_at = row.updated_at;
+            // Prefer cost/token data already in the blob (written by finalize_task).
+            // Fall back to agents.db aggregates only if blob has nothing.
             const taskKey = String(task.id ?? row.id);
             const s = agentStats.get(taskKey);
-            task.cost_usd = s?.cost_usd ?? 0;
-            task.input_tokens = s?.input_tokens ?? 0;
-            task.output_tokens = s?.output_tokens ?? 0;
+            if (!task.cost_usd && !task.input_tokens && !task.output_tokens) {
+              task.cost_usd = s?.cost_usd ?? 0;
+              task.input_tokens = s?.input_tokens ?? 0;
+              task.output_tokens = s?.output_tokens ?? 0;
+            }
             tasks.push(task);
           } catch { /* skip malformed */ }
         }

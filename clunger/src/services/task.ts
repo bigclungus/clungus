@@ -100,8 +100,8 @@ function loadTasksFromSQLite(): Task[] | null {
 
   try {
     const db = new Database(TASKS_DB, { readonly: true });
-    const rows = db.query<{ data: string }, []>(
-      "SELECT data FROM tasks ORDER BY created_at DESC"
+    const rows = db.query<{ status: string | null; data: string }, []>(
+      "SELECT status, data FROM tasks ORDER BY created_at DESC"
     ).all();
     db.close();
 
@@ -109,6 +109,8 @@ function loadTasksFromSQLite(): Task[] | null {
     for (const row of rows) {
       try {
         const data = JSON.parse(row.data) as Record<string, unknown>;
+        // Column status is authoritative — override stale blob value
+        if (row.status) data.status = row.status;
         const task = taskFromData(data);
         if (task) tasks.push(task);
       } catch {
