@@ -30,6 +30,9 @@ TEMPORAL_WORKFLOWS_DIR = BASE_DIR + "/temporal-workflows"
 GRAPHITI_ENV = BASE_DIR + "/graphiti/repo/mcp_server/.env"
 SCRIPTS_DIR = BASE_DIR + "/scripts"
 
+# Temporal server host — overridable via env for non-local deployments
+TEMPORAL_HOST = os.environ.get("TEMPORAL_HOST", "localhost:7233")
+
 # Discord REST API base URL
 DISCORD_API = "https://discord.com/api/v10"
 

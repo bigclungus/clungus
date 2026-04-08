@@ -53,6 +53,7 @@ from .constants import (
     SIGNAL_NO_DISPUTE,
     SIGNAL_REFRAME,
     TASKS_DIR,
+    TEMPORAL_HOST,
     TEMPORAL_WORKFLOWS_DIR,
 )
 from .inject_act import _do_inject
@@ -337,8 +338,7 @@ async def congress_start(params) -> dict:
 
     # Enforce single-congress lock: fail fast if another congress is already running
     _current_wf_id = activity.info().workflow_id
-    _temporal_host = os.environ.get("TEMPORAL_HOST", "localhost:7233")
-    _tc = await _TemporalClient.connect(_temporal_host)
+    _tc = await _TemporalClient.connect(TEMPORAL_HOST)
     # Check both CongressWorkflow (legacy) and SessionWorkflow (unified) for running sessions
     _running = []
     for _wf_type in ("CongressWorkflow", "SessionWorkflow"):
