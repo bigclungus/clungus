@@ -1508,6 +1508,14 @@ interface SubagentInfo {
   exitReason: string | null;
 }
 
+/** Parse a DB timestamp — handles both Unix seconds (number) and date strings. */
+function parseAgentTs(v: unknown): string | null {
+  if (!v) return null;
+  const n = Number(v);
+  const d = isNaN(n) ? new Date(String(v)) : new Date(n * 1000);
+  return isNaN(d.getTime()) ? null : d.toISOString();
+}
+
 function restServeSubagents(res: http.ServerResponse): void {
   res.setHeader("Access-Control-Allow-Origin", "*");
 
@@ -1521,13 +1529,6 @@ function restServeSubagents(res: http.ServerResponse): void {
     // Accept both 'running' (new) and 'in_progress' (legacy) as active
     const status: "running" | "complete" | "stale" =
       (rowStatus === "running" || rowStatus === "in_progress") ? "running" : rowStatus === "stale" ? "stale" : "complete";
-    const parseAgentTs = (v: unknown): string | null => {
-      if (!v) return null;
-      const n = Number(v);
-      // If numeric (Unix seconds), multiply by 1000; otherwise parse as date string directly
-      const d = isNaN(n) ? new Date(String(v)) : new Date(n * 1000);
-      return isNaN(d.getTime()) ? null : d.toISOString();
-    };
     const startedAt = parseAgentTs(row.started_at);
     const completedAt = parseAgentTs(row.completed_at);
     const lastModified = completedAt ?? startedAt ?? new Date().toISOString();
