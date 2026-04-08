@@ -1280,10 +1280,11 @@ function restServeTaskStats(res: http.ServerResponse): void {
     return;
   }
   try {
+    const agentStats = loadAgentStatsByTask();
     const db = new Database(TASKS_DB_REST, { readonly: true });
     try {
       // Aggregate totals across ALL tasks
-      const rows = db.query<{ status: string | null; data: string }, []>("SELECT status, data FROM tasks").all();
+      const rows = db.query<{ id: string; status: string | null; data: string }, []>("SELECT id, status, data FROM tasks").all();
 
       let total_cost_usd = 0;
       let total_input_tokens = 0;
@@ -1300,6 +1301,15 @@ function restServeTaskStats(res: http.ServerResponse): void {
 
         const status = String(task.status ?? "stale");
         task_counts[status] = (task_counts[status] ?? 0) + 1;
+
+        // Prefer cost/token data in blob; fall back to agents.db aggregates (same logic as restServeTasks)
+        const taskKey = String(task.id ?? row.id);
+        const s = agentStats.get(taskKey);
+        if (!task.cost_usd && !task.input_tokens && !task.output_tokens) {
+          task.cost_usd = s?.cost_usd ?? 0;
+          task.input_tokens = s?.input_tokens ?? 0;
+          task.output_tokens = s?.output_tokens ?? 0;
+        }
 
         const cost = typeof task.cost_usd === "number" ? task.cost_usd : 0;
         const inTok = typeof task.input_tokens === "number" ? task.input_tokens : 0;
