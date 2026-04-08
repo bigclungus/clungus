@@ -719,6 +719,28 @@ function loadAgentCostsByTask(): Map<string, number> {
   return costs;
 }
 
+/** Load per-task token totals from agents.db. Returns empty map if DB unavailable. */
+function loadAgentTokensByTask(): Map<string, { input_tokens: number; output_tokens: number }> {
+  const tokens = new Map<string, { input_tokens: number; output_tokens: number }>();
+  if (!existsSync(AGENTS_DB_REST)) return tokens;
+  try {
+    const db = new Database(AGENTS_DB_REST, { readonly: true });
+    try {
+      const rows = db.query<{ task_id: string; total_input: number; total_output: number }, []>(
+        "SELECT task_id, COALESCE(SUM(input_tokens), 0) as total_input, COALESCE(SUM(output_tokens), 0) as total_output FROM agents GROUP BY task_id"
+      ).all();
+      for (const row of rows) {
+        if (row.task_id) tokens.set(row.task_id, { input_tokens: row.total_input ?? 0, output_tokens: row.total_output ?? 0 });
+      }
+    } finally {
+      db.close();
+    }
+  } catch (err) {
+    console.warn(`[agents.db] Token query failed: ${err}`);
+  }
+  return tokens;
+}
+
 /** Load agent runs for a specific task from agents.db. Returns [] if DB unavailable. */
 function loadAgentRunsForTask(taskId: string): unknown[] {
   if (!existsSync(AGENTS_DB_REST)) return [];
@@ -744,7 +766,7 @@ function loadInProgressAgentsFromDb(): unknown[] {
     const db = new Database(AGENTS_DB_REST, { readonly: true });
     try {
       return db.query<Record<string, unknown>, []>(
-        "SELECT * FROM agents WHERE status = 'in_progress' ORDER BY started_at ASC"
+        "SELECT * FROM agents WHERE status = 'in_progress' AND output_file IS NOT NULL AND output_file != '' ORDER BY started_at ASC"
       ).all();
     } finally {
       db.close();
@@ -755,7 +777,8 @@ function loadInProgressAgentsFromDb(): unknown[] {
   }
 }
 
-/** Load recent agents from agents.db (last 2 hours, all statuses). Returns [] if DB unavailable. */
+/** Load recent agents from agents.db (last 2 hours, all statuses). Returns [] if DB unavailable.
+ * Only returns real agent spawns (output_file IS NOT NULL) — migrated task rows have no output_file. */
 function loadRecentAgentsFromDb(): unknown[] {
   if (!existsSync(AGENTS_DB_REST)) return [];
   try {
@@ -763,7 +786,7 @@ function loadRecentAgentsFromDb(): unknown[] {
     try {
       const twoHoursAgo = Math.floor((Date.now() - 2 * 60 * 60 * 1000) / 1000);
       return db.query<Record<string, unknown>, [number]>(
-        "SELECT * FROM agents WHERE started_at >= ? OR status = 'in_progress' ORDER BY started_at DESC"
+        "SELECT * FROM agents WHERE output_file IS NOT NULL AND output_file != '' AND (started_at >= ? OR status = 'in_progress') ORDER BY started_at DESC"
       ).all(twoHoursAgo);
     } finally {
       db.close();
@@ -780,8 +803,9 @@ function restServeTasks(res: http.ServerResponse, query: URLSearchParams): void 
   const page = Number.isFinite(pageRaw) && pageRaw >= 1 ? pageRaw : 1;
   const limit = Number.isFinite(limitRaw) && limitRaw >= 1 && limitRaw <= 500 ? limitRaw : 50;
 
-  // Load cost totals from agents.db (best-effort; empty map if unavailable)
+  // Load cost and token totals from agents.db (best-effort; empty map if unavailable)
   const agentCosts = loadAgentCostsByTask();
+  const agentTokens = loadAgentTokensByTask();
 
   const tasks: unknown[] = [];
 
@@ -797,7 +821,11 @@ function restServeTasks(res: http.ServerResponse, query: URLSearchParams): void 
         for (const row of rows) {
           try {
             const task = JSON.parse(row.data) as Record<string, unknown>;
-            task.cost_usd = agentCosts.get(String(task.id ?? row.id)) ?? 0;
+            const taskKey = String(task.id ?? row.id);
+            task.cost_usd = agentCosts.get(taskKey) ?? 0;
+            const toks = agentTokens.get(taskKey);
+            task.input_tokens = toks?.input_tokens ?? 0;
+            task.output_tokens = toks?.output_tokens ?? 0;
             tasks.push(task);
           } catch { /* skip malformed */ }
         }
@@ -840,7 +868,11 @@ function restServeTasks(res: http.ServerResponse, query: URLSearchParams): void 
               }
             }
           }
-          task.cost_usd = agentCosts.get(String(task.id ?? "")) ?? 0;
+          const taskKey2 = String(task.id ?? "");
+          task.cost_usd = agentCosts.get(taskKey2) ?? 0;
+          const toks2 = agentTokens.get(taskKey2);
+          task.input_tokens = toks2?.input_tokens ?? 0;
+          task.output_tokens = toks2?.output_tokens ?? 0;
           tasks.push(task);
         } catch { /* skip malformed file */ }
       }
@@ -859,7 +891,7 @@ function restServeTasks(res: http.ServerResponse, query: URLSearchParams): void 
   const paginated = tasks.slice(offset, offset + limit);
 
   // Compute per-status totals from the full dataset (not the paginated slice)
-  const totals = { total, in_progress: 0, done: 0, stale: 0, failed: 0, background: 0, foreground: 0 };
+  const totals = { total, in_progress: 0, done: 0, stale: 0, failed: 0, background: 0, foreground: 0, total_cost_usd: 0, total_input_tokens: 0, total_output_tokens: 0 };
   for (const t of tasks) {
     const task = t as Record<string, unknown>;
     const s = String(task.status ?? "stale");
@@ -869,6 +901,9 @@ function restServeTasks(res: http.ServerResponse, query: URLSearchParams): void 
     else totals.stale++;
     if (task.run_in_background === true) totals.background++;
     else totals.foreground++;
+    if (typeof task.cost_usd === "number") totals.total_cost_usd += task.cost_usd;
+    if (typeof task.input_tokens === "number") totals.total_input_tokens += task.input_tokens;
+    if (typeof task.output_tokens === "number") totals.total_output_tokens += task.output_tokens;
   }
 
   jsonResponse(res, { tasks: paginated, total, page: safePage, limit, pages, totals });
@@ -2627,7 +2662,7 @@ function serveStaticFile(res: http.ServerResponse, filePath: string): boolean {
     return false;
   }
   const headers: Record<string, string> = { "Content-Type": mime };
-  if (ext === ".html") {
+  if (ext === ".html" || ext === ".js" || ext === ".css") {
     headers["Cache-Control"] = "no-cache";
   }
   res.writeHead(200, headers);
