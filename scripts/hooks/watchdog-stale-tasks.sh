@@ -17,15 +17,36 @@ CHANGED=0
 # --- SQLite stale check (runs alongside JSON check during transition) ---
 if [ -f "$TASKS_DB" ]; then
   SQLITE_STALE=$(python3 - <<'PYEOF'
-import sqlite3, sys, json
+import sqlite3, sys, json, subprocess
 from datetime import datetime, timezone, timedelta
 
 DB = "/home/clungus/work/bigclungus-meta/tasks.db"
 STALE_TS = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-CUTOFF = datetime.now(timezone.utc) - timedelta(hours=2)
-OPEN_STATUSES = ("in_progress", "started", "blocked", "milestone")
+CUTOFF_2H = datetime.now(timezone.utc) - timedelta(hours=2)
+CUTOFF_30M = datetime.now(timezone.utc) - timedelta(minutes=30)
+
+def get_running_temporal_workflow_ids():
+    """Return set of workflow IDs currently running in tasks namespace."""
+    try:
+        result = subprocess.run(
+            ['temporal', 'workflow', 'list',
+             '--namespace', 'tasks',
+             '--query', 'WorkflowType="AgentTaskWorkflow" AND ExecutionStatus="Running"',
+             '--address', '127.0.0.1:7233',
+             '--output', 'json'],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode != 0 or not result.stdout.strip():
+            return set()
+        workflows = json.loads(result.stdout)
+        return {wf.get('workflowId', '') for wf in workflows if wf.get('workflowId')}
+    except Exception as e:
+        print(f"sqlite-watchdog: temporal query error: {e}", file=sys.stderr)
+        return None  # None = unknown, don't use 30min cutoff
 
 try:
+    running_wf_ids = get_running_temporal_workflow_ids()
+
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
     rows = conn.execute(
@@ -39,10 +60,29 @@ try:
             continue
         try:
             ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
-            if ts < CUTOFF:
-                stale_ids.append(row["id"])
         except ValueError:
             continue
+
+        task_id = row["id"]
+
+        # Determine which cutoff to use:
+        # - If temporal query failed (None), fall back to 2h for all
+        # - If task has no running temporal workflow, use 30min cutoff
+        # - Otherwise, use 2h cutoff
+        if running_wf_ids is None:
+            cutoff = CUTOFF_2H
+        else:
+            # Check if any running workflow corresponds to this task.
+            # Workflow IDs follow pattern agent-task-<agentId>-<provider>
+            # Tasks don't store workflow_id directly, so match by task id prefix in metadata
+            # or simply: if no running workflow at all older than 30min, mark stale
+            has_workflow = any(task_id in wf_id or task_id.replace("task-", "") in wf_id for wf_id in running_wf_ids)
+            cutoff = CUTOFF_2H if has_workflow else CUTOFF_30M
+
+        if ts < cutoff:
+            stale_ids.append(task_id)
+            reason = "30min no workflow" if (running_wf_ids is not None and cutoff == CUTOFF_30M) else "2h timeout"
+            print(f"sqlite-watchdog: queuing {task_id} as stale ({reason})", flush=True)
 
     for task_id in stale_ids:
         conn.execute(
@@ -99,8 +139,8 @@ for task_file in "$TASKS_DIR"/*.json; do
   STARTED_TS=$(date -d "$STARTED_AT" +%s 2>/dev/null) || continue
   AGE_SECONDS=$(( NOW_TS - STARTED_TS ))
 
-  # 2 hours = 7200 seconds
-  if [ "$AGE_SECONDS" -ge 7200 ]; then
+  # 30 minutes = 1800 seconds (reduced from 2h; workflows without temporal presence are cleaned up faster)
+  if [ "$AGE_SECONDS" -ge 1800 ]; then
     STALE_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     TASK_ID=$(jq -r '.id // "(unknown)"' "$task_file")
 
@@ -302,9 +342,9 @@ PYEOF
 # These are harmless but accumulate indefinitely without cleanup.
 BC_AGENTS_DIR="/tmp/bc-agents"
 if [ -d "$BC_AGENTS_DIR" ]; then
-  ORPHAN_COUNT=$(find "$BC_AGENTS_DIR" -name "*.json" -mmin +120 2>/dev/null | wc -l)
+  ORPHAN_COUNT=$(find "$BC_AGENTS_DIR" -name "*.json" -mmin +30 2>/dev/null | wc -l)
   PENDING_COUNT=$(find "$BC_AGENTS_DIR" -name "pending-*" -mmin +5 2>/dev/null | wc -l)
-  find "$BC_AGENTS_DIR" -name "*.json" -mmin +120 -delete 2>/dev/null || true
+  find "$BC_AGENTS_DIR" -name "*.json" -mmin +30 -delete 2>/dev/null || true
   find "$BC_AGENTS_DIR" -name "pending-*" -mmin +5 -delete 2>/dev/null || true
   if [ "$ORPHAN_COUNT" -gt 0 ] || [ "$PENDING_COUNT" -gt 0 ]; then
     echo "watchdog: cleaned $ORPHAN_COUNT orphaned agent state files + $PENDING_COUNT stale pending files from $BC_AGENTS_DIR"

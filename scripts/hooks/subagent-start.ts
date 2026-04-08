@@ -25,8 +25,14 @@ try {
 const agentId = (input.agent_id as string | undefined) ?? "";
 const agentType = (input.agent_type as string | undefined) ?? "unknown";
 const sessionId = (input.session_id as string | undefined) ?? "unknown";
+const model = (input.model as string | undefined) ?? "";
+const provider = (input.provider as string | undefined) ?? "";
 
 if (!agentId) process.exit(0);
+
+// Determine provider suffix for workflow ID
+const providerSuffix =
+  model.startsWith("grok-") || provider === "xai" ? "xai" : "claude";
 
 const nowTs = Math.floor(Date.now() / 1000);
 const startedAt = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
@@ -67,7 +73,7 @@ if (!title) {
 
 const datePart = new Date().toISOString().slice(0, 19).replace(/[-T:]/g, "").replace(/(\d{8})(\d{6})/, "$1-$2");
 const taskId = `task-${datePart}-${agentId.slice(0, 8)}`;
-const workflowId = `agent-task-${agentId}`;
+const workflowId = `agent-task-${agentId}-${providerSuffix}`;
 
 // Save state for subagent-stop.ts to pick up
 await Bun.write(
@@ -79,8 +85,8 @@ await Bun.write(
 const temporalInput = {
   task_id: taskId,
   prompt: title,
-  agent_type: "claude",
-  model: "claude-sonnet-4-6",
+  agent_type: providerSuffix,
+  model: model || "claude-sonnet-4-6",
   is_foreground: true,
   metadata: {
     agent_id: agentId,
