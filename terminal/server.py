@@ -1046,11 +1046,18 @@ HTML = r"""<!DOCTYPE html>
         if (!text) return;
         lineBuffer.push(text);
         // Keep last 200 lines
-        if (lineBuffer.length > 200) lineBuffer = lineBuffer.slice(-200);
-        const cardState = agentCards.get(agentId);
-        if (cardState) cardState.lines = lineBuffer;
-        // Re-render output pane
-        renderOutputPane(outputEl, lineBuffer);
+        if (lineBuffer.length > 200) {
+          lineBuffer = lineBuffer.slice(-200);
+          const cardState = agentCards.get(agentId);
+          if (cardState) cardState.lines = lineBuffer;
+          // Re-render from scratch after trim
+          renderOutputPane(outputEl, lineBuffer);
+        } else {
+          const cardState = agentCards.get(agentId);
+          if (cardState) cardState.lines = lineBuffer;
+          // Append new line incrementally
+          appendOutputLine(outputEl, text);
+        }
       };
 
       sse.onerror = () => {
@@ -1059,9 +1066,25 @@ HTML = r"""<!DOCTYPE html>
       };
     }
 
+    function isScrolledToBottom(el) {
+      return el.scrollHeight - el.scrollTop <= el.clientHeight + 20;
+    }
+
     function renderOutputPane(outputEl, lines) {
-      const atBottom = outputEl.scrollHeight - outputEl.scrollTop <= outputEl.clientHeight + 20;
+      const atBottom = isScrolledToBottom(outputEl);
       outputEl.innerHTML = lines.map(l => `<span class="sa-output-line">${escHtml(l)}</span>`).join('\n');
+      if (atBottom) outputEl.scrollTop = outputEl.scrollHeight;
+    }
+
+    function appendOutputLine(outputEl, line) {
+      const atBottom = isScrolledToBottom(outputEl);
+      const span = document.createElement('span');
+      span.className = 'sa-output-line';
+      span.textContent = line;
+      if (outputEl.childNodes.length > 0) {
+        outputEl.appendChild(document.createTextNode('\n'));
+      }
+      outputEl.appendChild(span);
       if (atBottom) outputEl.scrollTop = outputEl.scrollHeight;
     }
 
