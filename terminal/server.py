@@ -65,17 +65,21 @@ _GITHUB_BTN = """
     </a>"""
 
 _LOGIN_STYLES = """
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
     * { margin:0; padding:0; box-sizing:border-box; }
-    body { background:#0d0d0d; color:#d4d4d4; font-family:monospace;
+    body { background:#080b10; color:#c9d1d9; font-family:'Inter',system-ui,sans-serif;
            display:flex; align-items:center; justify-content:center; height:100vh; }
-    .box { background:#1a1a2e; border:1px solid #e94560; border-radius:6px;
-           padding:32px 40px; min-width:300px; text-align:center; }
-    h2 { color:#e94560; margin-bottom:20px; font-size:16px; letter-spacing:.05em; }
+    .box { background:rgba(22,27,34,0.95); border:1px solid rgba(99,110,123,0.35);
+           border-radius:10px; padding:36px 44px; min-width:320px; text-align:center;
+           box-shadow:0 16px 48px rgba(0,0,0,0.5); backdrop-filter:blur(8px); }
+    h2 { color:#c9d1d9; margin-bottom:24px; font-size:15px; font-weight:600;
+         letter-spacing:.04em; }
     .github-btn { display:flex; align-items:center; justify-content:center;
-      width:100%; padding:9px; background:#238636; color:#fff; text-decoration:none;
-      border-radius:3px; font-family:monospace; font-size:14px; cursor:pointer;
-      border:1px solid #2ea043; margin-bottom:12px; }
-    .github-btn:hover { background:#2ea043; }"""
+      width:100%; padding:10px 16px; background:#238636; color:#fff; text-decoration:none;
+      border-radius:6px; font-family:'Inter',system-ui,sans-serif; font-size:14px;
+      font-weight:500; cursor:pointer; border:1px solid rgba(46,160,67,0.4);
+      margin-bottom:12px; transition:background 0.15s, box-shadow 0.15s; }
+    .github-btn:hover { background:#2ea043; box-shadow:0 0 12px rgba(46,160,67,0.25); }"""
 
 LOGIN_HTML = """<!DOCTYPE html>
 <html>
@@ -270,42 +274,98 @@ HTML = r"""<!DOCTYPE html>
   <link rel="stylesheet" href="https://clung.us/sitenav.css?v=b6d00bc">
   <script src="https://clung.us/sitenav.js?v=b6d00bc" defer></script>
   <script src="/gamecube-sounds.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+    :root {
+      --bg-base:      #080b10;
+      --bg-surface:   #0d1117;
+      --bg-elevated:  #161b22;
+      --bg-overlay:   #1c2230;
+      --border:       rgba(48,54,61,0.8);
+      --border-glow:  rgba(78,204,163,0.4);
+      --accent:       #4ecca3;
+      --accent-dim:   rgba(78,204,163,0.15);
+      --red:          #f85149;
+      --yellow:       #e3b341;
+      --green:        #3fb950;
+      --purple:       #bc8cff;
+      --blue:         #58a6ff;
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --text-muted:   #484f58;
+      --font-ui:      'Inter', system-ui, -apple-system, sans-serif;
+      --font-mono:    'Consolas', 'Cascadia Code', 'SF Mono', 'Courier New', monospace;
+      --radius-sm:    4px;
+      --radius-md:    6px;
+      --radius-lg:    8px;
+      --transition:   0.15s ease;
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #0d0d0d; display: flex; flex-direction: column; height: 100vh; font-family: monospace;
-           padding-top: 0 !important; }
-    /* sitenav.js injects the shared nav as first flex child; override its sticky
-       position so it participates in the column layout instead of floating.
-       Force single-line at all viewport widths — no wrapping on the terminal page. */
+    body {
+      background: var(--bg-base);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      font-family: var(--font-ui);
+      color: var(--text-primary);
+      padding-top: 0 !important;
+    }
+    /* sitenav override */
     .sitenav { position: relative; flex-shrink: 0; flex-wrap: nowrap !important; overflow-x: auto; }
     .sitenav .sitenav-links { flex-wrap: nowrap; }
     .sitenav .sitenav-links a, .sitenav .sitenav-brand { white-space: nowrap; }
-    /* Unified session bar — tabs left, status+actions right */
+
+    /* ── Session bar ─────────────────────────────────────────────────────────── */
     #session-bar {
-      background: #2d2d44;
-      border-top: 1px solid #4a4a6a;
-      border-bottom: 1px solid #4a4a6a;
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: stretch;
       flex-shrink: 0;
-      padding: 0 12px 0 0;
+      padding: 0 8px 0 0;
       gap: 0;
     }
-    #status { font-size: 11px; color: #888; margin-left: auto; padding: 0 12px; white-space: nowrap; align-self: center; }
-    #status.connected { color: #4caf50; }
-    #status.disconnected { color: #e94560; }
+    #status {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      margin-left: auto;
+      padding: 0 10px;
+      white-space: nowrap;
+      align-self: center;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    #status::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      flex-shrink: 0;
+      transition: background var(--transition), box-shadow var(--transition);
+    }
+    #status.connected { color: var(--green); }
+    #status.connected::before { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    #status.disconnected { color: var(--red); }
+    #status.disconnected::before { background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+    /* ── Health bar ──────────────────────────────────────────────────────────── */
     #healthbar {
-      background: #111122;
-      border-bottom: 1px solid #2a2a4e;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
       padding: 5px 16px;
       display: flex;
       align-items: center;
-      gap: 18px;
+      gap: 16px;
       flex-wrap: wrap;
       flex-shrink: 0;
       font-size: 11px;
-      font-family: monospace;
-      color: #aaa;
+      font-family: var(--font-mono);
+      color: var(--text-secondary);
     }
     .hb-metric {
       display: flex;
@@ -314,42 +374,49 @@ HTML = r"""<!DOCTYPE html>
       white-space: nowrap;
     }
     .hb-label {
-      color: #e94560;
-      font-weight: bold;
-      min-width: 30px;
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      min-width: 32px;
     }
     .hb-bar-wrap {
-      width: 60px;
-      height: 6px;
-      background: #2a2a4e;
-      border-radius: 3px;
+      width: 56px;
+      height: 4px;
+      background: rgba(255,255,255,0.07);
+      border-radius: 2px;
       overflow: hidden;
     }
     .hb-bar-fill {
       height: 100%;
-      border-radius: 3px;
-      background: #4caf50;
-      transition: width 0.4s ease;
+      border-radius: 2px;
+      background: var(--green);
+      transition: width 0.5s ease, background 0.3s ease;
     }
-    .hb-bar-fill.warn { background: #f0c040; }
-    .hb-bar-fill.crit { background: #e94560; }
-    .hb-val { color: #ccc; min-width: 34px; }
-    .hb-sep { color: #2a2a4e; }
+    .hb-bar-fill.warn { background: var(--yellow); }
+    .hb-bar-fill.crit { background: var(--red); }
+    .hb-val { color: var(--text-primary); min-width: 36px; font-size: 11px; }
+    .hb-sep { color: var(--border); user-select: none; }
     .hb-svc {
       display: flex;
       align-items: center;
       gap: 5px;
+      font-size: 11px;
     }
     .hb-dot {
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: #444;
+      background: var(--text-muted);
       flex-shrink: 0;
+      transition: background var(--transition), box-shadow var(--transition);
     }
-    .hb-dot.ok { background: #4caf50; box-shadow: 0 0 4px #4caf50; }
-    .hb-dot.down { background: #e94560; box-shadow: 0 0 4px #e94560; }
-    .hb-uptime { color: #888; }
+    .hb-dot.ok  { background: var(--green); box-shadow: 0 0 5px rgba(63,185,80,0.6); }
+    .hb-dot.down { background: var(--red);  box-shadow: 0 0 5px rgba(248,81,73,0.6); }
+    .hb-uptime { color: var(--text-muted); font-size: 11px; }
+
+    /* ── Main split ──────────────────────────────────────────────────────────── */
     #main {
       display: flex;
       flex: 1;
@@ -366,191 +433,246 @@ HTML = r"""<!DOCTYPE html>
     #resizer {
       width: 4px;
       cursor: col-resize;
-      background: #21262d;
+      background: var(--border);
       flex-shrink: 0;
-      transition: background 0.15s;
+      transition: background var(--transition);
     }
-    #resizer:hover { background: #388bfd; }
+    #resizer:hover { background: var(--accent); }
+
+    /* ── Subagent panel ──────────────────────────────────────────────────────── */
     #agents {
       flex: 1;
-      background: #1a1a2e;
-      border-left: none;
+      background: var(--bg-surface);
+      border-left: 1px solid var(--border);
       display: flex;
       flex-direction: column;
       overflow: hidden;
       min-width: 100px;
     }
-    /* Subagent grid panel */
     #agents-header {
-      padding: 0.5em 0.9em;
-      color: #4ecca3;
-      font-size: 0.75em;
-      font-weight: bold;
-      border-bottom: 1px solid #2a2a4e;
-      border-left: 3px solid #4ecca3;
+      padding: 8px 12px;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 600;
+      font-family: var(--font-ui);
+      border-bottom: 1px solid var(--border);
       flex-shrink: 0;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       display: flex;
       align-items: center;
-      gap: 0.5em;
-      background: #0d1117;
+      gap: 8px;
+      background: var(--bg-elevated);
+    }
+    #agents-header::before {
+      content: '';
+      display: block;
+      width: 3px;
+      height: 14px;
+      background: var(--accent);
+      border-radius: 2px;
+      flex-shrink: 0;
     }
     #agents-token-total {
       margin-left: auto;
-      color: #4ecca3;
-      font-size: 0.9em;
-      font-weight: normal;
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 500;
       text-transform: none;
       letter-spacing: 0;
-      opacity: 0.8;
+      font-family: var(--font-mono);
     }
     #agents-list {
       flex: 1;
       overflow-y: auto;
-      padding: 0.5em;
+      padding: 8px;
       display: grid;
       grid-template-columns: 1fr 1fr;
       align-content: start;
-      gap: 0.4em;
+      gap: 6px;
     }
     #agents-list::-webkit-scrollbar { width: 4px; }
-    #agents-list::-webkit-scrollbar-track { background: #0d1117; }
-    #agents-list::-webkit-scrollbar-thumb { background: #4ecca3; border-radius: 2px; }
+    #agents-list::-webkit-scrollbar-track { background: transparent; }
+    #agents-list::-webkit-scrollbar-thumb { background: rgba(78,204,163,0.3); border-radius: 2px; }
+    #agents-list::-webkit-scrollbar-thumb:hover { background: var(--accent); }
     .xterm-viewport::-webkit-scrollbar { width: 4px; }
-    .xterm-viewport::-webkit-scrollbar-track { background: #1a1a2e; }
-    .xterm-viewport::-webkit-scrollbar-thumb { background: #4ecca3; border-radius: 2px; }
+    .xterm-viewport::-webkit-scrollbar-track { background: transparent; }
+    .xterm-viewport::-webkit-scrollbar-thumb { background: rgba(78,204,163,0.3); border-radius: 2px; }
     #agents-empty {
-      color: #444;
-      font-size: 0.85em;
+      grid-column: 1 / -1;
+      color: var(--text-muted);
+      font-size: 12px;
       text-align: center;
-      padding: 1.5em 0.5em;
+      padding: 32px 12px;
+      font-style: italic;
     }
-    /* Subagent cards */
+
+    /* ── Subagent cards ──────────────────────────────────────────────────────── */
     .sa-card {
-      background: #0d1117;
-      border: 1px solid #1e2a3a;
-      border-radius: 4px;
-      padding: 0.55em 0.7em;
-      font-size: 0.85em;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 10px 11px;
+      font-size: 12px;
+      font-family: var(--font-ui);
       min-width: 0;
-      transition: opacity 0.3s;
+      transition: border-color var(--transition), opacity 0.35s ease, filter 0.35s ease,
+                  box-shadow var(--transition), transform var(--transition);
+      cursor: default;
     }
-    .sa-card:hover { border-color: #4ecca3; }
+    .sa-card:hover {
+      border-color: var(--border-glow);
+      box-shadow: 0 0 0 1px var(--border-glow), 0 4px 16px rgba(78,204,163,0.06);
+    }
     .sa-card.done {
-      opacity: 0.4;
-      filter: grayscale(70%);
-      background: #080c10;
-      border-color: #151f2a;
-      transition: opacity 0.3s, filter 0.3s;
+      opacity: 0.38;
+      filter: grayscale(60%);
+      background: var(--bg-surface);
+      border-color: rgba(48,54,61,0.5);
     }
-    .sa-card.done:hover { opacity: 0.75; filter: grayscale(30%); }
+    .sa-card.done:hover { opacity: 0.72; filter: grayscale(20%); }
     .sa-top {
       display: flex;
       align-items: center;
-      gap: 0.4em;
-      margin-bottom: 0.35em;
+      gap: 7px;
+      margin-bottom: 5px;
     }
     .sa-dot {
-      width: 0.6em;
-      height: 0.6em;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       flex-shrink: 0;
+      transition: background var(--transition), box-shadow var(--transition);
     }
     .sa-dot.in_progress {
-      background: #f0c040;
-      box-shadow: 0 0 5px #f0c040;
-      animation: pulse 1.5s infinite;
+      background: var(--yellow);
+      box-shadow: 0 0 6px rgba(227,179,65,0.7);
+      animation: pulse 1.8s ease-in-out infinite;
     }
-    .sa-dot.complete { background: #666; }
-    .sa-dot.failed { background: #e94560; }
+    .sa-dot.complete {
+      background: var(--text-muted);
+      box-shadow: none;
+    }
+    .sa-dot.failed {
+      background: var(--red);
+      box-shadow: 0 0 5px rgba(248,81,73,0.5);
+    }
     @keyframes pulse {
-      0%, 100% { box-shadow: 0 0 3px #f0c040; }
-      50% { box-shadow: 0 0 8px #f0c040; }
+      0%, 100% { box-shadow: 0 0 4px rgba(227,179,65,0.5); opacity: 1; }
+      50% { box-shadow: 0 0 10px rgba(227,179,65,0.9); opacity: 0.85; }
     }
     .sa-name {
-      color: #c0c0d0;
-      font-weight: bold;
-      font-size: 1em;
+      color: var(--text-primary);
+      font-weight: 500;
+      font-size: 12px;
       flex: 1;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      letter-spacing: 0.01em;
     }
     .sa-age {
-      color: #444;
-      font-size: 0.85em;
+      color: var(--text-muted);
+      font-size: 10px;
+      font-family: var(--font-mono);
       flex-shrink: 0;
     }
     .sa-meta {
       display: flex;
       align-items: center;
-      gap: 0.65em;
-      margin-bottom: 0.35em;
-      font-size: 0.85em;
-      color: #555;
+      gap: 10px;
+      margin-bottom: 7px;
+      font-size: 11px;
     }
-    .sa-tokens {
-      color: #4ecca3;
-      font-weight: bold;
+    .sa-cost-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid rgba(78,204,163,0.2);
+      border-radius: 10px;
+      padding: 1px 7px;
+      font-size: 10px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      letter-spacing: 0.02em;
     }
-    .sa-tools { color: #a78bfa; }
+    .sa-tools {
+      color: var(--purple);
+      font-size: 10px;
+      font-family: var(--font-mono);
+    }
     .sa-output {
-      background: #060a10;
-      border: 1px solid #1a2232;
-      border-radius: 3px;
-      padding: 0.35em 0.5em;
-      max-height: 10em;
+      background: rgba(8,11,16,0.7);
+      border: 1px solid rgba(48,54,61,0.6);
+      border-radius: var(--radius-sm);
+      padding: 6px 8px;
+      max-height: 9em;
       overflow-y: auto;
-      font-family: 'Consolas', 'Courier New', monospace;
-      font-size: 0.78em;
-      color: #8899aa;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      color: #7d8590;
       white-space: pre-wrap;
       word-break: break-all;
-      line-height: 1.45;
+      line-height: 1.5;
     }
     .sa-output::-webkit-scrollbar { width: 3px; }
-    .sa-output::-webkit-scrollbar-track { background: #060a10; }
-    .sa-output::-webkit-scrollbar-thumb { background: #4ecca3; border-radius: 2px; }
+    .sa-output::-webkit-scrollbar-track { background: transparent; }
+    .sa-output::-webkit-scrollbar-thumb { background: rgba(78,204,163,0.25); border-radius: 2px; }
     .sa-output-line { display: block; }
-    /* Action button/link shared ghost style */
+
+    /* ── Action buttons/links ────────────────────────────────────────────────── */
     #graph-link, #edit-claude-link, #restart-btn {
-      color: #8b949e;
-      font-size: 10px;
-      font-weight: normal;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-family: var(--font-ui);
+      font-weight: 400;
       text-decoration: none;
       letter-spacing: 0;
       text-transform: none;
-      padding: 2px 8px;
+      padding: 3px 10px;
       border: 1px solid transparent;
-      border-radius: 3px;
+      border-radius: var(--radius-sm);
       background: none;
-      transition: color 0.15s, border-color 0.15s;
+      transition: color var(--transition), border-color var(--transition), background var(--transition);
       white-space: nowrap;
       align-self: center;
       cursor: pointer;
-      font-family: monospace;
     }
-    #graph-link:hover, #edit-claude-link:hover { color: #58a6ff; border-color: #4a4a6a; }
-    #restart-btn:hover { color: #e94560; border-color: #4a4a6a; }
-    /* Tab buttons — live inside #session-bar */
+    #graph-link:hover, #edit-claude-link:hover {
+      color: var(--blue);
+      border-color: rgba(88,166,255,0.3);
+      background: rgba(88,166,255,0.06);
+    }
+    #restart-btn:hover {
+      color: var(--red);
+      border-color: rgba(248,81,73,0.3);
+      background: rgba(248,81,73,0.06);
+    }
+
+    /* ── Tab buttons ─────────────────────────────────────────────────────────── */
     .tab-btn {
       background: none;
       border: none;
       border-bottom: 2px solid transparent;
-      color: #666;
-      font-family: monospace;
+      color: var(--text-muted);
+      font-family: var(--font-ui);
       font-size: 12px;
-      padding: 7px 16px 6px;
+      font-weight: 500;
+      padding: 8px 18px 7px;
       cursor: pointer;
-      letter-spacing: 0.04em;
-      transition: color 0.15s, border-color 0.15s;
+      letter-spacing: 0.02em;
+      transition: color var(--transition), border-color var(--transition);
       align-self: stretch;
       display: flex;
       align-items: center;
+      gap: 5px;
     }
-    .tab-btn:hover { color: #aaa; }
-    .tab-btn.active { color: #c0c0ff; border-bottom-color: #7c7cff; }
+    .tab-btn:hover { color: var(--text-secondary); }
+    .tab-btn.active { color: var(--text-primary); border-bottom-color: var(--accent); }
+
+    /* ── GigaClungus iframe tab ──────────────────────────────────────────────── */
     #giga-frame-wrap {
       flex: 1;
       overflow: hidden;
@@ -561,7 +683,16 @@ HTML = r"""<!DOCTYPE html>
       width: 100%;
       height: 100%;
       border: none;
-      background: #0d0d0d;
+      background: var(--bg-base);
+    }
+
+    /* ── Mobile ──────────────────────────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      #agents-list { grid-template-columns: 1fr; }
+      #healthbar { gap: 10px; padding: 5px 10px; font-size: 10px; }
+      .hb-bar-wrap { width: 40px; }
+      .tab-btn { padding: 8px 12px 7px; font-size: 11px; }
+      #session-bar { padding: 0 4px 0 0; }
     }
   </style>
 </head>
@@ -654,7 +785,7 @@ HTML = r"""<!DOCTYPE html>
       ws.binaryType = 'arraybuffer';
 
       ws.onopen = () => {
-        statusEl.textContent = '\u25CF live';
+        statusEl.textContent = 'live';
         statusEl.className = 'connected';
       };
       ws.onmessage = (e) => {
@@ -666,7 +797,7 @@ HTML = r"""<!DOCTYPE html>
         }
       };
       ws.onclose = () => {
-        statusEl.textContent = '\u25CF disconnected \u2014 reconnecting...';
+        statusEl.textContent = 'disconnected — reconnecting...';
         statusEl.className = 'disconnected';
         setTimeout(connect, 2000);
       };
@@ -848,7 +979,7 @@ HTML = r"""<!DOCTYPE html>
           <div class="sa-age">${escHtml(age)}</div>
         </div>
         <div class="sa-meta">
-          <span class="sa-tokens">&#x25CB; ${escHtml(fmtCost(agent.cost))}</span>
+          <span class="sa-cost-badge">${escHtml(fmtCost(agent.cost))}</span>
           <span class="sa-tools">&#x1F527; ${agent.toolUses} calls</span>
         </div>
         <div class="sa-output"></div>
@@ -868,8 +999,8 @@ HTML = r"""<!DOCTYPE html>
       if (agent.status !== 'in_progress') card.classList.add('done');
       else card.classList.remove('done');
       // Update meta
-      const tokEl = card.querySelector('.sa-tokens');
-      if (tokEl) tokEl.textContent = '\u25CB ' + fmtCost(agent.cost);
+      const tokEl = card.querySelector('.sa-cost-badge');
+      if (tokEl) tokEl.textContent = fmtCost(agent.cost);
       const toolEl = card.querySelector('.sa-tools');
       if (toolEl) toolEl.textContent = '\uD83D\uDD27 ' + agent.toolUses + ' calls';
       // Update age
@@ -1050,23 +1181,38 @@ GIGA_HTML = r"""<!DOCTYPE html>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #0d0d0d; display: flex; flex-direction: column; height: 100vh; }
+    body { background: #080b10; display: flex; flex-direction: column; height: 100vh; }
     #giga-status {
-      background: #1a1a2e;
-      color: #888;
-      font-family: monospace;
+      background: #161b22;
+      color: #484f58;
+      font-family: 'Consolas','Cascadia Code','SF Mono','Courier New',monospace;
       font-size: 11px;
-      padding: 4px 12px;
-      border-bottom: 1px solid #2a2a4e;
+      padding: 5px 14px;
+      border-bottom: 1px solid rgba(48,54,61,0.8);
       flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
-    #giga-status.connected { color: #4caf50; }
-    #giga-status.disconnected { color: #e94560; }
+    #giga-status::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #484f58;
+      flex-shrink: 0;
+      transition: background 0.15s, box-shadow 0.15s;
+    }
+    #giga-status.connected { color: #3fb950; }
+    #giga-status.connected::before { background: #3fb950; box-shadow: 0 0 6px #3fb950; }
+    #giga-status.disconnected { color: #f85149; }
+    #giga-status.disconnected::before { background: #f85149; box-shadow: 0 0 6px #f85149; }
     #giga-terminal { flex: 1; padding: 4px; overflow: hidden; }
   </style>
 </head>
 <body>
-  <div id="giga-status" class="disconnected">&#x26A1; GigaClungus — disconnected</div>
+  <div id="giga-status" class="disconnected">GigaClungus — disconnected</div>
   <div id="giga-terminal"></div>
   <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
@@ -1095,7 +1241,7 @@ GIGA_HTML = r"""<!DOCTYPE html>
       const ws = new WebSocket(proto + '//' + host + '/giga-ws');
       ws.binaryType = 'arraybuffer';
       ws.onopen = () => {
-        statusEl.textContent = '\u26A1 GigaClungus \u2014 live';
+        statusEl.textContent = 'GigaClungus — live';
         statusEl.className = 'connected';
         // ttyd requires an init message: plain JSON with AuthToken + terminal dimensions.
         // This triggers ttyd to spawn the pty process and send the initial screen repaint.
@@ -1122,7 +1268,7 @@ GIGA_HTML = r"""<!DOCTYPE html>
         }
       };
       ws.onclose = () => {
-        statusEl.textContent = '\u26A1 GigaClungus \u2014 disconnected \u2014 reconnecting...';
+        statusEl.textContent = 'GigaClungus — disconnected — reconnecting...';
         statusEl.className = 'disconnected';
         setTimeout(connect, 3000);
       };
