@@ -1080,13 +1080,12 @@ HTML = r"""<!DOCTYPE html>
     }
 
     function renderOutputPane(outputEl, lines) {
-      const atBottom = isScrolledToBottom(outputEl);
       outputEl.innerHTML = lines.map(l => `<span class="sa-output-line">${escHtml(l)}</span>`).join('\n');
-      if (atBottom) outputEl.scrollTop = outputEl.scrollHeight;
+      // Always scroll to bottom on full re-render (initial load or trim)
+      requestAnimationFrame(() => { outputEl.scrollTop = outputEl.scrollHeight; });
     }
 
     function appendOutputLine(outputEl, line) {
-      const atBottom = isScrolledToBottom(outputEl);
       const span = document.createElement('span');
       span.className = 'sa-output-line';
       span.textContent = line;
@@ -1094,7 +1093,10 @@ HTML = r"""<!DOCTYPE html>
         outputEl.appendChild(document.createTextNode('\n'));
       }
       outputEl.appendChild(span);
-      if (atBottom) outputEl.scrollTop = outputEl.scrollHeight;
+      // Auto-scroll only if user hasn't manually scrolled up
+      if (!outputEl._userScrolledUp) {
+        requestAnimationFrame(() => { outputEl.scrollTop = outputEl.scrollHeight; });
+      }
     }
 
     function agentStatusClass(status) {
@@ -1129,6 +1131,10 @@ HTML = r"""<!DOCTYPE html>
       `;
 
       const outputEl = card.querySelector('.sa-output');
+      outputEl._userScrolledUp = false;
+      outputEl.addEventListener('scroll', () => {
+        outputEl._userScrolledUp = !isScrolledToBottom(outputEl);
+      });
       return { card, outputEl };
     }
 
