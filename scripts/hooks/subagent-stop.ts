@@ -126,25 +126,20 @@ if (process.env.TEMPORAL_SHADOW === "true") {
     completed_at: timestamp,
     last_message_preview: context.slice(0, 200),
     exit_reason: "completed",
+    finished: true,
   };
   try {
-    const signalRes = await fetch(
-      `http://127.0.0.1:8233/api/v1/namespaces/tasks/workflows/${encodeURIComponent(workflowId)}/signal/add_metadata`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          signal_name: "add_metadata",
-          input: { payloads: [{ metadata: { encoding: Buffer.from("json/plain").toString("base64") }, data: Buffer.from(JSON.stringify(metadataPayload)).toString("base64") }] },
-        }),
-      }
+    const { execSync } = require("child_process");
+    execSync(
+      `temporal workflow signal \
+--namespace tasks \
+--workflow-id "${workflowId}" \
+--name mark_complete \
+--input '${JSON.stringify(metadataPayload).replace(/'/g, "'\\''")}' \
+--address 127.0.0.1:7233`,
+      { timeout: 5000, stdio: ["ignore", "ignore", "pipe"] }
     );
-    if (!signalRes.ok) {
-      const body = await signalRes.text().catch(() => "");
-      process.stderr.write(`subagent-stop: temporal signal returned ${signalRes.status}: ${body.slice(0, 200)}\n`);
-    } else {
-      process.stderr.write(`subagent-stop: temporal add_metadata signal sent to ${workflowId}\n`);
-    }
+    process.stderr.write(`subagent-stop: temporal mark_complete signal sent to ${workflowId}\n`);
   } catch (err) {
     process.stderr.write(`subagent-stop: temporal shadow error (non-fatal): ${err}\n`);
   }

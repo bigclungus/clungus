@@ -1,16 +1,21 @@
 """
-agent_executor.py — Activity that runs the claude CLI subprocess with heartbeats.
+agent_executor.py — Activity that waits for a mark_complete signal from subagent-stop.ts.
 
-The subprocess runs for up to 90 minutes. A background task heartbeats every 25s
-so Temporal knows the activity is still alive. heartbeat_timeout=90s in the
-workflow means if two heartbeats are missed the activity is considered failed.
+In shadow mode the agent is already running outside Temporal; this activity
+heartbeats every 25 s to keep the workflow alive and exits when the workflow
+sends it a cancellation (triggered by the mark_complete signal handler setting
+the completion event, which causes Temporal to cancel the running activity via
+workflow logic — see workflow for details).
 
-Usage tokens are currently zero-filled — replace _parse_output when claude CLI
-exposes structured output with token counts.
+The activity polls activity.is_cancelled() each loop iteration. When the
+workflow receives mark_complete it stores the result and raises CancelledError
+on the activity through Temporal's normal cancellation path. We catch that
+here and return the stored result cleanly.
+
+Usage tokens are zero-filled — workflow populates them from the signal payload.
 """
 
 import asyncio
-import os
 
 from temporalio import activity
 from temporalio.exceptions import CancelledError
@@ -19,65 +24,27 @@ from agent_types import AgentTaskInput
 
 
 @activity.defn
-async def execute_agent(input: AgentTaskInput) -> dict:
-    if activity.is_cancelled():
-        raise CancelledError()
-
-    cmd = ["claude", "-p", input.prompt, "--model", input.model]
-
-    if input.extra_cli_args:
-        cmd.extend(input.extra_cli_args)
-
-    env = os.environ.copy()
-    if input.api_key:
-        env["ANTHROPIC_API_KEY"] = input.api_key
-        # Note: --api-key flag may not exist in all claude CLI versions; env var is safer
-        # cmd.extend(["--api-key", input.api_key])
-
-    proc = await asyncio.create_subprocess_exec(
-        *cmd,
-        env=env,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-
-    heartbeat_task = asyncio.create_task(_heartbeat_loop(proc, input.task_id))
+async def wait_for_completion(input: AgentTaskInput) -> dict:
+    """
+    Heartbeats every 25 s until Temporal cancels this activity.
+    Cancellation is the signal that mark_complete was received.
+    Returns a minimal result dict; the workflow fills in richer data
+    from the signal payload stored in self._result.
+    """
     try:
-        stdout, stderr = await proc.communicate()
-        if proc.returncode != 0:
-            raise RuntimeError(
-                f"claude exited {proc.returncode}: {stderr.decode()[:500]}"
-            )
-        return _parse_output(stdout.decode(), input.model)
-    finally:
-        if not heartbeat_task.done():
-            heartbeat_task.cancel()
-            try:
-                await heartbeat_task
-            except asyncio.CancelledError:
-                pass
-
-
-async def _heartbeat_loop(proc: asyncio.subprocess.Process, task_id: str) -> None:
-    """Send a heartbeat to Temporal every 25 seconds so activity stays alive."""
-    while True:
-        await asyncio.sleep(25)
-        if proc.returncode is not None:
-            break
-        activity.heartbeat({"task_id": task_id, "status": "running", "pid": proc.pid})
-
-
-def _parse_output(output: str, model: str) -> dict:
-    """
-    Parse claude CLI output into a structured result dict.
-    Token counts are zero-filled until claude CLI exposes structured output.
-    """
-    return {
-        "status": "success",
-        "model": model,
-        "output": output.strip(),
-        "input_tokens": 0,
-        "output_tokens": 0,
-        "cost_usd": 0.0,
-        "raw": output,
-    }
+        while True:
+            await asyncio.sleep(25)
+            if activity.is_cancelled():
+                raise CancelledError()
+            activity.heartbeat({"task_id": input.task_id, "status": "running"})
+    except (CancelledError, asyncio.CancelledError):
+        # Normal path — mark_complete signal was received by the workflow,
+        # which cancelled this activity. Return a placeholder; the workflow
+        # will use self._result (populated from the signal) for finalize_task.
+        return {
+            "status": "completed",
+            "model": input.model,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cost_usd": 0.0,
+        }
