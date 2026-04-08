@@ -30,10 +30,8 @@ const provider = (input.provider as string | undefined) ?? "";
 
 if (!agentId) process.exit(0);
 
-// Determine provider for tracking (not used in workflow ID)
-const providerSuffix =
-  model.startsWith("grok-") || provider === "xai" ? "xai" : "claude";
-
+// Pass provider and model as-is — workflow's _is_xai() infers the path from both.
+// No need to normalize here; that logic lives in the workflow where it belongs.
 const nowTs = Math.floor(Date.now() / 1000);
 
 mkdirSync(STATE_DIR, { recursive: true });
@@ -85,7 +83,7 @@ const temporalInput = {
   task_id: taskId,
   agent_id: agentId,
   description: title,
-  provider: providerSuffix,
+  provider: provider,
   model: model || "",
   prompt: title,
   api_key: "",
