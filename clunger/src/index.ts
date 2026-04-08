@@ -769,45 +769,55 @@ function ensureAgentsSchema(db: Database): void {
   `);
 }
 
-/** Handle POST /api/agents/spawn — insert or replace a new agent row. Internal only. */
-async function restHandleAgentSpawn(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
-  let body: Record<string, unknown>;
+// ── agents.db write helper ────────────────────────────────────────────────────
+
+/** Open agents.db for writing, run WAL + schema, execute fn, close. Throws on error. */
+function withAgentsDb<T>(fn: (db: Database) => T): T {
+  const db = new Database(AGENTS_DB_REST);
+  db.run("PRAGMA journal_mode=WAL");
+  ensureAgentsSchema(db);
+  try {
+    return fn(db);
+  } finally {
+    db.close();
+  }
+}
+
+/** Parse JSON body; returns null and sends 400 on failure. */
+async function parseJsonBody(req: http.IncomingMessage, res: http.ServerResponse): Promise<Record<string, unknown> | null> {
   try {
     const raw = await readBody(req);
-    body = JSON.parse(raw.toString()) as Record<string, unknown>;
+    return JSON.parse(raw.toString()) as Record<string, unknown>;
   } catch {
-    res.writeHead(400, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "invalid JSON body" }));
-    return;
+    jsonResponse(res, { error: "invalid JSON body" }, 400);
+    return null;
   }
+}
+
+/** Handle POST /api/agents/spawn — insert or replace a new agent row. Internal only. */
+async function restHandleAgentSpawn(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  const body = await parseJsonBody(req, res);
+  if (!body) return;
   const id = typeof body.id === "string" ? body.id : null;
+  if (!id) { jsonResponse(res, { error: "id required" }, 400); return; }
   const description = typeof body.description === "string" ? body.description : null;
   const output_file = typeof body.output_file === "string" ? body.output_file : null;
   const task_id = typeof body.task_id === "string" ? body.task_id : null;
   const parent_agent_id = typeof body.parent_agent_id === "string" ? body.parent_agent_id : null;
   // Accept caller-provided trace_id (for child agents inheriting parent trace) or generate a new one
   const trace_id = typeof body.trace_id === "string" ? body.trace_id : randomBytes(16).toString("hex");
-  if (!id) {
-    res.writeHead(400, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "id required" }));
-    return;
-  }
   try {
-    const db = new Database(AGENTS_DB_REST);
-    db.run("PRAGMA journal_mode=WAL");
-    ensureAgentsSchema(db);
-    const started_at = Math.floor(Date.now() / 1000);
-    db.run(
-      "INSERT OR REPLACE INTO agents (id, description, started_at, status, output_file, task_id, parent_agent_id, trace_id) VALUES (?, ?, ?, 'running', ?, ?, ?, ?)",
-      [id, description, started_at, output_file, task_id, parent_agent_id, trace_id]
-    );
-    db.close();
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ ok: true, trace_id }));
+    withAgentsDb((db) => {
+      const started_at = Math.floor(Date.now() / 1000);
+      db.run(
+        "INSERT OR REPLACE INTO agents (id, description, started_at, status, output_file, task_id, parent_agent_id, trace_id) VALUES (?, ?, ?, 'running', ?, ?, ?, ?)",
+        [id, description, started_at, output_file, task_id, parent_agent_id, trace_id]
+      );
+    });
+    jsonResponse(res, { ok: true, trace_id });
   } catch (err) {
     console.error("[agents] spawn write failed:", err);
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: String(err) }));
+    jsonResponse(res, { error: String(err) }, 500);
   }
 }
 
@@ -818,15 +828,20 @@ async function restHandleAgentComplete(req: http.IncomingMessage, res: http.Serv
     const raw = await readBody(req);
     if (raw.length > 0) body = JSON.parse(raw.toString()) as Record<string, unknown>;
   } catch {
-    res.writeHead(400, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "invalid JSON body" }));
+    jsonResponse(res, { error: "invalid JSON body" }, 400);
     return;
   }
   // ID from URL path takes precedence; fall back to body for backward compat
   const id = agentId ?? (typeof body.id === "string" ? body.id : null);
+  if (!id) { jsonResponse(res, { error: "id required" }, 400); return; }
   const status = typeof body.status === "string" ? body.status : "completed";
+  // Valid terminal statuses
+  const validStatuses = ["completed", "failed", "cancelled", "timeout", "stale"];
+  if (!validStatuses.includes(status)) {
+    jsonResponse(res, { error: `status must be one of: ${validStatuses.join(", ")}` }, 400);
+    return;
+  }
   const failure_reason = typeof body.failure_reason === "string" ? body.failure_reason : null;
-  // New observability fields
   const exit_reason = typeof body.exit_reason === "string" ? body.exit_reason : null;
   const error_message = typeof body.error_message === "string" ? body.error_message : null;
   const tool_calls_count = typeof body.tool_calls_count === "number" ? body.tool_calls_count : null;
@@ -837,116 +852,71 @@ async function restHandleAgentComplete(req: http.IncomingMessage, res: http.Serv
   const usage_details = typeof body.usage_details === "object" && body.usage_details !== null
     ? JSON.stringify(body.usage_details)
     : (typeof body.usage_details === "string" ? body.usage_details : null);
-  if (!id) {
-    res.writeHead(400, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "id required" }));
-    return;
-  }
-  // Valid terminal statuses — 'running' maps to 'completed' for backward compat with hooks
-  const validStatuses = ["completed", "failed", "cancelled", "timeout", "stale"];
-  if (!validStatuses.includes(status)) {
-    res.writeHead(400, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: `status must be one of: ${validStatuses.join(", ")}` }));
-    return;
-  }
   // Derive exit_reason from status if not explicitly provided
-  const resolvedExitReason = exit_reason ?? (
-    status === "completed" ? "completed" :
-    status === "failed" ? "failed" :
-    status === "cancelled" ? "cancelled" :
-    status === "timeout" ? "timeout" :
-    null
-  );
+  const resolvedExitReason = exit_reason ?? (status !== "stale" ? status : null);
   try {
-    const db = new Database(AGENTS_DB_REST);
-    db.run("PRAGMA journal_mode=WAL");
-    ensureAgentsSchema(db);
-    const completed_at = Math.floor(Date.now() / 1000);
-    // Compute duration_ms from started_at
-    const row = db.query<{ started_at: number | null }, [string]>(
-      "SELECT started_at FROM agents WHERE id = ?"
-    ).get(id);
-    const duration_ms = row?.started_at != null ? (completed_at - row.started_at) * 1000 : null;
-    db.run(
-      `UPDATE agents SET
-        status=?, completed_at=?, failure_reason=?, duration_ms=?,
-        exit_reason=?, error_message=?,
-        tool_calls_count=COALESCE(?, tool_calls_count),
-        cache_read_tokens=COALESCE(?, cache_read_tokens),
-        input_tokens=COALESCE(?, input_tokens),
-        output_tokens=COALESCE(?, output_tokens),
-        cost_usd=COALESCE(?, cost_usd),
-        usage_details=COALESCE(?, usage_details)
-      WHERE id=?`,
-      [status, completed_at, failure_reason, duration_ms,
-       resolvedExitReason, error_message,
-       tool_calls_count, cache_read_tokens,
-       input_tokens, output_tokens, cost_usd, usage_details,
-       id]
-    );
-    db.close();
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ ok: true }));
+    withAgentsDb((db) => {
+      const completed_at = Math.floor(Date.now() / 1000);
+      const row = db.query<{ started_at: number | null }, [string]>(
+        "SELECT started_at FROM agents WHERE id = ?"
+      ).get(id);
+      const duration_ms = row?.started_at != null ? (completed_at - row.started_at) * 1000 : null;
+      db.run(
+        `UPDATE agents SET
+          status=?, completed_at=?, failure_reason=?, duration_ms=?,
+          exit_reason=?, error_message=?,
+          tool_calls_count=COALESCE(?, tool_calls_count),
+          cache_read_tokens=COALESCE(?, cache_read_tokens),
+          input_tokens=COALESCE(?, input_tokens),
+          output_tokens=COALESCE(?, output_tokens),
+          cost_usd=COALESCE(?, cost_usd),
+          usage_details=COALESCE(?, usage_details)
+        WHERE id=?`,
+        [status, completed_at, failure_reason, duration_ms,
+         resolvedExitReason, error_message,
+         tool_calls_count, cache_read_tokens,
+         input_tokens, output_tokens, cost_usd, usage_details,
+         id]
+      );
+    });
+    jsonResponse(res, { ok: true });
   } catch (err) {
     console.error("[agents] complete write failed:", err);
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: String(err) }));
+    jsonResponse(res, { error: String(err) }, 500);
   }
 }
 
 /** Handle POST /api/agents/:id/heartbeat — update last_heartbeat_at. Internal only. */
-async function restHandleAgentHeartbeat(res: http.ServerResponse, agentId: string): Promise<void> {
+function restHandleAgentHeartbeat(res: http.ServerResponse, agentId: string): void {
   try {
-    const db = new Database(AGENTS_DB_REST);
-    db.run("PRAGMA journal_mode=WAL");
-    ensureAgentsSchema(db);
-    db.run(
-      "UPDATE agents SET last_heartbeat_at = unixepoch('now') WHERE id = ?",
-      [agentId]
-    );
-    db.close();
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ ok: true }));
+    withAgentsDb((db) => {
+      db.run("UPDATE agents SET last_heartbeat_at = unixepoch('now') WHERE id = ?", [agentId]);
+    });
+    jsonResponse(res, { ok: true });
   } catch (err) {
     console.error("[agents] heartbeat write failed:", err);
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: String(err) }));
+    jsonResponse(res, { error: String(err) }, 500);
   }
 }
 
 /** Handle POST /api/agents/:id/events — insert an event. Internal only. */
 async function restHandleAgentEventPost(req: http.IncomingMessage, res: http.ServerResponse, agentId: string): Promise<void> {
-  let body: Record<string, unknown>;
-  try {
-    const raw = await readBody(req);
-    body = JSON.parse(raw.toString()) as Record<string, unknown>;
-  } catch {
-    res.writeHead(400, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "invalid JSON body" }));
-    return;
-  }
+  const body = await parseJsonBody(req, res);
+  if (!body) return;
   const event_type = typeof body.event_type === "string" ? body.event_type : null;
+  if (!event_type) { jsonResponse(res, { error: "event_type required" }, 400); return; }
   const payload = typeof body.payload === "string" ? body.payload : null;
-  if (!event_type) {
-    res.writeHead(400, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "event_type required" }));
-    return;
-  }
   try {
-    const db = new Database(AGENTS_DB_REST);
-    db.run("PRAGMA journal_mode=WAL");
-    ensureAgentsSchema(db);
-    db.run(
-      "INSERT INTO agent_events (agent_id, event_type, payload) VALUES (?, ?, ?)",
-      [agentId, event_type, payload]
-    );
-    db.close();
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ ok: true }));
+    withAgentsDb((db) => {
+      db.run(
+        "INSERT INTO agent_events (agent_id, event_type, payload) VALUES (?, ?, ?)",
+        [agentId, event_type, payload]
+      );
+    });
+    jsonResponse(res, { ok: true });
   } catch (err) {
     console.error("[agents] event insert failed:", err);
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: String(err) }));
+    jsonResponse(res, { error: String(err) }, 500);
   }
 }
 
@@ -955,119 +925,83 @@ function restHandleAgentEventGet(res: http.ServerResponse, agentId: string): voi
   try {
     const db = new Database(AGENTS_DB_REST, { readonly: true });
     ensureAgentsSchema(db);
-    const rows = db.query<{ id: number; agent_id: string; event_type: string; payload: string | null; created_at: number }, [string]>(
-      "SELECT id, agent_id, event_type, payload, created_at FROM agent_events WHERE agent_id = ? ORDER BY created_at ASC"
-    ).all(agentId);
-    db.close();
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(rows));
+    try {
+      const rows = db.query<{ id: number; agent_id: string; event_type: string; payload: string | null; created_at: number }, [string]>(
+        "SELECT id, agent_id, event_type, payload, created_at FROM agent_events WHERE agent_id = ? ORDER BY created_at ASC"
+      ).all(agentId);
+      jsonResponse(res, rows);
+    } finally {
+      db.close();
+    }
   } catch (err) {
     console.error("[agents] events query failed:", err);
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: String(err) }));
+    jsonResponse(res, { error: String(err) }, 500);
   }
 }
 
-// ── agents.db helpers ─────────────────────────────────────────────────────────
+// ── agents.db read helpers ────────────────────────────────────────────────────
 
-/** Load per-task cost totals from agents.db. Returns empty map if DB unavailable. */
-function loadAgentCostsByTask(): Map<string, number> {
-  const costs = new Map<string, number>();
-  if (!existsSync(AGENTS_DB_REST)) return costs;
+interface AgentTaskStats {
+  cost_usd: number;
+  input_tokens: number;
+  output_tokens: number;
+}
+
+/** Load per-task cost+token totals in a single query. Returns empty map if DB unavailable. */
+function loadAgentStatsByTask(): Map<string, AgentTaskStats> {
+  const stats = new Map<string, AgentTaskStats>();
+  if (!existsSync(AGENTS_DB_REST)) return stats;
   try {
     const db = new Database(AGENTS_DB_REST, { readonly: true });
     try {
-      const rows = db.query<{ task_id: string; total_cost_usd: number }, []>(
-        "SELECT task_id, COALESCE(SUM(cost_usd), 0) as total_cost_usd FROM agents GROUP BY task_id"
+      const rows = db.query<{ task_id: string; total_cost: number; total_input: number; total_output: number }, []>(
+        `SELECT task_id,
+           COALESCE(SUM(cost_usd), 0) as total_cost,
+           COALESCE(SUM(input_tokens), 0) as total_input,
+           COALESCE(SUM(output_tokens), 0) as total_output
+         FROM agents GROUP BY task_id`
       ).all();
       for (const row of rows) {
-        if (row.task_id) costs.set(row.task_id, row.total_cost_usd ?? 0);
+        if (row.task_id) stats.set(row.task_id, { cost_usd: row.total_cost ?? 0, input_tokens: row.total_input ?? 0, output_tokens: row.total_output ?? 0 });
       }
     } finally {
       db.close();
     }
   } catch (err) {
-    console.warn(`[agents.db] Cost query failed: ${err}`);
+    console.warn(`[agents.db] Stats query failed: ${err}`);
   }
-  return costs;
+  return stats;
 }
 
-/** Load per-task token totals from agents.db. Returns empty map if DB unavailable. */
-function loadAgentTokensByTask(): Map<string, { input_tokens: number; output_tokens: number }> {
-  const tokens = new Map<string, { input_tokens: number; output_tokens: number }>();
-  if (!existsSync(AGENTS_DB_REST)) return tokens;
+/** Query agents.db with a read-only query. Returns [] if DB unavailable. */
+function queryAgentsDb<T extends Record<string, unknown>>(sql: string, params: unknown[] = []): T[] {
+  if (!existsSync(AGENTS_DB_REST)) return [];
   try {
     const db = new Database(AGENTS_DB_REST, { readonly: true });
     try {
-      const rows = db.query<{ task_id: string; total_input: number; total_output: number }, []>(
-        "SELECT task_id, COALESCE(SUM(input_tokens), 0) as total_input, COALESCE(SUM(output_tokens), 0) as total_output FROM agents GROUP BY task_id"
-      ).all();
-      for (const row of rows) {
-        if (row.task_id) tokens.set(row.task_id, { input_tokens: row.total_input ?? 0, output_tokens: row.total_output ?? 0 });
-      }
+      return db.query<T, unknown[]>(sql).all(...params);
     } finally {
       db.close();
     }
   } catch (err) {
-    console.warn(`[agents.db] Token query failed: ${err}`);
+    console.warn(`[agents.db] Query failed: ${err}`);
+    return [];
   }
-  return tokens;
 }
 
 /** Load agent runs for a specific task from agents.db. Returns [] if DB unavailable. */
 function loadAgentRunsForTask(taskId: string): unknown[] {
-  if (!existsSync(AGENTS_DB_REST)) return [];
-  try {
-    const db = new Database(AGENTS_DB_REST, { readonly: true });
-    try {
-      return db.query<Record<string, unknown>, [string]>(
-        "SELECT * FROM agents WHERE task_id = ? ORDER BY started_at ASC"
-      ).all(taskId);
-    } finally {
-      db.close();
-    }
-  } catch (err) {
-    console.warn(`[agents.db] Agent runs query failed: ${err}`);
-    return [];
-  }
-}
-
-/** Load running agent rows from agents.db. Returns [] if DB unavailable. */
-function loadInProgressAgentsFromDb(): unknown[] {
-  if (!existsSync(AGENTS_DB_REST)) return [];
-  try {
-    const db = new Database(AGENTS_DB_REST, { readonly: true });
-    try {
-      return db.query<Record<string, unknown>, []>(
-        "SELECT * FROM agents WHERE status IN ('running', 'in_progress') AND output_file IS NOT NULL AND output_file != '' ORDER BY started_at ASC"
-      ).all();
-    } finally {
-      db.close();
-    }
-  } catch (err) {
-    console.warn(`[agents.db] In-progress query failed: ${err}`);
-    return [];
-  }
+  return queryAgentsDb("SELECT * FROM agents WHERE task_id = ? ORDER BY started_at ASC", [taskId]);
 }
 
 /** Load recent agents from agents.db (last 2 hours, all statuses). Returns [] if DB unavailable.
  * Only returns real agent spawns (output_file IS NOT NULL) — migrated task rows have no output_file. */
 function loadRecentAgentsFromDb(): unknown[] {
-  if (!existsSync(AGENTS_DB_REST)) return [];
-  try {
-    const db = new Database(AGENTS_DB_REST, { readonly: true });
-    try {
-      const twoHoursAgo = Math.floor((Date.now() - 2 * 60 * 60 * 1000) / 1000);
-      return db.query<Record<string, unknown>, [number]>(
-        "SELECT * FROM agents WHERE output_file IS NOT NULL AND output_file != '' AND (started_at >= ? OR status IN ('running', 'in_progress')) ORDER BY started_at DESC"
-      ).all(twoHoursAgo);
-    } finally {
-      db.close();
-    }
-  } catch (err) {
-    console.warn(`[agents.db] Recent agents query failed: ${err}`);
-    return [];
-  }
+  const twoHoursAgo = Math.floor((Date.now() - 2 * 60 * 60 * 1000) / 1000);
+  return queryAgentsDb(
+    "SELECT * FROM agents WHERE output_file IS NOT NULL AND output_file != '' AND (started_at >= ? OR status IN ('running', 'in_progress')) ORDER BY started_at DESC",
+    [twoHoursAgo]
+  );
 }
 
 function restServeTasks(res: http.ServerResponse, query: URLSearchParams): void {
@@ -1077,8 +1011,7 @@ function restServeTasks(res: http.ServerResponse, query: URLSearchParams): void 
   const limit = Number.isFinite(limitRaw) && limitRaw >= 1 && limitRaw <= 500 ? limitRaw : 50;
 
   // Load cost and token totals from agents.db (best-effort; empty map if unavailable)
-  const agentCosts = loadAgentCostsByTask();
-  const agentTokens = loadAgentTokensByTask();
+  const agentStats = loadAgentStatsByTask();
 
   const tasks: unknown[] = [];
 
@@ -1095,10 +1028,10 @@ function restServeTasks(res: http.ServerResponse, query: URLSearchParams): void 
           try {
             const task = JSON.parse(row.data) as Record<string, unknown>;
             const taskKey = String(task.id ?? row.id);
-            task.cost_usd = agentCosts.get(taskKey) ?? 0;
-            const toks = agentTokens.get(taskKey);
-            task.input_tokens = toks?.input_tokens ?? 0;
-            task.output_tokens = toks?.output_tokens ?? 0;
+            const s = agentStats.get(taskKey);
+            task.cost_usd = s?.cost_usd ?? 0;
+            task.input_tokens = s?.input_tokens ?? 0;
+            task.output_tokens = s?.output_tokens ?? 0;
             tasks.push(task);
           } catch { /* skip malformed */ }
         }
@@ -1142,10 +1075,10 @@ function restServeTasks(res: http.ServerResponse, query: URLSearchParams): void 
             }
           }
           const taskKey2 = String(task.id ?? "");
-          task.cost_usd = agentCosts.get(taskKey2) ?? 0;
-          const toks2 = agentTokens.get(taskKey2);
-          task.input_tokens = toks2?.input_tokens ?? 0;
-          task.output_tokens = toks2?.output_tokens ?? 0;
+          const s2 = agentStats.get(taskKey2);
+          task.cost_usd = s2?.cost_usd ?? 0;
+          task.input_tokens = s2?.input_tokens ?? 0;
+          task.output_tokens = s2?.output_tokens ?? 0;
           tasks.push(task);
         } catch { /* skip malformed file */ }
       }
