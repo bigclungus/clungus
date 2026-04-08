@@ -557,6 +557,15 @@ HTML = r"""<!DOCTYPE html>
       background: var(--red);
       box-shadow: 0 0 5px rgba(248,81,73,0.5);
     }
+    .sa-dot.stale {
+      background: var(--text-muted);
+      box-shadow: none;
+      opacity: 0.4;
+    }
+    .sa-card.stale {
+      opacity: 0.45;
+      filter: grayscale(60%);
+    }
     @keyframes pulse {
       0%, 100% { box-shadow: 0 0 4px rgba(227,179,65,0.5); opacity: 1; }
       50% { box-shadow: 0 0 10px rgba(227,179,65,0.9); opacity: 0.85; }
@@ -1088,19 +1097,28 @@ HTML = r"""<!DOCTYPE html>
       if (atBottom) outputEl.scrollTop = outputEl.scrollHeight;
     }
 
+    function agentStatusClass(status) {
+      if (status === 'in_progress') return 'in_progress';
+      if (status === 'failed') return 'failed';
+      if (status === 'stale') return 'stale';
+      return 'complete';
+    }
+
     function makeCard(agent) {
       const card = document.createElement('div');
-      const statusClass = agent.status === 'in_progress' ? 'in_progress' : agent.status === 'failed' ? 'failed' : 'complete';
-      card.className = 'sa-card' + (agent.status !== 'in_progress' ? ' done' : '');
+      const statusClass = agentStatusClass(agent.status);
+      const isDone = agent.status !== 'in_progress';
+      card.className = 'sa-card' + (isDone ? ' done' : '') + (agent.status === 'stale' ? ' stale' : '');
       card.dataset.id = agent.id;
 
       const nameShort = (agent.name || agent.id).slice(0, 55);
       const age = relativeTime(agent.lastModified);
+      const label = agent.status === 'stale' ? ' <span style="font-size:10px;opacity:0.6">[stale]</span>' : '';
 
       card.innerHTML = `
         <div class="sa-top">
           <div class="sa-dot ${statusClass}"></div>
-          <div class="sa-name" title="${escHtml(agent.name || agent.id)}">${escHtml(nameShort)}</div>
+          <div class="sa-name" title="${escHtml(agent.name || agent.id)}">${escHtml(nameShort)}${label}</div>
           <div class="sa-age">${escHtml(age)}</div>
         </div>
         <div class="sa-meta">
@@ -1118,11 +1136,13 @@ HTML = r"""<!DOCTYPE html>
       // Update status dot
       const dot = card.querySelector('.sa-dot');
       if (dot) {
-        dot.className = 'sa-dot ' + (agent.status === 'in_progress' ? 'in_progress' : agent.status === 'failed' ? 'failed' : 'complete');
+        dot.className = 'sa-dot ' + agentStatusClass(agent.status);
       }
-      // Update fade
+      // Update fade / stale
       if (agent.status !== 'in_progress') card.classList.add('done');
       else card.classList.remove('done');
+      if (agent.status === 'stale') card.classList.add('stale');
+      else card.classList.remove('stale');
       // Update meta
       const tokEl = card.querySelector('.sa-cost-badge');
       if (tokEl) tokEl.textContent = fmtCost(agent.cost);
@@ -1140,11 +1160,15 @@ HTML = r"""<!DOCTYPE html>
       // Filter out hook_* and very short IDs with no data
       const interesting = agents.filter(a => !a.id.startsWith('hook_') && (a.tokens > 0 || a.status === 'in_progress'));
 
-      // Sort: in_progress first, then complete/failed by lastModified descending
+      // Sort: in_progress first, then complete/failed/stale by lastModified descending
       interesting.sort((a, b) => {
         const aActive = a.status === 'in_progress' ? 0 : 1;
         const bActive = b.status === 'in_progress' ? 0 : 1;
         if (aActive !== bActive) return aActive - bActive;
+        // stale agents sink to bottom within the done group
+        const aStale = a.status === 'stale' ? 1 : 0;
+        const bStale = b.status === 'stale' ? 1 : 0;
+        if (aStale !== bStale) return aStale - bStale;
         return (b.lastModified || 0) - (a.lastModified || 0);
       });
 

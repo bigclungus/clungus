@@ -1253,7 +1253,7 @@ function restServeAgents(res: http.ServerResponse): void {
 interface SubagentInfo {
   id: string;
   name: string;
-  status: "in_progress" | "complete";
+  status: "in_progress" | "complete" | "stale";
   tokens: number;
   inputTokens: number;
   outputTokens: number;
@@ -1274,7 +1274,8 @@ function restServeSubagents(res: http.ServerResponse): void {
     const agentId = String(row.id ?? "");
     if (!agentId) continue;
     const rowStatus = String(row.status ?? "complete");
-    const status: "in_progress" | "complete" = rowStatus === "in_progress" ? "in_progress" : "complete";
+    const status: "in_progress" | "complete" | "stale" =
+      rowStatus === "in_progress" ? "in_progress" : rowStatus === "stale" ? "stale" : "complete";
     const startedAt = row.started_at ? new Date(Number(row.started_at) * 1000).toISOString() : null;
     const completedAt = row.completed_at ? new Date(Number(row.completed_at) * 1000).toISOString() : null;
     const lastModified = completedAt ?? startedAt ?? new Date().toISOString();
@@ -1296,8 +1297,14 @@ function restServeSubagents(res: http.ServerResponse): void {
   }
 
   result.sort((a, b) => {
-    if (a.status === b.status) return new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime();
-    return a.status === 'in_progress' ? -1 : 1;
+    const aActive = a.status === 'in_progress' ? 0 : 1;
+    const bActive = b.status === 'in_progress' ? 0 : 1;
+    if (aActive !== bActive) return aActive - bActive;
+    // stale agents sink to bottom within the done group
+    const aStale = a.status === 'stale' ? 1 : 0;
+    const bStale = b.status === 'stale' ? 1 : 0;
+    if (aStale !== bStale) return aStale - bStale;
+    return new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime();
   });
   jsonResponse(res, result);
 }

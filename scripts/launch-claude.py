@@ -40,6 +40,16 @@ def _record_agent_spawn(session_id: str) -> None:
     except Exception as e:
         print(f"[launch-claude] Warning: could not record spawn in agents.db: {e}", file=sys.stderr)
 
+# Mark any previously in_progress agents as stale (bot restart = they're dead)
+try:
+    import sqlite3 as _sqlite3
+    _db = _sqlite3.connect(AGENTS_DB)
+    _db.execute("UPDATE agents SET status='stale' WHERE status='in_progress'")
+    _db.commit()
+    _db.close()
+except Exception as _e:
+    print(f"[launch-claude] Warning: could not mark stale agents: {_e}", file=sys.stderr)
+
 cmd = "/home/clungus/.local/bin/claude"
 #cmd = "/home/clungus/.local/share/claude/versions/2.1.87"
 args = [
