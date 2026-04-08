@@ -737,13 +737,6 @@ HTML = r"""<!DOCTYPE html>
       return Math.floor(secs / 86400) + 'd ago';
     }
 
-    function fmtTokens(n) {
-      if (!n) return '0';
-      if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-      if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
-      return String(n);
-    }
-
     function fmtCost(dollars) {
       if (!dollars || dollars <= 0) return '$0.00';
       if (dollars >= 1) return '$' + dollars.toFixed(2);
@@ -889,7 +882,7 @@ HTML = r"""<!DOCTYPE html>
       const emptyEl = document.getElementById('agents-empty');
 
       // Filter out hook_* and very short IDs with no data
-      const interesting = agents.filter(a => !a.id.startsWith('hook_') && a.tokens > 0 || a.status === 'in_progress');
+      const interesting = agents.filter(a => !a.id.startsWith('hook_') && (a.tokens > 0 || a.status === 'in_progress'));
 
       // Update cost total
       const totalCost = interesting.reduce((s, a) => s + (a.cost || 0), 0);
