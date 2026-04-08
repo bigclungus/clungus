@@ -150,6 +150,19 @@
       background: rgba(239, 68, 68, 0.08);
     }
 
+    /* ── Cost badge ── */
+    .cost-badge {
+      flex-shrink: 0;
+      font-size: 0.62rem;
+      color: #a78bfa;
+      opacity: 0.7;
+      letter-spacing: 0.02em;
+    }
+    .cost-badge.cost-zero {
+      color: var(--text-muted);
+      opacity: 0.35;
+    }
+
     /* ── Last log snippet ── */
     .card-log-snippet {
       margin-top: 5px;
@@ -423,6 +436,8 @@
       color: var(--text-dim);
     }
     .sum-last .sum-last-age { flex-shrink: 0; opacity: 0.6; }
+    .sum-pill.pill-cost { border-color: rgba(167,139,250,0.35); }
+    .sum-pill.pill-cost .sum-val { color: #a78bfa; }
     @media (max-width: 768px) {
       #tasks-summary { padding: 8px 16px; }
     }
@@ -546,6 +561,17 @@
       return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
+    // Format cost_usd: returns "$0.0032" or "—" for zero/null
+    function fmtCost(val) {
+      if (val == null || val === 0 || val === '') return '—';
+      var n = parseFloat(val);
+      if (!isFinite(n) || n === 0) return '—';
+      if (n < 0.0001) return '<$0.0001';
+      if (n < 0.01) return '$' + n.toFixed(4);
+      if (n < 1) return '$' + n.toFixed(3);
+      return '$' + n.toFixed(2);
+    }
+
     var _cardCounter = 0;
 
     function makeLogTimeline(log) {
@@ -665,11 +691,16 @@
           '<div class="card-log"' + taskIdAttr + ' id="' + cardId + '">' + makeLogTimeline(task.log) + '</div>';
       }
 
+      var costFmt = fmtCost(task.cost_usd);
+      var costIsZero = costFmt === '—';
+      var costHtml = '<span class="cost-badge' + (costIsZero ? ' cost-zero' : '') + '" title="agent cost">' + escHtml(costFmt) + '</span>';
+
       var cardTaskIdAttr = task.id ? ' data-task-id="' + escHtml(String(task.id)) + '"' : '';
       return '<div class="task-card status-' + escHtml(status) + '"' + cardTaskIdAttr + '>' +
         '<div class="card-top">' +
           '<div class="card-title">' + title + '</div>' +
           agePill +
+          costHtml +
           '<span class="status-badge ' + escHtml(badgeClass) + '">' + escHtml(status.replace('_', ' ')) + '</span>' +
         '</div>' +
         snippetHtml +
@@ -738,6 +769,14 @@
         totalCount = (_lastMeta && _lastMeta.total != null && _lastMeta.total > 0) ? _lastMeta.total : tasks.length;
       }
 
+      // Sum cost_usd across visible page tasks
+      var pageCostSum = 0;
+      tasks.forEach(function(t) {
+        var c = parseFloat(t.cost_usd);
+        if (isFinite(c) && c > 0) pageCostSum += c;
+      });
+      var costLabel = pageCostSum > 0 ? fmtCost(pageCostSum) : '—';
+
       // Find newest task on the current page for "last:" display
       var newest = null;
       tasks.forEach(function(t) {
@@ -767,6 +806,8 @@
         '<span class="sum-sep">|</span>' +
         '<span class="sum-pill pill-bg"><span>&#128260;</span><span class="sum-val">' + bg + '</span><span>background</span></span>' +
         '<span class="sum-pill pill-fg"><span>&#9889;</span><span class="sum-val">' + fg + '</span><span>foreground</span></span>' +
+        '<span class="sum-sep">|</span>' +
+        '<span class="sum-pill pill-cost" title="total agent cost (visible page)"><span>cost</span><span class="sum-val">' + escHtml(costLabel) + '</span></span>' +
         lastHtml;
 
       // Wire up filter clicks and mark active pill in one pass
