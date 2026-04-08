@@ -4,7 +4,7 @@
 # Model defaults to grok-3-mini if not provided.
 set -euo pipefail
 
-MODEL="${1:-grok-3}"
+MODEL="${1:-grok-4}"
 PROMPT="${2:-}"
 
 if [[ -z "$PROMPT" ]]; then
