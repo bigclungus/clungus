@@ -211,11 +211,11 @@ const DEFAULT_ENEMY_VARIANTS: EnemyVariant[] = [
   { id: 3, name: "Brute", behavior: "brute", hp: 40, atk: 1, def: 5, spd: 0.8, floor_min: 2, budget_cost: 1 },
 ];
 
-// BULLET HELL MODE: enemy_budget x100 → rooms fill to spawn attempt cap (100x more enemies)
+// BULLET HELL MODE: enemy_budget x10 over original (10x more enemies)
 const DEFAULT_FLOOR_TEMPLATES: FloorTemplate[] = [
-  { floor_number: 1, room_count_min: 5, room_count_max: 7, enemy_budget: 60000, boss_type_id: 1, powerup_choices: 3, enemy_scaling: 1.0 },
-  { floor_number: 2, room_count_min: 6, room_count_max: 9, enemy_budget: 100000, boss_type_id: 2, powerup_choices: 3, enemy_scaling: 1.4 },
-  { floor_number: 3, room_count_min: 7, room_count_max: 10, enemy_budget: 140000, boss_type_id: 3, powerup_choices: 2, enemy_scaling: 1.8 },
+  { floor_number: 1, room_count_min: 5, room_count_max: 7, enemy_budget: 6000, boss_type_id: 1, powerup_choices: 3, enemy_scaling: 1.0 },
+  { floor_number: 2, room_count_min: 6, room_count_max: 9, enemy_budget: 10000, boss_type_id: 2, powerup_choices: 3, enemy_scaling: 1.4 },
+  { floor_number: 3, room_count_min: 7, room_count_max: 10, enemy_budget: 14000, boss_type_id: 3, powerup_choices: 2, enemy_scaling: 1.8 },
 ];
 
 const BOSS_TYPE_MAP: Record<number, BossType> = {

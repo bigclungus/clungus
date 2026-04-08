@@ -71,11 +71,11 @@ interface PlayerTarget {
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 // Hive Mother (F1)
-// BULLET HELL MODE: faster spawns, more minions per wave
-const HM_SPAWN_INTERVAL_P1 = 32;  // 2s at 16Hz (was 5s)
-const HM_SPAWN_INTERVAL_P2 = 16;  // 1s (enraged, was 3s)
-const HM_SPAWN_COUNT_P1 = 15;     // was 3
-const HM_SPAWN_COUNT_P2 = 25;     // was 5
+// 10x mode: slightly faster spawns (~25% faster than original), moderate minion counts (~3x original)
+const HM_SPAWN_INTERVAL_P1 = 60;  // ~3.75s at 16Hz (was 80 ticks / 5s original)
+const HM_SPAWN_INTERVAL_P2 = 36;  // ~2.25s (enraged, was 48 ticks / 3s original)
+const HM_SPAWN_COUNT_P1 = 9;      // ~3x original (was 3)
+const HM_SPAWN_COUNT_P2 = 15;     // ~3x original (was 5)
 const HM_PHASE2_THRESHOLD = 0.5;
 
 // Spore Lord (F2)
