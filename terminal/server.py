@@ -686,13 +686,100 @@ HTML = r"""<!DOCTYPE html>
       background: var(--bg-base);
     }
 
+    /* ── Mobile toggle bar (hidden on desktop) ───────────────────────────────── */
+    #mobile-view-toggle {
+      display: none;
+    }
+    .mvt-btn {
+      flex: 1;
+      padding: 10px 8px;
+      background: var(--bg-elevated);
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-muted);
+      font-family: var(--font-ui);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: color var(--transition), border-color var(--transition), background var(--transition);
+      letter-spacing: 0.01em;
+    }
+    .mvt-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+      background: var(--bg-surface);
+    }
+
     /* ── Mobile ──────────────────────────────────────────────────────────────── */
-    @media (max-width: 640px) {
+    @media (max-width: 768px) {
+      /* Show the mobile view toggle bar */
+      #mobile-view-toggle {
+        display: flex;
+        flex-shrink: 0;
+        border-bottom: 1px solid var(--border);
+      }
+
+      /* Stack main panes vertically */
+      #main {
+        flex-direction: column;
+        overflow-y: auto;
+        overflow-x: hidden;
+      }
+
+      /* Terminal takes full width, fixed height */
+      #terminal {
+        width: 100% !important;
+        height: 45vh;
+        min-height: 180px;
+        flex-shrink: 0;
+        border-bottom: 1px solid var(--border);
+      }
+
+      /* Hide the vertical resizer on mobile */
+      #resizer {
+        display: none;
+      }
+
+      /* Agents panel takes full width */
+      #agents {
+        border-left: none;
+        border-top: 1px solid var(--border);
+        min-width: 0;
+        width: 100%;
+        flex-shrink: 0;
+        min-height: 200px;
+      }
+
+      /* Single column agent cards */
       #agents-list { grid-template-columns: 1fr; }
-      #healthbar { gap: 10px; padding: 5px 10px; font-size: 10px; }
-      .hb-bar-wrap { width: 40px; }
-      .tab-btn { padding: 8px 12px 7px; font-size: 11px; }
-      #session-bar { padding: 0 4px 0 0; }
+
+      /* Healthbar: wrap tightly, smaller font */
+      #healthbar { gap: 8px; padding: 4px 8px; font-size: 10px; flex-wrap: wrap; }
+      .hb-bar-wrap { width: 36px; }
+      .hb-val { min-width: 28px; font-size: 10px; }
+      .hb-label { font-size: 9px; min-width: 28px; }
+
+      /* Session bar touch targets */
+      .tab-btn { padding: 10px 10px 9px; font-size: 12px; }
+      #session-bar { padding: 0 2px 0 0; }
+
+      /* Hide some session bar actions to save space on mobile */
+      #graph-link, #edit-claude-link { display: none; }
+
+      /* Bigger touch targets on agent cards */
+      .sa-card { padding: 12px 13px; }
+      .sa-name { font-size: 13px; }
+      .sa-output { font-size: 11px; max-height: 6em; }
+
+      /* Bigger status dot */
+      .sa-dot { width: 10px; height: 10px; }
+    }
+
+    @media (max-width: 480px) {
+      /* Even smaller screens: slightly reduce healthbar further */
+      #healthbar { font-size: 9px; padding: 3px 6px; }
+      .hb-sep { display: none; }
+      .tab-btn { padding: 10px 8px 9px; font-size: 11px; }
     }
   </style>
 </head>
@@ -704,6 +791,10 @@ HTML = r"""<!DOCTYPE html>
     <a id="graph-link" href="/graph" target="_blank">&#x238B; Knowledge Graph</a>
     <a id="edit-claude-link" href="/edit-claude-md" target="_blank">&#x270F; claude.md</a>
     <button id="restart-btn">&#x2620; restart</button>
+  </div>
+  <div id="mobile-view-toggle">
+    <button class="mvt-btn active" id="mvt-terminal" onclick="switchMobileView('terminal')">&#x1F5A5; Terminal</button>
+    <button class="mvt-btn" id="mvt-agents" onclick="switchMobileView('agents')">&#x26A1; Agents</button>
   </div>
   <div id="healthbar">
     <div class="hb-metric">
@@ -775,7 +866,18 @@ HTML = r"""<!DOCTYPE html>
     term.loadAddon(fitAddon);
     term.open(document.getElementById('terminal'));
     fitAddon.fit();
-    window.addEventListener('resize', () => fitAddon.fit());
+    window.addEventListener('resize', () => {
+      fitAddon.fit();
+      // If resizing to desktop, restore both panels
+      if (window.innerWidth > 768) {
+        const termEl = document.getElementById('terminal');
+        const agentsEl = document.getElementById('agents');
+        const resizerEl = document.getElementById('resizer');
+        if (termEl) termEl.style.display = '';
+        if (agentsEl) agentsEl.style.display = '';
+        if (resizerEl) resizerEl.style.display = '';
+      }
+    });
 
     const statusEl = document.getElementById('status');
 
@@ -1140,17 +1242,50 @@ HTML = r"""<!DOCTYPE html>
       el.addEventListener('click', function() { if (window.GCSounds) GCSounds.click(); }, true);
     });
 
+    // ── Mobile view toggle ─────────────────────────────────────────────────────
+    function switchMobileView(view) {
+      const termEl = document.getElementById('terminal');
+      const agentsEl = document.getElementById('agents');
+      const resizerEl = document.getElementById('resizer');
+      const btnTerminal = document.getElementById('mvt-terminal');
+      const btnAgents = document.getElementById('mvt-agents');
+      if (view === 'agents') {
+        termEl.style.display = 'none';
+        agentsEl.style.display = '';
+        if (resizerEl) resizerEl.style.display = 'none';
+        btnTerminal.classList.remove('active');
+        btnAgents.classList.add('active');
+      } else {
+        termEl.style.display = '';
+        agentsEl.style.display = 'none';
+        if (resizerEl) resizerEl.style.display = 'none';
+        btnTerminal.classList.add('active');
+        btnAgents.classList.remove('active');
+        fitAddon.fit();
+      }
+    }
+
+    // On mobile, default to showing terminal only (agents hidden until toggled)
+    (function initMobileView() {
+      if (window.innerWidth <= 768) {
+        const agentsEl = document.getElementById('agents');
+        if (agentsEl) agentsEl.style.display = 'none';
+      }
+    })();
+
     // Tab switching
     let gigaLoaded = false;
     function switchTab(name) {
       const mainEl = document.getElementById('main');
       const healthEl = document.getElementById('healthbar');
       const gigaWrap = document.getElementById('giga-frame-wrap');
+      const mobileToggle = document.getElementById('mobile-view-toggle');
       const tabBig = document.getElementById('tab-big');
       const tabGiga = document.getElementById('tab-giga');
       if (name === 'giga') {
         mainEl.style.display = 'none';
         healthEl.style.display = 'none';
+        if (mobileToggle) mobileToggle.style.display = 'none';
         gigaWrap.classList.add('visible');
         tabBig.classList.remove('active');
         tabGiga.classList.add('active');
@@ -1161,10 +1296,18 @@ HTML = r"""<!DOCTYPE html>
       } else {
         mainEl.style.display = '';
         healthEl.style.display = '';
+        // Restore mobile toggle visibility based on screen size
+        if (mobileToggle) mobileToggle.style.display = '';
         gigaWrap.classList.remove('visible');
         tabBig.classList.add('active');
         tabGiga.classList.remove('active');
-        fitAddon.fit();
+        // On mobile, ensure we're showing only the active panel
+        if (window.innerWidth <= 768) {
+          const activeView = document.getElementById('mvt-terminal').classList.contains('active') ? 'terminal' : 'agents';
+          switchMobileView(activeView);
+        } else {
+          fitAddon.fit();
+        }
       }
     }
 
