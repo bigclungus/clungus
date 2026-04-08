@@ -1588,8 +1588,15 @@ function restServeSubagents(res: http.ServerResponse): void {
     // Accept both 'running' (new) and 'in_progress' (legacy) as active
     const status: "running" | "complete" | "stale" =
       (rowStatus === "running" || rowStatus === "in_progress") ? "running" : rowStatus === "stale" ? "stale" : "complete";
-    const startedAt = row.started_at ? new Date(Number(row.started_at) * 1000).toISOString() : null;
-    const completedAt = row.completed_at ? new Date(Number(row.completed_at) * 1000).toISOString() : null;
+    const parseAgentTs = (v: unknown): string | null => {
+      if (!v) return null;
+      const n = Number(v);
+      // If numeric (Unix seconds), multiply by 1000; otherwise parse as date string directly
+      const d = isNaN(n) ? new Date(String(v)) : new Date(n * 1000);
+      return isNaN(d.getTime()) ? null : d.toISOString();
+    };
+    const startedAt = parseAgentTs(row.started_at);
+    const completedAt = parseAgentTs(row.completed_at);
     const lastModified = completedAt ?? startedAt ?? new Date().toISOString();
     const inputTokens = typeof row.input_tokens === "number" ? row.input_tokens : 0;
     const outputTokens = typeof row.output_tokens === "number" ? row.output_tokens : 0;
