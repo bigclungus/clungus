@@ -199,7 +199,7 @@ export const DUNGEON_BUILDING_COL_MAX = 47;    // right edge of dungeon building
 export const LEADERBOARD_COL = 36;
 export const LEADERBOARD_ROW = 10;
 // Proximity radius in tiles — show leaderboard UI when player is within this distance
-export const LEADERBOARD_PROXIMITY_TILES = 1;
+export const LEADERBOARD_PROXIMITY_TILES = 3;
 
 export const INTERPOLATION_DELAY_MS = 100;
 export const SNAPSHOT_BUFFER_SIZE = 8;

@@ -333,23 +333,33 @@ function drawChunk00Overlays(ctx: CanvasRenderingContext2D, congressActive: bool
   ctx.fillText("⚔ DUNGEON", DUNGEON_BUILDING_COL * TILE + TILE / 2, DUNGEON_BUILDING_LABEL_ROW * TILE - 3);
   ctx.restore();
 
+  // Leaderboard sign — 2 tiles wide, taller board, text inside
   const bx = LEADERBOARD_COL * TILE;
   const by = LEADERBOARD_ROW * TILE;
+  const signW = TILE * 2 + 4;       // ~44px wide
+  const signH = 22;                  // board height
+  const poleH = TILE + 8;            // pole goes below board into tile
+  const signX = bx - 2;             // left edge of board
+  const signCX = bx + TILE;         // center x (mid of 2-tile span)
   ctx.save();
+  // Pole
   ctx.fillStyle = "#6b4226";
-  ctx.fillRect(bx + 8, by - 4, 3, TILE + 4);
-  ctx.fillStyle = "#2a1a0a";
-  ctx.strokeStyle = "#8b6433";
+  ctx.fillRect(signCX - 2, by - signH + poleH, 4, poleH);
+  // Board background + border
+  ctx.fillStyle = "#1a0d02";
+  ctx.strokeStyle = "#c8a028";
   ctx.lineWidth = 1.5;
-  ctx.fillRect(bx - 2, by - 12, TILE + 4, 12);
-  ctx.strokeRect(bx - 2, by - 12, TILE + 4, 12);
-  ctx.font = "6px monospace";
+  ctx.fillRect(signX, by - signH, signW, signH);
+  ctx.strokeRect(signX, by - signH, signW, signH);
+  // Trophy icon row
+  ctx.font = "10px monospace";
   ctx.fillStyle = "#d4af37";
   ctx.textAlign = "center";
-  ctx.fillText("🏆", bx + TILE / 2, by - 3);
-  ctx.font = "5px monospace";
-  ctx.fillStyle = "#a08040";
-  ctx.fillText("LEADERBOARD", bx + TILE / 2, by + 8);
+  ctx.fillText("🏆", signCX, by - signH + 12);
+  // LEADERBOARD label inside board
+  ctx.font = "bold 6px monospace";
+  ctx.fillStyle = "#e8c040";
+  ctx.fillText("LEADERBOARD", signCX, by - signH + 20);
   ctx.restore();
 
   if (congressActive) {
