@@ -7,12 +7,12 @@ with workflow.unsafe.imports_passed_through():
     from activities.constants import MAIN_CHANNEL_ID
     from activities.inject_act import inject_message
 
-HEARTBEAT_INTERVAL_SECONDS = 600  # 10 minutes
+HEARTBEAT_INTERVAL_SECONDS = 3600  # 60 minutes
 
 
 @workflow.defn
 class HeartbeatWorkflow:
-    """Fires [heartbeat] every 10 minutes to keep BigClungus active.
+    """Fires [heartbeat] every 60 minutes to keep BigClungus active.
 
     Congress verdict (RFC-1): this is a watchdog, not a self-improvement loop.
     It pokes a sleeping process and checks if anything is on fire.
