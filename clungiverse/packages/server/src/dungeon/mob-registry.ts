@@ -272,18 +272,25 @@ export function initMobRegistry(db: Database): void {
     )
   `);
 
-  // Seed if empty
-  const count = db.query("SELECT COUNT(*) as cnt FROM mob_cache").get() as { cnt: number };
-  if (count.cnt === 0) {
-    const insert = db.prepare(
-      `INSERT INTO mob_cache (entity_name, display_name, behavior, hp, atk, def, spd, budget_cost, flavor_text)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    );
-    for (const m of SEED_MOBS) {
-      insert.run(m.entity_name, m.display_name, m.behavior, m.hp, m.atk, m.def, m.spd, m.budget_cost, m.flavor_text);
-    }
-    console.log(`[mob-registry] Seeded ${String(SEED_MOBS.length)} mobs into DB`);
+  // Upsert seed mobs so stat changes (e.g. bullet hell mode atk/cost values) apply to existing DBs
+  const upsert = db.prepare(
+    `INSERT INTO mob_cache (entity_name, display_name, behavior, hp, atk, def, spd, budget_cost, flavor_text)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(entity_name) DO UPDATE SET
+       display_name = excluded.display_name,
+       behavior = excluded.behavior,
+       hp = excluded.hp,
+       atk = excluded.atk,
+       def = excluded.def,
+       spd = excluded.spd,
+       budget_cost = excluded.budget_cost,
+       flavor_text = excluded.flavor_text,
+       updated_at = datetime('now')`
+  );
+  for (const m of SEED_MOBS) {
+    upsert.run(m.entity_name, m.display_name, m.behavior, m.hp, m.atk, m.def, m.spd, m.budget_cost, m.flavor_text);
   }
+  console.log(`[mob-registry] Upserted ${String(SEED_MOBS.length)} seed mobs into DB`);
 
   mobRegistry.loadFromDB(db);
 }

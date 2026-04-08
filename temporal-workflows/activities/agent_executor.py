@@ -38,7 +38,7 @@ _PRICING: dict[str, tuple[float, float]] = {
 # Allowlisted bash commands (first token of command)
 _BASH_ALLOWED = {"ls", "cat", "grep", "find", "head", "tail", "wc", "echo"}
 # Blocklisted substrings in the full command string (belt-and-suspenders)
-_BASH_BLOCKED_PATTERNS = ["rm ", "systemctl", "git push", "sudo", "curl", "wget", "rm\t"]
+_BASH_BLOCKED_PATTERNS = ["rm ", "rm\t", "rm\n", "rmdir", "systemctl", "git push", "sudo", "curl", "wget"]
 
 
 def _estimate_cost(model: str, input_tokens: int, output_tokens: int) -> float:
