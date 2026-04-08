@@ -1,7 +1,6 @@
 """One-off manual runner for Marin SFH ListingsWorkflow."""
 import asyncio
 import json
-import os
 import subprocess
 import time
 from pathlib import Path
@@ -12,11 +11,11 @@ load_dotenv(Path(__file__).parent / ".env")
 
 from temporalio.client import Client
 
+from activities.constants import MAIN_CHANNEL_ID
+from activities.utils import get_discord_token
 from workflows.listings import ListingsWorkflow
 
 CRITERIA_PATH = Path(__file__).parent / "criteria.json"
-DISCORD_CHANNEL_ID = "1485343472952148008"
-DISCORD_ENV_PATH = "/home/clungus/.claude/channels/discord/.env"
 
 def load_marin_criteria() -> dict:
     """Load Marin SFH search criteria from criteria.json."""
@@ -37,20 +36,6 @@ def format_price(price: int) -> str:
     if price >= 1_000:
         return f"${price // 1000}K"
     return f"${price}"
-
-def load_discord_token() -> str:
-    """Load Discord bot token from the discord .env file."""
-    token_env: dict[str, str] = {}
-    with open(DISCORD_ENV_PATH) as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                key, _, value = line.partition("=")
-                token_env[key.strip()] = value.strip().strip('"').strip("'")
-    token = token_env.get("DISCORD_BOT_TOKEN") or os.environ.get("DISCORD_BOT_TOKEN")
-    if not token:
-        raise ValueError("DISCORD_BOT_TOKEN not found in discord .env or environment")
-    return token
 
 async def main():
     criteria = load_marin_criteria()
@@ -75,10 +60,10 @@ price_range = f"{min_p}-{max_p}"
 msg = f"marin manual run ({price_range}, {listing_type}): found {result} new listings"
 
 # Post directly to Discord via bot API
-token = load_discord_token()
+token = get_discord_token()
 subprocess.run([
     "curl", "-s", "-X", "POST",
-    f"https://discord.com/api/v10/channels/{DISCORD_CHANNEL_ID}/messages",
+    f"https://discord.com/api/v10/channels/{MAIN_CHANNEL_ID}/messages",
     "-H", f"Authorization: Bot {token}",
     "-H", "Content-Type: application/json",
     "-H", "User-Agent: DiscordBot (https://clung.us, 1.0)",

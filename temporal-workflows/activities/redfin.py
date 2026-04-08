@@ -1,3 +1,5 @@
+import asyncio
+
 from homeharvest import scrape_property
 from temporalio import activity
 
@@ -12,8 +14,6 @@ async def fetch_redfin_listings(location: str, min_price: int, max_price: int, l
         max_price: Maximum list price filter
         listing_type: homeharvest listing type — 'for_sale' (default), 'for_rent', or 'sold'
     """
-    import asyncio
-
     # homeharvest is sync, run in executor to not block the event loop
     loop = asyncio.get_running_loop()
 
