@@ -25,13 +25,11 @@ try {
 const agentId = (input.agent_id as string | undefined) ?? "";
 const agentType = (input.agent_type as string | undefined) ?? "unknown";
 const sessionId = (input.session_id as string | undefined) ?? "unknown";
-const model = (input.model as string | undefined) ?? "";
-const provider = (input.provider as string | undefined) ?? "";
+const rawModel = (input.model as string | undefined) ?? "";
+const model = rawModel || "claude-sonnet-4-6";
+const provider = model.startsWith("grok-") ? "xai" : "claude";
 
 if (!agentId) process.exit(0);
-
-// Pass provider and model as-is — workflow's _is_xai() infers the path from both.
-// No need to normalize here; that logic lives in the workflow where it belongs.
 const nowTs = Math.floor(Date.now() / 1000);
 
 mkdirSync(STATE_DIR, { recursive: true });
@@ -84,7 +82,7 @@ const temporalInput = {
   agent_id: agentId,
   description: title,
   provider: provider,
-  model: model || "",
+  model: model,
   prompt: title,
   api_key: "",
 };
