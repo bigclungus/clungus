@@ -69,7 +69,7 @@ if (!title) {
 
 const datePart = new Date().toISOString().slice(0, 19).replace(/[-T:]/g, "").replace(/(\d{8})(\d{6})/, "$1-$2");
 const taskId = `task-${datePart}-${agentId.slice(0, 8)}`;
-const workflowId = `agent-task-${agentId}`;
+const workflowId = `agent-task-${agentId}-${provider}`;
 
 // Save state for subagent-stop.ts to pick up
 await Bun.write(
