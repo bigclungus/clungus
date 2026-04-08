@@ -231,6 +231,71 @@ async def finalize_task(input: AgentTaskInput, result: dict) -> None:
 
 
 @activity.defn
+async def poll_agent_status(agent_id: str, task_id: str) -> dict:
+    """
+    Check agent liveness and get current token counts.
+    Returns:
+      {
+        "jsonl_size": int,       # current size of output JSONL in bytes (0 if not found)
+        "state_file_exists": bool,
+        "input_tokens": int,
+        "output_tokens": int,
+        "cache_read_tokens": int,
+        "cost_usd": float,
+      }
+    Also updates tasks.db with current token counts (intermediate update).
+    """
+    import os
+
+    # jsonl_size: glob for output file
+    jsonl_size = 0
+    matches = glob.glob(f"/tmp/claude-1001/**/tasks/{agent_id}.output", recursive=True)
+    if matches:
+        try:
+            jsonl_size = os.path.getsize(matches[0])
+        except OSError:
+            jsonl_size = 0
+
+    # state_file_exists
+    state_file_exists = os.path.exists(f"/tmp/bc-agents/{agent_id}.json")
+
+    # token counts from JSONL
+    token_data = _parse_jsonl_tokens(agent_id)
+
+    # Intermediate UPDATE of token data in tasks.db
+    now = _iso_now()
+    with _get_conn() as conn:
+        conn.execute(
+            """
+            UPDATE tasks SET data = json_set(data,
+              '$.input_tokens', ?,
+              '$.output_tokens', ?,
+              '$.cache_read_tokens', ?,
+              '$.cost_usd', ?
+            ), updated_at = ? WHERE id = ?
+            """,
+            (
+                token_data["input_tokens"],
+                token_data["output_tokens"],
+                token_data["cache_read_tokens"],
+                token_data["cost_usd"],
+                now,
+                task_id,
+            ),
+        )
+        conn.commit()
+
+    return {
+        "jsonl_size": jsonl_size,
+        "state_file_exists": state_file_exists,
+        "input_tokens": token_data["input_tokens"],
+        "output_tokens": token_data["output_tokens"],
+        "cache_read_tokens": token_data["cache_read_tokens"],
+        "cost_usd": token_data["cost_usd"],
+    }
+
+
+@activity.defn
 async def record_error(task_id: str, error_message: str) -> None:
     """
     Record failure on the tasks row.

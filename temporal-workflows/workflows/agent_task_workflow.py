@@ -37,6 +37,7 @@ with workflow.unsafe.imports_passed_through():
         create_task_record,
         finalize_task,
         record_error,
+        poll_agent_status,
     )
     from activities.agent_executor import run_xai_agent
     from agent_types import AgentTaskInput
@@ -111,24 +112,67 @@ class AgentTaskWorkflow:
             )
 
     # ------------------------------------------------------------------
-    # Claude/tracker path — wait for external mark_complete signal
+    # Claude/tracker path — active poll loop with auto-finalize
     # ------------------------------------------------------------------
 
     async def _run_claude(self, input: AgentTaskInput) -> None:
-        # Wait for mark_complete signal (up to 90 minutes)
+        POLL_INTERVAL = 30        # seconds between polls
+        STALE_POLLS_NEEDED = 5    # consecutive stale polls → auto-finalize
+        MAX_POLLS = 180           # 180 * 30s = 90 min hard ceiling
+
+        stale_count = 0
+        last_jsonl_size = -1
+        polls = 0
+
         try:
-            await workflow.wait_condition(
-                lambda: self._complete or self._status == "cancelled",
-                timeout=timedelta(minutes=90),
-            )
-        except TimeoutError:
-            self._status = "timed_out"
-            self._result = {"status": "timed_out"}
-            await workflow.execute_local_activity(
-                record_error,
-                args=[input.task_id, "workflow timed out waiting for mark_complete"],
-                start_to_close_timeout=timedelta(seconds=10),
-            )
+            while not self._complete and self._status != "cancelled":
+                # Wait up to POLL_INTERVAL seconds, interruptible by signal
+                try:
+                    await workflow.wait_condition(
+                        lambda: self._complete or self._status == "cancelled",
+                        timeout=timedelta(seconds=POLL_INTERVAL),
+                    )
+                    if self._complete or self._status == "cancelled":
+                        break
+                except TimeoutError:
+                    pass  # normal — poll interval elapsed
+
+                polls += 1
+                if polls > MAX_POLLS:
+                    self._status = "timed_out"
+                    self._result = {"status": "timed_out"}
+                    await workflow.execute_local_activity(
+                        record_error,
+                        args=[input.task_id, "workflow timed out waiting for agent"],
+                        start_to_close_timeout=timedelta(seconds=10),
+                    )
+                    break
+
+                # Poll agent status
+                status = await workflow.execute_local_activity(
+                    poll_agent_status,
+                    args=[input.agent_id, input.task_id],
+                    start_to_close_timeout=timedelta(seconds=10),
+                )
+
+                jsonl_size = status.get("jsonl_size", 0)
+                state_exists = status.get("state_file_exists", True)
+
+                # Check stale condition: no JSONL growth AND state file gone
+                if jsonl_size == last_jsonl_size and not state_exists:
+                    stale_count += 1
+                else:
+                    stale_count = 0
+                last_jsonl_size = jsonl_size
+
+                if stale_count >= STALE_POLLS_NEEDED:
+                    workflow.logger.info(
+                        "Agent %s auto-finalized after %d stale polls",
+                        input.agent_id, stale_count,
+                    )
+                    self._complete = True
+                    break
+
         except CancelledError:
             self._status = "cancelled"
             raise
@@ -136,7 +180,7 @@ class AgentTaskWorkflow:
             # Always finalize — write status/tokens/cost to DB
             await workflow.execute_local_activity(
                 finalize_task,
-                args=[input, self._result or {"status": self._status}],
+                args=[input, self._result or {"status": self._status or "completed"}],
                 start_to_close_timeout=timedelta(seconds=30),
             )
 
