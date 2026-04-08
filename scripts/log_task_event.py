@@ -6,7 +6,7 @@ Usage: python3 log_task_event.py <task_id> <event_type> <message>
 event_type: started | milestone | user_feedback | blocked | done | failed
 task_id: a task ID like "task-20260324-..." or a unique prefix
 """
-import sys, os, re, time
+import sys, os, re, time, json
 from datetime import datetime, timezone
 
 AGENTS_DB = "/mnt/data/data/agents.db"
@@ -184,8 +184,60 @@ def _write_to_sqlite(task_id: str, event_type: str, message: str, ts: str) -> No
     conn.close()
 
 
+def _import_json_task_into_db(task_id: str, db_path: str) -> bool:
+    """
+    Look for a JSON task file in bigclungus-meta/tasks/<task_id>.json.
+    If found, import it into tasks.db on-demand and return True.
+    Returns False if no JSON file exists.
+    """
+    import json as _json
+    tasks_dir = "/home/clungus/work/bigclungus-meta/tasks"
+    json_path = os.path.join(tasks_dir, f"{task_id}.json")
+    if not os.path.exists(json_path):
+        return False
+
+    try:
+        with open(json_path) as fh:
+            data = _json.load(fh)
+    except Exception as e:
+        print(f"Warning: could not read {json_path}: {e}", file=sys.stderr)
+        return False
+
+    scripts_dir = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, scripts_dir)
+    from tasks_db import get_db, init_db
+
+    title = data.get("title", task_id)
+    status = data.get("status", "open")
+    # Derive timestamps from the log if available
+    log = data.get("log", [])
+    ts_created = log[0].get("ts") if log else datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    ts_updated = log[-1].get("ts") if log else ts_created
+
+    init_db(db_path)
+    conn = get_db(db_path)
+    conn.execute(
+        "INSERT OR IGNORE INTO tasks (id, title, status, created_at, updated_at, data) VALUES (?, ?, ?, ?, ?, ?)",
+        (task_id, title, status, ts_created, ts_updated, _json.dumps(data)),
+    )
+    # Re-import log entries as task_events (skip if they already exist)
+    for entry in log:
+        ts  = entry.get("ts", ts_created)
+        evt = entry.get("event", "milestone")
+        msg = entry.get("context", "")
+        conn.execute(
+            "INSERT INTO task_events (task_id, event, message, ts) VALUES (?, ?, ?, ?)",
+            (task_id, evt, msg, ts),
+        )
+    conn.commit()
+    conn.close()
+    print(f"Imported task {task_id} from JSON file into tasks.db", file=sys.stderr)
+    return True
+
+
 def _resolve_task_id(task_ref: str) -> str:
-    """Resolve a task reference (ID or prefix) to a canonical task_id via tasks.db."""
+    """Resolve a task reference (ID or prefix) to a canonical task_id via tasks.db.
+    Falls back to the JSON task file directory if not found in tasks.db."""
     scripts_dir = os.path.dirname(os.path.abspath(__file__))
     sys.path.insert(0, scripts_dir)
     from tasks_db import DEFAULT_DB, get_db
@@ -207,6 +259,20 @@ def _resolve_task_id(task_ref: str) -> str:
     conn.close()
     if row:
         return row[0]
+
+    # JSON file fallback: import on-demand if the exact task ID exists as a file
+    if _import_json_task_into_db(task_ref, db_path):
+        return task_ref
+
+    # Prefix fallback against JSON files
+    tasks_dir = "/home/clungus/work/bigclungus-meta/tasks"
+    if os.path.isdir(tasks_dir):
+        import glob as _glob
+        matches = sorted(_glob.glob(os.path.join(tasks_dir, f"{task_ref}*.json")), reverse=True)
+        if matches:
+            candidate = os.path.basename(matches[0])[:-5]  # strip .json
+            if _import_json_task_into_db(candidate, db_path):
+                return candidate
 
     raise ValueError(f"No task found for reference: {task_ref}")
 

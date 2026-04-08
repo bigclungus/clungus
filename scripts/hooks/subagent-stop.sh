@@ -61,6 +61,28 @@ UPDATED=$(jq \
 
 echo "$UPDATED" > "$TASK_FILE"
 
+# Update tasks.db status to done
+python3 - <<PYEOF
+import sqlite3, sys
+sys.path.insert(0, '/mnt/data/scripts')
+from tasks_db import DEFAULT_DB, get_db
+
+task_id = '${TASK_ID}'
+ts      = '${TIMESTAMP}'
+
+conn = get_db(DEFAULT_DB)
+conn.execute(
+    'UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?',
+    ('done', ts, task_id)
+)
+conn.execute(
+    'INSERT INTO task_events (task_id, event, message, ts) VALUES (?, ?, ?, ?)',
+    (task_id, 'done', '', ts)
+)
+conn.commit()
+conn.close()
+PYEOF
+
 # Clean up agent state file
 rm -f "$AGENT_STATE_FILE"
 

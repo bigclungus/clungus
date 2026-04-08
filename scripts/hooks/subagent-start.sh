@@ -97,6 +97,38 @@ jq -n \
     ]
   }' > "$TASK_FILE"
 
+# Insert task into tasks.db so it appears on clung.us/tasks
+python3 - <<PYEOF
+import sqlite3, json, sys
+sys.path.insert(0, '/mnt/data/scripts')
+from tasks_db import DEFAULT_DB, get_db, init_db
+
+task_id = '${TASK_ID}'
+title   = '${TITLE}'
+ts      = '${TIMESTAMP}'
+
+task_data = {
+    'id': task_id,
+    'title': title,
+    'status': 'open',
+    'source': 'discord',
+    'log': [{'ts': ts, 'event': 'started', 'context': title}]
+}
+
+init_db(DEFAULT_DB)
+conn = get_db(DEFAULT_DB)
+conn.execute(
+    'INSERT OR IGNORE INTO tasks (id, title, status, created_at, updated_at, data) VALUES (?, ?, ?, ?, ?, ?)',
+    (task_id, title, 'open', ts, ts, json.dumps(task_data))
+)
+conn.execute(
+    'INSERT INTO task_events (task_id, event, message, ts) VALUES (?, ?, ?, ?)',
+    (task_id, 'started', title, ts)
+)
+conn.commit()
+conn.close()
+PYEOF
+
 # Store task ID in agent state file for subagent-stop.sh to pick up
 jq -n \
   --arg task_id "$TASK_ID" \
