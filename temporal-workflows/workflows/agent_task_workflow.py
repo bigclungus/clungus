@@ -46,8 +46,6 @@ def _is_xai(input: AgentTaskInput) -> bool:
     """Return True when this task should use the xAI direct-call path."""
     if input.provider == "xai":
         return True
-    if input.provider == "claude":
-        return False
     # Infer from model name when provider is not explicitly set
     return input.model.startswith("grok-")
 

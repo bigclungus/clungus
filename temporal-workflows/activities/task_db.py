@@ -44,16 +44,14 @@ async def create_task_record(input: AgentTaskInput) -> None:
     available, so we guard with a SELECT first).
     """
     now = _iso_now()
-    description = input.metadata.get("description", input.prompt or input.task_id)
-    title = description
+    title = input.description or input.prompt or input.task_id
 
     task_data = json.dumps({
         "id": input.task_id,
         "title": title,
         "status": "open",
         "source": "agent-hook",
-        "agent_id": input.metadata.get("agent_id", ""),
-        "session_id": input.metadata.get("session_id", "unknown"),
+        "agent_id": input.agent_id,
         "model": input.model,
         "log": [{"ts": now, "event": "started", "context": title}],
     })

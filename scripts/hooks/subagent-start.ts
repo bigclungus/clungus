@@ -35,7 +35,6 @@ const providerSuffix =
   model.startsWith("grok-") || provider === "xai" ? "xai" : "claude";
 
 const nowTs = Math.floor(Date.now() / 1000);
-const startedAt = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
 
 mkdirSync(STATE_DIR, { recursive: true });
 
@@ -84,16 +83,12 @@ await Bun.write(
 // Start Temporal workflow — it owns the DB INSERT via create_task_record activity
 const temporalInput = {
   task_id: taskId,
+  agent_id: agentId,
+  description: title,
+  provider: providerSuffix,
+  model: model || "",
   prompt: title,
-  agent_type: providerSuffix,
-  model: model || "claude-sonnet-4-6",
-  is_foreground: true,
-  metadata: {
-    agent_id: agentId,
-    session_id: sessionId,
-    description: title,
-    started_at: startedAt,
-  },
+  api_key: "",
 };
 
 try {
