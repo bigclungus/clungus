@@ -59,9 +59,6 @@ from activities.history_ingest_act import run_history_ingest
 from activities.http import rate_limited_get
 from activities.inject_act import inject_message
 from activities.persona_polls_act import run_create_persona_polls
-from activities.agent_executor import run_xai_agent
-from activities.task_db import create_task_record, finalize_task, record_error
-from agent_types import AgentTaskInput  # noqa: F401 — needed for Temporal dataclass serialization
 from activities.mob_gen_act import (
     check_mob_cache,
     generate_mob_sprite,
@@ -117,7 +114,6 @@ from workflows.sweeper import TaskSweeperWorkflow
 from workflows.tasks_backup_wf import TaskDbBackupWorkflow
 from workflows.test_cron_wf import TestCronWorkflow
 from workflows.trial_wf import TrialWorkflow
-from workflows.agent_task_workflow import AgentTaskWorkflow  # noqa: F401 — needed for Temporal dataclass serialization
 
 TASK_QUEUE = "listings-queue"
 TEMPORAL_HOST = os.environ.get("TEMPORAL_HOST", "localhost:7233")
@@ -326,7 +322,6 @@ async def main() -> None:
             DiscordIngestWorkflow,
             Bokoen1IngestWorkflow,
             PersonaPollsWorkflow,
-            AgentTaskWorkflow,
         ],
         activities=[
             rate_limited_get,
@@ -399,10 +394,6 @@ async def main() -> None:
             generate_mob_stats,
             save_mob_stats,
             generate_mob_sprite,
-            run_xai_agent,
-            create_task_record,
-            finalize_task,
-            record_error,
         ],
     )
     logger.info("Worker started on task queue %r", TASK_QUEUE)
