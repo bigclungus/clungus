@@ -74,7 +74,7 @@ const signalPayload: Record<string, unknown> = {
 try {
   const { execSync } = require("child_process");
   execSync(
-    `temporal workflow signal \
+    `/home/clungus/.local/bin/temporal workflow signal \
 --namespace tasks \
 --workflow-id "${workflowId}" \
 --name mark_complete \

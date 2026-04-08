@@ -94,7 +94,7 @@ const temporalInput = {
 try {
   const { execSync } = require("child_process");
   execSync(
-    `temporal workflow start \
+    `/home/clungus/.local/bin/temporal workflow start \
 --namespace tasks \
 --task-queue agent-tasks-queue \
 --type AgentTaskWorkflow \

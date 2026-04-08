@@ -67,6 +67,17 @@ async def create_task_record(input: AgentTaskInput) -> None:
             """,
             (input.task_id, title, "open", now, now, task_data),
         )
+        # If row already existed (INSERT was ignored), backfill agent_id if it's empty.
+        # This handles the case where subagent-start.ts pre-created the row without agent_id.
+        if input.agent_id:
+            conn.execute(
+                """
+                UPDATE tasks
+                SET data = json_set(data, '$.agent_id', ?), updated_at = ?
+                WHERE id = ? AND (json_extract(data, '$.agent_id') IS NULL OR json_extract(data, '$.agent_id') = '')
+                """,
+                (input.agent_id, now, input.task_id),
+            )
         # Only insert started event if the tasks row was just created
         existing = conn.execute(
             "SELECT COUNT(*) FROM task_events WHERE task_id = ? AND event = 'started'",
