@@ -10,6 +10,7 @@
  */
 
 import { mkdirSync, readdirSync, readFileSync, unlinkSync } from "fs";
+import { execSync } from "child_process";
 
 const STATE_DIR = "/tmp/bc-agents";
 
@@ -88,7 +89,6 @@ const temporalInput = {
 };
 
 try {
-  const { execSync } = require("child_process");
   execSync(
     `/home/clungus/.local/bin/temporal workflow start \
 --namespace tasks \
