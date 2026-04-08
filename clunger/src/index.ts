@@ -1273,6 +1273,83 @@ function restServeTaskDetail(res: http.ServerResponse, taskId: string): void {
   jsonResponse(res, { task: taskData, events, agent_runs: agentRuns });
 }
 
+// ── Task stats: cost by day + aggregate totals ────────────────────────────────
+function restServeTaskStats(res: http.ServerResponse): void {
+  if (!existsSync(TASKS_DB_REST)) {
+    jsonResponse(res, { error: "tasks.db not found" }, 503);
+    return;
+  }
+  try {
+    const db = new Database(TASKS_DB_REST, { readonly: true });
+    try {
+      // Aggregate totals across ALL tasks
+      const rows = db.query<{ data: string }, []>("SELECT data FROM tasks").all();
+
+      let total_cost_usd = 0;
+      let total_input_tokens = 0;
+      let total_output_tokens = 0;
+      const task_counts: Record<string, number> = {};
+      // cost_by_day accumulator: date string → cost
+      const dayMap: Map<string, number> = new Map();
+
+      for (const row of rows) {
+        let task: Record<string, unknown>;
+        try { task = JSON.parse(row.data) as Record<string, unknown>; } catch { continue; }
+
+        const status = String(task.status ?? "stale");
+        task_counts[status] = (task_counts[status] ?? 0) + 1;
+
+        const cost = typeof task.cost_usd === "number" ? task.cost_usd : 0;
+        const inTok = typeof task.input_tokens === "number" ? task.input_tokens : 0;
+        const outTok = typeof task.output_tokens === "number" ? task.output_tokens : 0;
+
+        total_cost_usd += cost;
+        total_input_tokens += inTok;
+        total_output_tokens += outTok;
+
+        // Bucket cost by day using started_at or log[0].ts
+        if (cost > 0) {
+          let ts: string | null = null;
+          if (typeof task.started_at === "string" && task.started_at) {
+            ts = task.started_at;
+          } else {
+            const log = Array.isArray(task.log) ? task.log as Array<Record<string, string>> : [];
+            for (const entry of log) {
+              if (entry.event === "started" && entry.ts) { ts = entry.ts; break; }
+            }
+          }
+          if (ts) {
+            const dateStr = ts.slice(0, 10); // "YYYY-MM-DD"
+            dayMap.set(dateStr, (dayMap.get(dateStr) ?? 0) + cost);
+          }
+        }
+      }
+
+      // Build cost_by_day for last 7 days
+      const cost_by_day: Array<{ date: string; cost: number }> = [];
+      const now = new Date();
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(now);
+        d.setUTCDate(d.getUTCDate() - i);
+        const dateStr = d.toISOString().slice(0, 10);
+        cost_by_day.push({ date: dateStr, cost: dayMap.get(dateStr) ?? 0 });
+      }
+
+      jsonResponse(res, {
+        total_cost_usd,
+        total_input_tokens,
+        total_output_tokens,
+        task_counts,
+        cost_by_day,
+      });
+    } finally {
+      db.close();
+    }
+  } catch (err) {
+    jsonResponse(res, { error: `stats query failed: ${err}` }, 500);
+  }
+}
+
 // ── Cockpit: known service allowlist ──────────────────────────────────────────
 const COCKPIT_SERVICES = [
   "claude-bot.service",
@@ -3469,6 +3546,13 @@ const server = http.createServer(async (req, res) => {
     if (pathname === "/api/tasks" && req.method === "GET") {
       if (!restIsAuthed(req)) { jsonResponse(res, { error: "Forbidden: authentication required" }, 403); return; }
       restServeTasks(res, url.searchParams);
+      return;
+    }
+
+    // GET /api/tasks/stats — auth required
+    if (pathname === "/api/tasks/stats" && req.method === "GET") {
+      if (!restIsAuthed(req)) { jsonResponse(res, { error: "Forbidden: authentication required" }, 403); return; }
+      restServeTaskStats(res);
       return;
     }
 

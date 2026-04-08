@@ -678,6 +678,72 @@
       .pagination { padding: 10px 16px 24px; }
     }
 
+    /* ── Cost stats header ── */
+    #cost-stats {
+      padding: 10px 28px;
+      border-bottom: 1px solid var(--card-border);
+      background: rgba(0,0,0,0.08);
+      display: none;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px 12px;
+      font-size: 0.68rem;
+      font-family: var(--font-mono);
+    }
+    [data-theme="light"] #cost-stats { background: rgba(0,0,0,0.02); }
+    .stats-label {
+      color: var(--text-muted);
+      opacity: 0.5;
+      font-size: 0.63rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .stats-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 9px;
+      border-radius: 20px;
+      border: 1px solid var(--card-border);
+      background: var(--card-bg);
+      color: var(--text-muted);
+      font-size: 0.68rem;
+      white-space: nowrap;
+    }
+    .stats-chip .chip-val { font-weight: 700; color: var(--text-dim); }
+    .stats-chip.chip-cost { border-color: rgba(192,132,252,0.4); background: var(--violet-dim); }
+    .stats-chip.chip-cost .chip-val { color: var(--violet); }
+    .stats-sep { color: var(--card-border); opacity: 0.6; user-select: none; }
+    /* Day bars */
+    .day-bars {
+      display: inline-flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+    .day-bar-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .day-bar {
+      width: 14px;
+      border-radius: 3px 3px 0 0;
+      background: var(--violet);
+      opacity: 0.55;
+      min-height: 2px;
+      transition: opacity 0.15s;
+    }
+    .day-bar.today { opacity: 0.85; }
+    .day-bar:hover { opacity: 1; cursor: default; }
+    .day-bar-zero { opacity: 0.15; background: var(--card-border); }
+    @media (max-width: 768px) {
+      #cost-stats { padding: 8px 16px; }
+    }
+
     /* ── Error banner ── */
     .error-banner {
       margin: 14px 28px;
@@ -810,6 +876,8 @@
     <button class="sort-btn" data-sort="expensive">most expensive</button>
     <button class="sort-btn" data-sort="longest">longest running</button>
   </div>
+
+  <div id="cost-stats"></div>
 
   <div id="tasks-summary" style="display:none;"></div>
 
@@ -1388,12 +1456,76 @@
       fetchTasks();
     });
 
+    // ── Cost stats header ──
+    function renderCostStats(stats) {
+      var el = document.getElementById('cost-stats');
+      if (!el || !stats) return;
+
+      var totalCost = stats.total_cost_usd || 0;
+      var inTok = stats.total_input_tokens || 0;
+      var outTok = stats.total_output_tokens || 0;
+      var totalTok = inTok + outTok;
+      var counts = stats.task_counts || {};
+      var days = stats.cost_by_day || [];
+
+      // Build day bars
+      var maxCost = 0;
+      days.forEach(function(d) { if (d.cost > maxCost) maxCost = d.cost; });
+      var todayStr = new Date().toISOString().slice(0, 10);
+      var barsHtml = '<div class="day-bars">';
+      days.forEach(function(d) {
+        var h = maxCost > 0 ? Math.max(2, Math.round((d.cost / maxCost) * 20)) : 2;
+        var isZero = d.cost === 0;
+        var isToday = d.date === todayStr;
+        var label = d.date.slice(5) + ': ' + (d.cost > 0 ? ('$' + d.cost.toFixed(4)) : '$0');
+        barsHtml += '<div class="day-bar-wrap">' +
+          '<div class="day-bar' + (isZero ? ' day-bar-zero' : '') + (isToday ? ' today' : '') + '" ' +
+          'style="height:' + h + 'px" title="' + escHtml(label) + '"></div>' +
+          '</div>';
+      });
+      barsHtml += '</div>';
+
+      // Task counts chips
+      var doneN = counts.done || 0;
+      var failN = counts.failed || 0;
+      var openN = (counts.open || 0) + (counts.in_progress || 0);
+      var staleN = counts.stale || 0;
+
+      el.innerHTML =
+        '<span class="stats-label">7d</span>' +
+        barsHtml +
+        '<span class="stats-sep">|</span>' +
+        '<span class="stats-chip chip-cost"><span>total</span><span class="chip-val">' + escHtml(fmtCost(totalCost)) + '</span></span>' +
+        '<span class="stats-chip"><span>tok</span><span class="chip-val">' + escHtml(fmtTokens(totalTok) || '0') + '</span></span>' +
+        '<span class="stats-sep">|</span>' +
+        '<span class="stats-chip"><span class="chip-val" style="color:var(--teal)">' + doneN + '</span><span>done</span></span>' +
+        '<span class="stats-chip"><span class="chip-val" style="color:var(--red)">' + failN + '</span><span>failed</span></span>' +
+        (openN > 0 ? '<span class="stats-chip"><span class="chip-val" style="color:var(--amber)">' + openN + '</span><span>open</span></span>' : '') +
+        (staleN > 0 ? '<span class="stats-chip"><span class="chip-val" style="color:var(--status-stale-color)">' + staleN + '</span><span>stale</span></span>' : '');
+
+      el.style.display = 'flex';
+    }
+
+    function fetchStats() {
+      fetch('/api/tasks/stats')
+        .then(function(r) {
+          if (!r.ok) return null;
+          return r.json();
+        })
+        .then(function(data) {
+          if (data) renderCostStats(data);
+        })
+        .catch(function() { /* stats are non-critical; fail silently */ });
+    }
+
     fetchTasks();
+    fetchStats();
     setInterval(function() {
       // Don't poll if we're showing the auth prompt
       if (document.getElementById('auth-prompt') && document.getElementById('auth-prompt').innerHTML) return;
       fetchTasks();
     }, 10000);
+    setInterval(fetchStats, 60000);
   </script>
 </body>
 </html>
