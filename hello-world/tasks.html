@@ -223,24 +223,48 @@
     /* ── Cost badge ── */
     .cost-badge {
       flex-shrink: 0;
-      font-size: 0.68rem;
-      font-weight: 500;
+      font-size: 0.7rem;
+      font-weight: 600;
       color: var(--violet);
-      opacity: 0.85;
       letter-spacing: 0.01em;
       background: var(--violet-dim);
-      border: 1px solid rgba(192,132,252,0.25);
+      border: 1px solid rgba(192,132,252,0.35);
       border-radius: 20px;
-      padding: 1px 7px;
+      padding: 2px 9px;
       align-self: flex-start;
       margin-top: 1px;
       font-family: var(--font-mono);
+    }
+    .cost-badge.cost-nonzero {
+      box-shadow: 0 0 8px rgba(192,132,252,0.18);
     }
     .cost-badge.cost-zero {
       color: var(--text-muted);
       opacity: 0.4;
       background: none;
       border-color: transparent;
+      font-size: 0.68rem;
+      font-weight: 500;
+      box-shadow: none;
+    }
+
+    /* ── Token badge ── */
+    .token-badge {
+      flex-shrink: 0;
+      font-size: 0.63rem;
+      color: var(--text-muted);
+      opacity: 0.6;
+      background: none;
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 1px 7px;
+      align-self: flex-start;
+      margin-top: 1px;
+      font-family: var(--font-mono);
+      white-space: nowrap;
+    }
+    .token-badge.token-zero {
+      display: none;
     }
 
     /* ── Last log snippet ── */
@@ -565,8 +589,10 @@
       color: var(--text-dim);
     }
     .sum-last .sum-last-age { flex-shrink: 0; opacity: 0.55; }
-    .sum-pill.pill-cost { border-color: rgba(192,132,252,0.3); background: var(--violet-dim); }
-    .sum-pill.pill-cost .sum-val { color: var(--violet); }
+    .sum-pill.pill-cost { border-color: rgba(192,132,252,0.4); background: var(--violet-dim); font-weight: 600; }
+    .sum-pill.pill-cost .sum-val { color: var(--violet); font-size: 0.75rem; }
+    .sum-pill.pill-tokens { border-color: var(--card-border); }
+    .sum-pill.pill-tokens .sum-val { color: var(--text-dim); }
     @media (max-width: 768px) {
       #tasks-summary { padding: 8px 16px; }
     }
@@ -705,6 +731,14 @@
       return '$' + n.toFixed(2);
     }
 
+    // Format token count: e.g. 1234 → "1.2k", 123456 → "123k"
+    function fmtTokens(n) {
+      if (!n || n === 0) return null;
+      if (n < 1000) return String(n);
+      if (n < 1000000) return (n / 1000).toFixed(n < 10000 ? 1 : 0) + 'k';
+      return (n / 1000000).toFixed(2) + 'M';
+    }
+
     var _cardCounter = 0;
 
     function makeLogTimeline(log) {
@@ -827,7 +861,15 @@
 
       var costFmt = fmtCost(task.cost_usd);
       var costIsZero = costFmt === '—';
-      var costHtml = '<span class="cost-badge' + (costIsZero ? ' cost-zero' : '') + '" title="agent cost">' + escHtml(costFmt) + '</span>';
+      var costHtml = '<span class="cost-badge' + (costIsZero ? ' cost-zero' : ' cost-nonzero') + '" title="agent cost">' + escHtml(costFmt) + '</span>';
+
+      // Token badge: show total tokens if present
+      var totalTokens = (task.input_tokens || 0) + (task.output_tokens || 0);
+      var tokenFmt = fmtTokens(totalTokens);
+      var tokenTitle = tokenFmt ? ('in: ' + fmtTokens(task.input_tokens || 0) + ' / out: ' + fmtTokens(task.output_tokens || 0)) : '';
+      var tokenHtml = tokenFmt
+        ? '<span class="token-badge" title="' + escHtml(tokenTitle) + '">' + escHtml(tokenFmt) + ' tok</span>'
+        : '';
 
       var cardTaskIdAttr = task.id ? ' data-task-id="' + escHtml(String(task.id)) + '"' : '';
       return '<div class="task-card status-' + escHtml(status) + '"' + cardTaskIdAttr + '>' +
@@ -835,6 +877,7 @@
           '<div class="card-title">' + title + '</div>' +
           agePill +
           costHtml +
+          tokenHtml +
           '<span class="status-badge ' + escHtml(badgeClass) + '">' + escHtml(status.replace('_', ' ')) + '</span>' +
         '</div>' +
         snippetHtml +
@@ -880,17 +923,20 @@
       if (!tasks || tasks.length === 0) { bar.style.display = 'none'; return; }
 
       // Use server-provided totals (full dataset) when available; fall back to counting local page
-      var inProgress, done, stale, failed, bg, fg, totalCount;
+      var inProgress, done, stale, failed, bg, fg, totalCount, totalCost, totalInputTok, totalOutputTok;
       if (serverTotals && serverTotals.total != null) {
-        totalCount = serverTotals.total;
-        inProgress = serverTotals.in_progress || 0;
-        done       = serverTotals.done        || 0;
-        stale      = serverTotals.stale       || 0;
-        failed     = serverTotals.failed      || 0;
-        bg         = serverTotals.background  || 0;
-        fg         = serverTotals.foreground  || 0;
+        totalCount     = serverTotals.total;
+        inProgress     = serverTotals.in_progress     || 0;
+        done           = serverTotals.done             || 0;
+        stale          = serverTotals.stale            || 0;
+        failed         = serverTotals.failed           || 0;
+        bg             = serverTotals.background       || 0;
+        fg             = serverTotals.foreground       || 0;
+        totalCost      = serverTotals.total_cost_usd   || 0;
+        totalInputTok  = serverTotals.total_input_tokens  || 0;
+        totalOutputTok = serverTotals.total_output_tokens || 0;
       } else {
-        inProgress = 0; done = 0; stale = 0; failed = 0; bg = 0; fg = 0;
+        inProgress = 0; done = 0; stale = 0; failed = 0; bg = 0; fg = 0; totalCost = 0; totalInputTok = 0; totalOutputTok = 0;
         tasks.forEach(function(t) {
           var s = t.status;
           if (s === 'in_progress') inProgress++;
@@ -899,17 +945,18 @@
           else stale++;
           if (t.run_in_background === true) bg++;
           else if (t.run_in_background === false) fg++;
+          var c = parseFloat(t.cost_usd);
+          if (isFinite(c) && c > 0) totalCost += c;
+          totalInputTok  += (t.input_tokens  || 0);
+          totalOutputTok += (t.output_tokens || 0);
         });
         totalCount = (_lastMeta && _lastMeta.total != null && _lastMeta.total > 0) ? _lastMeta.total : tasks.length;
       }
 
-      // Sum cost_usd across visible page tasks
-      var pageCostSum = 0;
-      tasks.forEach(function(t) {
-        var c = parseFloat(t.cost_usd);
-        if (isFinite(c) && c > 0) pageCostSum += c;
-      });
-      var costLabel = pageCostSum > 0 ? fmtCost(pageCostSum) : '—';
+      var costLabel = totalCost > 0 ? fmtCost(totalCost) : '—';
+      var totalTokens = totalInputTok + totalOutputTok;
+      var tokenLabel = fmtTokens(totalTokens);
+      var tokenTitle = tokenLabel ? ('in: ' + fmtTokens(totalInputTok) + ' / out: ' + fmtTokens(totalOutputTok)) : '';
 
       // Find newest task on the current page for "last:" display
       var newest = null;
@@ -931,6 +978,10 @@
           '</span>';
       }
 
+      var tokenPill = tokenLabel
+        ? '<span class="sum-pill pill-tokens" title="' + escHtml(tokenTitle) + '"><span>tok</span><span class="sum-val">' + escHtml(tokenLabel) + '</span></span>'
+        : '';
+
       bar.innerHTML =
         '<span class="sum-pill filterable" data-filter=""><span>total</span><span class="sum-val">' + totalCount + '</span></span>' +
         '<span class="sum-pill pill-inprogress filterable" data-filter="in_progress"><span>&#9889;</span><span class="sum-val">' + inProgress + '</span><span>in progress</span></span>' +
@@ -941,7 +992,8 @@
         '<span class="sum-pill pill-bg"><span>&#128260;</span><span class="sum-val">' + bg + '</span><span>background</span></span>' +
         '<span class="sum-pill pill-fg"><span>&#9889;</span><span class="sum-val">' + fg + '</span><span>foreground</span></span>' +
         '<span class="sum-sep">|</span>' +
-        '<span class="sum-pill pill-cost" title="total agent cost (visible page)"><span>cost</span><span class="sum-val">' + escHtml(costLabel) + '</span></span>' +
+        '<span class="sum-pill pill-cost" title="total agent cost (all tasks)"><span>cost</span><span class="sum-val">' + escHtml(costLabel) + '</span></span>' +
+        tokenPill +
         lastHtml;
 
       // Wire up filter clicks and mark active pill in one pass
