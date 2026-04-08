@@ -126,9 +126,22 @@ export function preloadAvatars(): void {
   avatarsPreloaded = true;
   for (const [slug, filename] of Object.entries(PERSONA_AVATAR_FILES)) {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
     img.onload = () => {
-      avatarTextureCache.set(slug as PersonaSlug, Texture.from(img));
+      // Draw to canvas first — more reliable than Texture.from(HTMLImageElement) in PixiJS 8,
+      // and avoids any GIF / cross-origin canvas taint issues.
+      const size = 64;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, size, size);
+        avatarTextureCache.set(slug as PersonaSlug, textureFromCanvas(canvas));
+      }
+    };
+    img.onerror = () => {
+      // eslint-disable-next-line no-console
+      console.warn(`[sprites] Failed to load avatar: /avatars/${filename}`);
     };
     img.src = `/avatars/${filename}`;
     avatarImageCache.set(slug as PersonaSlug, img);
