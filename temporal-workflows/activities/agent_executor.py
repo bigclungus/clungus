@@ -1,15 +1,11 @@
 """
 agent_executor.py — Activities for AgentTaskWorkflow execution paths.
 
-wait_for_completion: used by the Claude/tracker path — heartbeats until
-  mark_complete signal arrives (via Temporal cancellation).
-
 run_xai_agent: used by the xAI path — calls the xAI API with a full
   agentic tool-use loop supporting read_file, write_file, list_dir, bash.
   Moved here from the now-deleted xai_agent_activity.py.
 """
 
-import asyncio
 import json
 import os
 import subprocess
@@ -19,9 +15,6 @@ from typing import Any
 
 import httpx
 from temporalio import activity
-from temporalio.exceptions import CancelledError
-
-from agent_types import AgentTaskInput
 
 XAI_API_URL = "https://api.x.ai/v1/chat/completions"
 XAI_API_KEY_PATH = "/mnt/data/secrets/xai_api_key"
@@ -215,33 +208,6 @@ def _dispatch_tool(name: str, arguments: dict) -> str:
 # ---------------------------------------------------------------------------
 # Activities
 # ---------------------------------------------------------------------------
-
-@activity.defn
-async def wait_for_completion(input: AgentTaskInput) -> dict:
-    """
-    Heartbeats every 25 s until Temporal cancels this activity.
-    Cancellation is the signal that mark_complete was received.
-    Returns a minimal result dict; the workflow fills in richer data
-    from the signal payload stored in self._result.
-    """
-    try:
-        while True:
-            await asyncio.sleep(25)
-            if activity.is_cancelled():
-                raise CancelledError()
-            activity.heartbeat({"task_id": input.task_id, "status": "running"})
-    except (CancelledError, asyncio.CancelledError):
-        # Normal path — mark_complete signal was received by the workflow,
-        # which cancelled this activity. Return a placeholder; the workflow
-        # will use self._result (populated from the signal) for finalize_task.
-        return {
-            "status": "completed",
-            "model": input.model,
-            "input_tokens": 0,
-            "output_tokens": 0,
-            "cost_usd": 0.0,
-        }
-
 
 @activity.defn
 async def run_xai_agent(

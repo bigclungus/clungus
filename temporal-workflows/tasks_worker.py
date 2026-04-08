@@ -22,7 +22,7 @@ from temporalio.worker import Worker
 
 load_dotenv(Path(__file__).parent / ".env")
 
-from activities.agent_executor import wait_for_completion, run_xai_agent
+from activities.agent_executor import run_xai_agent
 from activities.task_db import create_task_record, finalize_task, record_error, poll_agent_status
 from activities.context_snapshot import generate_context_snapshot
 from agent_types import AgentTaskInput  # noqa: F401 — needed for Temporal dataclass serialization
@@ -48,7 +48,7 @@ async def main() -> None:
         client,
         task_queue=TASK_QUEUE,
         workflows=[AgentTaskWorkflow, ContextSnapshotWorkflow],
-        activities=[wait_for_completion, run_xai_agent, create_task_record, finalize_task, record_error, poll_agent_status, generate_context_snapshot],
+        activities=[run_xai_agent, create_task_record, finalize_task, record_error, poll_agent_status, generate_context_snapshot],
     )
 
     logger.info("Worker started on task queue %r (namespace=%r)", TASK_QUEUE, NAMESPACE)

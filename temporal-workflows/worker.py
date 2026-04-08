@@ -59,7 +59,7 @@ from activities.history_ingest_act import run_history_ingest
 from activities.http import rate_limited_get
 from activities.inject_act import inject_message
 from activities.persona_polls_act import run_create_persona_polls
-from activities.agent_executor import run_xai_agent, wait_for_completion
+from activities.agent_executor import run_xai_agent
 from activities.task_db import create_task_record, finalize_task, record_error
 from agent_types import AgentTaskInput  # noqa: F401 — needed for Temporal dataclass serialization
 from activities.mob_gen_act import (
