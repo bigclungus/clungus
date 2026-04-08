@@ -1,5 +1,5 @@
 import http from "node:http";
-import { existsSync, readFileSync, readdirSync, writeFileSync, unlinkSync, statSync, openSync, readSync, closeSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync, unlinkSync, statSync, lstatSync, openSync, readSync, closeSync } from "node:fs";
 import { extname, join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { Database } from "bun:sqlite";
@@ -442,6 +442,8 @@ async function startGithubWebhookWorkflow(
 // ── REST API helpers ───────────────────────────────────────────────────────
 
 const TASKS_DIR_REST = "/mnt/data/bigclungus-meta/tasks";
+const TASKS_DB_REST = "/home/clungus/work/bigclungus-meta/tasks.db";
+const AGENTS_DB_REST = "/mnt/data/data/agents.db";
 const SESSIONS_DIR_REST = "/mnt/data/hello-world/sessions";
 const AGENTS_DIR_REST = "/mnt/data/bigclungus-meta/agents";
 const WALLET_FILE_REST = "/mnt/data/secrets/eth_wallet";
@@ -693,50 +695,143 @@ async function restInvokePersona(req: http.IncomingMessage, res: http.ServerResp
   }
 }
 
+// ── agents.db helpers ─────────────────────────────────────────────────────────
+
+/** Load per-task cost totals from agents.db. Returns empty map if DB unavailable. */
+function loadAgentCostsByTask(): Map<string, number> {
+  const costs = new Map<string, number>();
+  if (!existsSync(AGENTS_DB_REST)) return costs;
+  try {
+    const db = new Database(AGENTS_DB_REST, { readonly: true });
+    try {
+      const rows = db.query<{ task_id: string; total_cost_usd: number }, []>(
+        "SELECT task_id, COALESCE(SUM(cost_usd), 0) as total_cost_usd FROM agents GROUP BY task_id"
+      ).all();
+      for (const row of rows) {
+        if (row.task_id) costs.set(row.task_id, row.total_cost_usd ?? 0);
+      }
+    } finally {
+      db.close();
+    }
+  } catch (err) {
+    console.warn(`[agents.db] Cost query failed: ${err}`);
+  }
+  return costs;
+}
+
+/** Load agent runs for a specific task from agents.db. Returns [] if DB unavailable. */
+function loadAgentRunsForTask(taskId: string): unknown[] {
+  if (!existsSync(AGENTS_DB_REST)) return [];
+  try {
+    const db = new Database(AGENTS_DB_REST, { readonly: true });
+    try {
+      return db.query<Record<string, unknown>, [string]>(
+        "SELECT * FROM agents WHERE task_id = ? ORDER BY started_at ASC"
+      ).all(taskId);
+    } finally {
+      db.close();
+    }
+  } catch (err) {
+    console.warn(`[agents.db] Agent runs query failed: ${err}`);
+    return [];
+  }
+}
+
+/** Load in_progress agent rows from agents.db. Returns [] if DB unavailable. */
+function loadInProgressAgentsFromDb(): unknown[] {
+  if (!existsSync(AGENTS_DB_REST)) return [];
+  try {
+    const db = new Database(AGENTS_DB_REST, { readonly: true });
+    try {
+      return db.query<Record<string, unknown>, []>(
+        "SELECT * FROM agents WHERE status = 'in_progress' ORDER BY started_at ASC"
+      ).all();
+    } finally {
+      db.close();
+    }
+  } catch (err) {
+    console.warn(`[agents.db] In-progress query failed: ${err}`);
+    return [];
+  }
+}
+
 function restServeTasks(res: http.ServerResponse, query: URLSearchParams): void {
   const pageRaw = parseInt(query.get("page") ?? "1", 10);
   const limitRaw = parseInt(query.get("limit") ?? "50", 10);
   const page = Number.isFinite(pageRaw) && pageRaw >= 1 ? pageRaw : 1;
   const limit = Number.isFinite(limitRaw) && limitRaw >= 1 && limitRaw <= 500 ? limitRaw : 50;
 
+  // Load cost totals from agents.db (best-effort; empty map if unavailable)
+  const agentCosts = loadAgentCostsByTask();
+
   const tasks: unknown[] = [];
-  try {
-    const files = readdirSync(TASKS_DIR_REST).filter((f) => f.endsWith(".json") && f !== ".gitkeep");
-    for (const fname of files) {
+
+  // Try tasks.db first
+  let usedSqlite = false;
+  if (existsSync(TASKS_DB_REST)) {
+    try {
+      const db = new Database(TASKS_DB_REST, { readonly: true });
       try {
-        const raw = readFileSync(join(TASKS_DIR_REST, fname), "utf-8");
-        const task = JSON.parse(raw) as Record<string, unknown>;
-        // Derive status/started_at/finished_at/summary from log array
-        const log = Array.isArray(task.log) ? task.log as Array<Record<string, string>> : [];
-        if (log.length > 0) {
-          const lastEvent = log[log.length - 1];
-          const ev = lastEvent.event ?? "";
-          const statusMap: Record<string, string> = {
-            started: "in_progress", milestone: "in_progress", user_feedback: "in_progress",
-            blocked: "in_progress", done: "done", stale: "stale", failed: "failed",
-          };
-          task.status = statusMap[ev] ?? ev;
-          for (const entry of log) {
-            if (entry.event === "started") { task.started_at = entry.ts ?? ""; break; }
-          }
-          for (let i = log.length - 1; i >= 0; i--) {
-            if (log[i].event !== "started") { task.finished_at = log[i].ts ?? ""; break; }
-          }
-          for (let i = log.length - 1; i >= 0; i--) {
-            if (log[i].event !== "started" && log[i].context) {
-              task.summary = log[i].context ?? ""; break;
+        const rows = db.query<{ id: string; data: string }, []>(
+          "SELECT id, data FROM tasks ORDER BY created_at DESC"
+        ).all();
+        for (const row of rows) {
+          try {
+            const task = JSON.parse(row.data) as Record<string, unknown>;
+            task.cost_usd = agentCosts.get(String(task.id ?? row.id)) ?? 0;
+            tasks.push(task);
+          } catch { /* skip malformed */ }
+        }
+        usedSqlite = true;
+      } finally {
+        db.close();
+      }
+    } catch (err) {
+      console.error(`[restServeTasks] SQLite failed, falling back to JSON: ${err}`);
+    }
+  }
+
+  // Fall back to JSON files if SQLite unavailable
+  if (!usedSqlite) {
+    try {
+      const files = readdirSync(TASKS_DIR_REST).filter((f) => f.endsWith(".json") && f !== ".gitkeep");
+      for (const fname of files) {
+        try {
+          const raw = readFileSync(join(TASKS_DIR_REST, fname), "utf-8");
+          const task = JSON.parse(raw) as Record<string, unknown>;
+          // Derive status/started_at/finished_at/summary from log array
+          const log = Array.isArray(task.log) ? task.log as Array<Record<string, string>> : [];
+          if (log.length > 0) {
+            const lastEvent = log[log.length - 1];
+            const ev = lastEvent.event ?? "";
+            const statusMap: Record<string, string> = {
+              started: "in_progress", milestone: "in_progress", user_feedback: "in_progress",
+              blocked: "in_progress", done: "done", stale: "stale", failed: "failed",
+            };
+            task.status = statusMap[ev] ?? ev;
+            for (const entry of log) {
+              if (entry.event === "started") { task.started_at = entry.ts ?? ""; break; }
+            }
+            for (let i = log.length - 1; i >= 0; i--) {
+              if (log[i].event !== "started") { task.finished_at = log[i].ts ?? ""; break; }
+            }
+            for (let i = log.length - 1; i >= 0; i--) {
+              if (log[i].event !== "started" && log[i].context) {
+                task.summary = log[i].context ?? ""; break;
+              }
             }
           }
-        }
-        tasks.push(task);
-      } catch { /* skip malformed file */ }
-    }
-  } catch { /* directory unreadable */ }
-  tasks.sort((a, b) => {
-    const sa = String((a as Record<string, unknown>).started_at ?? "");
-    const sb = String((b as Record<string, unknown>).started_at ?? "");
-    return sb.localeCompare(sa);
-  });
+          task.cost_usd = agentCosts.get(String(task.id ?? "")) ?? 0;
+          tasks.push(task);
+        } catch { /* skip malformed file */ }
+      }
+    } catch { /* directory unreadable */ }
+    tasks.sort((a, b) => {
+      const sa = String((a as Record<string, unknown>).started_at ?? "");
+      const sb = String((b as Record<string, unknown>).started_at ?? "");
+      return sb.localeCompare(sa);
+    });
+  }
 
   const total = tasks.length;
   const pages = Math.max(1, Math.ceil(total / limit));
@@ -758,6 +853,76 @@ function restServeTasks(res: http.ServerResponse, query: URLSearchParams): void 
   }
 
   jsonResponse(res, { tasks: paginated, total, page: safePage, limit, pages, totals });
+}
+
+function restServeTaskDetail(res: http.ServerResponse, taskId: string): void {
+  if (!taskId || !/^[a-zA-Z0-9_-]+$/.test(taskId)) {
+    jsonResponse(res, { error: "Invalid task ID" }, 400);
+    return;
+  }
+
+  // Load task from SQLite
+  let taskData: Record<string, unknown> | null = null;
+  if (existsSync(TASKS_DB_REST)) {
+    try {
+      const db = new Database(TASKS_DB_REST, { readonly: true });
+      try {
+        const row = db.query<{ id: string; data: string }, [string]>(
+          "SELECT id, data FROM tasks WHERE id = ?"
+        ).get(taskId);
+        if (row) {
+          taskData = JSON.parse(row.data) as Record<string, unknown>;
+        }
+      } finally {
+        db.close();
+      }
+    } catch (err) {
+      console.error(`[restServeTaskDetail] SQLite error: ${err}`);
+    }
+  }
+
+  // Fall back to JSON file
+  if (!taskData) {
+    const fpath = join(TASKS_DIR_REST, `${taskId}.json`);
+    if (existsSync(fpath)) {
+      try {
+        taskData = JSON.parse(readFileSync(fpath, "utf-8")) as Record<string, unknown>;
+      } catch { /* fall through */ }
+    }
+  }
+
+  if (!taskData) {
+    jsonResponse(res, { error: "Task not found" }, 404);
+    return;
+  }
+
+  // Load events from tasks.db
+  let events: unknown[] = [];
+  if (existsSync(TASKS_DB_REST)) {
+    try {
+      const db = new Database(TASKS_DB_REST, { readonly: true });
+      try {
+        events = db.query<Record<string, unknown>, [string]>(
+          "SELECT * FROM task_events WHERE task_id = ? ORDER BY ts ASC"
+        ).all(taskId);
+      } finally {
+        db.close();
+      }
+    } catch (err) {
+      console.warn(`[restServeTaskDetail] Events query failed: ${err}`);
+    }
+  }
+
+  // Load agent runs from agents.db
+  const agentRuns = loadAgentRunsForTask(taskId);
+
+  // Attach cost_usd from agent runs
+  const totalCost = (agentRuns as Array<Record<string, unknown>>).reduce(
+    (sum, a) => sum + (typeof a.cost_usd === "number" ? a.cost_usd : 0), 0
+  );
+  taskData.cost_usd = totalCost;
+
+  jsonResponse(res, { task: taskData, events, agent_runs: agentRuns });
 }
 
 // ── Cockpit: known service allowlist ──────────────────────────────────────────
@@ -1141,8 +1306,8 @@ function parseSubagentFile(fpath: string, agentId: string): SubagentInfo {
   try {
     const st = statSync(fpath);
     const lastModified = new Date(st.mtimeMs).toISOString();
-    const thirtySecsAgo = Date.now() - 30_000;
-    const status: "in_progress" | "complete" = st.mtimeMs >= thirtySecsAgo ? "in_progress" : "complete";
+    const twoMinsAgo = Date.now() - 120_000;
+    const status: "in_progress" | "complete" = st.mtimeMs >= twoMinsAgo ? "in_progress" : "complete";
 
     // Read first ~4KB to get name/description and startedAt
     const fd = openSync(fpath, "r");
@@ -1208,41 +1373,78 @@ function parseSubagentFile(fpath: string, agentId: string): SubagentInfo {
     const cost = (inputTokens * COST_PER_INPUT_TOKEN) + (outputTokens * COST_PER_OUTPUT_TOKEN);
     return { id: agentId, name, status, tokens, inputTokens, outputTokens, cost, toolUses, outputPath: fpath, startedAt, lastModified };
   } catch {
-    return {
-      id: agentId, name, status: "complete", tokens: 0, inputTokens: 0, outputTokens: 0, cost: 0, toolUses: 0,
-      outputPath: fpath, startedAt: null, lastModified: new Date().toISOString(),
-    };
+    // statSync failed (e.g. symlink target not yet written). Use lstat on the symlink
+    // itself to determine recency — a brand-new symlink means the agent just started.
+    try {
+      const lst = lstatSync(fpath);
+      const twoMinsAgo = Date.now() - 120_000;
+      const status: "in_progress" | "complete" = lst.mtimeMs >= twoMinsAgo ? "in_progress" : "complete";
+      return {
+        id: agentId, name, status, tokens: 0, inputTokens: 0, outputTokens: 0, cost: 0, toolUses: 0,
+        outputPath: fpath, startedAt: null, lastModified: new Date(lst.mtimeMs).toISOString(),
+      };
+    } catch {
+      return {
+        id: agentId, name, status: "complete", tokens: 0, inputTokens: 0, outputTokens: 0, cost: 0, toolUses: 0,
+        outputPath: fpath, startedAt: null, lastModified: new Date().toISOString(),
+      };
+    }
   }
 }
 
 function restServeSubagents(res: http.ServerResponse): void {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  const taskDir = findMostRecentTaskDir();
-  if (!taskDir) {
-    jsonResponse(res, []);
-    return;
-  }
+
+  // Collect results from /tmp glob (existing behavior)
+  const seenIds = new Set<string>();
   const result: SubagentInfo[] = [];
-  try {
-    // Only include real Claude subagent output files — their IDs are 17-char hex strings.
-    // Hook scripts (hook_XXXXXXX) and background shell scripts (short alphanumeric IDs)
-    // produce plain-text output, not JSONL, and are not real subagents.
-    const files = readdirSync(taskDir).filter((f) => {
-      if (!f.endsWith(".output")) return false;
-      const id = f.slice(0, -7);
-      return SUBAGENT_ID_RE.test(id);
+  const taskDir = findMostRecentTaskDir();
+  if (taskDir) {
+    try {
+      // Only include real Claude subagent output files — their IDs are 17-char hex strings.
+      // Hook scripts (hook_XXXXXXX) and background shell scripts (short alphanumeric IDs)
+      // produce plain-text output, not JSONL, and are not real subagents.
+      const files = readdirSync(taskDir).filter((f) => {
+        if (!f.endsWith(".output")) return false;
+        const id = f.slice(0, -7);
+        return SUBAGENT_ID_RE.test(id);
+      });
+      const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
+      for (const fname of files) {
+        const fpath = join(taskDir, fname);
+        try {
+          // Use lstatSync so symlinks with unresolved targets (brand-new agents) are not skipped.
+          const st = lstatSync(fpath);
+          if (st.mtimeMs < twoHoursAgo) continue;
+          const agentId = fname.slice(0, -7); // strip .output
+          result.push(parseSubagentFile(fpath, agentId));
+          seenIds.add(agentId);
+        } catch { /* skip */ }
+      }
+    } catch { /* skip */ }
+  }
+
+  // Merge in_progress agents from agents.db (dedup by agent ID)
+  const dbAgents = loadInProgressAgentsFromDb();
+  for (const row of dbAgents as Array<Record<string, unknown>>) {
+    const agentId = String(row.id ?? row.agent_id ?? "");
+    if (!agentId || seenIds.has(agentId)) continue;
+    result.push({
+      id: agentId,
+      name: String(row.name ?? row.description ?? agentId.slice(0, 12)),
+      status: "in_progress",
+      tokens: typeof row.total_tokens === "number" ? row.total_tokens : 0,
+      inputTokens: typeof row.input_tokens === "number" ? row.input_tokens : 0,
+      outputTokens: typeof row.output_tokens === "number" ? row.output_tokens : 0,
+      cost: typeof row.cost_usd === "number" ? row.cost_usd : 0,
+      toolUses: typeof row.tool_uses === "number" ? row.tool_uses : 0,
+      outputPath: String(row.output_path ?? ""),
+      startedAt: row.started_at ? String(row.started_at) : null,
+      lastModified: String(row.updated_at ?? row.started_at ?? new Date().toISOString()),
     });
-    const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
-    for (const fname of files) {
-      const fpath = join(taskDir, fname);
-      try {
-        const st = statSync(fpath);
-        if (st.mtimeMs < twoHoursAgo) continue;
-        const agentId = fname.slice(0, -7); // strip .output
-        result.push(parseSubagentFile(fpath, agentId));
-      } catch { /* skip */ }
-    }
-  } catch { /* skip */ }
+    seenIds.add(agentId);
+  }
+
   result.sort((a, b) => {
     if (a.status === b.status) return new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime();
     return a.status === 'in_progress' ? -1 : 1;
@@ -3311,6 +3513,14 @@ const server = http.createServer(async (req, res) => {
     if (pathname === "/api/tasks" && req.method === "GET") {
       if (!restIsAuthed(req)) { jsonResponse(res, { error: "Forbidden: authentication required" }, 403); return; }
       restServeTasks(res, url.searchParams);
+      return;
+    }
+
+    // GET /api/tasks/:id — auth required
+    const taskDetailMatch = /^\/api\/tasks\/([a-zA-Z0-9_-]+)$/.exec(pathname);
+    if (taskDetailMatch && req.method === "GET") {
+      if (!restIsAuthed(req)) { jsonResponse(res, { error: "Forbidden: authentication required" }, 403); return; }
+      restServeTaskDetail(res, taskDetailMatch[1]);
       return;
     }
 
