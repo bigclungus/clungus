@@ -834,8 +834,8 @@ HTML = r"""<!DOCTYPE html>
 
     function makeCard(agent) {
       const card = document.createElement('div');
-      const statusClass = agent.status === 'in_progress' ? 'in_progress' : 'complete';
-      card.className = 'sa-card' + (agent.status === 'complete' ? ' done' : '');
+      const statusClass = agent.status === 'in_progress' ? 'in_progress' : agent.status === 'failed' ? 'failed' : 'complete';
+      card.className = 'sa-card' + (agent.status !== 'in_progress' ? ' done' : '');
       card.dataset.id = agent.id;
 
       const nameShort = (agent.name || agent.id).slice(0, 55);
@@ -862,10 +862,10 @@ HTML = r"""<!DOCTYPE html>
       // Update status dot
       const dot = card.querySelector('.sa-dot');
       if (dot) {
-        dot.className = 'sa-dot ' + (agent.status === 'in_progress' ? 'in_progress' : 'complete');
+        dot.className = 'sa-dot ' + (agent.status === 'in_progress' ? 'in_progress' : agent.status === 'failed' ? 'failed' : 'complete');
       }
       // Update fade
-      if (agent.status === 'complete') card.classList.add('done');
+      if (agent.status !== 'in_progress') card.classList.add('done');
       else card.classList.remove('done');
       // Update meta
       const tokEl = card.querySelector('.sa-tokens');
