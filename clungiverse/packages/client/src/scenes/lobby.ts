@@ -5,6 +5,7 @@ import type { DungeonClientState, PersonaSlug } from '../state';
 import { PERSONAS, PERSONA_SLUGS } from '../state';
 import type { DungeonNetwork } from '../network/dungeon-network';
 import { wrapText } from '../renderer/canvas-utils';
+import { getAvatarImage } from '../renderer/sprites';
 
 interface LobbyScene {
   enter(state: DungeonClientState): void;
@@ -174,7 +175,7 @@ function renderPersonaStatBlock(
   cy: number,
   cardW: number,
 ): void {
-  const statY = cy + 92;
+  const statY = cy + 100;
   ctx.font = '12px monospace';
   ctx.textAlign = 'left';
   const sx = cx + 14;
@@ -219,19 +220,44 @@ function renderPersonaCardHeader(
   ctx.strokeStyle = cardBorderColor(persona, selected, taken);
   ctx.lineWidth = selected ? 2 : 1;
   ctx.strokeRect(cx, cy, CARD_W, CARD_H);
-  ctx.fillStyle = taken ? '#444444' : persona.color;
+
+  // Avatar circle — try image first, fall back to colored circle
+  const avatarR = 22;
+  const avatarCX = cx + CARD_W / 2;
+  const avatarCY = cy + 34;
+  const avatarImg = getAvatarImage(persona.slug);
+
+  ctx.save();
   ctx.beginPath();
-  ctx.arc(cx + CARD_W / 2, cy + 30, 18, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  drawRoleShape(ctx, cx + CARD_W / 2, cy + 30, 11, persona.role);
+  ctx.arc(avatarCX, avatarCY, avatarR, 0, Math.PI * 2);
+  ctx.clip();
+
+  if (avatarImg && !taken) {
+    // Draw avatar image clipped to circle
+    ctx.drawImage(avatarImg, avatarCX - avatarR, avatarCY - avatarR, avatarR * 2, avatarR * 2);
+  } else {
+    // Fallback: colored circle with role shape
+    ctx.fillStyle = taken ? '#444444' : persona.color;
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    drawRoleShape(ctx, avatarCX, avatarCY, 11, persona.role);
+  }
+  ctx.restore();
+
+  // Border ring around avatar
+  ctx.strokeStyle = taken ? '#333333' : persona.color;
+  ctx.lineWidth = selected ? 2.5 : 1.5;
+  ctx.beginPath();
+  ctx.arc(avatarCX, avatarCY, avatarR, 0, Math.PI * 2);
+  ctx.stroke();
+
   ctx.fillStyle = taken ? '#555555' : '#ffffff';
   ctx.font = 'bold 16px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText(persona.name, cx + CARD_W / 2, cy + 62);
+  ctx.fillText(persona.name, cx + CARD_W / 2, cy + 68);
   ctx.fillStyle = taken ? '#666666' : persona.color;
   ctx.font = 'bold 11px monospace';
-  ctx.fillText(persona.role.toUpperCase(), cx + CARD_W / 2, cy + 76);
+  ctx.fillText(persona.role.toUpperCase(), cx + CARD_W / 2, cy + 82);
 }
 
 function renderPersonaCard(
@@ -260,11 +286,11 @@ function renderPersonaCard(
   ctx.textAlign = 'center';
   ctx.fillStyle = '#88bbff';
   ctx.font = 'bold 14px monospace';
-  ctx.fillText(persona.powerName, cx + CARD_W / 2, cy + 170);
+  ctx.fillText(persona.powerName, cx + CARD_W / 2, cy + 178);
 
   ctx.fillStyle = '#c0c0c0';
   ctx.font = '12px monospace';
-  wrapText(ctx, persona.powerDescription, cx + CARD_W / 2, cy + 186, CARD_W - 20, 14);
+  wrapText(ctx, persona.powerDescription, cx + CARD_W / 2, cy + 194, CARD_W - 20, 14);
 
   ctx.restore();
 

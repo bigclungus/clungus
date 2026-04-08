@@ -151,3 +151,10 @@ export function preloadAvatars(): void {
 export function getAvatarTexture(slug: PersonaSlug): Texture | null {
   return avatarTextureCache.get(slug) ?? null;
 }
+
+/** Return the raw HTMLImageElement for canvas-2D use (e.g. lobby cards). */
+export function getAvatarImage(slug: PersonaSlug): HTMLImageElement | null {
+  const img = avatarImageCache.get(slug);
+  if (img && img.complete && img.naturalWidth > 0) return img;
+  return null;
+}
