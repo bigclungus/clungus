@@ -3,8 +3,7 @@
  * Hook: SubagentStart
  * Fires when a subagent is spawned.
  *
- * TEMPORAL_SHADOW=true  → INSERT tasks.db + start Temporal workflow (no clunger HTTP)
- * TEMPORAL_SHADOW=false/unset → INSERT tasks.db + POST to clunger /api/agents/spawn (no Temporal)
+ * Always: INSERT into tasks.db + start Temporal workflow + save workflowId to /tmp/bc-agents/${agentId}.json
  *
  * Stdin: JSON with agent_id, agent_type, session_id, hook_event_name
  */
@@ -70,9 +69,7 @@ if (!title) {
 const datePart = new Date().toISOString().slice(0, 19).replace(/[-T:]/g, "").replace(/(\d{8})(\d{6})/, "$1-$2");
 const taskId = `task-${datePart}-${agentId.slice(0, 8)}`;
 
-const useTemporalPath = process.env.TEMPORAL_SHADOW === "true";
-
-// INSERT into tasks.db — both paths need a record
+// INSERT into tasks.db
 try {
   const db = new Database(DEFAULT_DB);
   db.run("PRAGMA journal_mode=WAL");
@@ -101,61 +98,44 @@ try {
 // Store task ID in agent state file for subagent-stop.ts
 await Bun.write(`${STATE_DIR}/${agentId}.json`, JSON.stringify({ task_id: taskId, agent_id: agentId, session_id: sessionId }));
 
-if (useTemporalPath) {
-  // ── Temporal path ──────────────────────────────────────────────────────────
-  const workflowId = `agent-task-${agentId}`;
-  const temporalInput = {
-    task_id: taskId,
-    prompt: title,
-    agent_type: "claude",
-    model: "claude-sonnet-4-6",
-    is_foreground: true,
-    metadata: {
-      agent_id: agentId,
-      session_id: sessionId,
-      description: title,
-    },
-  };
-  try {
-    const { execSync } = require("child_process");
-    execSync(
-      `temporal workflow start \
+// ── Temporal path ──────────────────────────────────────────────────────────
+const workflowId = `agent-task-${agentId}`;
+const temporalInput = {
+  task_id: taskId,
+  prompt: title,
+  agent_type: "claude",
+  model: "claude-sonnet-4-6",
+  is_foreground: true,
+  metadata: {
+    agent_id: agentId,
+    session_id: sessionId,
+    description: title,
+  },
+};
+try {
+  const { execSync } = require("child_process");
+  execSync(
+    `temporal workflow start \
 --namespace tasks \
 --task-queue agent-tasks-queue \
 --type AgentTaskWorkflow \
 --workflow-id "${workflowId}" \
 --input '${JSON.stringify(temporalInput).replace(/'/g, "'\\''")}' \
 --address 127.0.0.1:7233`,
-      { timeout: 5000, stdio: ["ignore", "ignore", "pipe"] }
-    );
-    // Save workflow reference alongside existing state
-    const stateFile = `${STATE_DIR}/${agentId}.json`;
-    try {
-      const existing = JSON.parse(await Bun.file(stateFile).text());
-      existing.workflow_id = workflowId;
-      await Bun.write(stateFile, JSON.stringify(existing));
-    } catch {
-      // state file write race — non-fatal
-    }
-    process.stderr.write(`subagent-start: temporal workflow started ${workflowId}\n`);
-  } catch (err) {
-    process.stderr.write(`subagent-start: temporal error: ${err}\n`);
-  }
-} else {
-  // ── Old path: POST spawn record to clunger ─────────────────────────────────
-  const outputFile = `/tmp/claude-1001/-mnt-data/${sessionId}/tasks/${agentId}.output`;
+    { timeout: 5000, stdio: ["ignore", "ignore", "pipe"] }
+  );
+  // Save workflow reference alongside existing state
+  const stateFile = `${STATE_DIR}/${agentId}.json`;
   try {
-    const res = await fetch("http://localhost:8081/api/agents/spawn", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: agentId, description: title, output_file: outputFile, task_id: taskId }),
-    });
-    if (!res.ok) {
-      process.stderr.write(`subagent-start: clunger spawn returned ${res.status}\n`);
-    }
-  } catch (err) {
-    process.stderr.write(`subagent-start: clunger POST failed: ${err}\n`);
+    const existing = JSON.parse(await Bun.file(stateFile).text());
+    existing.workflow_id = workflowId;
+    await Bun.write(stateFile, JSON.stringify(existing));
+  } catch {
+    // state file write race — non-fatal
   }
+  process.stderr.write(`subagent-start: temporal workflow started ${workflowId}\n`);
+} catch (err) {
+  process.stderr.write(`subagent-start: temporal error: ${err}\n`);
 }
 
 process.stderr.write(`subagent-start: created task ${taskId} for agent ${agentId} (${agentType})\n`);

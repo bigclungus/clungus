@@ -1010,6 +1010,14 @@ function restServeTasks(res: http.ServerResponse, query: URLSearchParams): void 
   const page = Number.isFinite(pageRaw) && pageRaw >= 1 ? pageRaw : 1;
   const limit = Number.isFinite(limitRaw) && limitRaw >= 1 && limitRaw <= 500 ? limitRaw : 50;
 
+  // sort: "recent" (default) | "oldest" | "expensive" | "longest"
+  const sortParam = query.get("sort") ?? "recent";
+  const VALID_SORTS = new Set(["recent", "oldest", "expensive", "longest"]);
+  const sort = VALID_SORTS.has(sortParam) ? sortParam : "recent";
+
+  // search: filter by title text (case-insensitive substring match)
+  const searchRaw = (query.get("search") ?? "").trim().toLowerCase();
+
   // Load cost and token totals from agents.db (best-effort; empty map if unavailable)
   const agentStats = loadAgentStatsByTask();
 
@@ -1083,22 +1091,63 @@ function restServeTasks(res: http.ServerResponse, query: URLSearchParams): void 
         } catch { /* skip malformed file */ }
       }
     } catch { /* directory unreadable */ }
-    tasks.sort((a, b) => {
-      const sa = String((a as Record<string, unknown>).started_at ?? "");
-      const sb = String((b as Record<string, unknown>).started_at ?? "");
-      return sb.localeCompare(sa);
-    });
   }
 
-  const total = tasks.length;
+  // Apply search filter (against title and first log context / prompt)
+  const filtered = searchRaw
+    ? tasks.filter((t) => {
+        const task = t as Record<string, unknown>;
+        const title = String(task.title ?? "").toLowerCase();
+        if (title.includes(searchRaw)) return true;
+        // Also search the started log entry's context (the original prompt)
+        const log = Array.isArray(task.log) ? task.log as Array<Record<string, string>> : [];
+        for (const entry of log) {
+          if (entry.event === "started" && String(entry.context ?? "").toLowerCase().includes(searchRaw)) return true;
+        }
+        return false;
+      })
+    : tasks;
+
+  // Apply sort
+  filtered.sort((a, b) => {
+    const ta = a as Record<string, unknown>;
+    const tb = b as Record<string, unknown>;
+    if (sort === "oldest") {
+      const sa = String(ta.started_at ?? "");
+      const sb = String(tb.started_at ?? "");
+      return sa.localeCompare(sb);
+    }
+    if (sort === "expensive") {
+      const ca = typeof ta.cost_usd === "number" ? ta.cost_usd : 0;
+      const cb = typeof tb.cost_usd === "number" ? tb.cost_usd : 0;
+      return cb - ca;
+    }
+    if (sort === "longest") {
+      const durationMs = (task: Record<string, unknown>): number => {
+        const started = String(task.started_at ?? "");
+        const finished = String(task.finished_at ?? "");
+        if (!started) return 0;
+        const s = new Date(started).getTime();
+        const f = finished ? new Date(finished).getTime() : Date.now();
+        return isNaN(s) || isNaN(f) ? 0 : Math.max(0, f - s);
+      };
+      return durationMs(tb) - durationMs(ta);
+    }
+    // Default: "recent" — newest started_at first
+    const sa = String(ta.started_at ?? "");
+    const sb = String(tb.started_at ?? "");
+    return sb.localeCompare(sa);
+  });
+
+  const total = filtered.length;
   const pages = Math.max(1, Math.ceil(total / limit));
   const safePage = Math.min(page, pages);
   const offset = (safePage - 1) * limit;
-  const paginated = tasks.slice(offset, offset + limit);
+  const paginated = filtered.slice(offset, offset + limit);
 
-  // Compute per-status totals from the full dataset (not the paginated slice)
+  // Compute per-status totals from the filtered dataset (not the paginated slice)
   const totals = { total, in_progress: 0, done: 0, stale: 0, failed: 0, background: 0, foreground: 0, total_cost_usd: 0, total_input_tokens: 0, total_output_tokens: 0 };
-  for (const t of tasks) {
+  for (const t of filtered) {
     const task = t as Record<string, unknown>;
     const s = String(task.status ?? "stale");
     if (s === "in_progress") totals.in_progress++;
@@ -1489,7 +1538,7 @@ function restServeAgents(res: http.ServerResponse): void {
   jsonResponse(res, { eligible, meme, moderator });
 }
 
-// ── Native REST: GET /api/subagents — list agents from agents.db ──
+// ── Native REST: GET /api/subagents — list agents from tasks.db ──
 
 interface SubagentInfo {
   id: string;
@@ -1519,48 +1568,62 @@ function parseAgentTs(v: unknown): string | null {
 function restServeSubagents(res: http.ServerResponse): void {
   res.setHeader("Access-Control-Allow-Origin", "*");
 
-  // Read exclusively from agents.db (legacy /tmp glob removed in Milestone 5)
+  // Read from tasks.db — the canonical agent tracking store
   const result: SubagentInfo[] = [];
-  const dbAgents = loadRecentAgentsFromDb();
-  for (const row of dbAgents as Array<Record<string, unknown>>) {
-    const agentId = String(row.id ?? "");
-    if (!agentId) continue;
-    const rowStatus = String(row.status ?? "complete");
-    // Accept both 'running' (new) and 'in_progress' (legacy) as active
-    const status: "running" | "complete" | "stale" =
-      (rowStatus === "running" || rowStatus === "in_progress") ? "running" : rowStatus === "stale" ? "stale" : "complete";
-    const startedAt = parseAgentTs(row.started_at);
-    const completedAt = parseAgentTs(row.completed_at);
-    const lastModified = completedAt ?? startedAt ?? new Date().toISOString();
-    const inputTokens = typeof row.input_tokens === "number" ? row.input_tokens : 0;
-    const outputTokens = typeof row.output_tokens === "number" ? row.output_tokens : 0;
-    const cacheReadTokens = typeof row.cache_read_tokens === "number" ? row.cache_read_tokens : 0;
-    result.push({
-      id: agentId,
-      name: String(row.description ?? row.task_id ?? agentId.slice(0, 12)),
-      status,
-      tokens: inputTokens + outputTokens,
-      inputTokens,
-      outputTokens,
-      cacheReadTokens,
-      cost: typeof row.cost_usd === "number" ? row.cost_usd : 0,
-      toolUses: typeof row.tool_calls_count === "number" ? row.tool_calls_count : 0,
-      outputPath: String(row.output_file ?? ""),
-      startedAt,
-      lastModified,
-      traceId: typeof row.trace_id === "string" ? row.trace_id : null,
-      exitReason: typeof row.exit_reason === "string" ? row.exit_reason : null,
-    });
+  try {
+    const db = new Database(TASKS_DB_REST, { readonly: true });
+    db.run("PRAGMA journal_mode=WAL");
+    // Show tasks from the last 2 hours plus any still open/running
+    const cutoff = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    const rows = db.query<Record<string, unknown>, [string]>(
+      "SELECT * FROM tasks WHERE created_at >= ? OR status NOT IN ('done', 'failed') ORDER BY created_at DESC LIMIT 100",
+    ).all(cutoff);
+    db.close();
+
+    for (const row of rows) {
+      const taskId = String(row.id ?? "");
+      if (!taskId) continue;
+      const rowStatus = String(row.status ?? "done");
+      // tasks.db uses: open/running → running, done/failed → complete
+      const status: "running" | "complete" | "stale" =
+        (rowStatus === "open" || rowStatus === "running" || rowStatus === "in_progress") ? "running" : "complete";
+
+      // Parse optional JSON blob for extra fields
+      let blobData: Record<string, unknown> = {};
+      try {
+        if (row.data) blobData = JSON.parse(String(row.data)) as Record<string, unknown>;
+      } catch { /* ignore malformed blob */ }
+
+      const startedAt = parseAgentTs(row.created_at);
+      const finishedAt = parseAgentTs(blobData.finished_at ?? row.updated_at);
+      const lastModified = (rowStatus === "done" || rowStatus === "failed") ? (finishedAt ?? startedAt ?? new Date().toISOString()) : (startedAt ?? new Date().toISOString());
+
+      result.push({
+        id: taskId,
+        name: String(row.title ?? taskId.slice(0, 12)),
+        status,
+        // tasks.db doesn't track token costs — zero-fill for UI compatibility
+        tokens: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheReadTokens: 0,
+        cost: 0,
+        toolUses: 0,
+        outputPath: "",
+        startedAt,
+        lastModified,
+        traceId: null,
+        exitReason: rowStatus === "failed" ? "failed" : rowStatus === "done" ? "completed" : null,
+      });
+    }
+  } catch (err) {
+    console.warn("[subagents] tasks.db query failed:", err);
   }
 
   result.sort((a, b) => {
     const aActive = a.status === 'running' ? 0 : 1;
     const bActive = b.status === 'running' ? 0 : 1;
     if (aActive !== bActive) return aActive - bActive;
-    // stale agents sink to bottom within the done group
-    const aStale = a.status === 'stale' ? 1 : 0;
-    const bStale = b.status === 'stale' ? 1 : 0;
-    if (aStale !== bStale) return aStale - bStale;
     return new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime();
   });
   jsonResponse(res, result);
