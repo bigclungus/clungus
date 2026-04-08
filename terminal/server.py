@@ -5,14 +5,18 @@ served alongside an xterm.js HTML page.
 """
 import asyncio
 import bisect as _bisect
+import fcntl
 import glob
 import hashlib
 import hmac
 import json
 import os
+import pty
 import re
 import secrets
+import struct
 import subprocess
+import termios
 import time
 import urllib.parse
 import urllib.request
@@ -236,6 +240,7 @@ except ImportError:
     HAS_PSUTIL = False
 
 LOGFILE = "/tmp/screenlog.txt"
+SCREEN_SESSION = "claude-bot"  # matched by screen -x as suffix; full name 130684.claude-bot
 _TASKS_BASE = "/tmp/claude-1001/-mnt-data"
 
 
@@ -874,7 +879,17 @@ HTML = r"""<!DOCTYPE html>
     const fitAddon = new FitAddon.FitAddon();
     term.loadAddon(fitAddon);
     term.open(document.getElementById('terminal'));
+
+    const statusEl = document.getElementById('status');
+    let activeWs = null;
+
     fitAddon.fit();
+    // Forward terminal resize events to the PTY
+    term.onResize(({ cols, rows }) => {
+      if (activeWs && activeWs.readyState === WebSocket.OPEN) {
+        activeWs.send(JSON.stringify({ type: 'resize', cols, rows }));
+      }
+    });
     window.addEventListener('resize', () => {
       fitAddon.fit();
       // If resizing to desktop, restore both panels
@@ -888,16 +903,36 @@ HTML = r"""<!DOCTYPE html>
       }
     });
 
-    const statusEl = document.getElementById('status');
+    // Send resize to server whenever xterm dimensions change
+    function sendResize(ws) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }));
+      }
+    }
+
+    // Wire up input forwarding (once, after first connect)
+    let inputBound = false;
+    function bindInput(ws) {
+      if (inputBound) return;
+      inputBound = true;
+      term.onData((data) => {
+        if (activeWs && activeWs.readyState === WebSocket.OPEN) {
+          activeWs.send(new TextEncoder().encode(data));
+        }
+      });
+    }
 
     function connect() {
       const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
       const ws = new WebSocket(`${proto}//${location.host}/ws`);
       ws.binaryType = 'arraybuffer';
+      activeWs = ws;
 
       ws.onopen = () => {
         statusEl.textContent = 'live';
         statusEl.className = 'connected';
+        bindInput(ws);
+        sendResize(ws);
       };
       ws.onmessage = (e) => {
         const atBottom = term.buffer.active.viewportY >= term.buffer.active.baseY;
@@ -908,6 +943,7 @@ HTML = r"""<!DOCTYPE html>
         }
       };
       ws.onclose = () => {
+        activeWs = null;
         statusEl.textContent = 'disconnected — reconnecting...';
         statusEl.className = 'disconnected';
         setTimeout(connect, 2000);
@@ -1570,9 +1606,16 @@ async def graph_page_handler(request):
         content = f.read()
     return web.Response(text=content, content_type='text/html')
 
+def _set_pty_size(fd: int, cols: int, rows: int) -> None:
+    """Set PTY window size via ioctl TIOCSWINSZ."""
+    try:
+        fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack('HHHH', rows, cols, 0, 0))
+    except OSError:
+        pass
+
+
 async def websocket_handler(request):
     if not _is_authed(request):
-        # Reject unauthenticated WebSocket connections immediately
         ws = web.WebSocketResponse()
         await ws.prepare(request)
         await ws.close(code=4401, message=b'Unauthorized')
@@ -1581,36 +1624,110 @@ async def websocket_handler(request):
     ws = web.WebSocketResponse()
     await ws.prepare(request)
 
-    # Send tail of existing log content (cap at 512KB to avoid OOM on large logs)
-    MAX_INITIAL_BYTES = 512 * 1024
-    try:
-        with open(LOGFILE, 'rb') as f:
-            f.seek(0, 2)
-            size = f.tell()
-            f.seek(max(0, size - MAX_INITIAL_BYTES))
-            existing = f.read()
-        if existing:
-            try:
-                await ws.send_bytes(existing)
-            except (ConnectionResetError, aiohttp.ClientConnectionResetError, aiohttp.ServerConnectionError):
-                return ws  # client already gone
-    except FileNotFoundError:
-        pass
+    loop = asyncio.get_event_loop()
 
-    # Tail new content
-    with open(LOGFILE, 'rb') as f:
-        f.seek(0, 2)  # seek to end
-        while not ws.closed:
-            chunk = f.read(4096)
-            if chunk:
+    # Open a PTY pair and spawn screen -x to attach to the existing session.
+    # Using os.openpty() so we retain the master fd for both read and resize.
+    master_fd, slave_fd = os.openpty()
+    try:
+        proc = subprocess.Popen(
+            ['screen', '-x', SCREEN_SESSION],
+            stdin=slave_fd,
+            stdout=slave_fd,
+            stderr=slave_fd,
+            close_fds=True,
+            preexec_fn=os.setsid,
+        )
+    except Exception as exc:
+        os.close(master_fd)
+        os.close(slave_fd)
+        try:
+            await ws.send_str(f'\r\n\x1b[31m[terminal] failed to attach to screen session: {exc}\x1b[0m\r\n')
+        except Exception:
+            pass
+        return ws
+
+    os.close(slave_fd)  # parent doesn't need the slave end
+
+    # Set initial PTY size to a reasonable default; client will send a resize shortly
+    _set_pty_size(master_fd, 220, 50)
+
+    # Make master_fd non-blocking for asyncio compatibility
+    flags = fcntl.fcntl(master_fd, fcntl.F_GETFL)
+    fcntl.fcntl(master_fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+
+    async def pty_to_ws():
+        """Read from pty master fd using asyncio reader, forward bytes to browser."""
+        read_ready = asyncio.Event()
+
+        def _on_readable():
+            read_ready.set()
+
+        loop.add_reader(master_fd, _on_readable)
+        try:
+            while not ws.closed:
+                await read_ready.wait()
+                read_ready.clear()
                 try:
-                    await ws.send_bytes(chunk)
+                    data = os.read(master_fd, 4096)
+                except BlockingIOError:
+                    continue
+                except OSError:
+                    break
+                if not data:
+                    break
+                try:
+                    await ws.send_bytes(data)
                 except (ConnectionResetError, aiohttp.ClientConnectionResetError, aiohttp.ServerConnectionError):
-                    break  # client disconnected, stop sending
-            else:
-                await asyncio.sleep(0.05)
+                    break
+        finally:
+            loop.remove_reader(master_fd)
+
+    async def ws_to_pty():
+        """Read from browser, forward to pty (or handle resize)."""
+        try:
+            async for msg in ws:
+                if msg.type == 0x2:  # BINARY — raw terminal input
+                    try:
+                        os.write(master_fd, msg.data)
+                    except OSError:
+                        break
+                elif msg.type == 0x1:  # TEXT — control messages (resize)
+                    try:
+                        obj = json.loads(msg.data)
+                        if obj.get('type') == 'resize':
+                            cols = int(obj.get('cols', 80))
+                            rows = int(obj.get('rows', 24))
+                            _set_pty_size(master_fd, cols, rows)
+                    except (json.JSONDecodeError, ValueError, KeyError):
+                        pass
+                else:
+                    break
+        finally:
+            pass
+
+    read_task  = asyncio.ensure_future(pty_to_ws())
+    write_task = asyncio.ensure_future(ws_to_pty())
+    try:
+        done, pending = await asyncio.wait(
+            [read_task, write_task],
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+        for t in pending:
+            t.cancel()
+    finally:
+        try:
+            os.close(master_fd)
+        except OSError:
+            pass
+        try:
+            proc.terminate()
+        except Exception:
+            pass
 
     return ws
+
+
 
 def get_task_description(agent_id, fpath):
     """Return a short human-readable description for a task.
