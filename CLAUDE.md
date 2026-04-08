@@ -542,6 +542,9 @@ See `/mnt/data/bigclungus-meta/TRIGGERS.md` for full handling instructions.
 ### `[nightowl_task_id: xxx]` (suffix pattern)
 See `/mnt/data/bigclungus-meta/TRIGGERS.md` for full handling instructions.
 
+### `[grok] <prompt>` / `[grok:<model>] <prompt>`
+See `/mnt/data/bigclungus-meta/TRIGGERS.md` for full handling instructions. Fires an xAI Temporal workflow. Helper script: `/mnt/data/scripts/fire-xai-task.sh`.
+
 ### `[sprite-regen] sprite-{persona}`
 Handled by clunger — no action needed from BigClungus.
 
