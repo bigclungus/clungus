@@ -206,7 +206,7 @@ class MobRegistry {
       def: mob.def,
       spd: mob.spd,
       floor_min: 1,
-      budget_cost: mob.budgetCost,
+      budget_cost: 1, // BULLET HELL MODE: force cost=1 so rooms fill to spawn cap
     };
   }
 }
@@ -226,18 +226,18 @@ const SEED_MOBS: {
   budget_cost: number;
   flavor_text: string;
 }[] = [
-  // melee_chase tier
-  { entity_name: "cave_rat", display_name: "Cave Rat", behavior: "melee_chase", hp: 30, atk: 8, def: 4, spd: 10, budget_cost: 5, flavor_text: "Gnaws at anything that moves." },
-  { entity_name: "shadow_hound", display_name: "Shadow Hound", behavior: "melee_chase", hp: 39, atk: 10, def: 5, spd: 13, budget_cost: 7, flavor_text: "Hunts by scent in total darkness." },
-  { entity_name: "feral_stalker", display_name: "Feral Stalker", behavior: "melee_chase", hp: 48, atk: 13, def: 6, spd: 16, budget_cost: 9, flavor_text: "Once human, now something far worse." },
-  // ranged_pattern tier
-  { entity_name: "fungal_spore", display_name: "Fungal Spore", behavior: "ranged_pattern", hp: 20, atk: 12, def: 2, spd: 6, budget_cost: 5, flavor_text: "Bursts into a toxic cloud when threatened." },
-  { entity_name: "acid_sprayer", display_name: "Acid Sprayer", behavior: "ranged_pattern", hp: 26, atk: 16, def: 3, spd: 8, budget_cost: 7, flavor_text: "Corrosive jets melt through armor." },
-  { entity_name: "chaos_weaver", display_name: "Chaos Weaver", behavior: "ranged_pattern", hp: 30, atk: 18, def: 3, spd: 9, budget_cost: 9, flavor_text: "Threads of arcane energy lash out unpredictably." },
-  // slow_charge tier
-  { entity_name: "stone_golem", display_name: "Stone Golem", behavior: "slow_charge", hp: 60, atk: 15, def: 10, spd: 3, budget_cost: 5, flavor_text: "Ancient stone given terrible purpose." },
-  { entity_name: "iron_behemoth", display_name: "Iron Behemoth", behavior: "slow_charge", hp: 84, atk: 21, def: 14, spd: 4, budget_cost: 7, flavor_text: "Each step shakes the ground beneath you." },
-  { entity_name: "abyssal_titan", display_name: "Abyssal Titan", behavior: "slow_charge", hp: 108, atk: 27, def: 18, spd: 5, budget_cost: 9, flavor_text: "Born in the deepest crevice, it knows nothing but destruction." },
+  // melee_chase tier — BULLET HELL MODE: atk /10, budget_cost 1 (pack rooms full)
+  { entity_name: "cave_rat", display_name: "Cave Rat", behavior: "melee_chase", hp: 30, atk: 1, def: 4, spd: 10, budget_cost: 1, flavor_text: "Gnaws at anything that moves." },
+  { entity_name: "shadow_hound", display_name: "Shadow Hound", behavior: "melee_chase", hp: 39, atk: 1, def: 5, spd: 13, budget_cost: 1, flavor_text: "Hunts by scent in total darkness." },
+  { entity_name: "feral_stalker", display_name: "Feral Stalker", behavior: "melee_chase", hp: 48, atk: 1, def: 6, spd: 16, budget_cost: 1, flavor_text: "Once human, now something far worse." },
+  // ranged_pattern tier — BULLET HELL MODE: atk /10, budget_cost 1
+  { entity_name: "fungal_spore", display_name: "Fungal Spore", behavior: "ranged_pattern", hp: 20, atk: 1, def: 2, spd: 6, budget_cost: 1, flavor_text: "Bursts into a toxic cloud when threatened." },
+  { entity_name: "acid_sprayer", display_name: "Acid Sprayer", behavior: "ranged_pattern", hp: 26, atk: 2, def: 3, spd: 8, budget_cost: 1, flavor_text: "Corrosive jets melt through armor." },
+  { entity_name: "chaos_weaver", display_name: "Chaos Weaver", behavior: "ranged_pattern", hp: 30, atk: 2, def: 3, spd: 9, budget_cost: 1, flavor_text: "Threads of arcane energy lash out unpredictably." },
+  // slow_charge tier — BULLET HELL MODE: atk /10, budget_cost 1
+  { entity_name: "stone_golem", display_name: "Stone Golem", behavior: "slow_charge", hp: 60, atk: 2, def: 10, spd: 3, budget_cost: 1, flavor_text: "Ancient stone given terrible purpose." },
+  { entity_name: "iron_behemoth", display_name: "Iron Behemoth", behavior: "slow_charge", hp: 84, atk: 2, def: 14, spd: 4, budget_cost: 1, flavor_text: "Each step shakes the ground beneath you." },
+  { entity_name: "abyssal_titan", display_name: "Abyssal Titan", behavior: "slow_charge", hp: 108, atk: 3, def: 18, spd: 5, budget_cost: 1, flavor_text: "Born in the deepest crevice, it knows nothing but destruction." },
 ];
 
 /**

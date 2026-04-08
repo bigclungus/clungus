@@ -668,7 +668,7 @@ function spawnInRoom(
   if (spawnTiles.length === 0) return;
   let remaining = budget;
   let attempts = 0;
-  while (remaining > 0 && attempts < 100) {
+  while (remaining > 0 && attempts < 1000) { // BULLET HELL MODE: increased cap for horde density
     attempts++;
     const variant = rng.pick(available);
     const tile = rng.pick(spawnTiles);

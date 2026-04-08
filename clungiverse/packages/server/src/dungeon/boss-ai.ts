@@ -71,10 +71,11 @@ interface PlayerTarget {
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 // Hive Mother (F1)
-const HM_SPAWN_INTERVAL_P1 = 80;  // 5s at 16Hz
-const HM_SPAWN_INTERVAL_P2 = 48;  // 3s (enraged)
-const HM_SPAWN_COUNT_P1 = 3;
-const HM_SPAWN_COUNT_P2 = 5;
+// BULLET HELL MODE: faster spawns, more minions per wave
+const HM_SPAWN_INTERVAL_P1 = 32;  // 2s at 16Hz (was 5s)
+const HM_SPAWN_INTERVAL_P2 = 16;  // 1s (enraged, was 3s)
+const HM_SPAWN_COUNT_P1 = 15;     // was 3
+const HM_SPAWN_COUNT_P2 = 25;     // was 5
 const HM_PHASE2_THRESHOLD = 0.5;
 
 // Spore Lord (F2)
