@@ -36,6 +36,7 @@ export function buildPlayerSnapshots(instance: DungeonInstance): DungeonPlayerSn
       maxHp: p.maxHp,
       iframeTicks: p.iframeTicks,
       cooldownRemaining: p.cooldownTicks,
+      spinCooldownRemaining: p.spinCooldownTicks,
       scramblingTicks: p.scramblingTicks,
       activeTempPowerups: p.activeTempPowerups.map((a) => ({
         templateId: a.templateId,

@@ -7,6 +7,8 @@ export interface InputSnapshot {
   facingX: number;
   facingY: number;
   power: boolean;
+  sprint: boolean;
+  spinAttack: boolean; // E key — circular sword sweep
   mouseX: number;
   mouseY: number;
   spectateNext: boolean; // Tab to cycle spectate target
@@ -17,6 +19,10 @@ let mouseX = 0;
 let mouseY = 0;
 let powerTriggered = false;
 let powerConsumed = false;
+let sprintTriggered = false;
+let sprintConsumed = false;
+let spinTriggered = false;
+let spinConsumed = false;
 let lastFacingX = 0;
 let lastFacingY = 1;
 let spectateNextTriggered = false;
@@ -31,6 +37,15 @@ export function initInput(canvas: HTMLCanvasElement): void {
       if (!powerConsumed) {
         powerTriggered = true;
       }
+      if (!sprintConsumed) {
+        sprintTriggered = true;
+      }
+    }
+    if (e.key.toLowerCase() === 'e') {
+      e.preventDefault();
+      if (!spinConsumed) {
+        spinTriggered = true;
+      }
     }
     if (e.key === 'Tab') {
       e.preventDefault();
@@ -44,6 +59,10 @@ export function initInput(canvas: HTMLCanvasElement): void {
     held.delete(e.key.toLowerCase());
     if (e.key === ' ') {
       powerConsumed = false;
+      sprintConsumed = false;
+    }
+    if (e.key.toLowerCase() === 'e') {
+      spinConsumed = false;
     }
     if (e.key === 'Tab') {
       spectateNextConsumed = false;
@@ -100,6 +119,14 @@ export function pollInput(): InputSnapshot {
   powerTriggered = newPowerTriggered;
   powerConsumed = newPowerConsumed;
 
+  const [sprint, newSprintTriggered, newSprintConsumed] = consumeOneShot(sprintTriggered, sprintConsumed);
+  sprintTriggered = newSprintTriggered;
+  sprintConsumed = newSprintConsumed;
+
+  const [spinAttack, newSpinTriggered, newSpinConsumed] = consumeOneShot(spinTriggered, spinConsumed);
+  spinTriggered = newSpinTriggered;
+  spinConsumed = newSpinConsumed;
+
   const [spectateNext, newSpectateTriggered, newSpectateConsumed] = consumeOneShot(spectateNextTriggered, spectateNextConsumed);
   spectateNextTriggered = newSpectateTriggered;
   spectateNextConsumed = newSpectateConsumed;
@@ -110,6 +137,8 @@ export function pollInput(): InputSnapshot {
     facingX: lastFacingX,
     facingY: lastFacingY,
     power,
+    sprint,
+    spinAttack,
     mouseX,
     mouseY,
     spectateNext,

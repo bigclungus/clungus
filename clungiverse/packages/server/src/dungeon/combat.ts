@@ -332,6 +332,61 @@ export function isCrundleScrambling(player: PlayerEntity, tick: number): boolean
   return player.persona === "crundle" && tick < player.scramblingUntilTick;
 }
 
+// ─── Spin Attack ────────────────────────────────────────────────────────────
+
+const SPIN_RADIUS = 60;
+const SPIN_DAMAGE_MULTIPLIER = 1.3; // 30% more than auto-attack base
+export const SPIN_COOLDOWN_TICKS = 77; // ~4.8s at 16Hz
+
+export interface SpinResult {
+  hits: DamageResult[];
+}
+
+/**
+ * Resolve a spin attack — hits all alive enemies within SPIN_RADIUS pixels.
+ * Deals 1.3x ATK (pre-crit), ignores i-frames for multi-hit feel.
+ */
+export function resolveSpinAttack(
+  attacker: CombatEntity,
+  targets: EnemyEntity[],
+  tick: number,
+): SpinResult {
+  const hits: DamageResult[] = [];
+
+  for (const t of targets) {
+    if (!t.alive) continue;
+    const dx = attacker.x - t.x;
+    const dy = attacker.y - t.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > SPIN_RADIUS + attacker.radius + t.radius) continue;
+
+    const variance = 1 + (Math.random() * 0.2 - 0.1);
+    const rawDamage = attacker.stats.ATK * SPIN_DAMAGE_MULTIPLIER * variance;
+    const mitigation = t.stats.DEF * 0.5;
+    let finalDamage = Math.max(1, Math.floor(rawDamage - mitigation));
+    const isCrit = Math.random() < attacker.stats.critChance;
+    if (isCrit) finalDamage = Math.floor(finalDamage * 1.5);
+
+    hits.push({
+      hit: true,
+      damage: finalDamage,
+      isCrit,
+      targetId: t.id,
+      attackerId: attacker.id,
+    });
+
+    // Apply damage directly (spin ignores per-target i-frames so all enemies in radius are hit)
+    t.hp -= finalDamage;
+    t.iFrameUntilTick = tick + I_FRAME_TICKS;
+    if (t.hp <= 0) {
+      t.hp = 0;
+      t.alive = false;
+    }
+  }
+
+  return { hits };
+}
+
 // ─── Damage Application ─────────────────────────────────────────────────────
 
 /** Apply damage to a target, set i-frames, check death. */

@@ -18,6 +18,7 @@ export {
   type DungeonReadyMessage,
   type DungeonStartMessage,
   type DungeonPickPowerupMessage,
+  type DungeonSpinMessage,
   type DungeonClientMessage,
   type TempPowerupSnapshot,
   type FloorPickupSnapshot,
@@ -84,6 +85,8 @@ export interface DungeonPlayer {
   iframeTicks: number;
   cooldownTicks: number;
   cooldownMax: number;
+  /** Spin attack cooldown: ticks remaining. 0 = ready. ~4.8s = 77 ticks at 16Hz. */
+  spinCooldownTicks: number;
   /** Crundle Nervous Scramble: ticks remaining in scramble. 0 = inactive. */
   scramblingTicks: number;
   kills: number;

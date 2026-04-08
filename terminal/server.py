@@ -544,7 +544,7 @@ HTML = r"""<!DOCTYPE html>
       flex-shrink: 0;
       transition: background var(--transition), box-shadow var(--transition);
     }
-    .sa-dot.in_progress {
+    .sa-dot.running {
       background: var(--yellow);
       box-shadow: 0 0 6px rgba(227,179,65,0.7);
       animation: pulse 1.8s ease-in-out infinite;
@@ -1100,7 +1100,7 @@ HTML = r"""<!DOCTYPE html>
     }
 
     function agentStatusClass(status) {
-      if (status === 'in_progress') return 'in_progress';
+      if (status === 'running') return 'running';
       if (status === 'failed') return 'failed';
       if (status === 'stale') return 'stale';
       return 'complete';
@@ -1109,7 +1109,7 @@ HTML = r"""<!DOCTYPE html>
     function makeCard(agent) {
       const card = document.createElement('div');
       const statusClass = agentStatusClass(agent.status);
-      const isDone = agent.status !== 'in_progress';
+      const isDone = agent.status !== 'running';
       card.className = 'sa-card' + (isDone ? ' done' : '') + (agent.status === 'stale' ? ' stale' : '');
       card.dataset.id = agent.id;
 
@@ -1145,7 +1145,7 @@ HTML = r"""<!DOCTYPE html>
         dot.className = 'sa-dot ' + agentStatusClass(agent.status);
       }
       // Update fade / stale
-      if (agent.status !== 'in_progress') card.classList.add('done');
+      if (agent.status !== 'running') card.classList.add('done');
       else card.classList.remove('done');
       if (agent.status === 'stale') card.classList.add('stale');
       else card.classList.remove('stale');
@@ -1164,12 +1164,12 @@ HTML = r"""<!DOCTYPE html>
       const emptyEl = document.getElementById('agents-empty');
 
       // Filter out hook_* and very short IDs with no data
-      const interesting = agents.filter(a => !a.id.startsWith('hook_') && (a.tokens > 0 || a.status === 'in_progress'));
+      const interesting = agents.filter(a => !a.id.startsWith('hook_') && (a.tokens > 0 || a.status === 'running'));
 
       // Sort: in_progress first, then complete/failed/stale by lastModified descending
       interesting.sort((a, b) => {
-        const aActive = a.status === 'in_progress' ? 0 : 1;
-        const bActive = b.status === 'in_progress' ? 0 : 1;
+        const aActive = a.status === 'running' ? 0 : 1;
+        const bActive = b.status === 'running' ? 0 : 1;
         if (aActive !== bActive) return aActive - bActive;
         // stale agents sink to bottom within the done group
         const aStale = a.status === 'stale' ? 1 : 0;

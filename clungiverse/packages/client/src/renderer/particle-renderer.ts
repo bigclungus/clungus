@@ -201,6 +201,43 @@ export function spawnDeathPoof(x: number, y: number): void {
   }
 }
 
+/** Spin attack visual — expanding ring of sword-slash particles */
+export function spawnSpinSweep(x: number, y: number): void {
+  const SPIN_RADIUS = 60;
+  // Ring of outward-moving white sparks
+  const ringCount = 24;
+  for (let i = 0; i < ringCount && particles.length < MAX_PARTICLES; i++) {
+    const angle = (i / ringCount) * Math.PI * 2;
+    const dist = 10 + Math.random() * 15;
+    const speed = 80 + Math.random() * 60;
+    particles.push({
+      x: x + Math.cos(angle) * dist,
+      y: y + Math.sin(angle) * dist,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 350,
+      maxLife: 350,
+      color: 0xffffff,
+      size: randRange(2, 4),
+    });
+  }
+  // Golden arc ring at hit radius
+  const arcCount = 32;
+  for (let i = 0; i < arcCount && particles.length < MAX_PARTICLES; i++) {
+    const angle = (i / arcCount) * Math.PI * 2;
+    particles.push({
+      x: x + Math.cos(angle) * (SPIN_RADIUS * 0.7),
+      y: y + Math.sin(angle) * (SPIN_RADIUS * 0.7),
+      vx: (Math.random() - 0.5) * 20,
+      vy: (Math.random() - 0.5) * 20,
+      life: 500,
+      maxLife: 500,
+      color: 0xffd700,
+      size: randRange(1.5, 3),
+    });
+  }
+}
+
 export function spawnPowerActivation(x: number, y: number): void {
   const count = 16;
   for (let i = 0; i < count && particles.length < MAX_PARTICLES; i++) {
@@ -215,6 +252,25 @@ export function spawnPowerActivation(x: number, y: number): void {
       maxLife: 400,
       color: 0x88ccff,
       size: randRange(2, 4),
+    });
+  }
+}
+
+export function spawnSprintTrail(x: number, y: number, color: number): void {
+  // Emit 3 small afterimage particles behind the player
+  const count = 3;
+  for (let i = 0; i < count && particles.length < MAX_PARTICLES; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = randRange(5, 20);
+    particles.push({
+      x: x + (Math.random() - 0.5) * 8,
+      y: y + (Math.random() - 0.5) * 8,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 180,
+      maxLife: 180,
+      color,
+      size: randRange(2, 5),
     });
   }
 }

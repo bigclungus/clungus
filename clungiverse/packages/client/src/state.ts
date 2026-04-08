@@ -132,6 +132,10 @@ export interface DungeonClientState {
   localMaxHp: number;
   localCooldown: number;
   localCooldownMax: number;
+  localSpinCooldown: number;
+  localSpinCooldownMax: number;
+  localSprintCooldownUntil: number;
+  localSprintingUntil: number;
   elapsedMs: number;
   kills: number;
   totalMobs: number;
@@ -212,6 +216,12 @@ export interface ClientPlayer {
   activeTempPowerups: ClientTempPowerup[];
   /** Crundle Nervous Scramble: ms timestamp until which scramble is active. 0 = inactive. */
   scramblingUntil: number;
+  /** Sprint: ms timestamp until which sprint boost is active. 0 = inactive. */
+  sprintingUntil: number;
+  /** Sprint cooldown: ms timestamp until which sprint cannot be triggered. 0 = ready. */
+  sprintCooldownUntil: number;
+  /** Spin attack cooldown: ticks remaining. 0 = ready. */
+  spinCooldown: number;
   /** True when dead but spectating (party still alive). */
   spectating: boolean;
 }
@@ -363,6 +373,10 @@ export function createInitialState(): DungeonClientState {
     localMaxHp: 0,
     localCooldown: 0,
     localCooldownMax: 0,
+    localSpinCooldown: 0,
+    localSpinCooldownMax: 77,
+    localSprintCooldownUntil: 0,
+    localSprintingUntil: 0,
     elapsedMs: 0,
     kills: 0,
     totalMobs: 0,

@@ -1,18 +1,18 @@
 // Clungiverse v2 — Dungeon Scene (PixiJS)
 // Main gameplay: input -> network -> render via PixiJS display objects
 
-import type { DungeonClientState } from '../state';
-import { TILE_SIZE, TILE_DOOR_CLOSED, TILE_DOOR_OPEN } from '../state';
+import type { DungeonClientState, PersonaSlug } from '../state';
+import { TILE_SIZE, TILE_DOOR_CLOSED, TILE_DOOR_OPEN, PERSONAS } from '../state';
 import type { DungeonNetwork } from '../network/dungeon-network';
 import { pollInput } from '../input/input';
-import { applyLocalInput, getLocalPlayer } from '../entities/local-player';
+import { applyLocalInput, getLocalPlayer, tryActivateSprint } from '../entities/local-player';
 import { app, worldContainer, hudContainer } from '../renderer/pixi-app';
 import { camera, centerCamera, applyCamera, startShake } from '../renderer/camera';
 import { TileRenderer, invalidateRoomMap } from '../renderer/tile-renderer';
 import { EntityRenderer } from '../renderer/entity-renderer';
 import {
   ParticleRenderer, clearAllParticles, spawnHitSparks, spawnDeathPoof,
-  spawnPowerActivation, spawnHealText, spawnDamageText,
+  spawnPowerActivation, spawnSpinSweep, spawnHealText, spawnDamageText, spawnSprintTrail,
   setDustViewport, updateFootstepDust, resetFootstepTracking,
 } from '../renderer/particle-renderer';
 import { HudRenderer } from '../renderer/hud-renderer';
@@ -40,6 +40,11 @@ let flashAlpha = 0;
 
 function triggerFlash(): void {
   flashAlpha = 0.3;
+}
+
+function sprintTrailColor(slug: PersonaSlug): number {
+  const hex = PERSONAS[slug]?.color ?? '#ffffff';
+  return parseInt(hex.replace('#', ''), 16);
 }
 
 const FOG_RADIUS = 9;
@@ -119,6 +124,13 @@ function handlePowerActivateEvent(state: DungeonClientState, payload: TickPayloa
   }
 }
 
+function handleSpinActivateEvent(state: DungeonClientState, payload: TickPayload): void {
+  const player = state.players.get(payload.playerId as string);
+  if (!player) return;
+  spawnSpinSweep(player.x, player.y);
+  startShake(2, 100);
+}
+
 function handlePlayerDeathEvent(state: DungeonClientState, payload: TickPayload): void {
   const player = state.players.get(payload.playerId as string);
   if (player) spawnDeathPoof(player.x, player.y);
@@ -188,6 +200,7 @@ const TICK_EVENT_HANDLERS: Record<string, EventHandler> = {
   damage: handleDamageEvent,
   kill: handleKillEvent,
   power_activate: handlePowerActivateEvent,
+  spin_activate: handleSpinActivateEvent,
   player_death: handlePlayerDeathEvent,
   door_open: handleDoorOpenEvent,
   pickup: handlePickupEvent,
@@ -269,6 +282,18 @@ export function createDungeonScene(network: DungeonNetwork): DungeonScene {
         }
         const local = getLocalPlayer(state);
         if (local) {
+          // Sprint: trigger on spacebar if not on cooldown
+          if (input.sprint) {
+            tryActivateSprint(local);
+          }
+          // Sprint trail particles while sprinting
+          if (local.sprintingUntil > Date.now()) {
+            spawnSprintTrail(local.x, local.y, sprintTrailColor(local.personaSlug));
+          }
+          // Update HUD sprint state
+          state.localSprintCooldownUntil = local.sprintCooldownUntil;
+          state.localSprintingUntil = local.sprintingUntil;
+
           network.sendMove(local.x, local.y, local.facingX, local.facingY, state.inputSeq);
           updateFogOfWar(state, local.x, local.y);
           trackVisitedRooms(state, local.x, local.y);
@@ -276,6 +301,7 @@ export function createDungeonScene(network: DungeonNetwork): DungeonScene {
           updateFootstepDust(local.x, local.y);
         }
         if (input.power) network.sendPower();
+        if (input.spinAttack) network.sendSpin();
       }
 
       // Flash decay

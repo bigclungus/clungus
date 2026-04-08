@@ -194,10 +194,18 @@ export class EntityRenderer {
     }
 
     // Scramble glow ring
-    if (player.scramblingUntil > Date.now()) {
+    const now = Date.now();
+    if (player.scramblingUntil > now) {
       const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 80);
       this.gfx.circle(x, y, r + 4);
       this.gfx.stroke({ color: 0x7d8f69, alpha: 0.5 + pulse * 0.5, width: 3 + pulse * 2 });
+    }
+
+    // Sprint glow ring (cyan streak)
+    if (player.sprintingUntil > now) {
+      const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 50);
+      this.gfx.circle(x, y, r + 3 + pulse * 2);
+      this.gfx.stroke({ color: 0x00eeff, alpha: 0.5 + pulse * 0.4, width: 2 });
     }
 
     // Avatar or fallback circle

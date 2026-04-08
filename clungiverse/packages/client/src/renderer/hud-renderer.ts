@@ -6,6 +6,7 @@ import { Container, Graphics, Text } from 'pixi.js';
 import type { DungeonClientState } from '../state';
 import { PERSONAS, TEMP_POWERUP_META, TEMP_POWERUP_MAX_DURATIONS, TILE_WALL, TILE_SIZE } from '../state';
 import { isTileExplored, isTileVisible } from './tile-renderer';
+import { SPRINT_COOLDOWN_MS } from '../entities/local-player';
 
 function formatTime(ms: number): string {
   const totalSec = Math.floor(ms / 1000);
@@ -30,6 +31,8 @@ export class HudRenderer {
   private spectateHint: Text;
   private disconnectText: Text;
   private cdLabel: Text;
+  private sprintLabel: Text;
+  private spinLabel: Text;
 
   // Party roster text elements keyed by player ID
   private rosterTexts = new Map<string, { dot: boolean; nameText: Text }>();
@@ -96,6 +99,16 @@ export class HudRenderer {
     this.cdLabel = new Text({ text: 'SPC', style: { ...MONO_STYLE, fontSize: 8 } });
     this.cdLabel.anchor.set(0.5, 0.5);
     this.container.addChild(this.cdLabel);
+
+    // Sprint label
+    this.sprintLabel = new Text({ text: 'RUN', style: { ...MONO_STYLE, fontSize: 8 } });
+    this.sprintLabel.anchor.set(0.5, 0.5);
+    this.container.addChild(this.sprintLabel);
+
+    // Spin label
+    this.spinLabel = new Text({ text: '[E]', style: { ...MONO_STYLE, fontSize: 8 } });
+    this.spinLabel.anchor.set(0.5, 0.5);
+    this.container.addChild(this.spinLabel);
   }
 
   render(state: DungeonClientState, screenW: number, screenH: number): void {
@@ -149,6 +162,12 @@ export class HudRenderer {
 
     // === Power Cooldown (bottom right) ===
     this.renderPowerCooldown(state, screenW, screenH);
+
+    // === Sprint Cooldown (bottom right, left of power) ===
+    this.renderSprintCooldown(state, screenW, screenH);
+
+    // === Spin Attack Cooldown (bottom right, left of sprint) ===
+    this.renderSpinCooldown(state, screenW, screenH);
 
     // === Minimap (top right) ===
     this.renderMinimap(state, screenW);
@@ -348,6 +367,83 @@ export class HudRenderer {
 
     // Label
     this.cdLabel.position.set(cx, cy + 3);
+  }
+
+  // === Sprint Cooldown (circular, bottom right — left of power cooldown) ===
+
+  private renderSprintCooldown(state: DungeonClientState, screenW: number, screenH: number): void {
+    const cx = screenW - 86; // 50px left of the power cooldown circle
+    const cy = screenH - 36;
+    const r = 16;
+    const now = Date.now();
+
+    const onCooldown = state.localSprintCooldownUntil > now;
+    const sprinting = state.localSprintingUntil > now;
+
+    // Outer ring — brighter when ready, dim when on cooldown
+    const ringColor = onCooldown ? 0x333333 : 0x888888;
+    this.gfx.circle(cx, cy, r);
+    this.gfx.stroke({ color: ringColor, width: 2 });
+
+    if (onCooldown) {
+      // Cooldown sweep: show how much cooldown remains
+      const elapsed = SPRINT_COOLDOWN_MS - Math.max(0, state.localSprintCooldownUntil - now);
+      const ratio = Math.min(1, elapsed / SPRINT_COOLDOWN_MS);
+      const endAngle = -Math.PI / 2 + Math.PI * 2 * ratio;
+
+      // Dark fill for remaining cooldown
+      this.gfx.moveTo(cx, cy);
+      this.gfx.arc(cx, cy, r, endAngle, Math.PI * 1.5);
+      this.gfx.closePath();
+      this.gfx.fill({ color: 0x222222, alpha: 0.75 });
+    } else if (sprinting) {
+      // Active sprint — bright cyan glow
+      this.gfx.circle(cx, cy, r);
+      this.gfx.fill({ color: 0x00eeff, alpha: 0.35 });
+    } else {
+      // Ready — subtle green tint
+      this.gfx.circle(cx, cy, r);
+      this.gfx.fill({ color: 0x44ff88, alpha: 0.2 });
+    }
+
+    // Label
+    this.sprintLabel.text = sprinting ? '>>>' : 'RUN';
+    this.sprintLabel.style.fill = sprinting ? 0x00eeff : (onCooldown ? 0x666666 : 0xaaaaaa);
+    this.sprintLabel.position.set(cx, cy + 3);
+  }
+
+  // === Spin Attack Cooldown (circular, bottom right — left of sprint) ===
+
+  private renderSpinCooldown(state: DungeonClientState, screenW: number, screenH: number): void {
+    const SPIN_CD_MAX = 77; // ticks — matches server SPIN_COOLDOWN_TICKS
+    const cx = screenW - 136; // 50px left of sprint cooldown circle
+    const cy = screenH - 36;
+    const r = 16;
+
+    const onCooldown = state.localSpinCooldown > 0;
+
+    // Outer ring
+    const ringColor = onCooldown ? 0x333333 : 0x886600;
+    this.gfx.circle(cx, cy, r);
+    this.gfx.stroke({ color: ringColor, width: 2 });
+
+    if (onCooldown) {
+      const ratio = state.localSpinCooldown / SPIN_CD_MAX;
+      const endAngle = -Math.PI / 2 + Math.PI * 2 * (1 - ratio);
+      this.gfx.moveTo(cx, cy);
+      this.gfx.arc(cx, cy, r, -Math.PI / 2, endAngle);
+      this.gfx.closePath();
+      this.gfx.fill({ color: 0x222222, alpha: 0.75 });
+    } else {
+      // Ready — golden tint
+      this.gfx.circle(cx, cy, r);
+      this.gfx.fill({ color: 0xffd700, alpha: 0.25 });
+    }
+
+    // Label
+    this.spinLabel.text = '[E]';
+    this.spinLabel.style.fill = onCooldown ? 0x666666 : 0xffd700;
+    this.spinLabel.position.set(cx, cy + 3);
   }
 
   // === Minimap (130x130, top right) ===

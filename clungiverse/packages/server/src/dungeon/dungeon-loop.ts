@@ -47,6 +47,8 @@ import { db } from "../persistence.ts";
 
 import {
   resolvePower,
+  resolveSpinAttack,
+  SPIN_COOLDOWN_TICKS,
   tickAoEZones,
   getCrundleContactDamage,
   isCrundleScrambling,
@@ -109,6 +111,7 @@ interface InstanceEphemeral {
   autoAttackTimers: Map<string, number>; // playerId -> tick of next allowed auto-attack
   pendingAttacks: Set<string>; // playerIds that requested an attack this tick
   pendingPowers: Set<string>; // playerIds that activated power this tick
+  pendingSpins: Set<string>; // playerIds that requested a spin attack this tick
   genLayout: GenFloorLayout | null;
   // Powerup transition state
   transitionChoices: LootItem[] | null; // current powerup choices offered
@@ -132,6 +135,7 @@ function getEphemeral(instance: DungeonInstance): InstanceEphemeral {
       autoAttackTimers: new Map(),
       pendingAttacks: new Set(),
       pendingPowers: new Set(),
+      pendingSpins: new Set(),
       genLayout: null,
       transitionChoices: null,
       transitionPicks: new Map(),
@@ -444,6 +448,7 @@ function initPlayerStats(instance: DungeonInstance, floorNum: number): void {
     player.iframeTicks = 0;
     player.cooldownTicks = 0;
     player.scramblingTicks = 0;
+    player.spinCooldownTicks = 0;
     player.cooldownMax = Math.ceil(effective.autoAttackIntervalMs / TICK_MS);
     player.diedOnFloor = null;
     player.activeTempPowerups = [];
@@ -1285,6 +1290,54 @@ function processPendingPowers(
   eph.pendingPowers.clear();
 }
 
+function processPendingSpins(
+  instance: DungeonInstance,
+  eph: InstanceEphemeral,
+  enemyEntities: EnemyEntity[],
+  tick: number,
+  events: TickEvent[],
+): void {
+  for (const pid of eph.pendingSpins) {
+    const player = instance.players.get(pid);
+    if (!player || player.hp <= 0 || player.diedOnFloor !== null) continue;
+    if (player.spinCooldownTicks > 0) continue;
+
+    const pe = toPlayerEntity(player, tick);
+    const aliveEnemyEntities = enemyEntities.filter((e) => e.alive);
+    const spinResult = resolveSpinAttack(pe, aliveEnemyEntities, tick);
+
+    // Apply spin cooldown
+    player.spinCooldownTicks = SPIN_COOLDOWN_TICKS;
+
+    // Emit spin_activate event for visual effect
+    events.push({ type: "spin_activate", payload: { playerId: pid } });
+
+    // Sync damage and kills back to instance enemies
+    for (const hit of spinResult.hits) {
+      const enemy = instance.enemies.get(hit.targetId);
+      if (!enemy) continue;
+      const ce = aliveEnemyEntities.find((e) => e.id === hit.targetId);
+      if (!ce) continue;
+
+      player.damageDealt += hit.damage;
+      enemy.hp = ce.hp;
+
+      events.push({
+        type: "damage",
+        payload: { targetId: hit.targetId, attackerId: pid, damage: hit.damage, isCrit: hit.isCrit, source: "spin" },
+      });
+
+      if (enemy.hp <= 0) {
+        enemy.hp = 0;
+        player.kills++;
+        events.push({ type: "kill", payload: { enemyId: hit.targetId, killerId: pid } });
+        if (!enemy.isBoss) maybeDropPickup(instance, enemy.x, enemy.y);
+      }
+    }
+  }
+  eph.pendingSpins.clear();
+}
+
 function tickPhasePowers(
   instance: DungeonInstance,
   eph: InstanceEphemeral,
@@ -1297,6 +1350,7 @@ function tickPhasePowers(
     if (p.hp > 0 && p.diedOnFloor === null) allPlayerEntities.push(toPlayerEntity(p, tick));
   }
   processPendingPowers(instance, eph, enemyEntities, allPlayerEntities, tick, events);
+  processPendingSpins(instance, eph, enemyEntities, tick, events);
   tickCrundleScramble(instance, allPlayerEntities, tick, events);
 }
 
@@ -1348,6 +1402,7 @@ function tickPhaseTimersAndPickups(
     if (player.iframeTicks > 0) player.iframeTicks--;
     if (player.cooldownTicks > 0) player.cooldownTicks--;
     if (player.scramblingTicks > 0) player.scramblingTicks--;
+    if (player.spinCooldownTicks > 0) player.spinCooldownTicks--;
   }
   for (const [_pid, player] of instance.players) {
     if (player.hp <= 0 || player.diedOnFloor !== null) continue;
@@ -1671,6 +1726,16 @@ export function queuePowerActivation(instanceId: string, playerId: string): void
     if (instance.id === instanceId) {
       const eph = getEphemeral(instance);
       eph.pendingPowers.add(playerId);
+      return;
+    }
+  }
+}
+
+export function queueSpinAttack(instanceId: string, playerId: string): void {
+  for (const [_lobbyId, instance] of getAllInstances()) {
+    if (instance.id === instanceId) {
+      const eph = getEphemeral(instance);
+      eph.pendingSpins.add(playerId);
       return;
     }
   }

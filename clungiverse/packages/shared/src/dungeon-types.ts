@@ -80,13 +80,18 @@ export interface DungeonPickPowerupMessage {
   powerupId: number;
 }
 
+export interface DungeonSpinMessage {
+  type: "d_spin";
+}
+
 export type DungeonClientMessage =
   | DungeonMoveMessage
   | DungeonAttackMessage
   | DungeonPowerMessage
   | DungeonReadyMessage
   | DungeonStartMessage
-  | DungeonPickPowerupMessage;
+  | DungeonPickPowerupMessage
+  | DungeonSpinMessage;
 
 // ─── Server → Client messages ────────────────────────────────────────────────
 
@@ -197,6 +202,8 @@ export interface DungeonPlayerSnapshot {
   maxHp: number;
   iframeTicks: number;
   cooldownRemaining: number;
+  /** Spin attack: ticks remaining on cooldown. 0 = ready. */
+  spinCooldownRemaining: number;
   activeTempPowerups: TempPowerupSnapshot[];
   /** Crundle Nervous Scramble: ticks remaining in scramble. 0 = inactive. */
   scramblingTicks: number;
@@ -294,6 +301,6 @@ export interface MobRosterSnapshot {
 }
 
 export interface TickEvent {
-  type: "damage" | "kill" | "power_activate" | "door_open" | "pickup" | "player_death" | "boss_phase";
+  type: "damage" | "kill" | "heal" | "power_activate" | "spin_activate" | "door_open" | "pickup" | "player_death" | "boss_phase";
   payload: Record<string, unknown>;
 }

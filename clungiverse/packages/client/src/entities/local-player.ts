@@ -8,6 +8,11 @@ const PLAYER_RADIUS = 10;
 // Average persona SPD is ~3.0, so ~48 px/sec at 16Hz. Use that as base.
 const BASE_SPEED = 280; // pixels per second
 
+// Sprint constants
+const SPRINT_MULTIPLIER = 1.9;
+const SPRINT_DURATION_MS = 600;
+const SPRINT_COOLDOWN_MS = 3500;
+
 function isBlockingTile(tile: number): boolean {
   return tile === TILE_WALL || tile === TILE_DOOR_CLOSED;
 }
@@ -39,13 +44,25 @@ function collidesWithWall(state: DungeonClientState, x: number, y: number): bool
 function applyMovement(
   state: DungeonClientState, player: ClientPlayer, dx: number, dy: number, dt: number
 ): void {
-  const scrambleMultiplier = player.scramblingUntil > Date.now() ? 3 : 1;
-  const speed = BASE_SPEED * scrambleMultiplier * dt;
+  const now = Date.now();
+  const scrambleMultiplier = player.scramblingUntil > now ? 3 : 1;
+  const sprintMultiplier = player.sprintingUntil > now ? SPRINT_MULTIPLIER : 1;
+  const speed = BASE_SPEED * scrambleMultiplier * sprintMultiplier * dt;
   const newX = player.x + dx * speed;
   const newY = player.y + dy * speed;
   if (!collidesWithWall(state, newX, player.y)) player.x = newX;
   if (!collidesWithWall(state, player.x, newY)) player.y = newY;
 }
+
+export function tryActivateSprint(player: ClientPlayer): boolean {
+  const now = Date.now();
+  if (player.sprintCooldownUntil > now) return false;
+  player.sprintingUntil = now + SPRINT_DURATION_MS;
+  player.sprintCooldownUntil = now + SPRINT_COOLDOWN_MS;
+  return true;
+}
+
+export { SPRINT_DURATION_MS, SPRINT_COOLDOWN_MS };
 
 export function applyLocalInput(
   state: DungeonClientState,

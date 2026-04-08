@@ -253,6 +253,7 @@ export class DungeonNetwork extends Emitter {
     old.spectating = sp.spectating ?? false;
     old.iframeTicks = sp.iframeTicks;
     old.powerCooldown = sp.cooldownRemaining;
+    old.spinCooldown = sp.spinCooldownRemaining ?? 0;
     old.name = sp.name;
     old.personaSlug = sp.personaSlug as PersonaSlug;
     old.activeTempPowerups = tempPowerups;
@@ -262,6 +263,7 @@ export class DungeonNetwork extends Emitter {
     s.localHp = sp.hp;
     s.localMaxHp = sp.maxHp;
     s.localCooldown = sp.cooldownRemaining;
+    s.localSpinCooldown = sp.spinCooldownRemaining ?? 0;
     s.localTempPowerups = tempPowerups;
     s.localCooldownMax = old.powerCooldownMax;
   }
@@ -294,6 +296,9 @@ export class DungeonNetwork extends Emitter {
       powerCooldownMax: old ? old.powerCooldownMax : 128,
       activeTempPowerups: tempPowerups,
       scramblingUntil,
+      sprintingUntil: old ? old.sprintingUntil : 0,
+      sprintCooldownUntil: old ? old.sprintCooldownUntil : 0,
+      spinCooldown: old ? old.spinCooldown : 0,
       spectating: sp.spectating ?? false,
     };
     s.players.set(sp.id, cp);
@@ -647,6 +652,10 @@ export class DungeonNetwork extends Emitter {
 
   sendPower(): void {
     this.send({ type: 'd_power' });
+  }
+
+  sendSpin(): void {
+    this.send({ type: 'd_spin' });
   }
 
   sendReady(persona: PersonaSlug): void {

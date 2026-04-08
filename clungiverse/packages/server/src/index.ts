@@ -43,6 +43,7 @@ import {
   setSendFunction,
   initFloor,
   queuePowerActivation,
+  queueSpinAttack,
   handlePowerupPick,
 } from "./dungeon/dungeon-loop.ts";
 import { initLootSystem } from "./dungeon/loot.ts";
@@ -253,6 +254,11 @@ function handleDPower(lobbyId: string, userId: string): void {
   if (inst && (inst.status === "running" || inst.status === "boss")) queuePowerActivation(inst.id, userId);
 }
 
+function handleDSpin(lobbyId: string, userId: string): void {
+  const inst = getInstance(lobbyId);
+  if (inst && (inst.status === "running" || inst.status === "boss")) queueSpinAttack(inst.id, userId);
+}
+
 function handleDPickPowerup(lobbyId: string, userId: string, msg: DungeonClientMessage): void {
   if (msg.type !== "d_pick_powerup") return;
   const inst = getInstance(lobbyId);
@@ -262,6 +268,7 @@ function handleDPickPowerup(lobbyId: string, userId: string, msg: DungeonClientM
 function handleDungeonWsActions(lobbyId: string, userId: string, msg: DungeonClientMessage): void {
   if (msg.type === "d_start") { handleDungeonStart(lobbyId, userId, !!msg.skipGen); return; }
   if (msg.type === "d_power") { handleDPower(lobbyId, userId); return; }
+  if (msg.type === "d_spin") { handleDSpin(lobbyId, userId); return; }
   if (msg.type === "d_pick_powerup") { handleDPickPowerup(lobbyId, userId, msg); return; }
   handleDungeonMessage(lobbyId, userId, msg, makeSendToPlayer());
 }

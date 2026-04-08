@@ -99,6 +99,7 @@ export function createLobby(hostId: string, hostName: string): DungeonInstance {
     iframeTicks: 0,
     cooldownTicks: 0,
     cooldownMax: 0,
+    spinCooldownTicks: 0,
     scramblingTicks: 0,
     kills: 0,
     damageDealt: 0,
@@ -149,6 +150,7 @@ export function joinLobby(
     iframeTicks: 0,
     cooldownTicks: 0,
     cooldownMax: 0,
+    spinCooldownTicks: 0,
     scramblingTicks: 0,
     kills: 0,
     damageDealt: 0,
@@ -277,6 +279,7 @@ function dispatchMessage(instance: DungeonInstance, player: DungeonPlayer, lobby
     case "d_move": handleMoveMessage(instance, player, msg); break;
     case "d_attack": break;
     case "d_power": break;
+    case "d_spin": break;
     case "d_pick_powerup": break;
   }
 }
