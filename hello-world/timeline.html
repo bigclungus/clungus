@@ -802,9 +802,18 @@
       });
 
       // Apply zebra stripes and hour ticks after layout (using requestAnimationFrame for correct positions)
+      // Then scroll to the newest (rightmost on desktop, bottommost on mobile) event
       requestAnimationFrame(function() {
         applyZebraStripes(timeline, isMobile);
         renderHourTicks(timeline, visible, isMobile);
+        var wrapper = document.querySelector('.scroll-wrapper');
+        if (wrapper) {
+          if (isMobile) {
+            wrapper.scrollTop = wrapper.scrollHeight;
+          } else {
+            wrapper.scrollLeft = wrapper.scrollWidth;
+          }
+        }
       });
 
       // Activate Lucide icons
