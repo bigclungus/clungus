@@ -69,6 +69,9 @@ class ListingsWorkflow:
                 start_to_close_timeout=timedelta(seconds=5),
             )
 
+        # Sort by price descending (highest first) before capping
+        new_listings.sort(key=lambda lst: lst.get("price", 0), reverse=True)
+
         # Cap at 1 and post a single summary message if there are any new listings
         top_listings = new_listings[:1]
         if top_listings:
