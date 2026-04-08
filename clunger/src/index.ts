@@ -701,22 +701,28 @@ async function restInvokePersona(req: http.IncomingMessage, res: http.ServerResp
 function ensureAgentsSchema(db: Database): void {
   db.run(`
     CREATE TABLE IF NOT EXISTS agents (
-      id              TEXT PRIMARY KEY,
-      task_id         TEXT,
-      session_id      TEXT,
-      started_at      INTEGER,
-      completed_at    INTEGER,
-      status          TEXT DEFAULT 'in_progress',
-      input_tokens    INTEGER DEFAULT 0,
-      output_tokens   INTEGER DEFAULT 0,
-      cost_usd        REAL DEFAULT 0.0,
-      model           TEXT,
-      output_file     TEXT,
-      description     TEXT,
-      failure_reason  TEXT,
-      parent_agent_id TEXT,
-      last_heartbeat_at INTEGER,
-      duration_ms     INTEGER
+      id                 TEXT PRIMARY KEY,
+      task_id            TEXT,
+      session_id         TEXT,
+      started_at         INTEGER,
+      completed_at       INTEGER,
+      status             TEXT DEFAULT 'running',
+      input_tokens       INTEGER DEFAULT 0,
+      output_tokens      INTEGER DEFAULT 0,
+      cost_usd           REAL DEFAULT 0.0,
+      model              TEXT,
+      output_file        TEXT,
+      description        TEXT,
+      failure_reason     TEXT,
+      parent_agent_id    TEXT,
+      last_heartbeat_at  INTEGER,
+      duration_ms        INTEGER,
+      trace_id           TEXT,
+      cache_read_tokens  INTEGER DEFAULT 0,
+      exit_reason        TEXT,
+      error_message      TEXT,
+      tool_calls_count   INTEGER DEFAULT 0,
+      usage_details      TEXT
     )
   `);
   // Add columns if DB existed before they were added
@@ -726,6 +732,12 @@ function ensureAgentsSchema(db: Database): void {
     "ALTER TABLE agents ADD COLUMN parent_agent_id TEXT",
     "ALTER TABLE agents ADD COLUMN last_heartbeat_at INTEGER",
     "ALTER TABLE agents ADD COLUMN duration_ms INTEGER",
+    "ALTER TABLE agents ADD COLUMN trace_id TEXT",
+    "ALTER TABLE agents ADD COLUMN cache_read_tokens INTEGER DEFAULT 0",
+    "ALTER TABLE agents ADD COLUMN exit_reason TEXT",
+    "ALTER TABLE agents ADD COLUMN error_message TEXT",
+    "ALTER TABLE agents ADD COLUMN tool_calls_count INTEGER DEFAULT 0",
+    "ALTER TABLE agents ADD COLUMN usage_details TEXT",
   ];
   for (const stmt of alterColumns) {
     try {
@@ -738,13 +750,20 @@ function ensureAgentsSchema(db: Database): void {
   // agent_events table
   db.run(`
     CREATE TABLE IF NOT EXISTS agent_events (
-      id          INTEGER PRIMARY KEY AUTOINCREMENT,
-      agent_id    TEXT NOT NULL,
-      event_type  TEXT NOT NULL,
-      payload     TEXT,
-      created_at  INTEGER DEFAULT (unixepoch('now'))
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      agent_id      TEXT NOT NULL,
+      event_type    TEXT NOT NULL,
+      payload       TEXT,
+      created_at    INTEGER DEFAULT (unixepoch('now')),
+      event_version INTEGER DEFAULT 1
     )
   `);
+  // Add event_version if table existed before it was added
+  try {
+    db.run("ALTER TABLE agent_events ADD COLUMN event_version INTEGER DEFAULT 1");
+  } catch {
+    // column already exists — ignore
+  }
   db.run(`
     CREATE INDEX IF NOT EXISTS idx_agent_events_agent ON agent_events(agent_id)
   `);
@@ -765,6 +784,9 @@ async function restHandleAgentSpawn(req: http.IncomingMessage, res: http.ServerR
   const description = typeof body.description === "string" ? body.description : null;
   const output_file = typeof body.output_file === "string" ? body.output_file : null;
   const task_id = typeof body.task_id === "string" ? body.task_id : null;
+  const parent_agent_id = typeof body.parent_agent_id === "string" ? body.parent_agent_id : null;
+  // Accept caller-provided trace_id (for child agents inheriting parent trace) or generate a new one
+  const trace_id = typeof body.trace_id === "string" ? body.trace_id : randomBytes(16).toString("hex");
   if (!id) {
     res.writeHead(400, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "id required" }));
@@ -776,12 +798,12 @@ async function restHandleAgentSpawn(req: http.IncomingMessage, res: http.ServerR
     ensureAgentsSchema(db);
     const started_at = Math.floor(Date.now() / 1000);
     db.run(
-      "INSERT OR REPLACE INTO agents (id, description, started_at, status, output_file, task_id) VALUES (?, ?, ?, 'in_progress', ?, ?)",
-      [id, description, started_at, output_file, task_id]
+      "INSERT OR REPLACE INTO agents (id, description, started_at, status, output_file, task_id, parent_agent_id, trace_id) VALUES (?, ?, ?, 'running', ?, ?, ?, ?)",
+      [id, description, started_at, output_file, task_id, parent_agent_id, trace_id]
     );
     db.close();
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ ok: true }));
+    res.end(JSON.stringify({ ok: true, trace_id }));
   } catch (err) {
     console.error("[agents] spawn write failed:", err);
     res.writeHead(500, { "Content-Type": "application/json" });
@@ -804,17 +826,37 @@ async function restHandleAgentComplete(req: http.IncomingMessage, res: http.Serv
   const id = agentId ?? (typeof body.id === "string" ? body.id : null);
   const status = typeof body.status === "string" ? body.status : "completed";
   const failure_reason = typeof body.failure_reason === "string" ? body.failure_reason : null;
+  // New observability fields
+  const exit_reason = typeof body.exit_reason === "string" ? body.exit_reason : null;
+  const error_message = typeof body.error_message === "string" ? body.error_message : null;
+  const tool_calls_count = typeof body.tool_calls_count === "number" ? body.tool_calls_count : null;
+  const cache_read_tokens = typeof body.cache_read_tokens === "number" ? body.cache_read_tokens : null;
+  const input_tokens = typeof body.input_tokens === "number" ? body.input_tokens : null;
+  const output_tokens = typeof body.output_tokens === "number" ? body.output_tokens : null;
+  const cost_usd = typeof body.cost_usd === "number" ? body.cost_usd : null;
+  const usage_details = typeof body.usage_details === "object" && body.usage_details !== null
+    ? JSON.stringify(body.usage_details)
+    : (typeof body.usage_details === "string" ? body.usage_details : null);
   if (!id) {
     res.writeHead(400, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "id required" }));
     return;
   }
-  const validStatuses = ["completed", "failed", "stale"];
+  // Valid terminal statuses — 'running' maps to 'completed' for backward compat with hooks
+  const validStatuses = ["completed", "failed", "cancelled", "timeout", "stale"];
   if (!validStatuses.includes(status)) {
     res.writeHead(400, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: `status must be one of: ${validStatuses.join(", ")}` }));
     return;
   }
+  // Derive exit_reason from status if not explicitly provided
+  const resolvedExitReason = exit_reason ?? (
+    status === "completed" ? "completed" :
+    status === "failed" ? "failed" :
+    status === "cancelled" ? "cancelled" :
+    status === "timeout" ? "timeout" :
+    null
+  );
   try {
     const db = new Database(AGENTS_DB_REST);
     db.run("PRAGMA journal_mode=WAL");
@@ -826,8 +868,21 @@ async function restHandleAgentComplete(req: http.IncomingMessage, res: http.Serv
     ).get(id);
     const duration_ms = row?.started_at != null ? (completed_at - row.started_at) * 1000 : null;
     db.run(
-      "UPDATE agents SET status=?, completed_at=?, failure_reason=?, duration_ms=? WHERE id=?",
-      [status, completed_at, failure_reason, duration_ms, id]
+      `UPDATE agents SET
+        status=?, completed_at=?, failure_reason=?, duration_ms=?,
+        exit_reason=?, error_message=?,
+        tool_calls_count=COALESCE(?, tool_calls_count),
+        cache_read_tokens=COALESCE(?, cache_read_tokens),
+        input_tokens=COALESCE(?, input_tokens),
+        output_tokens=COALESCE(?, output_tokens),
+        cost_usd=COALESCE(?, cost_usd),
+        usage_details=COALESCE(?, usage_details)
+      WHERE id=?`,
+      [status, completed_at, failure_reason, duration_ms,
+       resolvedExitReason, error_message,
+       tool_calls_count, cache_read_tokens,
+       input_tokens, output_tokens, cost_usd, usage_details,
+       id]
     );
     db.close();
     res.writeHead(200, { "Content-Type": "application/json" });
@@ -977,14 +1032,14 @@ function loadAgentRunsForTask(taskId: string): unknown[] {
   }
 }
 
-/** Load in_progress agent rows from agents.db. Returns [] if DB unavailable. */
+/** Load running agent rows from agents.db. Returns [] if DB unavailable. */
 function loadInProgressAgentsFromDb(): unknown[] {
   if (!existsSync(AGENTS_DB_REST)) return [];
   try {
     const db = new Database(AGENTS_DB_REST, { readonly: true });
     try {
       return db.query<Record<string, unknown>, []>(
-        "SELECT * FROM agents WHERE status = 'in_progress' AND output_file IS NOT NULL AND output_file != '' ORDER BY started_at ASC"
+        "SELECT * FROM agents WHERE status IN ('running', 'in_progress') AND output_file IS NOT NULL AND output_file != '' ORDER BY started_at ASC"
       ).all();
     } finally {
       db.close();
@@ -1004,7 +1059,7 @@ function loadRecentAgentsFromDb(): unknown[] {
     try {
       const twoHoursAgo = Math.floor((Date.now() - 2 * 60 * 60 * 1000) / 1000);
       return db.query<Record<string, unknown>, [number]>(
-        "SELECT * FROM agents WHERE output_file IS NOT NULL AND output_file != '' AND (started_at >= ? OR status = 'in_progress') ORDER BY started_at DESC"
+        "SELECT * FROM agents WHERE output_file IS NOT NULL AND output_file != '' AND (started_at >= ? OR status IN ('running', 'in_progress')) ORDER BY started_at DESC"
       ).all(twoHoursAgo);
     } finally {
       db.close();
@@ -1506,15 +1561,18 @@ function restServeAgents(res: http.ServerResponse): void {
 interface SubagentInfo {
   id: string;
   name: string;
-  status: "in_progress" | "complete" | "stale";
+  status: "running" | "complete" | "stale";
   tokens: number;
   inputTokens: number;
   outputTokens: number;
+  cacheReadTokens: number;
   cost: number;
   toolUses: number;
   outputPath: string;
   startedAt: string | null;
   lastModified: string;
+  traceId: string | null;
+  exitReason: string | null;
 }
 
 function restServeSubagents(res: http.ServerResponse): void {
@@ -1527,13 +1585,15 @@ function restServeSubagents(res: http.ServerResponse): void {
     const agentId = String(row.id ?? "");
     if (!agentId) continue;
     const rowStatus = String(row.status ?? "complete");
-    const status: "in_progress" | "complete" | "stale" =
-      rowStatus === "in_progress" ? "in_progress" : rowStatus === "stale" ? "stale" : "complete";
+    // Accept both 'running' (new) and 'in_progress' (legacy) as active
+    const status: "running" | "complete" | "stale" =
+      (rowStatus === "running" || rowStatus === "in_progress") ? "running" : rowStatus === "stale" ? "stale" : "complete";
     const startedAt = row.started_at ? new Date(Number(row.started_at) * 1000).toISOString() : null;
     const completedAt = row.completed_at ? new Date(Number(row.completed_at) * 1000).toISOString() : null;
     const lastModified = completedAt ?? startedAt ?? new Date().toISOString();
     const inputTokens = typeof row.input_tokens === "number" ? row.input_tokens : 0;
     const outputTokens = typeof row.output_tokens === "number" ? row.output_tokens : 0;
+    const cacheReadTokens = typeof row.cache_read_tokens === "number" ? row.cache_read_tokens : 0;
     result.push({
       id: agentId,
       name: String(row.description ?? row.task_id ?? agentId.slice(0, 12)),
@@ -1541,17 +1601,20 @@ function restServeSubagents(res: http.ServerResponse): void {
       tokens: inputTokens + outputTokens,
       inputTokens,
       outputTokens,
+      cacheReadTokens,
       cost: typeof row.cost_usd === "number" ? row.cost_usd : 0,
-      toolUses: 0,
+      toolUses: typeof row.tool_calls_count === "number" ? row.tool_calls_count : 0,
       outputPath: String(row.output_file ?? ""),
       startedAt,
       lastModified,
+      traceId: typeof row.trace_id === "string" ? row.trace_id : null,
+      exitReason: typeof row.exit_reason === "string" ? row.exit_reason : null,
     });
   }
 
   result.sort((a, b) => {
-    const aActive = a.status === 'in_progress' ? 0 : 1;
-    const bActive = b.status === 'in_progress' ? 0 : 1;
+    const aActive = a.status === 'running' ? 0 : 1;
+    const bActive = b.status === 'running' ? 0 : 1;
     if (aActive !== bActive) return aActive - bActive;
     // stale agents sink to bottom within the done group
     const aStale = a.status === 'stale' ? 1 : 0;
