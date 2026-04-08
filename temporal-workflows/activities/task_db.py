@@ -206,6 +206,9 @@ async def finalize_task(input: AgentTaskInput, result: dict) -> None:
                 blob["output_tokens"] = token_data["output_tokens"]
                 blob["cache_read_tokens"] = token_data["cache_read_tokens"]
                 blob["cost_usd"] = token_data["cost_usd"]
+                blob["response"] = result.get("response", "")
+                blob["tool_calls_made"] = result.get("tool_calls_made", 0)
+                blob["model"] = result.get("model", blob.get("model", ""))
                 if isinstance(blob.get("log"), list):
                     blob["log"].append({"ts": now, "event": status, "context": context or "agent finished"})
                 updated_data = json.dumps(blob)
