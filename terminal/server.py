@@ -14,6 +14,7 @@ import os
 import pty
 import re
 import secrets
+import signal
 import struct
 import subprocess
 import termios
@@ -883,7 +884,6 @@ HTML = r"""<!DOCTYPE html>
     const statusEl = document.getElementById('status');
     let activeWs = null;
 
-    fitAddon.fit();
     // Forward terminal resize events to the PTY
     term.onResize(({ cols, rows }) => {
       if (activeWs && activeWs.readyState === WebSocket.OPEN) {
@@ -932,7 +932,21 @@ HTML = r"""<!DOCTYPE html>
         statusEl.textContent = 'live';
         statusEl.className = 'connected';
         bindInput(ws);
-        sendResize(ws);
+        // Fit after DOM is fully laid out (critical on mobile where dimensions
+        // may not be correct at DOMContentLoaded). fitAddon.fit() triggers
+        // term.onResize which fires sendResize via the handler above, but we
+        // also call sendResize explicitly as a fallback in case dimensions
+        // didn't change from xterm's default.
+        requestAnimationFrame(() => {
+          fitAddon.fit();
+          sendResize(ws);
+          // Second pass: mobile browsers sometimes need an extra tick for
+          // viewport to settle (address bar hide/show, safe area insets, etc.)
+          setTimeout(() => {
+            fitAddon.fit();
+            sendResize(ws);
+          }, 150);
+        });
       };
       ws.onmessage = (e) => {
         const atBottom = term.buffer.active.viewportY >= term.buffer.active.baseY;
@@ -1702,6 +1716,11 @@ async def websocket_handler(request):
                             cols = int(obj.get('cols', 80))
                             rows = int(obj.get('rows', 24))
                             _set_pty_size(master_fd, cols, rows)
+                            # Signal screen to repaint at new dimensions
+                            try:
+                                os.kill(proc.pid, signal.SIGWINCH)
+                            except ProcessLookupError:
+                                pass
                     except (json.JSONDecodeError, ValueError, KeyError):
                         pass
                 else:
