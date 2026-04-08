@@ -324,6 +324,14 @@ async def run_xai_agent(
                         "content": tool_result,
                     })
 
+                # Trim context if messages list is getting large
+                if len(messages) > 30:
+                    old_len = len(messages)
+                    messages = [messages[0]] + messages[-24:]
+                    activity.logger.warning(
+                        "context trimmed: %d → %d messages", old_len, len(messages)
+                    )
+
                 # Continue loop — let model see tool results
                 continue
 
