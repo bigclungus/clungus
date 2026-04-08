@@ -44,8 +44,8 @@ def _load_audit_state() -> datetime:
             ts_str = data.get("last_audit_at", "")
             if ts_str:
                 return datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("[audit] failed to parse audit state file: %s", e)
     # Default: start of today UTC
     now = datetime.now(timezone.utc)
     return now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -69,15 +69,15 @@ def _summarise_session(session: dict) -> dict:
     if isinstance(evolution, str):
         try:
             evolution = json.loads(evolution)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("[audit] failed to parse evolution JSON in session %s: %s", session.get("session_id"), e)
 
     vote_summary = session.get("vote_summary")
     if isinstance(vote_summary, str):
         try:
             vote_summary = json.loads(vote_summary)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("[audit] failed to parse vote_summary JSON in session %s: %s", session.get("session_id"), e)
 
     debaters = [
         r.get("identity", "unknown")

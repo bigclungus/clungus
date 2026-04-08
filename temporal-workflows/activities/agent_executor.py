@@ -304,7 +304,8 @@ async def run_xai_agent(
 
                     try:
                         tc_args = json.loads(tc_args_raw)
-                    except json.JSONDecodeError:
+                    except json.JSONDecodeError as e:
+                        activity.logger.warning("[agent_executor] bad tool args JSON for %s: %s — %s", tc_name, tc_args_raw[:100], e)
                         tc_args = {}
 
                     activity.heartbeat({
