@@ -1283,7 +1283,7 @@ function restServeTaskStats(res: http.ServerResponse): void {
     const db = new Database(TASKS_DB_REST, { readonly: true });
     try {
       // Aggregate totals across ALL tasks
-      const rows = db.query<{ data: string }, []>("SELECT data FROM tasks").all();
+      const rows = db.query<{ status: string | null; data: string }, []>("SELECT status, data FROM tasks").all();
 
       let total_cost_usd = 0;
       let total_input_tokens = 0;
@@ -1295,6 +1295,8 @@ function restServeTaskStats(res: http.ServerResponse): void {
       for (const row of rows) {
         let task: Record<string, unknown>;
         try { task = JSON.parse(row.data) as Record<string, unknown>; } catch { continue; }
+        // Column status is authoritative — override stale blob value
+        if (row.status) task.status = row.status;
 
         const status = String(task.status ?? "stale");
         task_counts[status] = (task_counts[status] ?? 0) + 1;
