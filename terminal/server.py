@@ -1630,6 +1630,8 @@ async def websocket_handler(request):
     # Using os.openpty() so we retain the master fd for both read and resize.
     master_fd, slave_fd = os.openpty()
     try:
+        env = os.environ.copy()
+        env["TERM"] = "xterm-256color"
         proc = subprocess.Popen(
             ['screen', '-x', SCREEN_SESSION],
             stdin=slave_fd,
@@ -1637,6 +1639,7 @@ async def websocket_handler(request):
             stderr=slave_fd,
             close_fds=True,
             preexec_fn=os.setsid,
+            env=env,
         )
     except Exception as exc:
         os.close(master_fd)
