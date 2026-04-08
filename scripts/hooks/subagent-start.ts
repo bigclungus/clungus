@@ -103,7 +103,7 @@ await Bun.write(`${STATE_DIR}/${agentId}.json`, JSON.stringify({ task_id: taskId
 
 if (useTemporalPath) {
   // ── Temporal path ──────────────────────────────────────────────────────────
-  const workflowId = `agent-task-${taskId}`;
+  const workflowId = `agent-task-${agentId}`;
   const temporalInput = {
     task_id: taskId,
     prompt: title,

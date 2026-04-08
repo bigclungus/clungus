@@ -106,7 +106,7 @@ try { unlinkSync(agentStateFile); } catch { /* non-fatal */ }
 
 if (useTemporalPath) {
   // ── Temporal path ──────────────────────────────────────────────────────────
-  const workflowId = `agent-task-${taskId}`;
+  const workflowId = `agent-task-${agentId}`;
   const metadataPayload = {
     completed_at: timestamp,
     last_message_preview: context.slice(0, 200),
