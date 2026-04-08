@@ -25,8 +25,6 @@ _PRICING: dict[str, tuple[float, float]] = {
     "grok-4.20-0309-reasoning": (3.00, 15.00),
     "grok-3-mini": (0.30, 0.50),
     "grok-3": (3.00, 15.00),
-    "grok-2": (2.00, 10.00),
-    "grok-beta": (5.00, 15.00),
 }
 
 # Allowlisted bash commands (first token of command)
