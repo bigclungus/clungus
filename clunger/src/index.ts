@@ -695,6 +695,116 @@ async function restInvokePersona(req: http.IncomingMessage, res: http.ServerResp
   }
 }
 
+// ── agents.db write helpers ────────────────────────────────────────────────────
+
+/** Ensure agents table has all expected columns (adds description if missing). */
+function ensureAgentsSchema(db: Database): void {
+  db.run(`
+    CREATE TABLE IF NOT EXISTS agents (
+      id              TEXT PRIMARY KEY,
+      task_id         TEXT,
+      session_id      TEXT,
+      started_at      INTEGER,
+      completed_at    INTEGER,
+      status          TEXT DEFAULT 'in_progress',
+      input_tokens    INTEGER DEFAULT 0,
+      output_tokens   INTEGER DEFAULT 0,
+      cost_usd        REAL DEFAULT 0.0,
+      model           TEXT,
+      output_file     TEXT,
+      description     TEXT
+    )
+  `);
+  // Add description column if DB existed before it was added
+  try {
+    db.run("ALTER TABLE agents ADD COLUMN description TEXT");
+  } catch {
+    // column already exists — ignore
+  }
+}
+
+/** Handle POST /api/agents/spawn — insert or replace a new agent row. Internal only. */
+async function restHandleAgentSpawn(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  let body: Record<string, unknown>;
+  try {
+    const raw = await readBody(req);
+    body = JSON.parse(raw.toString()) as Record<string, unknown>;
+  } catch {
+    res.writeHead(400, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "invalid JSON body" }));
+    return;
+  }
+  const id = typeof body.id === "string" ? body.id : null;
+  const description = typeof body.description === "string" ? body.description : null;
+  const output_file = typeof body.output_file === "string" ? body.output_file : null;
+  const task_id = typeof body.task_id === "string" ? body.task_id : null;
+  if (!id) {
+    res.writeHead(400, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "id required" }));
+    return;
+  }
+  try {
+    const db = new Database(AGENTS_DB_REST);
+    db.run("PRAGMA journal_mode=WAL");
+    ensureAgentsSchema(db);
+    const started_at = Math.floor(Date.now() / 1000);
+    db.run(
+      "INSERT OR REPLACE INTO agents (id, description, started_at, status, output_file, task_id) VALUES (?, ?, ?, 'in_progress', ?, ?)",
+      [id, description, started_at, output_file, task_id]
+    );
+    db.close();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ ok: true }));
+  } catch (err) {
+    console.error("[agents] spawn write failed:", err);
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: String(err) }));
+  }
+}
+
+/** Handle POST /api/agents/complete — mark an agent completed/failed/stale. Internal only. */
+async function restHandleAgentComplete(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  let body: Record<string, unknown>;
+  try {
+    const raw = await readBody(req);
+    body = JSON.parse(raw.toString()) as Record<string, unknown>;
+  } catch {
+    res.writeHead(400, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "invalid JSON body" }));
+    return;
+  }
+  const id = typeof body.id === "string" ? body.id : null;
+  const status = typeof body.status === "string" ? body.status : "completed";
+  if (!id) {
+    res.writeHead(400, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "id required" }));
+    return;
+  }
+  const validStatuses = ["completed", "failed", "stale"];
+  if (!validStatuses.includes(status)) {
+    res.writeHead(400, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: `status must be one of: ${validStatuses.join(", ")}` }));
+    return;
+  }
+  try {
+    const db = new Database(AGENTS_DB_REST);
+    db.run("PRAGMA journal_mode=WAL");
+    ensureAgentsSchema(db);
+    const completed_at = Math.floor(Date.now() / 1000);
+    db.run(
+      "UPDATE agents SET status=?, completed_at=? WHERE id=?",
+      [status, completed_at, id]
+    );
+    db.close();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ ok: true }));
+  } catch (err) {
+    console.error("[agents] complete write failed:", err);
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: String(err) }));
+  }
+}
+
 // ── agents.db helpers ─────────────────────────────────────────────────────────
 
 /** Load per-task cost totals from agents.db. Returns empty map if DB unavailable. */
@@ -3159,6 +3269,18 @@ const server = http.createServer(async (req, res) => {
     if (pathname === "/api/subagents/stream" && req.method === "GET") {
       const outputPath = url.searchParams.get("path") ?? "";
       await restStreamSubagent(req, res, outputPath);
+      return;
+    }
+
+    // POST /api/agents/spawn — internal; no auth (localhost only)
+    if (pathname === "/api/agents/spawn" && req.method === "POST") {
+      await restHandleAgentSpawn(req, res);
+      return;
+    }
+
+    // POST /api/agents/complete — internal; no auth (localhost only)
+    if (pathname === "/api/agents/complete" && req.method === "POST") {
+      await restHandleAgentComplete(req, res);
       return;
     }
 

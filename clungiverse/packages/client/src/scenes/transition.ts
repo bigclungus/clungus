@@ -35,6 +35,7 @@ const RARITY_COLORS: Record<string, { bg: string; border: string; label: string 
   common: { bg: '#222222', border: '#777777', label: '#aaaaaa' },
   uncommon: { bg: '#1a2e1a', border: '#44aa44', label: '#44aa44' },
   rare: { bg: '#1a1a3e', border: '#4488ff', label: '#4488ff' },
+  cursed: { bg: '#2a0808', border: '#cc2222', label: '#ff4444' },
 };
 
 function renderPowerupCard(
@@ -44,22 +45,39 @@ function renderPowerupCard(
   cy: number,
   isPicked: boolean,
 ): void {
+  const isCursed = choice.rarity === 'cursed';
   const rarity = RARITY_COLORS[choice.rarity] ?? RARITY_COLORS.common;
 
   ctx.fillStyle = isPicked ? '#111111' : rarity.bg;
   ctx.fillRect(cx, cy, CARD_W, CARD_H);
 
+  // Cursed card: pulsing red glow border using a double-stroke trick
+  if (isCursed && !isPicked) {
+    ctx.strokeStyle = 'rgba(200,0,0,0.25)';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(cx - 2, cy - 2, CARD_W + 4, CARD_H + 4);
+  }
+
   ctx.strokeStyle = rarity.border;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = isCursed ? 2.5 : 2;
   ctx.strokeRect(cx, cy, CARD_W, CARD_H);
 
-  ctx.fillStyle = rarity.label;
-  ctx.font = '9px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText(choice.rarity.toUpperCase(), cx + CARD_W / 2, cy + 18);
+  // Cursed label row: skull icon + "CURSED"
+  if (isCursed) {
+    ctx.fillStyle = rarity.label;
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('☠ CURSED ☠', cx + CARD_W / 2, cy + 18);
+  } else {
+    ctx.fillStyle = rarity.label;
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(choice.rarity.toUpperCase(), cx + CARD_W / 2, cy + 18);
+  }
 
-  ctx.fillStyle = '#eeeeee';
+  ctx.fillStyle = isCursed ? '#ffaaaa' : '#eeeeee';
   ctx.font = 'bold 13px monospace';
+  ctx.textAlign = 'center';
   ctx.fillText(choice.name, cx + CARD_W / 2, cy + 45);
 
   ctx.fillStyle = '#aaaaaa';
@@ -74,6 +92,16 @@ function renderPowerupCard(
     ctx.fillStyle = value > 0 ? '#44aa44' : '#aa4444';
     ctx.fillText(`${stat.toUpperCase()} ${sign}${String(value)}`, cx + CARD_W / 2, my);
     my += 14;
+  }
+
+  // Cursed drawback: shown in red below stat mods
+  if (isCursed && (choice as PowerupChoice & { curseDescription?: string }).curseDescription) {
+    my += 4;
+    ctx.fillStyle = '#ff4444';
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    const curseDesc = (choice as PowerupChoice & { curseDescription?: string }).curseDescription ?? '';
+    wrapText(ctx, `⚠ ${curseDesc}`, cx + CARD_W / 2, my, CARD_W - 16, 11);
   }
 
   if (!isPicked) {
@@ -152,11 +180,16 @@ export function createTransitionScene(network: DungeonNetwork): TransitionScene 
       ctx.textAlign = 'center';
       ctx.fillText('CHOOSE YOUR POWERUP', w / 2, 50);
 
+      // Hint about cursed option
+      ctx.fillStyle = '#883333';
+      ctx.font = '10px monospace';
+      ctx.fillText('☠  4th option is cursed — great power, dark cost', w / 2, 68);
+
       // Timer
       const timerSec = Math.ceil(state.powerupTimer / 1000);
       ctx.fillStyle = timerSec <= 5 ? '#ff4444' : '#aaaaaa';
       ctx.font = '16px monospace';
-      ctx.fillText(`${String(timerSec)}s`, w / 2, 75);
+      ctx.fillText(`${String(timerSec)}s`, w / 2, 88);
 
       // Cards
       const choices = state.powerupChoices;

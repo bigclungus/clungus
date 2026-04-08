@@ -25,7 +25,7 @@ export type RoomShape = "rect" | "L" | "circle" | "cross" | "cave";
 
 // ─── Rarity type ────────────────────────────────────────────────────────────
 
-export type Rarity = "common" | "uncommon" | "rare";
+export type Rarity = "common" | "uncommon" | "rare" | "cursed";
 
 // ─── Facing type ────────────────────────────────────────────────────────────
 
@@ -258,6 +258,10 @@ export interface PowerupChoiceSnapshot {
   description: string;
   rarity: Rarity;
   statModifier: Record<string, number>;
+  /** Cursed items have better stats but apply a painful side effect. */
+  cursed?: boolean;
+  /** Human-readable description of the curse drawback. */
+  curseDescription?: string;
 }
 
 export interface PlayerResultSnapshot {

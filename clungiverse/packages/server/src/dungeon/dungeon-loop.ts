@@ -321,11 +321,24 @@ function spawnEnemiesFromLayout(
     spitter: "ranged_pattern",
     brute: "slow_charge",
   };
+
+  // Aggregate cursed modifiers across all players: enemyHpMult and enemyAtkMult
+  let totalEnemyHpMult = 0;
+  let totalEnemyAtkMult = 0;
+  for (const [, p] of instance.players) {
+    totalEnemyHpMult += p.cursedEffects?.enemyHpMult ?? 0;
+    totalEnemyAtkMult += p.cursedEffects?.enemyAtkMult ?? 0;
+  }
+  const enemyHpScale = 1 + totalEnemyHpMult;
+  const enemyAtkScale = 1 + totalEnemyAtkMult;
+
   let enemyCounter = 0;
   for (const spawn of genLayout.enemySpawns) {
     const variant = variants.find((v) => v.id === spawn.variantId);
     if (!variant) continue;
     const enemyId = `e-${instance.id}-${String(enemyCounter++)}`;
+    const baseHp = Math.floor(variant.hp * template.enemy_scaling * enemyHpScale);
+    const baseAtk = Math.floor(variant.atk * template.enemy_scaling * enemyAtkScale);
     const enemy: EnemyInstance = {
       id: enemyId,
       variantId: variant.id,
@@ -333,9 +346,9 @@ function spawnEnemiesFromLayout(
       behavior: behaviorMap[variant.behavior] ?? "melee_chase",
       x: spawn.x * TILE_SIZE + TILE_SIZE / 2,
       y: spawn.y * TILE_SIZE + TILE_SIZE / 2,
-      hp: Math.floor(variant.hp * template.enemy_scaling),
-      maxHp: Math.floor(variant.hp * template.enemy_scaling),
-      atk: Math.floor(variant.atk * template.enemy_scaling),
+      hp: baseHp,
+      maxHp: baseHp,
+      atk: baseAtk,
       def: variant.def,
       spd: variant.spd,
       isBoss: false,
@@ -417,9 +430,13 @@ function initPlayerStats(instance: DungeonInstance, floorNum: number): void {
     const base = PERSONA_STATS[player.personaSlug] ?? PERSONA_STATS.holden;
     const effective = calculateEffectiveStats(base, []);
     player.maxHp = effective.maxHP;
-    player.hp = wasSpectating
+
+    // halfHpOnFloor curse: start each floor at 50% max HP
+    const halfHpCurse = (player.cursedEffects?.halfHpOnFloor ?? 0) > 0;
+    player.hp = (wasSpectating || halfHpCurse)
       ? Math.max(1, Math.floor(effective.maxHP / 2))
       : effective.maxHP;
+
     player.atk = effective.ATK;
     player.def = effective.DEF;
     player.spd = effective.SPD;
@@ -432,6 +449,9 @@ function initPlayerStats(instance: DungeonInstance, floorNum: number): void {
     player.activeTempPowerups = [];
     if (wasSpectating) {
       console.log(`[dungeon-loop] Reviving spectating player ${player.name} with ${String(player.hp)}/${String(player.maxHp)} HP on floor ${String(floorNum)}`);
+    }
+    if (halfHpCurse && !wasSpectating) {
+      console.log(`[dungeon-loop] Player ${player.name} starts floor ${String(floorNum)} at half HP (Iron Hubris curse)`);
     }
   }
 }
@@ -747,7 +767,9 @@ function applyEnemyAttackAction(
       const dy = enemy.y - p.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist <= (combatEnemy.radius + PLAYER_RADIUS + 2) && p.iframeTicks <= 0) {
-        const damage = Math.max(1, enemy.atk - Math.floor(p.def * 0.5));
+        const rawDamage = Math.max(1, enemy.atk - Math.floor(p.def * 0.5));
+        const damageMult = 1 + (p.cursedEffects?.damageTakenMult ?? 0);
+        const damage = Math.max(1, Math.floor(rawDamage * damageMult));
         p.hp -= damage;
         p.iframeTicks = 8;
         p.damageTaken += damage;
@@ -1002,7 +1024,9 @@ function tickEnemyProjectile(
   for (const p of alivePlayers) {
     if (p.iframeTicks > 0) continue;
     if (!circleVsCircle(proj.x, proj.y, proj.radius, p.x, p.y, PLAYER_RADIUS)) continue;
-    const damage = Math.max(1, proj.damage - Math.floor(p.def * 0.5));
+    const rawProjDamage = Math.max(1, proj.damage - Math.floor(p.def * 0.5));
+    const projDamageMult = 1 + (p.cursedEffects?.damageTakenMult ?? 0);
+    const damage = Math.max(1, Math.floor(rawProjDamage * projDamageMult));
     p.hp -= damage;
     p.iframeTicks = 8;
     p.damageTaken += damage;
@@ -1185,7 +1209,10 @@ function applyPowerEffects(
   tick: number,
   events: TickEvent[],
 ): void {
-  player.cooldownTicks = Math.max(0, pe.powerCooldownUntilTick - tick);
+  // Apply power cooldown curse: double the cooldown if player has powerCooldownMult > 0
+  const baseCooldownTicks = Math.max(0, pe.powerCooldownUntilTick - tick);
+  const cooldownCurseMult = 1 + (player.cursedEffects?.powerCooldownMult ?? 0);
+  player.cooldownTicks = Math.round(baseCooldownTicks * cooldownCurseMult);
   player.scramblingTicks = Math.max(0, pe.scramblingUntilTick - tick);
   events.push({ type: "power_activate", payload: { playerId: pid, power: powerResult.powerName, affected: powerResult.affected } });
   syncPowerKills(instance, pid, player, powerResult.affected, targets, events);
@@ -1444,8 +1471,12 @@ function tickInstance(instance: DungeonInstance): void {
 // ─── Powerup transition ─────────────────────────────────────────────────────
 
 function startPowerupTransition(instance: DungeonInstance, eph: InstanceEphemeral): void {
-  // Generate 3 choices from registry
-  const choices = lootRegistry.generateChoices(3, instance.floor);
+  // Generate 3 normal choices + 1 cursed choice from registry
+  const normalChoices = lootRegistry.generateChoices(3, instance.floor);
+  const cursedChoice = lootRegistry.generateCursedChoice();
+  const choices: LootItem[] = cursedChoice
+    ? [...normalChoices, cursedChoice]
+    : normalChoices;
   eph.transitionChoices = choices;
   eph.transitionPicks = new Map();
 
@@ -1459,6 +1490,8 @@ function startPowerupTransition(instance: DungeonInstance, eph: InstanceEphemera
       description: c.description,
       rarity: c.rarity,
       statModifier: c.statModifier,
+      cursed: c.cursed ?? false,
+      curseDescription: c.curseDescription,
     })),
   };
   broadcastToInstance(instance, choicesMsg);
@@ -1530,7 +1563,17 @@ function applyPickedLoot(
   if (mods.def) player.def = Math.max(0, player.def + mods.def);
   if (mods.spd) player.spd = Math.max(0.5, player.spd + mods.spd);
   if (mods.lck) player.lck = Math.max(0, player.lck + mods.lck);
-  console.log(`[dungeon-loop] Player ${player.name} picked ${lootItem.name} (${lootItem.rarity})`);
+
+  // Apply curse side effects (additive stacking on player's cursedEffects bag)
+  if (lootItem.cursed && lootItem.curseEffect) {
+    if (!player.cursedEffects) player.cursedEffects = {};
+    for (const [key, value] of Object.entries(lootItem.curseEffect)) {
+      player.cursedEffects[key] = (player.cursedEffects[key] ?? 0) + value;
+    }
+    console.log(`[dungeon-loop] Player ${player.name} picked CURSED ${lootItem.name} — curse: ${lootItem.curseDescription ?? "unknown"}`);
+  } else {
+    console.log(`[dungeon-loop] Player ${player.name} picked ${lootItem.name} (${lootItem.rarity})`);
+  }
 }
 
 function finalizePowerupTransition(instance: DungeonInstance): void {

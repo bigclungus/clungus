@@ -64,6 +64,12 @@ echo "$UPDATED" > "$TASK_FILE"
 # Clean up agent state file
 rm -f "$AGENT_STATE_FILE"
 
+# Mark agent completed in agents.db via clunger HTTP endpoint
+curl -sf -X POST http://localhost:8081/api/agents/complete \
+  -H "Content-Type: application/json" \
+  -d "{\"id\": \"$AGENT_ID\", \"status\": \"completed\"}" \
+  || true  # non-fatal
+
 # Async background git commit+push (zero blocking)
 (cd /home/clungus/work/bigclungus-meta && git add tasks/ && git commit -m "task: done $TASK_ID" && git push) &
 

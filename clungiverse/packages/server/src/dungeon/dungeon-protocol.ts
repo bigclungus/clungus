@@ -97,6 +97,12 @@ export interface DungeonPlayer {
   connected: boolean;
   disconnectedAt: number | null;
   lastProcessedSeq: number;
+  /**
+   * Accumulated curse modifiers from picked cursed loot items.
+   * Keys: "enemyHpMult", "powerCooldownMult", "damageTakenMult", "halfHpOnFloor", "enemyAtkMult"
+   * Values: additive stacking floats (e.g. enemyHpMult: 0.8 = enemies have +80% HP).
+   */
+  cursedEffects: Record<string, number>;
 }
 
 export interface EnemyInstance {

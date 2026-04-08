@@ -111,6 +111,7 @@ export function createLobby(hostId: string, hostName: string): DungeonInstance {
     connected: true,
     disconnectedAt: null,
     lastProcessedSeq: 0,
+    cursedEffects: {},
   };
 
   instance.players.set(hostId, hostPlayer);
@@ -160,6 +161,7 @@ export function joinLobby(
     connected: true,
     disconnectedAt: null,
     lastProcessedSeq: 0,
+    cursedEffects: {},
   };
 
   instance.players.set(playerId, player);

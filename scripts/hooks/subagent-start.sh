@@ -105,6 +105,19 @@ jq -n \
   '{task_id: $task_id, agent_id: $agent_id, session_id: $session_id}' \
   > "$STATE_DIR/${AGENT_ID}.json"
 
+# Write spawn record to agents.db via clunger HTTP endpoint
+OUTPUT_FILE="/tmp/claude-1001/-mnt-data/${SESSION_ID}/tasks/${AGENT_ID}.output"
+SPAWN_PAYLOAD=$(jq -cn \
+  --arg id "$AGENT_ID" \
+  --arg description "$TITLE" \
+  --arg output_file "$OUTPUT_FILE" \
+  --arg task_id "$TASK_ID" \
+  '{id: $id, description: $description, output_file: $output_file, task_id: $task_id}')
+curl -sf -X POST http://localhost:8081/api/agents/spawn \
+  -H "Content-Type: application/json" \
+  -d "$SPAWN_PAYLOAD" \
+  || true  # non-fatal
+
 # Async background git commit+push (zero blocking)
 (cd /home/clungus/work/bigclungus-meta && git add tasks/ && git commit -m "task: start $TASK_ID" && git push) &
 
