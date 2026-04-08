@@ -1117,6 +1117,14 @@ HTML = r"""<!DOCTYPE html>
       // Filter out hook_* and very short IDs with no data
       const interesting = agents.filter(a => !a.id.startsWith('hook_') && (a.tokens > 0 || a.status === 'in_progress'));
 
+      // Sort: in_progress first, then complete/failed by lastModified descending
+      interesting.sort((a, b) => {
+        const aActive = a.status === 'in_progress' ? 0 : 1;
+        const bActive = b.status === 'in_progress' ? 0 : 1;
+        if (aActive !== bActive) return aActive - bActive;
+        return (b.lastModified || 0) - (a.lastModified || 0);
+      });
+
       // Update cost total
       const totalCost = interesting.reduce((s, a) => s + (a.cost || 0), 0);
       const totalEl = document.getElementById('agents-token-total');
@@ -1147,7 +1155,7 @@ HTML = r"""<!DOCTYPE html>
           // Create new card
           const { card, outputEl } = makeCard(agent);
           agentCards.set(agent.id, { card, outputEl, lines: [] });
-          list.insertBefore(card, list.firstChild);
+          list.appendChild(card);
           startStream(agent.id, agent.outputPath, outputEl);
         }
       }
@@ -1160,6 +1168,12 @@ HTML = r"""<!DOCTYPE html>
           const sse = agentStreams.get(id);
           if (sse) { sse.close(); agentStreams.delete(id); }
         }
+      }
+
+      // Re-order DOM to match sorted order
+      for (const agent of interesting) {
+        const state = agentCards.get(agent.id);
+        if (state) list.appendChild(state.card);
       }
     }
 
