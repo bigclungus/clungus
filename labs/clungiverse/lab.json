@@ -1,0 +1,7 @@
+{
+  "name": "clungiverse",
+  "title": "Clungiverse",
+  "description": "2D canvas game world",
+  "port": 8104,
+  "status": "active"
+}

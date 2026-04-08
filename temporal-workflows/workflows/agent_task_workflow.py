@@ -79,17 +79,16 @@ class AgentTaskWorkflow:
     # ------------------------------------------------------------------
 
     async def _run_xai(self, input: AgentTaskInput) -> None:
-        api_key = input.api_key
-        if not api_key:
-            raise ValueError(f"api_key is required for xAI tasks (task_id={input.task_id})")
+        # api_key may be empty — the activity will read from secrets file
+        api_key = input.api_key or ""
 
         try:
             result = await workflow.execute_activity(
                 run_xai_agent,
                 args=[input.prompt, input.model, api_key, input.task_id],
-                start_to_close_timeout=timedelta(minutes=5),
-                heartbeat_timeout=timedelta(seconds=60),
-                retry_policy=RetryPolicy(maximum_attempts=2),
+                start_to_close_timeout=timedelta(minutes=30),
+                heartbeat_timeout=timedelta(seconds=90),
+                retry_policy=RetryPolicy(maximum_attempts=1),
             )
             self._result = result
             self._status = "completed"
