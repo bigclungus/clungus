@@ -10,6 +10,7 @@
  */
 
 import { existsSync, readFileSync, unlinkSync } from "fs";
+import { execSync } from "child_process";
 
 const STATE_DIR = "/tmp/bc-agents";
 
@@ -72,7 +73,6 @@ const signalPayload: Record<string, unknown> = {
 };
 
 try {
-  const { execSync } = require("child_process");
   execSync(
     `/home/clungus/.local/bin/temporal workflow signal \
 --namespace tasks \
