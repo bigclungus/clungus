@@ -2,6 +2,44 @@
 """Launch Claude CLI, auto-dismiss dev-channel prompt, transparent pty proxy."""
 import pty, os, sys, time, select, struct, fcntl, termios, signal
 
+AGENTS_DB = "/mnt/data/data/agents.db"
+
+def _record_agent_spawn(session_id: str) -> None:
+    """Insert a row into agents.db for this session. Non-fatal on any error."""
+    try:
+        import sqlite3
+        conn = sqlite3.connect(AGENTS_DB)
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS agents (
+                id              TEXT PRIMARY KEY,
+                task_id         TEXT,
+                session_id      TEXT,
+                started_at      INTEGER,
+                completed_at    INTEGER,
+                status          TEXT DEFAULT 'in_progress',
+                input_tokens    INTEGER DEFAULT 0,
+                output_tokens   INTEGER DEFAULT 0,
+                cost_usd        REAL DEFAULT 0.0,
+                model           TEXT,
+                output_file     TEXT
+            )
+            """
+        )
+        started_at = int(time.time())
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO agents (id, started_at, status)
+            VALUES (?, ?, 'in_progress')
+            """,
+            (session_id, started_at),
+        )
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"[launch-claude] Warning: could not record spawn in agents.db: {e}", file=sys.stderr)
+
 cmd = "/home/clungus/.local/bin/claude"
 #cmd = "/home/clungus/.local/share/claude/versions/2.1.87"
 args = [
@@ -15,6 +53,15 @@ args = [
     "--model", "sonnet",
     "--resume", "38879609-c8bd-47f5-af26-6210d2de543c"
 ]
+
+# Extract session ID from --resume arg (the value after "--resume")
+_session_id = None
+for _i, _a in enumerate(args):
+    if _a == "--resume" and _i + 1 < len(args):
+        _session_id = args[_i + 1]
+        break
+if _session_id:
+    _record_agent_spawn(_session_id)
 
 pid, fd = pty.fork()
 

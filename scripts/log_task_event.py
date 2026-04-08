@@ -6,10 +6,126 @@ Usage: python3 log_task_event.py <task_id_or_file> <event_type> <message>
 event_type: started | milestone | user_feedback | blocked | done | failed
 task_id_or_file: either a task ID like "task-20260324-..." or a full path
 """
-import sys, json, os, re
+import sys, json, os, re, time
 from datetime import datetime, timezone
 from pathlib import Path
 import glob as _glob
+
+AGENTS_DB = "/mnt/data/data/agents.db"
+
+# Cost per token (USD) — Sonnet pricing
+_INPUT_COST_PER_TOKEN = 0.000003
+_OUTPUT_COST_PER_TOKEN = 0.000015
+
+
+def _parse_output_file_usage(output_file: str) -> tuple[int, int, float, str | None]:
+    """
+    Read a Claude agent JSONL output file and sum all usage entries.
+    Returns (input_tokens, output_tokens, cost_usd, model).
+    Non-fatal: returns zeros on any error.
+    """
+    try:
+        input_tokens = 0
+        output_tokens = 0
+        model = None
+        with open(output_file) as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    obj = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                msg = obj.get("message", {})
+                if not isinstance(msg, dict):
+                    continue
+                usage = msg.get("usage")
+                if not isinstance(usage, dict):
+                    continue
+                input_tokens += usage.get("input_tokens", 0)
+                input_tokens += usage.get("cache_creation_input_tokens", 0)
+                input_tokens += usage.get("cache_read_input_tokens", 0)
+                output_tokens += usage.get("output_tokens", 0)
+                if model is None and msg.get("model"):
+                    model = msg["model"]
+        cost_usd = (input_tokens * _INPUT_COST_PER_TOKEN) + (output_tokens * _OUTPUT_COST_PER_TOKEN)
+        return input_tokens, output_tokens, cost_usd, model
+    except Exception:
+        return 0, 0, 0.0, None
+
+
+def _update_agent_completion(task_id: str, event_type: str) -> None:
+    """
+    When a task is marked done/failed, find matching agent rows in agents.db
+    and update their completion data from the output file.
+    Non-fatal on any error.
+    """
+    try:
+        import sqlite3
+        if not os.path.exists(AGENTS_DB):
+            return
+        conn = sqlite3.connect(AGENTS_DB)
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.row_factory = sqlite3.Row
+
+        # Ensure table exists defensively
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS agents (
+                id              TEXT PRIMARY KEY,
+                task_id         TEXT,
+                session_id      TEXT,
+                started_at      INTEGER,
+                completed_at    INTEGER,
+                status          TEXT DEFAULT 'in_progress',
+                input_tokens    INTEGER DEFAULT 0,
+                output_tokens   INTEGER DEFAULT 0,
+                cost_usd        REAL DEFAULT 0.0,
+                model           TEXT,
+                output_file     TEXT
+            )
+            """
+        )
+
+        rows = conn.execute(
+            "SELECT id, output_file FROM agents WHERE task_id = ? AND status = 'in_progress'",
+            (task_id,),
+        ).fetchall()
+
+        if not rows:
+            conn.close()
+            return
+
+        completed_at = int(time.time())
+        status = event_type  # "done" or "failed"
+
+        for row in rows:
+            agent_id = row["id"]
+            output_file = row["output_file"]
+
+            input_tokens, output_tokens, cost_usd, model = 0, 0, 0.0, None
+            if output_file and os.path.exists(output_file):
+                input_tokens, output_tokens, cost_usd, model = _parse_output_file_usage(output_file)
+
+            conn.execute(
+                """
+                UPDATE agents
+                SET completed_at = ?,
+                    status       = ?,
+                    input_tokens = ?,
+                    output_tokens = ?,
+                    cost_usd     = ?,
+                    model        = COALESCE(model, ?)
+                WHERE id = ?
+                """,
+                (completed_at, status, input_tokens, output_tokens, cost_usd, model, agent_id),
+            )
+
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Warning: agents.db update failed for task {task_id}: {e}", file=sys.stderr)
 
 # Patterns that suggest a credential is being logged
 _CRED_PATTERNS = [
@@ -131,6 +247,10 @@ def main():
     # Write to SQLite (secondary store during transition)
     task_id = data.get("id", os.path.splitext(os.path.basename(path))[0])
     _write_to_sqlite(task_id, data, event_type, message, ts)
+
+    # Update agents.db completion data for done/failed events
+    if event_type in ("done", "failed"):
+        _update_agent_completion(task_id, event_type)
 
     print(f"Logged [{event_type}] to {os.path.basename(path)}: {message}")
 
