@@ -16,7 +16,7 @@ set -euo pipefail
 
 INJECT_URL="http://127.0.0.1:8085/webhooks/bigclungus-main"
 HEARTBEAT_FILE="/tmp/last-heartbeat.txt"
-HEARTBEAT_STALE_SECONDS=1200  # 20 minutes
+HEARTBEAT_STALE_SECONDS=5400  # 90 minutes (1.5x the 60-minute heartbeat interval)
 
 FORCE_STATUS=false
 if [[ "${1:-}" == "--status" ]]; then
