@@ -1,7 +1,7 @@
 #!/bin/bash
 # Usage: fire-xai-task.sh <model> <prompt>
 # Fires an xAI temporal workflow and prints the task_id + workflow_id
-# Model defaults to grok-3-mini if not provided.
+# Model defaults to grok-4.20-0309-reasoning if not provided.
 set -euo pipefail
 
 MODEL="${1:-grok-4.20-0309-reasoning}"

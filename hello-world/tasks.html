@@ -1515,7 +1515,7 @@
         .then(function(data) {
           if (data) renderCostStats(data);
         })
-        .catch(function() { /* stats are non-critical; fail silently */ });
+        .catch(function(err) { console.warn('[tasks] fetchStats failed:', err); });
     }
 
     fetchTasks();
