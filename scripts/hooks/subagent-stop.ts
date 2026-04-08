@@ -115,3 +115,37 @@ try {
 }
 
 process.stderr.write(`subagent-stop: marked task ${taskId} done for agent ${agentId}\n`);
+
+// ── Shadow mode: signal Temporal workflow with final metadata ─────────────
+// Enabled only when TEMPORAL_SHADOW=true. Non-blocking, never affects exit code.
+if (process.env.TEMPORAL_SHADOW === "true") {
+  // Workflow ID was stored alongside task_id in the state file (before it was deleted above)
+  // Re-derive it from taskId since state file is already cleaned up
+  const workflowId = `agent-task-${taskId}`;
+  const metadataPayload = {
+    completed_at: timestamp,
+    last_message_preview: context.slice(0, 200),
+    exit_reason: "completed",
+  };
+  try {
+    const signalRes = await fetch(
+      `http://127.0.0.1:8233/api/v1/namespaces/tasks/workflows/${encodeURIComponent(workflowId)}/signal/add_metadata`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          signal_name: "add_metadata",
+          input: { payloads: [{ metadata: { encoding: Buffer.from("json/plain").toString("base64") }, data: Buffer.from(JSON.stringify(metadataPayload)).toString("base64") }] },
+        }),
+      }
+    );
+    if (!signalRes.ok) {
+      const body = await signalRes.text().catch(() => "");
+      process.stderr.write(`subagent-stop: temporal signal returned ${signalRes.status}: ${body.slice(0, 200)}\n`);
+    } else {
+      process.stderr.write(`subagent-stop: temporal add_metadata signal sent to ${workflowId}\n`);
+    }
+  } catch (err) {
+    process.stderr.write(`subagent-stop: temporal shadow error (non-fatal): ${err}\n`);
+  }
+}

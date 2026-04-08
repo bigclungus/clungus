@@ -113,3 +113,54 @@ try {
 }
 
 process.stderr.write(`subagent-start: created task ${taskId} for agent ${agentId} (${agentType})\n`);
+
+// ── Shadow mode: fire Temporal AgentTaskWorkflow ──────────────────────────
+// Enabled only when TEMPORAL_SHADOW=true. All Temporal calls are non-blocking
+// and wrapped in try/catch — they MUST NOT affect hook exit code.
+if (process.env.TEMPORAL_SHADOW === "true") {
+  const workflowId = `agent-task-${taskId}`;
+  const temporalInput = {
+    task_id: taskId,
+    prompt: title,
+    agent_type: "claude",
+    model: "claude-sonnet-4-6",
+    is_foreground: true,
+    metadata: {
+      agent_id: agentId,
+      session_id: sessionId,
+      description: title,
+    },
+  };
+  try {
+    const temporalRes = await fetch(
+      "http://127.0.0.1:8233/api/v1/namespaces/tasks/workflows",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workflow_id: workflowId,
+          workflow_type: { name: "AgentTaskWorkflow" },
+          task_queue: { name: "agent-tasks-queue" },
+          input: { payloads: [{ metadata: { encoding: Buffer.from("json/plain").toString("base64") }, data: Buffer.from(JSON.stringify(temporalInput)).toString("base64") }] },
+        }),
+      }
+    );
+    if (!temporalRes.ok) {
+      const body = await temporalRes.text().catch(() => "");
+      process.stderr.write(`subagent-start: temporal start returned ${temporalRes.status}: ${body.slice(0, 200)}\n`);
+    } else {
+      // Save workflow reference alongside existing state
+      const stateFile = `${STATE_DIR}/${agentId}.json`;
+      try {
+        const existing = JSON.parse(await Bun.file(stateFile).text());
+        existing.workflow_id = workflowId;
+        await Bun.write(stateFile, JSON.stringify(existing));
+      } catch {
+        // state file write race — non-fatal
+      }
+      process.stderr.write(`subagent-start: temporal workflow started ${workflowId}\n`);
+    }
+  } catch (err) {
+    process.stderr.write(`subagent-start: temporal shadow error (non-fatal): ${err}\n`);
+  }
+}

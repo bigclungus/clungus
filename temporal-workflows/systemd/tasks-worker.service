@@ -1,0 +1,21 @@
+[Unit]
+Description=Temporal Worker — Agent Task Tracking (tasks namespace)
+After=network.target temporal.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/clungus/work/temporal-workflows
+ExecStart=/usr/bin/python3 /home/clungus/work/temporal-workflows/tasks_worker.py
+Restart=on-failure
+RestartSec=10
+ExecStopPost=/mnt/data/scripts/service-crash-alert.sh %n
+
+# Load .env vars into the service environment
+EnvironmentFile=/home/clungus/work/temporal-workflows/.env
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=tasks-worker
+
+[Install]
+WantedBy=default.target
