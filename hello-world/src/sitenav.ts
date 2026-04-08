@@ -13,6 +13,7 @@
     { href: 'https://clung.us/', label: 'hello', path: '/' },
     { href: 'https://clung.us/tasks', label: 'tasks', path: '/tasks' },
     { href: 'https://clung.us/congress', label: 'congress', path: '/congress' },
+    { href: 'https://clung.us/personas', label: 'personas', path: '/personas' },
     { href: 'https://labs.clung.us', label: 'labs', external: true },
     { href: 'https://clung.us/commons-v2/', label: 'commons', path: '/commons-v2/' },
     { href: 'https://clung.us/clungiverse', label: 'clungiverse', path: '/clungiverse' },

@@ -5,6 +5,7 @@
       { href: "https://clung.us/", label: "hello", path: "/" },
       { href: "https://clung.us/tasks", label: "tasks", path: "/tasks" },
       { href: "https://clung.us/congress", label: "congress", path: "/congress" },
+      { href: "https://clung.us/personas", label: "personas", path: "/personas" },
       { href: "https://labs.clung.us", label: "labs", external: true },
       { href: "https://clung.us/commons-v2/", label: "commons", path: "/commons-v2/" },
       { href: "https://clung.us/clungiverse", label: "clungiverse", path: "/clungiverse" },
@@ -17,7 +18,7 @@
       { href: "https://terminal.clung.us", label: "terminal", external: true, toolHost: "terminal.clung.us" },
       { href: "https://temporal.clung.us", label: "temporal", external: true, toolHost: "temporal.clung.us" },
       { href: "https://terminal.clung.us/topology", label: "topology", external: true },
-      { href: "https://clung.us/cockpit", label: "cockpit", path: "/cockpit" },
+      { href: "https://clung.us/cockpit", label: "cockpit", path: "/cockpit" }
     ];
     function normalizePath(p) {
       return p.replace(/\/+$/, "") || "/";

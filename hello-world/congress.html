@@ -1743,32 +1743,6 @@
     .matrix-tooltip .tt-detail { color: var(--text-muted); display: block; font-size: 10px; margin-top: 2px; }
 
     /* ── Personas tab content (fullscreen center col overlay) ── */
-    #personasTab {
-      display: none;
-      flex-direction: column;
-      width: 100%;
-      max-width: 960px;
-      padding: 20px 16px 40px;
-      box-sizing: border-box;
-      gap: 14px;
-    }
-    #personasTab.visible { display: flex; }
-
-    .personas-toolbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .personas-toolbar-title {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--accent);
-      text-shadow: 0 0 6px var(--accent);
-    }
-
     /* ── Personas table ── */
     .personas-table {
       width: 100%;
@@ -2049,8 +2023,8 @@
   </div>
 </div>
 
-<!-- Persona edit/create modal -->
-<div class="persona-modal-overlay" id="personaModal">
+<!-- Persona edit/create modal (removed — moved to /personas) -->
+<div class="persona-modal-overlay" id="personaModal" style="display:none!important">
   <div class="persona-modal">
     <button class="persona-modal-close" id="personaModalClose">✕</button>
     <div class="persona-modal-title" id="personaModalTitle">Edit Persona</div>
@@ -2157,7 +2131,6 @@
     <!-- Tab nav bar -->
     <div class="page-tab-bar">
       <button class="page-tab active" id="tabSessions" onclick="switchTab('sessions')">Sessions</button>
-      <button class="page-tab" id="tabPersonas" onclick="switchTab('personas')">Personas</button>
       <button class="page-tab" id="tabMatrix" onclick="switchTab('matrix')">Matrix</button>
     </div>
 
@@ -2228,17 +2201,6 @@
     </div>
 
     </div><!-- end #sessionsView -->
-
-    <!-- Personas tab -->
-    <div id="personasTab">
-      <div class="personas-toolbar">
-        <div class="personas-toolbar-title">Personas</div>
-        <button class="btn" style="font-size:0.7rem;padding:6px 14px;" onclick="openPersonaModalCreate()">+ New Persona</button>
-      </div>
-      <div id="personasTableWrap">
-        <div style="font-size:0.72rem;color:var(--text-muted);opacity:0.6;">Loading personas…</div>
-      </div>
-    </div>
 
     <!-- Matrix tab -->
     <div id="matrixTab">
@@ -4309,25 +4271,17 @@
   // ── Tab switching ───────────────────────────────────────────────────────────
   window.switchTab = function(tab) {
     const sessionsView = document.getElementById('sessionsView');
-    const personasTab = document.getElementById('personasTab');
     const matrixTab = document.getElementById('matrixTab');
     const tabSessions = document.getElementById('tabSessions');
-    const tabPersonas = document.getElementById('tabPersonas');
     const tabMatrix = document.getElementById('tabMatrix');
 
     // Hide all
     sessionsView.style.display = 'none';
-    personasTab.classList.remove('visible');
     matrixTab.classList.remove('visible');
     tabSessions.classList.remove('active');
-    tabPersonas.classList.remove('active');
     tabMatrix.classList.remove('active');
 
-    if (tab === 'personas') {
-      personasTab.classList.add('visible');
-      tabPersonas.classList.add('active');
-      loadPersonasTable();
-    } else if (tab === 'matrix') {
+    if (tab === 'matrix') {
       matrixTab.classList.add('visible');
       tabMatrix.classList.add('active');
       loadMatrixTab();
