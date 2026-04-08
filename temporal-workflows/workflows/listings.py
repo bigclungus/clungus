@@ -40,11 +40,12 @@ class ListingsWorkflow:
         dry_run: bool = search.get("dry_run", False)
 
         # Fetch listings for each location (remote activity)
+        listing_type: str = search.get("listing_type", "for_sale")
         all_listings: list[dict] = []
         for location in search["locations"]:
             listings = await workflow.execute_activity(
                 fetch_redfin_listings,
-                args=[location, search["min_price"], search["max_price"]],
+                args=[location, search["min_price"], search["max_price"], listing_type],
                 start_to_close_timeout=timedelta(seconds=60),
                 retry_policy=RetryPolicy(maximum_attempts=3),
             )

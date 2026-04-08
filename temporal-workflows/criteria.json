@@ -12,9 +12,10 @@
     {
       "name": "Marin SFH",
       "locations": ["Mill Valley, CA", "Tiburon, CA", "Sausalito, CA", "San Rafael, CA", "Larkspur, CA", "Corte Madera, CA"],
-      "min_price": 2000000,
-      "max_price": 2500000,
+      "min_price": 0,
+      "max_price": 500000,
       "home_type": "sfh",
+      "listing_type": "for_sale",
       "discord_channel_id": "1383689218861039686",
       "dry_run": false
     }

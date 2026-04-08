@@ -3,8 +3,15 @@ from temporalio import activity
 
 
 @activity.defn
-async def fetch_redfin_listings(location: str, min_price: int, max_price: int) -> list[dict]:
-    """Fetch SFH listings using homeharvest (Redfin/MLS data)."""
+async def fetch_redfin_listings(location: str, min_price: int, max_price: int, listing_type: str = 'for_sale') -> list[dict]:
+    """Fetch SFH listings using homeharvest (Redfin/MLS data).
+
+    Args:
+        location: City/state string (e.g. "Mill Valley, CA")
+        min_price: Minimum list price filter
+        max_price: Maximum list price filter
+        listing_type: homeharvest listing type — 'for_sale' (default), 'for_rent', or 'sold'
+    """
     import asyncio
 
     # homeharvest is sync, run in executor to not block the event loop
@@ -13,7 +20,7 @@ async def fetch_redfin_listings(location: str, min_price: int, max_price: int) -
     def _fetch():
         props = scrape_property(
             location=location,
-            listing_type='for_sale',
+            listing_type=listing_type,
             past_days=7,  # only new listings from last 7 days
             property_type=['single_family'],
         )
