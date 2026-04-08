@@ -4,11 +4,7 @@
  * Fires when a subagent finishes.
  * UPDATEs tasks.db status to done + POSTs to clunger /api/agents/:id/complete
  *
- * Input JSON (stdin) fields:
- *   agent_id               — same ID as SubagentStart
- *   agent_type             — agent type
- *   last_assistant_message — final text output of the subagent
- *   hook_event_name        — "SubagentStop"
+ * Stdin: JSON with agent_id, agent_type, last_assistant_message, hook_event_name
  */
 
 import { Database } from "bun:sqlite";
@@ -27,7 +23,6 @@ try {
 }
 
 const agentId = (input.agent_id as string | undefined) ?? "";
-const agentType = (input.agent_type as string | undefined) ?? "unknown";
 const lastMsg = (input.last_assistant_message as string | undefined) ?? "";
 
 if (!agentId) process.exit(0);
@@ -36,7 +31,7 @@ const timestamp = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
 const agentStateFile = `${STATE_DIR}/${agentId}.json`;
 
 if (!existsSync(agentStateFile)) {
-  process.stderr.write(`subagent-stop: no state file found for agent ${agentId}, skipping task update\n`);
+  process.stderr.write(`subagent-stop: no state file found for agent ${agentId}, skipping\n`);
   process.exit(0);
 }
 
@@ -54,37 +49,30 @@ if (!taskId) {
   process.exit(0);
 }
 
-// Truncate context to 500 chars
 const context = lastMsg.length > 500 ? lastMsg.slice(0, 500) + "...(truncated)" : lastMsg;
 
-// UPDATE tasks.db — update both the status column AND the data JSON blob
-// (clunger reads task status from the data blob, not the column)
+// UPDATE tasks.db — update both status column and data blob
+// (clunger reads task status from the blob, not the column)
 try {
   const db = new Database(DEFAULT_DB);
   db.run("PRAGMA journal_mode=WAL");
-  db.run("PRAGMA foreign_keys=ON");
 
-  // Read current data blob so we can update its status field
   const row = db.query<{ data: string }, [string]>(
     "SELECT data FROM tasks WHERE id = ?"
   ).get(taskId);
+
   let updatedData: string | null = null;
   if (row?.data) {
     try {
       const blob = JSON.parse(row.data) as Record<string, unknown>;
       blob.status = "done";
       blob.finished_at = timestamp;
-      // Append a done event to the log array if present
       if (Array.isArray(blob.log)) {
-        (blob.log as Array<Record<string, unknown>>).push({
-          ts: timestamp,
-          event: "done",
-          context: context || "subagent finished",
-        });
+        (blob.log as Array<Record<string, unknown>>).push({ ts: timestamp, event: "done", context: context || "subagent finished" });
       }
       updatedData = JSON.stringify(blob);
     } catch {
-      // malformed blob — leave it alone, still update column
+      // malformed blob — leave it, still update column
     }
   }
 
