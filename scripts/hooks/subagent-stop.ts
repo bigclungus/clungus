@@ -3,15 +3,14 @@
  * Hook: SubagentStop
  * Fires when a subagent finishes.
  *
- * Always: UPDATE tasks.db + signal Temporal workflow mark_complete
+ * Responsibility: SIGNAL the Temporal workflow mark_complete only.
+ * DB writes are owned by the workflow's finalize_task activity.
  *
  * Stdin: JSON with agent_id, agent_type, last_assistant_message, hook_event_name
  */
 
-import { Database } from "bun:sqlite";
 import { existsSync, readFileSync, unlinkSync } from "fs";
 
-const DEFAULT_DB = "/home/clungus/work/bigclungus-meta/tasks.db";
 const STATE_DIR = "/tmp/bc-agents";
 
 const raw = await Bun.stdin.text();
@@ -28,7 +27,7 @@ const lastMsg = (input.last_assistant_message as string | undefined) ?? "";
 
 if (!agentId) process.exit(0);
 
-const timestamp = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+const finishedAt = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
 const agentStateFile = `${STATE_DIR}/${agentId}.json`;
 
 if (!existsSync(agentStateFile)) {
@@ -50,64 +49,21 @@ if (!taskId) {
   process.exit(0);
 }
 
-const context = lastMsg.length > 500 ? lastMsg.slice(0, 500) + "...(truncated)" : lastMsg;
-
-// UPDATE tasks.db
-try {
-  const db = new Database(DEFAULT_DB);
-  db.run("PRAGMA journal_mode=WAL");
-
-  const row = db.query<{ data: string }, [string]>(
-    "SELECT data FROM tasks WHERE id = ?"
-  ).get(taskId);
-
-  let updatedData: string | null = null;
-  if (row?.data) {
-    try {
-      const blob = JSON.parse(row.data) as Record<string, unknown>;
-      blob.status = "done";
-      blob.finished_at = timestamp;
-      if (Array.isArray(blob.log)) {
-        (blob.log as Array<Record<string, unknown>>).push({ ts: timestamp, event: "done", context: context || "subagent finished" });
-      }
-      updatedData = JSON.stringify(blob);
-    } catch {
-      // malformed blob — leave it, still update column
-    }
-  }
-
-  if (updatedData !== null) {
-    db.run(
-      "UPDATE tasks SET status = ?, updated_at = ?, data = ? WHERE id = ?",
-      ["done", timestamp, updatedData, taskId],
-    );
-  } else {
-    db.run(
-      "UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?",
-      ["done", timestamp, taskId],
-    );
-  }
-
-  db.run(
-    "INSERT INTO task_events (task_id, event, message, ts) VALUES (?, ?, ?, ?)",
-    [taskId, "done", context.slice(0, 500), timestamp],
-  );
-  db.close();
-} catch (err) {
-  process.stderr.write(`subagent-stop: db error: ${err}\n`);
-}
-
 // Clean up agent state file
 try { unlinkSync(agentStateFile); } catch { /* non-fatal */ }
 
-// ── Temporal path ──────────────────────────────────────────────────────────
+// Signal Temporal workflow — it owns the DB UPDATE via finalize_task activity
 const workflowId = `agent-task-${agentId}`;
-const metadataPayload = {
-  completed_at: timestamp,
-  last_message_preview: context.slice(0, 200),
+const preview = lastMsg.length > 200 ? lastMsg.slice(0, 200) + "...(truncated)" : lastMsg;
+const signalPayload = {
+  finished_at: finishedAt,
+  exit_code: 0,
+  status: "completed",
+  last_message_preview: preview,
   exit_reason: "completed",
   finished: true,
 };
+
 try {
   const { execSync } = require("child_process");
   execSync(
@@ -115,13 +71,11 @@ try {
 --namespace tasks \
 --workflow-id "${workflowId}" \
 --name mark_complete \
---input '${JSON.stringify(metadataPayload).replace(/'/g, "'\\''")}' \
+--input '${JSON.stringify(signalPayload).replace(/'/g, "'\\''")}' \
 --address 127.0.0.1:7233`,
     { timeout: 5000, stdio: ["ignore", "ignore", "pipe"] }
   );
-  process.stderr.write(`subagent-stop: temporal mark_complete signal sent to ${workflowId}\n`);
+  process.stderr.write(`subagent-stop: mark_complete signal sent to ${workflowId} (task ${taskId})\n`);
 } catch (err) {
   process.stderr.write(`subagent-stop: temporal error: ${err}\n`);
 }
-
-process.stderr.write(`subagent-stop: marked task ${taskId} done for agent ${agentId}\n`);

@@ -3,15 +3,14 @@
  * Hook: SubagentStart
  * Fires when a subagent is spawned.
  *
- * Always: INSERT into tasks.db + start Temporal workflow + save workflowId to /tmp/bc-agents/${agentId}.json
+ * Responsibility: START the Temporal workflow only.
+ * DB writes are owned by the workflow's create_task_record activity.
  *
  * Stdin: JSON with agent_id, agent_type, session_id, hook_event_name
  */
 
-import { Database } from "bun:sqlite";
 import { mkdirSync, readdirSync, readFileSync, unlinkSync } from "fs";
 
-const DEFAULT_DB = "/home/clungus/work/bigclungus-meta/tasks.db";
 const STATE_DIR = "/tmp/bc-agents";
 
 const raw = await Bun.stdin.text();
@@ -29,8 +28,8 @@ const sessionId = (input.session_id as string | undefined) ?? "unknown";
 
 if (!agentId) process.exit(0);
 
-const timestamp = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
 const nowTs = Math.floor(Date.now() / 1000);
+const startedAt = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
 
 mkdirSync(STATE_DIR, { recursive: true });
 
@@ -68,38 +67,15 @@ if (!title) {
 
 const datePart = new Date().toISOString().slice(0, 19).replace(/[-T:]/g, "").replace(/(\d{8})(\d{6})/, "$1-$2");
 const taskId = `task-${datePart}-${agentId.slice(0, 8)}`;
-
-// INSERT into tasks.db
-try {
-  const db = new Database(DEFAULT_DB);
-  db.run("PRAGMA journal_mode=WAL");
-
-  const taskData = JSON.stringify({
-    id: taskId,
-    title,
-    status: "open",
-    source: "discord",
-    log: [{ ts: timestamp, event: "started", context: title }],
-  });
-
-  db.run(
-    "INSERT OR IGNORE INTO tasks (id, title, status, created_at, updated_at, data) VALUES (?, ?, ?, ?, ?, ?)",
-    [taskId, title, "open", timestamp, timestamp, taskData],
-  );
-  db.run(
-    "INSERT INTO task_events (task_id, event, message, ts) VALUES (?, ?, ?, ?)",
-    [taskId, "started", title, timestamp],
-  );
-  db.close();
-} catch (err) {
-  process.stderr.write(`subagent-start: db error: ${err}\n`);
-}
-
-// Store task ID in agent state file for subagent-stop.ts
-await Bun.write(`${STATE_DIR}/${agentId}.json`, JSON.stringify({ task_id: taskId, agent_id: agentId, session_id: sessionId }));
-
-// ── Temporal path ──────────────────────────────────────────────────────────
 const workflowId = `agent-task-${agentId}`;
+
+// Save state for subagent-stop.ts to pick up
+await Bun.write(
+  `${STATE_DIR}/${agentId}.json`,
+  JSON.stringify({ task_id: taskId, agent_id: agentId, session_id: sessionId, workflow_id: workflowId }),
+);
+
+// Start Temporal workflow — it owns the DB INSERT via create_task_record activity
 const temporalInput = {
   task_id: taskId,
   prompt: title,
@@ -110,8 +86,10 @@ const temporalInput = {
     agent_id: agentId,
     session_id: sessionId,
     description: title,
+    started_at: startedAt,
   },
 };
+
 try {
   const { execSync } = require("child_process");
   execSync(
@@ -124,18 +102,7 @@ try {
 --address 127.0.0.1:7233`,
     { timeout: 5000, stdio: ["ignore", "ignore", "pipe"] }
   );
-  // Save workflow reference alongside existing state
-  const stateFile = `${STATE_DIR}/${agentId}.json`;
-  try {
-    const existing = JSON.parse(await Bun.file(stateFile).text());
-    existing.workflow_id = workflowId;
-    await Bun.write(stateFile, JSON.stringify(existing));
-  } catch {
-    // state file write race — non-fatal
-  }
-  process.stderr.write(`subagent-start: temporal workflow started ${workflowId}\n`);
+  process.stderr.write(`subagent-start: temporal workflow started ${workflowId} (task ${taskId})\n`);
 } catch (err) {
   process.stderr.write(`subagent-start: temporal error: ${err}\n`);
 }
-
-process.stderr.write(`subagent-start: created task ${taskId} for agent ${agentId} (${agentType})\n`);

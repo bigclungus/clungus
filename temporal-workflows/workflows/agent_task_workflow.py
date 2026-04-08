@@ -13,14 +13,14 @@ Two execution paths depending on input.provider (or model name prefix):
     which POSTs to the xAI API and returns the result. No external signal needed.
 
 Control flow — claude path:
-  1. create_task_record (Local Activity) — idempotent INSERT into agents.db
+  1. create_task_record (Local Activity) — idempotent INSERT into tasks.db
   2. wait_condition on _complete flag — yields until mark_complete signal arrives
-  3. finalize_task (Local Activity) — UPDATE agents.db with result/status
+  3. finalize_task (Local Activity) — UPDATE tasks.db with result/status
 
 Control flow — xai path:
-  1. create_task_record (Local Activity) — idempotent INSERT into agents.db
+  1. create_task_record (Local Activity) — idempotent INSERT into tasks.db
   2. run_xai_agent (Activity) — POST to xAI API, returns response + usage
-  3. finalize_task (Local Activity) — UPDATE agents.db with result/status
+  3. finalize_task (Local Activity) — UPDATE tasks.db with result/status
 
 Signals: mark_complete, add_metadata, cancel
 Query:   get_status
