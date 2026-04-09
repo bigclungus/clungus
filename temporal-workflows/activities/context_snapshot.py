@@ -22,6 +22,8 @@ from pathlib import Path
 
 from temporalio import activity
 
+logger = logging.getLogger(__name__)
+
 SESSIONS_DIR = Path("/home/clungus/.claude/projects/-mnt-data")
 OUTPUT_DIR = Path("/mnt/data/context-snapshot")
 OUTPUT_FILE = OUTPUT_DIR / "CONTEXT.md"
@@ -85,7 +87,7 @@ def _read_file_safe(path: str, max_chars: int = MAX_FILE_CHARS) -> tuple[str, bo
             return (text[:max_chars], True)
         return (text, False)
     except Exception as e:
-        logging.warning("[context_snapshot] failed to read file %s: %s", p, e)
+        logger.warning("[context_snapshot] failed to read file %s: %s", p, e)
         return ("", False)
 
 

@@ -12,6 +12,8 @@ import aiohttp
 import time
 from temporalio import activity
 
+logger = logging.getLogger(__name__)
+
 from .constants import INJECT_URL
 
 HEARTBEAT_TIMESTAMP_FILE = "/tmp/last-heartbeat.txt"
@@ -43,7 +45,7 @@ async def _do_inject(
                     data = await resp.json()
                     return data.get("message_id") or data.get("id")
                 except Exception as e:
-                    logging.warning("[inject] failed to parse message_id from response: %s", e)
+                    logger.warning("[inject] failed to parse message_id from response: %s", e)
                     return None
     return None
 
@@ -58,4 +60,4 @@ async def inject_message(content: str, user: str, chat_id: str) -> None:
             with open(HEARTBEAT_TIMESTAMP_FILE, "w") as f:
                 f.write(str(time.time()))
         except Exception as e:
-            logging.warning("[inject] failed to write heartbeat timestamp: %s", e)
+            activity.logger.warning("[inject] failed to write heartbeat timestamp: %s", e)
