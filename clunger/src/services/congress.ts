@@ -103,14 +103,7 @@ async function callLlm(
   const CLAUDE_SHORT_NAMES = new Set(["haiku", "opus", "sonnet"]);
   if (resolved.startsWith("together/")) {
     const togetherModel = resolved.slice(9);
-    try {
-      return await callTogether(systemPrompt, userMessage, togetherModel, onToken);
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
-      console.warn(`[congress] together.ai call failed (${togetherModel}): ${errMsg}. Falling back to haiku.`);
-      // Fallback to haiku to keep the session alive
-      return callClaudeCli(systemPrompt, userMessage, "haiku", onToken);
-    }
+    return callTogether(systemPrompt, userMessage, togetherModel, onToken);
   } else if (resolved.startsWith("grok-") || resolved.startsWith("xai/")) {
     const grokModel = resolved.startsWith("xai/") ? resolved.slice(4) : resolved;
     return callClaudeCli(systemPrompt, userMessage, grokModel, onToken, {
