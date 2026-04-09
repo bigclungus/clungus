@@ -40,6 +40,8 @@ const MODEL_ALIASES: Record<string, string> = {
   sonnet: "sonnet",
 };
 
+const CLAUDE_SHORT_NAMES = new Set(["haiku", "opus", "sonnet"]);
+
 // ─── Module-level stream state ──────────────────────────────────────────────
 
 export interface StreamState {
@@ -72,7 +74,8 @@ function getPersonaFromDb(name: string): PersonaRow | null {
     ).get(name);
     db.close();
     return row ?? null;
-  } catch {
+  } catch (e) {
+    console.warn(`[congress] personas.db lookup failed for ${name}, falling back to YAML: ${e instanceof Error ? e.message : String(e)}`);
     return null;
   }
 }
@@ -100,7 +103,6 @@ async function callLlm(
   const modelLower = (model || "").toLowerCase().trim();
   const resolved = MODEL_ALIASES[modelLower] ?? modelLower;
 
-  const CLAUDE_SHORT_NAMES = new Set(["haiku", "opus", "sonnet"]);
   if (resolved.startsWith("together/")) {
     const togetherModel = resolved.slice(9);
     return callTogether(systemPrompt, userMessage, togetherModel, onToken);

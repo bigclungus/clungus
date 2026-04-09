@@ -22,10 +22,12 @@ from pathlib import Path
 
 from temporalio import activity
 
+from .constants import BASE_DIR
+
 logger = logging.getLogger(__name__)
 
 SESSIONS_DIR = Path("/home/clungus/.claude/projects/-mnt-data")
-OUTPUT_DIR = Path("/mnt/data/context-snapshot")
+OUTPUT_DIR = Path(BASE_DIR) / "context-snapshot"
 OUTPUT_FILE = OUTPUT_DIR / "CONTEXT.md"
 MAX_SESSIONS = 10
 MAX_FILE_CHARS = 5000
@@ -98,13 +100,13 @@ def _repo_tree() -> str:
     # Top-level dirs
     try:
         result = subprocess.run(
-            ["ls", "-1", "/mnt/data"],
+            ["ls", "-1", BASE_DIR],
             capture_output=True, text=True, timeout=10
         )
         entries = result.stdout.strip().splitlines()
-        lines.append("## /mnt/data top-level")
+        lines.append(f"## {BASE_DIR} top-level")
         for e in entries:
-            full = Path("/mnt/data") / e
+            full = Path(BASE_DIR) / e
             suffix = "/" if full.is_dir() else ""
             lines.append(f"  {e}{suffix}")
     except Exception as exc:
@@ -112,12 +114,12 @@ def _repo_tree() -> str:
 
     # Key subdirs
     key_subdirs = [
-        "/mnt/data/temporal-workflows",
-        "/mnt/data/temporal-workflows/activities",
-        "/mnt/data/temporal-workflows/workflows",
-        "/mnt/data/omni/omnichannel",
-        "/mnt/data/scripts",
-        "/mnt/data/clunger/src",
+        f"{BASE_DIR}/temporal-workflows",
+        f"{BASE_DIR}/temporal-workflows/activities",
+        f"{BASE_DIR}/temporal-workflows/workflows",
+        f"{BASE_DIR}/omni/omnichannel",
+        f"{BASE_DIR}/scripts",
+        f"{BASE_DIR}/clunger/src",
     ]
     for subdir in key_subdirs:
         p = Path(subdir)

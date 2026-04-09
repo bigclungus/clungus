@@ -16,8 +16,10 @@ from typing import Any
 import httpx
 from temporalio import activity
 
+from .constants import BASE_DIR
+
 XAI_API_URL = "https://api.x.ai/v1/chat/completions"
-XAI_API_KEY_PATH = "/mnt/data/secrets/xai_api_key"
+XAI_API_KEY_PATH = f"{BASE_DIR}/secrets/xai_api_key"
 MAX_TOOL_ITERATIONS = 20
 
 # Rough pricing per 1M tokens (input, output)

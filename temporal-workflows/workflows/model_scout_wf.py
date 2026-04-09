@@ -784,8 +784,8 @@ class PersonaOnboardingWorkflow:
         if winner is None:
             return {"status": "failed", "reason": "no_winner", "model": model_name}
 
-        # ---- Step 5: Build persona .md and write ----
-        avatar_url = None  # image gen not yet implemented
+        # ---- Step 5: Build and write persona .md ----
+        avatar_url = None
         together_model_id = model_info.get("together_model_id", model_id)
         persona_md = await workflow.execute_activity(
             build_persona_frontmatter,
@@ -812,7 +812,7 @@ class PersonaOnboardingWorkflow:
             retry_policy=IO_RETRY,
         )
 
-        # ---- Step 7: Announce ----
+        # ---- Step 6: Announce ----
         announce_text = (
             f"New persona onboarded: **{winner.get('name', slug)}** "
             f"({winner.get('role', 'Congress Debater')})\n"
