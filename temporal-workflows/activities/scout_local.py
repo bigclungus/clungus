@@ -7,7 +7,6 @@ to synthesize a concise description of what makes a model unique.
 """
 
 import logging
-import os
 import re
 from datetime import datetime, timezone
 

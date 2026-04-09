@@ -17,17 +17,15 @@ import sys
 import sqlite3
 import time
 import urllib.request
-from datetime import datetime
 
 from temporalio import activity
 
 from .constants import DISCORD_API, SCRIPTS_DIR
-from .utils import get_discord_token
 
 sys.path.insert(0, SCRIPTS_DIR)
 from common import (
-    DB_PATH, LOCAL_EMBED_MODEL, LOCAL_EMBED_DIMS,
-    EMBED_MODEL, EMBED_DIMS, local_embed_texts, serialize_f32,
+    DB_PATH, LOCAL_EMBED_DIMS,
+    EMBED_MODEL, EMBED_DIMS, local_embed_texts,
 )
 
 # ---- Constants ---------------------------------------------------------------
