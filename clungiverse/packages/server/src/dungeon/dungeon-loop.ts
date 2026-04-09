@@ -101,8 +101,6 @@ const PLAYER_PROJECTILE_LIFETIME_TICKS = Math.ceil(1500 / TICK_MS); // 1.5s
 const PLAYER_AUTO_ATTACK_RANGE = 120; // px — detection range for spawning projectiles
 const TOTAL_FLOORS = 3;
 const POWERUP_PICK_TIMEOUT_MS = 15_000; // 15s to pick a powerup between floors
-// BULLET HELL MODE: scale enemy ATK down at spawn time (applies to all mob sources incl. DB mobs)
-const ENEMY_ATK_SCALE = 0.1;
 
 // ─── Per-instance ephemeral state ────────────────────────────────────────────
 
@@ -204,18 +202,16 @@ const PERSONA_POWER: Record<string, "holden" | "broseidon" | "deckard_cain" | "g
 
 // ─── Default enemy variants (until DB is populated) ─────────────────────────
 
-// BULLET HELL MODE: budget_cost reduced to 1 (pack rooms full), atk divided by 10 (each hit lighter)
 const DEFAULT_ENEMY_VARIANTS: EnemyVariant[] = [
-  { id: 1, name: "Crawler", behavior: "crawler", hp: 20, atk: 1, def: 2, spd: 1.5, floor_min: 1, budget_cost: 1 },
-  { id: 2, name: "Spitter", behavior: "spitter", hp: 15, atk: 1, def: 1, spd: 1.2, floor_min: 1, budget_cost: 1 },
-  { id: 3, name: "Brute", behavior: "brute", hp: 40, atk: 1, def: 5, spd: 0.8, floor_min: 2, budget_cost: 1 },
+  { id: 1, name: "Crawler", behavior: "crawler", hp: 20, atk: 5, def: 2, spd: 1.5, floor_min: 1, budget_cost: 3 },
+  { id: 2, name: "Spitter", behavior: "spitter", hp: 15, atk: 8, def: 1, spd: 1.2, floor_min: 1, budget_cost: 5 },
+  { id: 3, name: "Brute", behavior: "brute", hp: 40, atk: 12, def: 5, spd: 0.8, floor_min: 2, budget_cost: 8 },
 ];
 
-// BULLET HELL MODE: enemy_budget x10 over original (10x more enemies)
 const DEFAULT_FLOOR_TEMPLATES: FloorTemplate[] = [
-  { floor_number: 1, room_count_min: 5, room_count_max: 7, enemy_budget: 6000, boss_type_id: 1, powerup_choices: 3, enemy_scaling: 1.0 },
-  { floor_number: 2, room_count_min: 6, room_count_max: 9, enemy_budget: 10000, boss_type_id: 2, powerup_choices: 3, enemy_scaling: 1.4 },
-  { floor_number: 3, room_count_min: 7, room_count_max: 10, enemy_budget: 14000, boss_type_id: 3, powerup_choices: 2, enemy_scaling: 1.8 },
+  { floor_number: 1, room_count_min: 5, room_count_max: 7, enemy_budget: 600, boss_type_id: 1, powerup_choices: 3, enemy_scaling: 1.0 },
+  { floor_number: 2, room_count_min: 6, room_count_max: 9, enemy_budget: 1000, boss_type_id: 2, powerup_choices: 3, enemy_scaling: 1.4 },
+  { floor_number: 3, room_count_min: 7, room_count_max: 10, enemy_budget: 1400, boss_type_id: 3, powerup_choices: 2, enemy_scaling: 1.8 },
 ];
 
 const BOSS_TYPE_MAP: Record<number, BossType> = {
@@ -346,7 +342,7 @@ function spawnEnemiesFromLayout(
     if (!variant) continue;
     const enemyId = `e-${instance.id}-${String(enemyCounter++)}`;
     const baseHp = Math.floor(variant.hp * template.enemy_scaling * enemyHpScale);
-    const baseAtk = Math.max(1, Math.floor(variant.atk * template.enemy_scaling * enemyAtkScale * ENEMY_ATK_SCALE));
+    const baseAtk = Math.floor(variant.atk * template.enemy_scaling * enemyAtkScale);
     const enemy: EnemyInstance = {
       id: enemyId,
       variantId: variant.id,

@@ -668,7 +668,7 @@ function spawnInRoom(
   if (spawnTiles.length === 0) return;
   let remaining = budget;
   let attempts = 0;
-  while (remaining > 0 && attempts < 1000) { // 10x mode: keep high cap for horde density
+  while (remaining > 0 && attempts < 100) {
     attempts++;
     const variant = rng.pick(available);
     const tile = rng.pick(spawnTiles);
