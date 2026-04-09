@@ -94,7 +94,6 @@ from activities.trial_act import (
 )
 from workflows.audit_wf import CongressAuditWorkflow
 from workflows.bokoen1_ingest_wf import Bokoen1IngestWorkflow
-from workflows.congress_wf import CongressWorkflow
 from workflows.discord_ingest_wf import DiscordIngestWorkflow
 from workflows.drift_scan_wf import DriftScanWorkflow
 from workflows.email_wf import EmailPollerWorkflow
@@ -107,13 +106,12 @@ from workflows.mob_gen_wf import MobGenerationWorkflow
 from workflows.persona_polls_wf import PersonaPollsWorkflow
 from workflows.nightowl_wf import NightOwlWorkflow
 from workflows.reminder_wf import OnceReminderWorkflow
-from workflows.session_wf import SessionWorkflow
+from workflows.session_wf import CongressWorkflow, SessionWorkflow, TrialWorkflow
 from workflows.simplify_wf import SimplifyCronWorkflow
 from workflows.startup_wf import StartupWorkflow
 from workflows.sweeper import TaskSweeperWorkflow
 from workflows.tasks_backup_wf import TaskDbBackupWorkflow
 from workflows.test_cron_wf import TestCronWorkflow
-from workflows.trial_wf import TrialWorkflow
 
 TASK_QUEUE = "listings-queue"
 TEMPORAL_HOST = os.environ.get("TEMPORAL_HOST", "localhost:7233")
