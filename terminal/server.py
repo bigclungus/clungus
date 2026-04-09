@@ -1561,7 +1561,6 @@ GIGA_HTML = r"""<!DOCTYPE html>
 """
 
 GIGA_TTYD_PORT = 7683
-GIGA_LOGFILE = "/tmp/giga-screenlog.txt"
 
 
 async def giga_page_handler(request):
@@ -1658,7 +1657,7 @@ async def websocket_handler(request):
     ws = web.WebSocketResponse()
     await ws.prepare(request)
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     # Open a PTY pair and spawn screen -x to attach to the existing session.
     # Using os.openpty() so we retain the master fd for both read and resize.
@@ -1745,9 +1744,6 @@ async def websocket_handler(request):
                         pass
                 else:
                     break
-        finally:
-            pass
-
     read_task  = asyncio.ensure_future(pty_to_ws())
     write_task = asyncio.ensure_future(ws_to_pty())
     try:
@@ -1768,7 +1764,6 @@ async def websocket_handler(request):
             pass
 
     return ws
-
 
 
 def get_task_description(agent_id, fpath):
@@ -2025,7 +2020,7 @@ async def fetch_openai_spend() -> float:
 
     today = time.strftime('%Y-%m-%d')
     url = f'https://api.openai.com/v1/usage?date={today}'
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     def _do_fetch():
         req = urllib.request.Request(url, headers={'Authorization': f'Bearer {OPENAI_API_KEY}'})
@@ -2334,7 +2329,7 @@ def _query_graph(graph_name: str):
 
 async def graph_data_handler(request):
     """Query all Graphiti FalkorDB graphs and return nodes + edges for vis.js."""
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     nodes_map = {}   # uuid -> {id, label, group, title}
     edges_list = []  # {from, to, label, title}
@@ -2557,7 +2552,7 @@ async def cost_data_handler(request):
     if now - _cost_cache['ts'] < 60 and _cost_cache['data'] is not None:
         data = _cost_cache['data']
     else:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         data = await loop.run_in_executor(None, _parse_cost_data)
         data['openai_spend_usd'] = await fetch_openai_spend()
         _cost_cache['data'] = data
@@ -2676,7 +2671,7 @@ async def github_tasks_handler(request):
     if now - _github_tasks_cache['ts'] < 10 and _github_tasks_cache['data'] is not None:
         items = _github_tasks_cache['data']
     else:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         items = await loop.run_in_executor(None, _fetch_github_tasks)
         _github_tasks_cache['data'] = items
         _github_tasks_cache['ts'] = now
@@ -3055,7 +3050,7 @@ def _auto_meta_work() -> None:
 async def _auto_meta_loop():
     """Background task: auto-create .meta.json for tasks that lack a requester."""
     await asyncio.sleep(10)  # Let the server start first
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     while True:
         try:
             await loop.run_in_executor(None, _auto_meta_work)
