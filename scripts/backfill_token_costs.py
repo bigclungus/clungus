@@ -2,13 +2,12 @@
 """
 Backfill token counts and costs into agents.db for historical agent sessions.
 
-Two sources:
-1. Hex-ID agents: have output_file pointing to a JSONL task output file.
-   Parse usage from assistant message entries, dedup by message_id (take last = streaming final).
+Source: hex-ID agents with output_file pointing to a JSONL task output file.
+Parse usage from assistant message entries, dedup by message_id (take last = streaming final).
 
-2. usage-N agents without tokens: have session_id pointing to a JSONL in the projects dir.
-   Sum tokens across all assistant entries in that session JSONL.
-   (These are main-session events with no per-agent boundary; treated as full-session sums.)
+Session-JSONL strategy (usage-N agents) is intentionally skipped — those sessions contain
+multiple overlapping agents so summing produces inflated per-agent counts with no
+accurate attribution boundary.
 
 Cost calculation uses official claude-sonnet-4-6 pricing:
   input:       $3.00 / 1M tokens
@@ -23,7 +22,6 @@ import os
 import sys
 
 DB_PATH = "/mnt/data/data/agents.db"
-PROJECTS_DIR = "/home/clungus/.claude/projects/-mnt-data"
 
 PRICING = {
     "input":       3.00 / 1_000_000,
@@ -95,22 +93,6 @@ def parse_output_file(path: str) -> dict:
     }
     return total
 
-
-def parse_session_jsonl(session_id: str) -> dict:
-    """
-    Parse token usage from a main-session JSONL file.
-
-    These sessions contain multiple overlapping agents; we sum all assistant
-    entries deduped by message_id (last occurrence wins).
-
-    Returns dict with input_tokens, output_tokens, cache_read_tokens,
-    cache_write_tokens, model.
-    """
-    path = os.path.join(PROJECTS_DIR, f"{session_id}.jsonl")
-    if not os.path.exists(path):
-        return {}
-
-    return parse_output_file(path)
 
 
 def compute_cost(usage: dict) -> float:
