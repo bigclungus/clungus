@@ -32,7 +32,8 @@ def _age_str(iso_str: str) -> str:
             return f"{total_seconds // 3600}h ago"
         else:
             return f"{total_seconds // 86400}d ago"
-    except Exception:
+    except Exception as e:
+        activity.logger.warning("[sweeper_act] _age_str failed to parse %r: %s", iso_str, e)
         return "?"
 
 

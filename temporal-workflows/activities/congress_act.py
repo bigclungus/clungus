@@ -123,7 +123,7 @@ def _save_context_cache(brief: str, topic: str) -> None:
             )
         )
     except Exception as e:
-        logging.warning(f"context cache write failed: {e}")
+        logger.warning("[congress] context cache write failed: %s", e)
 
 
 # ---------------------------------------------------------------------------

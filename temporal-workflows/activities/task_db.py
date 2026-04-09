@@ -14,7 +14,6 @@ Schema:
 
 import glob
 import json
-import logging
 import sqlite3
 from datetime import datetime, timezone
 
@@ -213,7 +212,7 @@ async def finalize_task(input: AgentTaskInput, result: dict) -> None:
                     blob["log"].append({"ts": now, "event": status, "context": context or "agent finished"})
                 updated_data = json.dumps(blob)
             except (json.JSONDecodeError, TypeError) as e:
-                logging.warning("[finalize_task] failed to update blob for task %s: %s", input.task_id, e)
+                activity.logger.warning("[finalize_task] failed to update blob for task %s: %s", input.task_id, e)
 
         if updated_data is not None:
             conn.execute(

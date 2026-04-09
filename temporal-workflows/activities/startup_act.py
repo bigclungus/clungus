@@ -1,5 +1,4 @@
 """Startup activities — run on bot restart, inject Discord only if something is wrong."""
-import logging
 import shutil
 import subprocess
 
@@ -62,7 +61,7 @@ async def startup_check_disk() -> dict:
             data_usage = shutil.disk_usage(BASE_DIR)
             data_pct = int(data_usage.used / data_usage.total * 100)
         except Exception as e:
-            logging.warning("[startup_check_disk] could not check %s: %s", BASE_DIR, e)
+            activity.logger.warning("[startup_check_disk] could not check %s: %s", BASE_DIR, e)
             data_pct = 0
         return {
             "root_pct": root_pct,
