@@ -234,7 +234,6 @@ def _update_html_script_refs(new_batch_name: str) -> None:
     html_files = [
         os.path.join(SPRITES_DIR, "sprites-vote.html"),
         os.path.join(SPRITES_DIR, "grazing.html"),
-        os.path.join(SPRITES_DIR, "refinery.html"),
     ]
     tag = f'  <script src="/{new_batch_name}"></script>'
 
@@ -342,7 +341,7 @@ def _git_commit_and_push() -> None:
     """Commit and push hello-world changes (polls, avatars, sprites)."""
     subprocess.run(
         ["git", "add", "polls/", "static/avatars/", "sprites-batch*.js",
-         "sprites-vote.html", "grazing.html", "refinery.html"],
+         "sprites-vote.html", "grazing.html"],
         cwd=SPRITES_DIR,
         check=False,
         timeout=30,
@@ -412,7 +411,7 @@ async def run_create_persona_polls(slug: str) -> str:
     # 6. Discord notification
     message = (
         f"New persona **{display_name}** (`{slug}`) has been created.\n"
-        f"Avatar and sprite polls are now open at https://clung.us/refinery\n"
+        f"Avatar and sprite polls are now open at https://clung.us/sprites-vote\n"
         f"- Avatar poll: `avatar-{slug}` (4 variants)\n"
         f"- Sprite poll: `sprite-{slug}` (3 variants)"
     )
