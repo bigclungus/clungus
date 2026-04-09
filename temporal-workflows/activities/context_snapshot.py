@@ -161,7 +161,7 @@ async def generate_context_snapshot() -> dict:
     # Build CONTEXT.md
     lines: list[str] = []
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    lines.append(f"# BigClungus Context Snapshot")
+    lines.append("# BigClungus Context Snapshot")
     lines.append(f"Generated: {now}")
     lines.append(f"Sessions analyzed: {files_analyzed} (of {len(all_jsonls)} total)")
     lines.append("")
