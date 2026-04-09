@@ -21,7 +21,6 @@ import json
 import sqlite3
 import os
 import sys
-from pathlib import Path
 
 DB_PATH = "/mnt/data/data/agents.db"
 PROJECTS_DIR = "/home/clungus/.claude/projects/-mnt-data"

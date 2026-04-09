@@ -87,14 +87,13 @@ def main():
                 # Clean up VTT
                 try:
                     vtt_file.unlink()
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f'  WARN: failed to remove {vtt_file}: {e}')
 
             if converted:
                 downloaded += 1
             elif not vtt_files:
                 failed += 1
-                # print(f'  No subtitles available for {vid_id}')
 
         except subprocess.TimeoutExpired:
             print(f'  Timeout: {vid_id}')

@@ -14,12 +14,8 @@ Usage:
 """
 
 import argparse
-import json
-import os
 import sqlite3
-import sys
 import time
-from datetime import datetime, timezone
 
 import requests
 import sqlite_vec

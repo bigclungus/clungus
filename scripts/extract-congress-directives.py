@@ -7,7 +7,6 @@ Idempotent: checks session_id before appending, so re-running is safe.
 """
 import glob
 import json
-import os
 import subprocess
 from pathlib import Path
 

@@ -10,7 +10,6 @@ Creates /mnt/data/data/agents.db with unified schema, then:
 """
 
 import json
-import os
 import sqlite3
 import sys
 from datetime import datetime, timezone
@@ -215,8 +214,8 @@ def migrate_agents(conn: sqlite3.Connection) -> tuple[int, int, int]:
             tid = data.get("id")
             if aid and tid:
                 agent_to_task[aid] = tid
-        except (json.JSONDecodeError, OSError):
-            pass
+        except (json.JSONDecodeError, OSError) as e:
+            print(f"  WARN: skipping task file {fpath}: {e}", file=sys.stderr)
 
     agents_inserted = 0
     agents_skipped = 0

@@ -3,8 +3,6 @@
 
 import argparse
 import sqlite3
-import sys
-from pathlib import Path
 
 DB_PATH = "/mnt/data/data/token-usage.db"
 
