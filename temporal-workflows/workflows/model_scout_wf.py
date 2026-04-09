@@ -784,20 +784,8 @@ class PersonaOnboardingWorkflow:
         if winner is None:
             return {"status": "failed", "reason": "no_winner", "model": model_name}
 
-        # ---- Step 5: Generate avatar (stubbed) ----
-        avatar_url = None
-        # TODO: Uncomment when image gen is implemented
-        # try:
-        #     avatar_url = await workflow.execute_activity(
-        #         call_image_gen,
-        #         args=[winner.get("avatar_prompt", f"avatar for {winner['name']}")],
-        #         start_to_close_timeout=timedelta(seconds=60),
-        #         retry_policy=IO_RETRY,
-        #     )
-        # except NotImplementedError:
-        #     workflow.logger.info("Image gen not yet implemented, skipping avatar")
-
-        # ---- Step 6: Build persona .md and write ----
+        # ---- Step 5: Build persona .md and write ----
+        avatar_url = None  # image gen not yet implemented
         together_model_id = model_info.get("together_model_id", model_id)
         persona_md = await workflow.execute_activity(
             build_persona_frontmatter,

@@ -29,7 +29,7 @@ from activities.common.discord_io import (
 )
 from activities.common.fs_io import git_commit, write_file
 from activities.common.http_io import fetch_json
-from activities.common.llm_io import call_image_gen, call_llm
+from activities.common.llm_io import call_llm
 
 # Local (pure logic) activities
 from activities.scout_local import (
@@ -98,7 +98,6 @@ async def main() -> None:
             git_commit,
             fetch_json,
             call_llm,
-            call_image_gen,
             # DB activities
             db_get_known_ids,
             db_insert_model,

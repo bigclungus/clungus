@@ -2,7 +2,6 @@
 LLM I/O activities — reusable across all workflows.
 
 call_llm routes through together.ai's OpenAI-compatible endpoint.
-call_image_gen is stubbed for now pending image gen service selection.
 """
 
 import logging
@@ -67,15 +66,3 @@ async def call_llm(
         raise RuntimeError(f"together.ai returned no choices: {data}")
     return choices[0]["message"]["content"]
 
-
-@activity.defn
-async def call_image_gen(prompt: str) -> str:
-    """Generate an avatar image from a prompt. Returns image URL.
-
-    TODO: Implement when image gen service is selected (FLUX on together.ai,
-    or another provider). For now, raises NotImplementedError so callers
-    know to handle the stub.
-    """
-    raise NotImplementedError(
-        "call_image_gen is not yet implemented — image gen service TBD"
-    )
