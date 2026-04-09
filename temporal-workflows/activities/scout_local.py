@@ -302,7 +302,6 @@ async def build_persona_frontmatter(
     Returns:
         Full markdown content ready to write to agents/<slug>.md
     """
-    slug = winner.get("slug", "unknown")
     name = winner.get("name", "Unknown Persona")
     role = winner.get("role", "Congress Debater")
     description = winner.get("description", "")
@@ -418,7 +417,6 @@ def extract_model_card_details(hf_detail: dict) -> dict:
             task = ev.get("task", {}).get("name") or ev.get("task_type") or ""
             dataset_name = ev.get("dataset", {}).get("name") or ev.get("dataset_name") or ""
             metric = ev.get("metrics", [{}])[0] if ev.get("metrics") else {}
-            metric_name = metric.get("name") or metric.get("type") or ""
             metric_val = metric.get("value")
             if metric_val is not None and task:
                 label = dataset_name or task

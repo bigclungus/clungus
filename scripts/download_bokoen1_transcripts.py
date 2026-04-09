@@ -40,6 +40,7 @@ def main():
     downloaded = 0
     failed = 0
     skipped = 0
+    consecutive_fails = 0
 
     print(f"Starting download of {total} transcripts...")
 
@@ -110,7 +111,7 @@ def main():
 
         # Extra backoff after failures (likely rate limited)
         if not list(TRANSCRIPTS_DIR.glob(f'{vid_id}_*.txt')):
-            consecutive_fails = consecutive_fails + 1 if 'consecutive_fails' in dir() else 1
+            consecutive_fails += 1
             if consecutive_fails >= 5:
                 wait = min(consecutive_fails * 30, 300)
                 print(f'  {consecutive_fails} consecutive failures, waiting {wait}s...')

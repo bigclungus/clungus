@@ -12,13 +12,13 @@ VOICE = "bm_george"
 TEXT = "Hello, this is a test of the Kokoro text to speech system"
 
 def main():
-    print(f"Loading Kokoro model...")
+    print("Loading Kokoro model...")
     t0 = time.time()
     kokoro = Kokoro(MODEL_PATH, VOICES_PATH)
     load_time = time.time() - t0
     print(f"Model loaded in {load_time:.2f}s")
 
-    print(f"\nAvailable male voices:")
+    print("\nAvailable male voices:")
     for v in kokoro.get_voices():
         if v.startswith(("am_", "bm_", "em_", "hm_", "im_", "jm_", "pm_", "zm_")):
             print(f"  {v}")

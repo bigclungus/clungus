@@ -289,7 +289,6 @@ async def run_xai_agent(
 
             choice = choices[0]
             message = choice.get("message", {})
-            finish_reason = choice.get("finish_reason", "")
 
             # Append assistant message to conversation history
             messages.append(message)
