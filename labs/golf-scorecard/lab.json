@@ -1,0 +1,8 @@
+{
+  "name": "golf-scorecard",
+  "title": "Golf Scorecard",
+  "description": "Track golf rounds, scores per hole, and handicap progress across multiple courses",
+  "port": 8100,
+  "status": "active",
+  "rationale": "Graph signal: koole mentions golf as an interest (discord_history fact uuid: b26d0c98-cba7-450d-bc2a-c9e8f735b8cf, valid_at: 2025-11-24). No existing lab covers golf or sports tracking."
+}
