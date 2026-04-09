@@ -170,7 +170,8 @@ async def post_listings_summary(channel_id: str, listings: list) -> str:
                         # Rate limited — parse retry_after and wait, then retry
                         try:
                             retry_after = json.loads(body).get("retry_after", 1.0)
-                        except Exception:
+                        except Exception as e:
+                            activity.logger.warning("[discord_act] failed to parse rate-limit retry_after body: %s", e)
                             retry_after = 1.0
                         await asyncio.sleep(float(retry_after) + 0.1)
                     else:

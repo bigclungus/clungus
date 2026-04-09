@@ -272,7 +272,7 @@ export function initMobRegistry(db: Database): void {
     )
   `);
 
-  // Upsert seed mobs so stat changes (e.g. bullet hell mode atk/cost values) apply to existing DBs
+  // Upsert seed mobs so stat changes apply to existing DBs
   const upsert = db.prepare(
     `INSERT INTO mob_cache (entity_name, display_name, behavior, hp, atk, def, spd, budget_cost, flavor_text)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)

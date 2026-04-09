@@ -79,8 +79,8 @@ async def _inject_alert(message: str) -> None:
     """Inject a warning alert to the bot session. Non-fatal — never raises."""
     try:
         await _do_inject(f"⚠️ {message}", MAIN_CHANNEL_ID, user="temporal-monitor")
-    except Exception:
-        pass  # Never let alerting break the caller
+    except Exception as e:
+        logger.warning("[congress] _inject_alert failed: %s", e)  # Never let alerting break the caller
 
 
 # ---------------------------------------------------------------------------

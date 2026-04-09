@@ -44,7 +44,8 @@ def _check_emails_sync(last_check_ts: float) -> list[dict]:
                     raw = re.sub(r'<(style|script)[^>]*>.*?</(style|script)>', '', raw, flags=re.DOTALL | re.IGNORECASE)
                     raw = re.sub(r'<[^>]+>', '', raw)
                     body = ' '.join(raw.split())[:200].strip()
-                except Exception:
+                except Exception as e:
+                    activity.logger.warning("[email_act] failed to read message body for %s: %s", m.id, e)
                     body = ''
 
                 new_msgs.append({
