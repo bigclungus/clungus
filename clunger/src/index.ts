@@ -12,13 +12,7 @@ import { runPostMergeReview } from "./services/post-merge-review.js";
 // ── Error monitoring: inject alerts to bot on critical failures ────────────
 async function injectAlert(message: string): Promise<void> {
   try {
-    const resp = await fetch("http://127.0.0.1:8085/webhooks/bigclungus-main", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: `⚠️ ${message}`, chat_id: "1485343472952148008", user: "clunger-monitor" }),
-      signal: AbortSignal.timeout(5_000),
-    });
-    if (!resp.ok) console.error("[clunger] injectAlert failed:", resp.status);
+    await injectDiscord(`⚠️ ${message}`, "1485343472952148008", "clunger-monitor");
   } catch (e) {
     console.error("[clunger] injectAlert error:", e);
   }
@@ -591,24 +585,12 @@ async function restHandleDiscordPersona(req: http.IncomingMessage, res: http.Ser
   const injectContent = `[persona-invoke] identity=${identity} display_name=${displayName} question=${question}\n\nPERSONA PROMPT:\n${personaPrompt}`;
 
   try {
-    const injectResp = await fetch("http://127.0.0.1:8085/webhooks/bigclungus-main", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        content: injectContent,
-        chat_id: chatId,
-        user: "clunger-persona",
-        ...(messageId ? { message_id: `persona-${messageId}` } : {}),
-      }),
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!injectResp.ok) {
-      const errText = await injectResp.text();
-      jsonResponse(res, { error: `Inject failed: ${injectResp.status} ${errText}` }, 502);
-      return;
-    }
+    await injectDiscord(
+      injectContent,
+      chatId,
+      "clunger-persona",
+      messageId ? { message_id: `persona-${messageId}` } : undefined,
+    );
   } catch (e) {
     jsonResponse(res, { error: `Inject request failed: ${e}` }, 502);
     return;
