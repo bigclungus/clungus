@@ -198,7 +198,8 @@ def compute_session_stats() -> dict[str, dict]:
         if isinstance(evolution, str):
             try:
                 evolution = json.loads(evolution)
-            except Exception:
+            except Exception as e:
+                print(f"  WARNING: could not parse evolution JSON in {fpath}: {e}")
                 evolution = {}
         for evolved in evolution.get('evolved', []):
             dn = evolved.get('display_name', '')

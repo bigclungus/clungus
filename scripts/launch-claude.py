@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Launch Claude CLI, auto-dismiss dev-channel prompt, transparent pty proxy."""
-import pty, os, sys, time, select, struct, fcntl, termios, signal
+import pty, os, sys, time, select, fcntl, termios, signal
 
 AGENTS_DB = "/mnt/data/data/agents.db"
 

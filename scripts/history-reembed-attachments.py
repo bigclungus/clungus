@@ -9,7 +9,6 @@ them with gpt-4o-mini vision, and updates the content + re-embeds.
 
 import json
 import os
-import re
 import sys
 import sqlite3
 import base64
@@ -20,7 +19,7 @@ from openai import OpenAI
 
 # Reuse shared code
 sys.path.insert(0, os.path.dirname(__file__))
-from common import DB_PATH, EMBED_MODEL, EMBED_DIMS, get_openai_key
+from common import DB_PATH, EMBED_MODEL, get_openai_key
 
 IMAGE_MIMES = {"image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp"}
 VISION_MODEL = "gpt-4o-mini"

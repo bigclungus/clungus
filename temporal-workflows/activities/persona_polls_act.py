@@ -220,7 +220,7 @@ def _write_sprite_batch(slug: str, sprite_code: str) -> str:
     new_path = os.path.join(SPRITES_DIR, new_name)
     with open(new_path, "w") as f:
         f.write(f"// {new_name} -- Auto-generated sprite variants\n")
-        f.write(f"// Format: drawSprite_<name>_<variant>(ctx, cx, cy)\n\n")
+        f.write("// Format: drawSprite_<name>_<variant>(ctx, cx, cy)\n\n")
         f.write(sprite_code)
         f.write("\n")
 

@@ -192,7 +192,7 @@ def main():
     db.close()
 
     print()
-    print(f"Done.")
+    print("Done.")
     print(f"  Updated:             {updated}")
     print(f"  Skipped (no source): {skipped_no_source}")
     print(f"  Skipped (zero data): {skipped_zero_parse}")

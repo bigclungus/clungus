@@ -534,16 +534,16 @@ async def congress_debate(
 
     # Build the prompt based on round
     CRUX_INSTRUCTIONS = (
-        f"\n\n## CRUX DECLARATION (REQUIRED)\n"
-        f"You MUST explicitly state your CRUX — the specific factual question, empirical claim, "
-        f"or priority dispute that you believe this topic turns on. Your crux is the core disagreement "
-        f"or uncertainty that, if resolved, would most shift the debate outcome.\n\n"
-        f"Format your response to include this exact section:\n\n"
-        f"CRUX: <your crux statement — what factual question or priority trade-off does your position hinge on?>\n\n"
-        f"Examples:\n"
-        f'  CRUX: Whether the performance bottleneck is in I/O or CPU — this determines whether the optimization effort should target database queries or computation.\n'
-        f'  CRUX: Whether user trust or feature velocity should be prioritized — my position assumes trust is the more valuable asset long-term.\n\n'
-        f"Failure to include a CRUX statement will result in your contribution being flagged as incomplete.\n\n"
+        "\n\n## CRUX DECLARATION (REQUIRED)\n"
+        "You MUST explicitly state your CRUX — the specific factual question, empirical claim, "
+        "or priority dispute that you believe this topic turns on. Your crux is the core disagreement "
+        "or uncertainty that, if resolved, would most shift the debate outcome.\n\n"
+        "Format your response to include this exact section:\n\n"
+        "CRUX: <your crux statement — what factual question or priority trade-off does your position hinge on?>\n\n"
+        "Examples:\n"
+        "  CRUX: Whether the performance bottleneck is in I/O or CPU — this determines whether the optimization effort should target database queries or computation.\n"
+        "  CRUX: Whether user trust or feature velocity should be prioritized — my position assumes trust is the more valuable asset long-term.\n\n"
+        "Failure to include a CRUX statement will result in your contribution being flagged as incomplete.\n\n"
     )
 
     if round_num == 1:
@@ -1082,9 +1082,6 @@ async def congress_check_ibrahim(topic: str, context_brief: str, debate_summarie
     else:
         # CONTINUE or anything unrecognised defaults to CONTINUE
         return {"signal": SIGNAL_CONTINUE, "reason": first_line, "new_topic": None}
-
-
-SIGNAL_NO_DISPUTE = "NO_DISPUTE"
 
 
 @activity.defn

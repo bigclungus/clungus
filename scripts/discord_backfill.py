@@ -21,7 +21,7 @@ import requests
 import sqlite_vec
 
 from common import (
-    DB_PATH, LOCAL_EMBED_MODEL, LOCAL_EMBED_DIMS,
+    DB_PATH, LOCAL_EMBED_MODEL,
     serialize_f32, get_bot_token, get_local_model,
 )
 
@@ -155,7 +155,6 @@ def backfill_channel(client: DiscordClient, conn: sqlite3.Connection,
     total_fetched = 0
     total_new = 0
     before_id = None
-    empty_pages = 0
 
     while True:
         messages = client.get_channel_messages(channel_id, before=before_id)
