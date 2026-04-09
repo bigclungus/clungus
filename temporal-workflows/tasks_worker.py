@@ -2,7 +2,7 @@
 tasks_worker.py — Temporal worker for the AgentTask tracking system.
 
 Connects to namespace="tasks", task_queue="agent-tasks-queue".
-Registers AgentTaskWorkflow and all three activities.
+Registers AgentTaskWorkflow, ContextSnapshotWorkflow, and all activities.
 
 Run:
     python tasks_worker.py

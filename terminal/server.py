@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Live terminal stream server — streams /tmp/screenlog.txt to websocket clients,
-served alongside an xterm.js HTML page.
+Live terminal server — bidirectional PTY via screen -x, served alongside an xterm.js HTML page.
 """
 import asyncio
 import bisect as _bisect
@@ -11,7 +10,6 @@ import hashlib
 import hmac
 import json
 import os
-import pty
 import re
 import secrets
 import signal
@@ -22,7 +20,7 @@ import time
 import urllib.parse
 import urllib.request
 import falkordb as _fdb
-from datetime import datetime, timezone
+from datetime import datetime
 import aiohttp
 from aiohttp import web, ClientSession
 
@@ -240,7 +238,6 @@ try:
 except ImportError:
     HAS_PSUTIL = False
 
-LOGFILE = "/tmp/screenlog.txt"
 SCREEN_SESSION = "claude-bot"  # matched by screen -x as suffix; full name 130684.claude-bot
 _TASKS_BASE = "/tmp/claude-1001/-mnt-data"
 
