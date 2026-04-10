@@ -264,6 +264,18 @@ async def run_xai_agent(
                 "tool_calls_made": tool_calls_made,
             })
 
+            # Token count guard: estimate tokens via chars/4 heuristic.
+            # If estimated tokens exceed 120k (buffer below xAI 131k limit),
+            # trim to messages[0] (initial prompt) + last 10 messages.
+            estimated_tokens = len(json.dumps(messages)) // 4
+            if estimated_tokens > 120_000:
+                old_len = len(messages)
+                messages = [messages[0]] + messages[-10:]
+                activity.logger.warning(
+                    "token guard triggered: ~%d estimated tokens, trimmed %d → %d messages",
+                    estimated_tokens, old_len, len(messages),
+                )
+
             payload: dict[str, Any] = {
                 "model": model,
                 "messages": messages,
