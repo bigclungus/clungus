@@ -79,8 +79,8 @@ function loadMdMeta(name: string): Record<string, unknown> {
     try {
       const raw = fs.readFileSync(fpath, "utf-8");
       return matter(raw).data as Record<string, unknown>;
-    } catch {
-      // skip
+    } catch (e) {
+      console.warn(`[agent] loadMdMeta: failed to parse ${fpath}: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
   return {};

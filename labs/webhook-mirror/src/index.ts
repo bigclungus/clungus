@@ -460,7 +460,8 @@ const server = Bun.serve({
       let body = "";
       try {
         body = await req.text();
-      } catch {
+      } catch (e) {
+        console.warn(`[webhook-mirror] failed to read request body: ${e instanceof Error ? e.message : String(e)}`);
         body = "";
       }
 

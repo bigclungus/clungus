@@ -339,8 +339,6 @@ function writeSession(sessionId: string, data: Record<string, unknown>): void {
 // ─── Roster builder ──────────────────────────────────────────────────────────
 
 function buildRoster(): unknown[] {
-  const EMOJI_MAP: Record<string, string> = {};
-  const COLOR_MAP: Record<string, string> = {};
   const roster: unknown[] = [];
   if (!fs.existsSync(AGENTS_DIR)) return roster;
   const files = fs.readdirSync(AGENTS_DIR).filter((f) => f.endsWith(".md")).sort();

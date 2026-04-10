@@ -80,7 +80,8 @@ function taskFromData(data: Record<string, unknown>): Task | null {
       sessionId: String(data.session_id ?? ""),
       runInBackground: Boolean(data.run_in_background ?? false),
     });
-  } catch {
+  } catch (e) {
+    console.warn(`[task] taskFromData: failed to build task: ${e instanceof Error ? e.message : String(e)}`);
     return null;
   }
 }
@@ -90,7 +91,8 @@ function parseTaskFile(fpath: string): Task | null {
     const raw = readFileSync(fpath, "utf8");
     const data = JSON.parse(raw) as Record<string, unknown>;
     return taskFromData(data);
-  } catch {
+  } catch (e) {
+    console.warn(`[task] parseTaskFile: failed to parse ${fpath}: ${e instanceof Error ? e.message : String(e)}`);
     return null;
   }
 }

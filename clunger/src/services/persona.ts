@@ -102,7 +102,8 @@ function readPromptSync(name: string): string {
     const content = readFileSync(filePath, "utf8");
     const { body } = parseFrontmatter(content);
     return body;
-  } catch {
+  } catch (e) {
+    console.warn(`[persona] readPromptSync: failed to read ${filePath}: ${e instanceof Error ? e.message : String(e)}`);
     return "";
   }
 }

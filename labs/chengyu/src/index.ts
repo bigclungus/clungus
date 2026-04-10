@@ -28,7 +28,10 @@ const OPENAI_API_KEY = (() => {
     const env = require("fs").readFileSync("/mnt/data/temporal-workflows/.env", "utf-8");
     const match = env.match(/^OPENAI_API_KEY=(.+)$/m);
     return match?.[1]?.trim() ?? "";
-  } catch { return ""; }
+  } catch (e) {
+    console.warn(`[chengyu] failed to load OpenAI key from .env: ${e instanceof Error ? e.message : String(e)}`);
+    return "";
+  }
 })();
 
 async function translateChengyu(word: string, explanation: string): Promise<{ literal: string; explanationEn: string }> {
