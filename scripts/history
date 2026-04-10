@@ -20,7 +20,7 @@ from datetime import datetime, timezone
 
 import sqlite_vec
 
-from common import DB_PATH, LOCAL_EMBED_DIMS, USE_LOCAL_EMBEDDINGS, local_embed_query, get_openai_key
+from common import DB_PATH, local_embed_query, get_openai_key
 
 
 def open_db() -> sqlite3.Connection:
