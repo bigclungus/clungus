@@ -2959,9 +2959,10 @@ async function buildCommonsV2Bundle(): Promise<void> {
     throw new Error(commonsV2BundleError);
   }
   const [output] = result.outputs;
-  commonsV2Bundle = await output.text();
+  const bundleText = await output.text();
+  commonsV2Bundle = bundleText;
   commonsV2BuildToken = String(Date.now());
-  console.log(`[commons-v2] client bundle built (${Math.round(commonsV2Bundle.length / 1024)}KB), token=${commonsV2BuildToken}`);
+  console.log(`[commons-v2] client bundle built (${Math.round(bundleText.length / 1024)}KB), token=${commonsV2BuildToken}`);
 }
 
 // Build CommonsV2 bundle at startup — don't block server start on failure
