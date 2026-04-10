@@ -48,6 +48,7 @@ async def github_post_ack_comment(repo: str, number: int, event_type: str) -> st
                 )
                 return f"ERROR {resp.status}: {text[:200]}"
     except Exception as e:
+        activity.logger.error("github_post_ack_comment request failed for %s#%s: %s", repo, number, e)
         return f"ERROR: {e}"
 
 
