@@ -18,9 +18,9 @@ db.run(`CREATE TABLE IF NOT EXISTS chengyu (
 )`);
 db.run(`CREATE INDEX IF NOT EXISTS idx_word ON chengyu(word)`);
 
-// Migration: add translation columns
-try { db.run(`ALTER TABLE chengyu ADD COLUMN translation_literal TEXT DEFAULT ''`); } catch {}
-try { db.run(`ALTER TABLE chengyu ADD COLUMN translation_explanation TEXT DEFAULT ''`); } catch {}
+// Migration: add translation columns (swallow "column already exists" errors only)
+try { db.run(`ALTER TABLE chengyu ADD COLUMN translation_literal TEXT DEFAULT ''`); } catch (e: unknown) { if (!(e instanceof Error && e.message.includes("duplicate column"))) throw e; }
+try { db.run(`ALTER TABLE chengyu ADD COLUMN translation_explanation TEXT DEFAULT ''`); } catch (e: unknown) { if (!(e instanceof Error && e.message.includes("duplicate column"))) throw e; }
 
 // Load OpenAI key for on-demand translation
 const OPENAI_API_KEY = (() => {
