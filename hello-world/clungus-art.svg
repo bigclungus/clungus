@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400" style="background:#1a1a2e;">
+
+  <!-- Stars scattered in background -->
+  <text x="30" y="40" fill="#ffd700" font-size="14">★</text>
+  <text x="540" y="60" fill="#ffd700" font-size="10">★</text>
+  <text x="80" y="300" fill="#ffd700" font-size="8">★</text>
+  <text x="500" y="350" fill="#ffd700" font-size="12">★</text>
+  <text x="280" y="20" fill="#ffd700" font-size="8">★</text>
+  <text x="420" y="380" fill="#ffd700" font-size="10">★</text>
+
+  <!-- ===== ROBOT (right side) ===== -->
+
+  <!-- Robot body -->
+  <rect x="340" y="160" width="100" height="90" rx="6" fill="#4a90d9" stroke="#7ec8e3" stroke-width="3"/>
+
+  <!-- Robot eyes (glowing) -->
+  <rect x="358" y="178" width="18" height="12" rx="3" fill="#00ffcc" opacity="0.9"/>
+  <rect x="402" y="178" width="18" height="12" rx="3" fill="#00ffcc" opacity="0.9"/>
+  <!-- eye glint -->
+  <circle cx="363" cy="182" r="3" fill="white" opacity="0.7"/>
+  <circle cx="407" cy="182" r="3" fill="white" opacity="0.7"/>
+
+  <!-- Robot mouth (flat line with uptick) -->
+  <path d="M365 205 Q390 215 415 205" stroke="#7ec8e3" stroke-width="2.5" fill="none"/>
+
+  <!-- Robot antenna -->
+  <line x1="390" y1="160" x2="390" y2="130" stroke="#7ec8e3" stroke-width="3"/>
+  <circle cx="390" cy="125" r="7" fill="#ff6b6b" stroke="#7ec8e3" stroke-width="2"/>
+  <!-- antenna blink -->
+  <circle cx="390" cy="125" r="4" fill="#ff9999" opacity="0.8">
+    <animate attributeName="opacity" values="0.3;1;0.3" dur="1.2s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Robot head box -->
+  <rect x="350" y="120" width="80" height="45" rx="5" fill="#3a7bc8" stroke="#7ec8e3" stroke-width="2.5"/>
+
+  <!-- Robot neck -->
+  <rect x="378" y="163" width="24" height="12" fill="#4a90d9"/>
+
+  <!-- Robot legs -->
+  <rect x="355" y="248" width="22" height="38" rx="4" fill="#3a7bc8" stroke="#7ec8e3" stroke-width="2"/>
+  <rect x="403" y="248" width="22" height="38" rx="4" fill="#3a7bc8" stroke="#7ec8e3" stroke-width="2"/>
+  <!-- Robot feet -->
+  <rect x="348" y="282" width="30" height="12" rx="4" fill="#2a5fa8"/>
+  <rect x="402" y="282" width="30" height="12" rx="4" fill="#2a5fa8"/>
+
+  <!-- Robot arms -->
+  <rect x="298" y="165" width="44" height="16" rx="6" fill="#3a7bc8" stroke="#7ec8e3" stroke-width="2"/>
+  <rect x="438" y="165" width="44" height="16" rx="6" fill="#3a7bc8" stroke="#7ec8e3" stroke-width="2"/>
+  <!-- Robot hands (pointing) -->
+  <circle cx="297" cy="173" r="9" fill="#4a90d9" stroke="#7ec8e3" stroke-width="2"/>
+  <circle cx="483" cy="173" r="9" fill="#4a90d9" stroke="#7ec8e3" stroke-width="2"/>
+  <!-- pointer finger left -->
+  <rect x="283" y="170" width="16" height="6" rx="3" fill="#7ec8e3"/>
+
+  <!-- Robot chest panel detail -->
+  <rect x="358" y="185" width="65" height="38" rx="3" fill="#2a5fa8" stroke="#7ec8e3" stroke-width="1.5"/>
+  <rect x="364" y="191" width="14" height="8" rx="2" fill="#00ffcc" opacity="0.7"/>
+  <rect x="383" y="191" width="14" height="8" rx="2" fill="#ff6b6b" opacity="0.7">
+    <animate attributeName="opacity" values="0.4;1;0.4" dur="0.8s" repeatCount="indefinite"/>
+  </rect>
+  <rect x="402" y="191" width="14" height="8" rx="2" fill="#ffd700" opacity="0.7"/>
+  <line x1="364" y1="207" x2="412" y2="207" stroke="#7ec8e3" stroke-width="1" opacity="0.5"/>
+  <line x1="364" y1="215" x2="405" y2="215" stroke="#7ec8e3" stroke-width="1" opacity="0.5"/>
+
+  <!-- ===== ROBOT SPEECH BUBBLE ===== -->
+  <ellipse cx="230" cy="80" rx="145" ry="52" fill="white" stroke="#ffd700" stroke-width="3"/>
+  <!-- bubble tail pointing to robot -->
+  <polygon points="310,118 340,130 300,138" fill="white" stroke="#ffd700" stroke-width="2"/>
+
+  <!-- Speech bubble text -->
+  <text x="155" y="68" font-family="monospace" font-size="13" fill="#1a1a2e" font-weight="bold">OPPAI = おっぱい</text>
+  <text x="148" y="88" font-family="monospace" font-size="11" fill="#3a7bc8">(TECHNICAL TERM)</text>
+  <text x="175" y="106" font-family="monospace" font-size="10" fill="#888">...for science</text>
+
+  <!-- ===== STICK FIGURE PERSON (left side) ===== -->
+
+  <!-- Head -->
+  <circle cx="110" cy="150" r="28" fill="none" stroke="#ff9f43" stroke-width="3.5"/>
+  <!-- face - huge excited eyes -->
+  <circle cx="100" cy="144" r="6" fill="#ff9f43"/>
+  <circle cx="120" cy="144" r="6" fill="#ff9f43"/>
+  <!-- pupils -->
+  <circle cx="102" cy="143" r="3" fill="#1a1a2e"/>
+  <circle cx="122" cy="143" r="3" fill="#1a1a2e"/>
+  <!-- highlight dots in eyes -->
+  <circle cx="104" cy="141" r="1.5" fill="white"/>
+  <circle cx="124" cy="141" r="1.5" fill="white"/>
+  <!-- huge grin -->
+  <path d="M95 162 Q110 178 125 162" stroke="#ff9f43" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <!-- sweat drop (too much info) -->
+  <ellipse cx="135" cy="138" rx="5" ry="8" fill="#7ec8e3" opacity="0.8"/>
+  <circle cx="135" cy="130" r="4" fill="#7ec8e3" opacity="0.8"/>
+
+  <!-- Neck -->
+  <line x1="110" y1="178" x2="110" y2="198" stroke="#ff9f43" stroke-width="3.5"/>
+
+  <!-- Body -->
+  <line x1="110" y1="198" x2="110" y2="268" stroke="#ff9f43" stroke-width="3.5"/>
+
+  <!-- Arms - raised in excitement! -->
+  <!-- left arm up and waving -->
+  <line x1="110" y1="215" x2="68" y2="185" stroke="#ff9f43" stroke-width="3.5"/>
+  <line x1="68" y1="185" x2="48" y2="158" stroke="#ff9f43" stroke-width="3"/>
+  <!-- hand squiggle left -->
+  <path d="M48,158 Q42,150 50,145 Q58,140 55,153" stroke="#ff9f43" stroke-width="2.5" fill="none"/>
+
+  <!-- right arm up too -->
+  <line x1="110" y1="215" x2="152" y2="188" stroke="#ff9f43" stroke-width="3.5"/>
+  <line x1="152" y1="188" x2="170" y2="162" stroke="#ff9f43" stroke-width="3"/>
+  <!-- hand squiggle right -->
+  <path d="M170,162 Q178,154 172,148 Q164,142 162,156" stroke="#ff9f43" stroke-width="2.5" fill="none"/>
+
+  <!-- Legs - jumping stance -->
+  <line x1="110" y1="268" x2="82" y2="320" stroke="#ff9f43" stroke-width="3.5"/>
+  <line x1="110" y1="268" x2="138" y2="320" stroke="#ff9f43" stroke-width="3.5"/>
+  <!-- feet -->
+  <line x1="82" y1="320" x2="58" y2="328" stroke="#ff9f43" stroke-width="3"/>
+  <line x1="138" y1="320" x2="162" y2="328" stroke="#ff9f43" stroke-width="3"/>
+
+  <!-- ===== EXCITEMENT EFFECTS around person ===== -->
+
+  <!-- Wavy energy lines -->
+  <path d="M20 180 Q35 170 25 160 Q15 150 30 140" stroke="#ffd700" stroke-width="2.5" fill="none" opacity="0.8"/>
+  <path d="M15 220 Q32 208 20 198 Q8 188 25 178" stroke="#ffd700" stroke-width="2" fill="none" opacity="0.7"/>
+  <path d="M195 175 Q182 163 192 155 Q202 147 188 138" stroke="#ffd700" stroke-width="2.5" fill="none" opacity="0.8"/>
+
+  <!-- Stars exploding from person's head -->
+  <text x="55" y="125" fill="#ffd700" font-size="20">✦</text>
+  <text x="145" y="118" fill="#ffd700" font-size="16">✦</text>
+  <text x="35" y="145" fill="#ff6b6b" font-size="13">✦</text>
+  <text x="165" y="145" fill="#ff6b6b" font-size="12">★</text>
+  <text x="75" y="100" fill="#ffd700" font-size="11">★</text>
+
+  <!-- Knowledge particles flying from robot to person -->
+  <circle cx="258" cy="155" r="5" fill="#00ffcc" opacity="0.9">
+    <animateTransform attributeName="transform" type="translate" values="0,0; -30,-10; -60,-5; -90,5" dur="1.5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="1;0.7;0.4;0" dur="1.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="268" cy="168" r="4" fill="#ffd700" opacity="0.9">
+    <animateTransform attributeName="transform" type="translate" values="0,0; -25,5; -55,8; -85,3" dur="1.8s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="1;0.7;0.4;0" dur="1.8s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="252" cy="178" r="3" fill="#ff6b6b" opacity="0.9">
+    <animateTransform attributeName="transform" type="translate" values="0,0; -20,12; -50,10; -80,15" dur="2s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="1;0.7;0.4;0" dur="2s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- "WOW!" text above person -->
+  <text x="60" y="65" font-family="Impact, sans-serif" font-size="32" fill="#ffd700" stroke="#ff6b6b" stroke-width="1.5" transform="rotate(-8, 60, 65)">WOW!!</text>
+
+  <!-- Speed lines (person moving forward excitedly) -->
+  <line x1="20" y1="255" x2="55" y2="253" stroke="#ff9f43" stroke-width="2" opacity="0.5"/>
+  <line x1="15" y1="265" x2="52" y2="263" stroke="#ff9f43" stroke-width="1.5" opacity="0.4"/>
+  <line x1="22" y1="275" x2="55" y2="272" stroke="#ff9f43" stroke-width="1" opacity="0.3"/>
+
+  <!-- "beep boop" label on robot (small, flavor text) -->
+  <text x="352" y="360" font-family="monospace" font-size="10" fill="#7ec8e3" opacity="0.6">[ CLUNGUS-ROBOT v2.0 ]</text>
+
+  <!-- Bottom caption -->
+  <text x="300" y="388" font-family="monospace" font-size="11" fill="#888" text-anchor="middle">grug learn many thing today</text>
+
+</svg>
