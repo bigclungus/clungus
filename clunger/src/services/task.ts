@@ -113,8 +113,8 @@ function loadTasksFromSQLite(): Task[] | null {
         if (row.status) data.status = row.status;
         const task = taskFromData(data);
         if (task) tasks.push(task);
-      } catch {
-        // Skip malformed rows; do not swallow silently in aggregate
+      } catch (rowErr) {
+        console.warn(`[task] skipping malformed SQLite row: ${rowErr}`);
       }
     }
     return tasks;
