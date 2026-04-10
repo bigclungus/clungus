@@ -190,7 +190,6 @@ def _import_json_task_into_db(task_id: str, db_path: str) -> bool:
     If found, import it into tasks.db on-demand and return True.
     Returns False if no JSON file exists.
     """
-    import json as _json
     tasks_dir = "/home/clungus/work/bigclungus-meta/tasks"
     json_path = os.path.join(tasks_dir, f"{task_id}.json")
     if not os.path.exists(json_path):
@@ -198,7 +197,7 @@ def _import_json_task_into_db(task_id: str, db_path: str) -> bool:
 
     try:
         with open(json_path) as fh:
-            data = _json.load(fh)
+            data = json.load(fh)
     except Exception as e:
         print(f"Warning: could not read {json_path}: {e}", file=sys.stderr)
         return False
@@ -218,7 +217,7 @@ def _import_json_task_into_db(task_id: str, db_path: str) -> bool:
     conn = get_db(db_path)
     conn.execute(
         "INSERT OR IGNORE INTO tasks (id, title, status, created_at, updated_at, data) VALUES (?, ?, ?, ?, ?, ?)",
-        (task_id, title, status, ts_created, ts_updated, _json.dumps(data)),
+        (task_id, title, status, ts_created, ts_updated, json.dumps(data)),
     )
     # Re-import log entries as task_events (skip if they already exist)
     for entry in log:

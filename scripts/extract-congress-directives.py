@@ -57,9 +57,8 @@ def main():
         # Collect evolution notes from personas, if any
         evolution = d.get("evolution", {})
         if isinstance(evolution, str):
-            import json as _json
             try:
-                evolution = _json.loads(evolution)
+                evolution = json.loads(evolution)
             except Exception as e:
                 print(f"Skipping evolution JSON for {session_id}: {e}")
                 evolution = {}

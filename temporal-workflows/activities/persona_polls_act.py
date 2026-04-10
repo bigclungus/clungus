@@ -106,7 +106,7 @@ def _generate_avatar_scripts(slug: str, persona: dict) -> list[tuple[str, str, s
             f"Character context: {prose[:300]}\n\n"
             f"This is variant {label} ({concept}).\n"
             f"Set OUT_PATH = {json.dumps(out_path)} at the top of the script.\n"
-            f"Save the animated GIF to OUT_PATH at the end."
+            "Save the animated GIF to OUT_PATH at the end."
         )
         script = _run_claude(system_prompt, user_msg)
         scripts.append((label, out_path, script))
@@ -173,7 +173,7 @@ def _generate_sprites(slug: str, persona: dict) -> str:
         f"Create 3 pixel art sprite variants for '{display_name}' "
         f"({role}, {title}). Traits: {traits}.\n"
         f"Character context: {prose[:300]}\n\n"
-        f"Each variant should capture a different visual interpretation of this character."
+        "Each variant should capture a different visual interpretation of this character."
     )
 
     output = _run_claude(system_prompt, user_msg)
