@@ -365,8 +365,8 @@ function buildRoster(): unknown[] {
         role: meta.role ?? "",
         model: meta.model ?? "",
       });
-    } catch {
-      // skip unparseable files
+    } catch (e) {
+      console.warn(`[congress] buildRoster: skipping unparseable file ${file}: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
   return roster;
@@ -474,8 +474,8 @@ export const congressServiceImpl: ServiceImpl<typeof CongressService> = {
           });
           session.rounds = rounds;
           fs.writeFileSync(fpath, JSON.stringify(session, null, 2), "utf-8");
-        } catch {
-          // Non-fatal
+        } catch (e) {
+          console.warn(`[congress] postDebate: failed to append round to session file ${sessionId}: ${e instanceof Error ? e.message : String(e)}`);
         }
       }
     }
@@ -489,8 +489,8 @@ export const congressServiceImpl: ServiceImpl<typeof CongressService> = {
           identity,
         ]);
         db.close();
-      } catch {
-        // Non-fatal
+      } catch (e) {
+        console.warn(`[congress] postDebate: failed to increment total_congresses for ${identity}: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
 
@@ -571,8 +571,8 @@ export const congressServiceImpl: ServiceImpl<typeof CongressService> = {
           sex: (meta.sex as string) ?? "",
           traits,
         } satisfies Identity);
-      } catch {
-        // skip
+      } catch (e) {
+        console.warn(`[congress] listIdentities: skipping unparseable file ${file}: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
 
@@ -605,8 +605,8 @@ export const congressServiceImpl: ServiceImpl<typeof CongressService> = {
           _startedAt: String(s.started_at ?? s.saved_at ?? ""),
         } as SessionSummary & { _startedAt?: string };
         sessions.push(entry);
-      } catch {
-        // skip malformed session files
+      } catch (e) {
+        console.warn(`[congress] listSessions: skipping malformed session file ${file}: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
 
