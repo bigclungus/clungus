@@ -15,15 +15,11 @@ except Exception as _e:
     print(f"[launch-claude] Warning: could not mark stale agents: {_e}", file=sys.stderr)
 
 cmd = "/home/clungus/.local/bin/claude"
-#cmd = "/home/clungus/.local/share/claude/versions/2.1.87"
 args = [
     cmd,
     "--debug",
     "--dangerously-skip-permissions",
-#    "--dangerously-load-development-channels", "plugin:discord-clungus@inline",
     "--dangerously-load-development-channels", "server:omni",
-#    "--model", "qwen/qwen3.6-plus:free",
-#    "--model", "minimax/minimax-m2.7",
     "--model", "sonnet",
     "--resume", "38879609-c8bd-47f5-af26-6210d2de543c"
 ]
@@ -42,8 +38,8 @@ def set_winsize():
     try:
         ws = fcntl.ioctl(sys.stdin.fileno(), termios.TIOCGWINSZ, b'\x00' * 8)
         fcntl.ioctl(fd, termios.TIOCSWINSZ, ws)
-    except Exception:
-        pass
+    except OSError:
+        pass  # stdin may not be a tty (e.g. piped); ioctl failure is expected
 
 set_winsize()
 signal.signal(signal.SIGWINCH, lambda *_: set_winsize())

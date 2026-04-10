@@ -59,7 +59,7 @@ def _parse_session_ts(session: dict) -> "datetime | None":
             try:
                 return datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
             except ValueError:
-                pass
+                logger.warning("could not parse timestamp %r from field %r", ts_str, field)
     return None
 
 
