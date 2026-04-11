@@ -141,7 +141,6 @@ function generateWorkout(inputs: {
 
   // Pick exercises, ensuring muscle group coverage
   const picked: ExerciseRow[] = [];
-  const coveredMuscles = new Set<string>();
 
   // First pass: one compound per major muscle group
   for (const muscle of targetMuscles) {
@@ -154,7 +153,6 @@ function generateWorkout(inputs: {
     );
     if (match) {
       picked.push(match);
-      match.muscle_groups.split(",").forEach((m) => coveredMuscles.add(m.trim()));
     }
   }
 

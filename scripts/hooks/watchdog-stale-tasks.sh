@@ -196,7 +196,7 @@ fi
 # Check for stalled congress sessions (running > 2 hours) and terminate them
 # Wrapped in timeout to prevent watchdog hangs (GH#150)
 timeout 15 python3 - <<'PYEOF'
-import json, sys, datetime, subprocess, os
+import json, sys, datetime, subprocess
 
 try:
     result = subprocess.run(
@@ -232,7 +232,7 @@ PYEOF
 
 # Also mark session JSONs for terminated congresses
 python3 - <<'PYEOF'
-import json, os, glob, datetime
+import json, os, glob, datetime, sys
 
 sessions_dir = '/home/clungus/work/hello-world/sessions'
 now = datetime.datetime.now(datetime.timezone.utc)
@@ -260,7 +260,7 @@ PYEOF
 # Workflows don't always update session JSON on failure/completion, so sessions
 # can get stuck in "deliberating" indefinitely.
 python3 - <<'PYEOF'
-import asyncio, json, os, glob, datetime, subprocess, sys
+import asyncio, json, os, glob, datetime, sys
 
 async def main():
     sessions_dir = '/home/clungus/work/hello-world/sessions'

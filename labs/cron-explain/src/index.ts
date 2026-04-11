@@ -6,8 +6,6 @@ const PORT = 8105;
 function describeField(
   value: string,
   unit: string,
-  _min: number,
-  _max: number,
   names?: string[]
 ): string | null {
   if (value === "*") return null;
@@ -97,11 +95,11 @@ function describeCron(expr: string): string {
     } else if (minute === "0") {
       parts.push("at the top of every hour");
     } else {
-      const mDesc = describeField(minute, "minute", 0, 59);
+      const mDesc = describeField(minute, "minute");
       parts.push(`at minute ${mDesc} of every hour`);
     }
   } else if (minute === "*") {
-    const hDesc = describeField(hour, "hour", 0, 23);
+    const hDesc = describeField(hour, "hour");
     parts.push(`every minute during hour ${hDesc}`);
   } else {
     const stepMin = minute.match(/^\*\/(\d+)$/);
@@ -114,7 +112,7 @@ function describeCron(expr: string): string {
       if (minute === "0") {
         parts.push(`every ${stepHr[1]} hours`);
       } else {
-        const mDesc = describeField(minute, "minute", 0, 59);
+        const mDesc = describeField(minute, "minute");
         parts.push(`at minute ${mDesc} every ${stepHr[1]} hours`);
       }
     } else {
@@ -126,8 +124,8 @@ function describeCron(expr: string): string {
         const m = padTwo(minuteNum);
         parts.push(`at ${h}:${m} ${ampm}`);
       } else {
-        const mDesc = describeField(minute, "minute", 0, 59) ?? "0";
-        const hDesc = describeField(hour, "hour", 0, 23) ?? "every hour";
+        const mDesc = describeField(minute, "minute") ?? "0";
+        const hDesc = describeField(hour, "hour") ?? "every hour";
         parts.push(`at minute ${mDesc} of hour ${hDesc}`);
       }
     }
@@ -139,7 +137,7 @@ function describeCron(expr: string): string {
     if (stepDow) {
       parts.push(`every ${stepDow[1]} days of the week`);
     } else {
-      const dowDesc = describeField(dow, "day", 0, 6, DAY_NAMES);
+      const dowDesc = describeField(dow, "day", DAY_NAMES);
       if (dowDesc) parts.push(dowDesc);
     }
   }
@@ -150,14 +148,14 @@ function describeCron(expr: string): string {
     if (stepDom) {
       parts.push(`every ${stepDom[1]} days`);
     } else {
-      const domDesc = describeField(dom, "day", 1, 31);
+      const domDesc = describeField(dom, "day");
       if (domDesc) parts.push(`on the ${domOrdinal(domDesc)}`);
     }
   }
 
   // Month
   if (month !== "*") {
-    const monthDesc = describeField(month, "month", 1, 12, MONTH_NAMES);
+    const monthDesc = describeField(month, "month", MONTH_NAMES);
     if (monthDesc) parts.push(`in ${monthDesc}`);
   }
 
