@@ -460,7 +460,7 @@ function fetchAuditionWalkers() {
   fetch(AUDITION_URL + '/api/audition/walkers')
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(data) { if (data) auditionWalkers = data; })
-    .catch(function() {});
+    .catch(function(err) { console.warn('[grazing] audition fetch failed:', err); });
 }
 
 function drawAuditionWalkers() {
@@ -719,7 +719,7 @@ function fetchSpriteWinners() {
           SPRITE_WINNERS[name] = d.winner;
         }
       })
-      .catch(function() {});
+      .catch(function(err) { console.warn('[grazing] sprite vote fetch failed:', err); });
   });
 }
 
@@ -805,7 +805,7 @@ function pollCongress() {
         };
       }
     })
-    .catch(function() {});
+    .catch(function(err) { console.warn('[grazing] congress poll failed:', err); });
 }
 pollCongress();
 setInterval(pollCongress, 10000);
@@ -1433,10 +1433,10 @@ var WORN_TILES = (function() {
       var obj = JSON.parse(raw);
       if (now - obj.ts < DAY_MS) stored = obj;
     }
-  } catch(e) {}
+  } catch(e) { console.warn('[grazing] localStorage read failed:', e); }
   if (!stored) {
     stored = { ts: now, counts: {} };
-    try { localStorage.setItem('commons_worn_tiles', JSON.stringify(stored)); } catch(e) {}
+    try { localStorage.setItem('commons_worn_tiles', JSON.stringify(stored)); } catch(e) { console.warn('[grazing] localStorage write failed:', e); }
   }
   return stored;
 })();
@@ -1447,7 +1447,7 @@ function recordTileVisit(tx, ty) {
   // Persist every 30 visits (avoid thrashing localStorage)
   var total = WORN_TILES.counts[key];
   if (total % 30 === 0) {
-    try { localStorage.setItem('commons_worn_tiles', JSON.stringify(WORN_TILES)); } catch(e) {}
+    try { localStorage.setItem('commons_worn_tiles', JSON.stringify(WORN_TILES)); } catch(e) { console.warn('[grazing] localStorage write failed:', e); }
   }
 }
 
@@ -1960,7 +1960,7 @@ canvas.addEventListener('mouseleave', function() {
     fetch(AUDITION_URL + '/api/audition/resume', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: auditionHoveredId }),
-    }).catch(function() {});
+    }).catch(function(err) { console.warn('[grazing] fetch failed:', err); });
     for (var ri = 0; ri < auditionWalkers.length; ri++) {
       if (auditionWalkers[ri].id === auditionHoveredId) auditionWalkers[ri].paused = false;
     }
@@ -2130,14 +2130,14 @@ canvas.addEventListener('mousemove', function(e) {
           fetch(AUDITION_URL + '/api/audition/resume', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: auditionHoveredId }),
-          }).catch(function() {});
+          }).catch(function(err) { console.warn('[grazing] fetch failed:', err); });
         }
         auditionHoveredId = foundWalker.id;
         // Pause this walker
         fetch(AUDITION_URL + '/api/audition/pause', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: foundWalker.id }),
-        }).catch(function() {});
+        }).catch(function(err) { console.warn('[grazing] fetch failed:', err); });
         // Mark paused in local state
         for (var pi = 0; pi < auditionWalkers.length; pi++) {
           auditionWalkers[pi].paused = (auditionWalkers[pi].id === foundWalker.id);
@@ -2150,7 +2150,7 @@ canvas.addEventListener('mousemove', function(e) {
       fetch(AUDITION_URL + '/api/audition/resume', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: auditionHoveredId }),
-      }).catch(function() {});
+      }).catch(function(err) { console.warn('[grazing] fetch failed:', err); });
       for (var ri = 0; ri < auditionWalkers.length; ri++) {
         if (auditionWalkers[ri].id === auditionHoveredId) auditionWalkers[ri].paused = false;
       }
@@ -2337,7 +2337,7 @@ function fetchTraces() {
   fetch('/api/commons/traces')
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(d) { if (d && d.traces) tracesData = d.traces; })
-    .catch(function() {});
+    .catch(function(err) { console.warn('[grazing] traces fetch failed:', err); });
 }
 
 function drawTraces() {
@@ -2407,7 +2407,7 @@ fetch('/api/me').then(function(r) { return r.ok ? r.json() : null; }).then(funct
     sessionStorage.setItem('commons_player_name', d.username);
     sendPlayerMove();
   }
-}).catch(function() {});
+}).catch(function(err) { console.warn('[grazing] fetch failed:', err); });
 
 function genPlayerColor() {
   var stored = sessionStorage.getItem('commons_player_color');
@@ -3232,7 +3232,7 @@ function loop() {
           fetch(AUDITION_URL + '/api/audition/resume', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: auditionHoveredId }),
-          }).catch(function() {});
+          }).catch(function(err) { console.warn('[grazing] fetch failed:', err); });
           for (var _ri = 0; _ri < auditionWalkers.length; _ri++) {
             if (auditionWalkers[_ri].id === auditionHoveredId) auditionWalkers[_ri].paused = false;
           }

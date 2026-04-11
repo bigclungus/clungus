@@ -2361,7 +2361,7 @@
           for (let i = 0; i < SEAT_COUNT; i++) seats[i] = allActivePersonas[i] || null;
           retiredPool = [];
         }
-      } catch (e2) { /* ignore */ }
+      } catch (e2) { console.warn('[congress] fallback persona load failed:', e2); }
     }
 
     // Always load sessions into the left sidebar
@@ -2667,7 +2667,7 @@
         }
         applySessionData(session, false);
       } catch (e) {
-        // Ignore polling errors
+        console.warn('[congress] session poll error:', e);
       }
     }, 4000);
   }
@@ -2770,7 +2770,7 @@
       sidebarPollTimer = setTimeout(async () => {
         try {
           await loadSidebarSessionList(selectedId);
-        } catch (e) { /* silently ignore network errors */ }
+        } catch (e) { console.warn('[congress] sidebar poll error:', e); }
         scheduleNext();
       }, interval);
     }
