@@ -1,6 +1,6 @@
 # BigClungus Context Snapshot
-Generated: 2026-04-08 06:06 UTC
-Sessions analyzed: 10 (of 321 total)
+Generated: 2026-04-11 00:00 UTC
+Sessions analyzed: 10 (of 322 total)
 
 ## Top 15 Most-Read Files
 
@@ -92,6 +92,7 @@ with workflow.unsafe.imports_passed_through():
         create_task_record,
         finalize_task,
         record_error,
+        poll_agent_status,
     )
     from activities.agent_executor import run_xai_agent
     from agent_types import AgentTaskInput
@@ -166,26 +167,25 @@ class AgentTaskWorkflow:
             )
 
     # ------------------------------------------------------------------
-    # Claude/tracker path — wait for external mark_complete signal
+    # Claude/tracker path — active poll loop with auto-finalize
     # ------------------------------------------------------------------
 
     async def _run_claude(self, input: AgentTaskInput) -> None:
-        # Wait for mark_complete signal (up to 90 minutes)
+        POLL_INTERVAL = 30        # seconds between polls
+        STALE_POLLS_NEEDED = 5    # consecutive stale polls → auto-finalize
+        MAX_POLLS = 180           # 180 * 30s = 90 min hard ceiling
+
+        stale_count = 0
+        last_jsonl_size = -1
+        polls = 0
+
         try:
-            await workflow.wait_condition(
-                lambda: self._complete or self._status == "cancelled",
-                timeout=timedelta(minutes=90),
-            )
-        except TimeoutError:
-            self._status = "timed_out"
-            self._result = {"status": "timed_out"}
-            await workflow.execute_local_activity(
-                record_error,
-                args=[input.task_id, "workflow timed out waiting for mark_complete"],
-                start_to_close_timeout=timedelta(seconds=10),
-            )
-        except CancelledError:
-         
+            while not self._complete and self._status != "cancelled":
+                # Wait up to POLL_INTERVAL seconds, interruptible by signal
+                try:
+                    await workflow.wait_condition(
+                        lambda: self._complete or self._status == "cancelled",
+                        timeout=timedelt
 ```
 _(truncated at 5000 chars)_
 
@@ -214,6 +214,7 @@ _(truncated at 5000 chars)_
  */
 
 import { existsSync, readFileSync, unlinkSync } from "fs";
+import { execSync } from "child_process";
 
 const STATE_DIR = "/tmp/bc-agents";
 
@@ -276,7 +277,6 @@ const signalPayload: Record<string, unknown> = {
 };
 
 try {
-  const { execSync } = require("child_process");
   execSync(
     `/home/clungus/.local/bin/temporal workflow signal \
 --namespace tasks \
@@ -842,7 +842,6 @@ _(truncated at 5000 chars)_
   agent_task_workflow.py
   audit_wf.py
   bokoen1_ingest_wf.py
-  congress_wf.py
   context_snapshot_wf.py
   discord_ingest_wf.py
   drift_scan_wf.py
@@ -863,7 +862,6 @@ _(truncated at 5000 chars)_
   sweeper.py
   tasks_backup_wf.py
   test_cron_wf.py
-  trial_wf.py
 
 ## /mnt/data/omni/omnichannel
   .env.giga
@@ -894,70 +892,6 @@ _(truncated at 5000 chars)_
   download_bokoen1_transcripts.sh
   extract-congress-directives.py
   fire-xai-task.sh
-  gen_adelbert_avatar_a.py
-  gen_adelbert_avatar_b.py
-  gen_adelbert_avatar_c.py
-  gen_adelbert_avatar_d.py
-  gen_bigclungus_celebration.py
-  gen_chaz_avatar.py
-  gen_galactus_avatar.py
-  gen_galactus_avatar_a.py
-  gen_galactus_avatar_b.py
-  gen_gigaclungus_avatar.py
-  gen_gigaclungus_avatar_a.py
-  gen_gigaclungus_avatar_b.py
-  gen_gigaclungus_avatar_v3.py
-  gen_gigaclungus_avatar_v4.py
-  gen_gigaclungus_avatar_v5.py
-  gen_gigaclungus_avatar_v6.py
-  gen_gigaclungus_v1.py
-  gen_gigaclungus_v2.py
-  gen_hasan_avatar.py
-  gen_hume_avatar.py
-  gen_hume_avatar_a.py
-  gen_hume_avatar_b.py
-  gen_hume_avatar_c.py
-  gen_hume_avatar_d.py
-  gen_ibrahim_avatar_a.py
-  gen_ibrahim_avatar_b.py
-  gen_ibrahim_avatar_c.py
-  gen_ibrahim_avatar_d.py
-  gen_ibrahim_avatar_e.py
-  gen_ibrahim_avatar_f.py
-  gen_ibrahim_avatar_g.py
-  gen_ibrahim_avatar_h.py
-  gen_kwame_avatar_a.py
-  gen_kwame_avatar_b.py
-  gen_kwame_avatar_c.py
-  gen_kwame_avatar_d.py
-  gen_morgan_avatar.py
-  gen_morgan_avatar_a.py
-  gen_morgan_avatar_b.py
-  gen_nemesis_avatar_a.py
-  gen_nemesis_avatar_b.py
-  gen_pepe_avatar_a.py
-  gen_pepe_avatar_b.py
-  gen_pepe_avatar_c.py
-  gen_priya_avatar_a.py
-  gen_priya_avatar_b.py
-  gen_priya_avatar_c.py
-  gen_priya_avatar_d.py
-  gen_punished_trump.py
-  gen_punished_trump_v2.py
-  gen_punished_trump_v3.py
-  gen_ronpaul_avatar_a.py
-  gen_ronpaul_avatar_b.py
-  gen_ronpaul_avatar_c.py
-  gen_thekid_avatar_a.py
-  gen_thekid_avatar_b.py
-  gen_unclebob_avatar_a.py
-  gen_unclebob_avatar_b.py
-  gen_vesper_avatar.py
-  gen_wolf_avatar.py
-  gen_yuki_avatar_a.py
-  gen_yuki_avatar_b.py
-  gen_yuki_avatar_c.py
-  gen_yuki_avatar_d.py
   heartbeat.sh
   history
   history-reembed-attachments.py

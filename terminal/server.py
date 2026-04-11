@@ -264,8 +264,6 @@ def _find_task_dir_for_agent(agent_id: str) -> str | None:
     return None
 
 
-# Legacy constant kept for meta_handler writes — resolved dynamically at call time.
-TASKS_DIR = _TASKS_BASE  # unused sentinel; real resolution happens via helpers above
 
 HTML = r"""<!DOCTYPE html>
 <html>
@@ -2160,7 +2158,6 @@ async def health_handler(request):
 
 
 GRAPHITI_GRAPHS = ['discord', 'infrastructure', 'discord-history', 'discord_history']
-FALKORDB_CONTAINER = 'docker-falkordb-1'
 
 # Entity classifier — module-level constants so they're built once, not per-request.
 _ENTITY_PEOPLE = {
@@ -2261,46 +2258,6 @@ def _user_dedup_key(label: str) -> str:
     k = (label or '').strip().lower()
     return _DISCORD_USER_ALIASES.get(k, k)
 
-
-def _run_falkordb_query(graph: str, query: str) -> list[str]:
-    """Run a Cypher query against FalkorDB via docker exec redis-cli.
-
-    Returns a flat list of all non-blank, non-metadata lines from the output.
-    The first N lines are column headers; callers use _parse_falkordb_table to
-    strip headers and split into rows.
-    """
-    try:
-        result = subprocess.run(
-            ['docker', 'exec', FALKORDB_CONTAINER,
-             'redis-cli', '-p', '6379', 'GRAPH.QUERY', graph, query],
-            capture_output=True, text=True, timeout=10
-        )
-        lines = result.stdout.splitlines()
-    except Exception:
-        return []
-
-    all_data = []
-    for line in lines:
-        stripped = line.strip()
-        if stripped.startswith('Cached execution') or stripped.startswith('Query internal'):
-            break
-        if stripped == '':
-            continue
-        all_data.append(stripped)
-
-    return all_data
-
-
-def _parse_falkordb_table(raw_lines: list[str], num_cols: int) -> list[list[str]]:
-    """Given flat list of values from redis-cli GRAPH.QUERY, split into rows."""
-    # Skip the header row (first num_cols lines)
-    data = raw_lines[num_cols:]
-    rows = []
-    for i in range(0, len(data), num_cols):
-        row = data[i:i + num_cols]
-        if len(row) == num_cols:
-            rows.append(row)
-    return rows
 
 
 def _query_graph(graph_name: str):
@@ -2480,8 +2437,7 @@ def _parse_cost_data():
                     try:
                         # Parse ISO timestamp with Z suffix
                         ts_clean = ts_str.replace('Z', '+00:00')
-                        import datetime
-                        dt = datetime.datetime.fromisoformat(ts_clean)
+                        dt = datetime.fromisoformat(ts_clean)
                         ts = dt.timestamp()
                     except Exception:
                         pass
@@ -2514,8 +2470,7 @@ def _parse_cost_data():
     elapsed_hours = 0.0
     if session_start:
         try:
-            import datetime
-            dt = datetime.datetime.fromisoformat(session_start.replace('Z', '+00:00'))
+            dt = datetime.fromisoformat(session_start.replace('Z', '+00:00'))
             elapsed_hours = (now - dt.timestamp()) / 3600
         except Exception:
             pass
