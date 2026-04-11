@@ -148,7 +148,6 @@ function validateAndApplyMove(player: PlayerState, msg: MoveMessage, world: Worl
       const blockedH = cornersH.some(([cx, cy]) => !isPixelWalkable(cx, cy, chunk));
 
       if (!blockedH) {
-        newX = newX;
         newY = player.y;
       } else {
         // Try vertical only
@@ -160,7 +159,6 @@ function validateAndApplyMove(player: PlayerState, msg: MoveMessage, world: Worl
 
         if (!blockedV) {
           newX = player.x;
-          newY = newY;
         } else {
           // Fully blocked — reject move, keep current position
           newX = player.x;

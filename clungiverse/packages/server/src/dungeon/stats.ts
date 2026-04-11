@@ -35,7 +35,7 @@ function applyTempMultipliers(result: EffectiveStats, activeTempPowerups: Active
   for (const active of activeTempPowerups) {
     if (active.expiresAt <= now) continue;
     let tmpl;
-    try { tmpl = getTempPowerupTemplate(active.templateId); } catch { continue; }
+    try { tmpl = getTempPowerupTemplate(active.templateId); } catch (err) { console.warn("[stats] Unknown temp powerup template:", active.templateId, err); continue; }
     if (tmpl.applyMultipliers) {
       current = { ...tmpl.applyMultipliers(current), autoAttackIntervalMs: 0, critChance: 0 };
       recalcDerived(current);

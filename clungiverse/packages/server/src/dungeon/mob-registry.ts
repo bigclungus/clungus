@@ -26,7 +26,8 @@ function loadAvailableImageSlugs(): Set<string> {
         .filter((f) => f.endsWith(".png"))
         .map((f) => f.slice(0, -4))
     );
-  } catch {
+  } catch (err) {
+    console.warn("[mob-registry] Failed to read mob images directory:", err);
     return new Set();
   }
 }

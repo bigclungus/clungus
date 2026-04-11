@@ -1372,7 +1372,7 @@ function collectPickup(
     applyTempPowerupToPlayer(player, pickup.templateId);
     let tmplName = pickup.templateId;
     let tmplEmoji = "";
-    try { const tmpl = getTempPowerupTemplate(pickup.templateId); tmplName = tmpl.name; tmplEmoji = tmpl.emoji; } catch { /* unknown template */ }
+    try { const tmpl = getTempPowerupTemplate(pickup.templateId); tmplName = tmpl.name; tmplEmoji = tmpl.emoji; } catch (err) { console.warn("[dungeon-loop] Unknown pickup template:", pickup.templateId, err); }
     events.push({ type: "pickup", payload: { playerId: player.id, pickupId: puid, templateId: pickup.templateId, name: tmplName, emoji: tmplEmoji } });
   }
 }

@@ -391,8 +391,8 @@ async function fetchUsername(): Promise<string> {
       const data = await res.json() as { username?: string };
       if (data.username) return data.username;
     }
-  } catch {
-    // Not authenticated or network error
+  } catch (err) {
+    console.warn('[clungiverse] Failed to fetch username:', err);
   }
   return 'Adventurer';
 }
@@ -420,7 +420,8 @@ async function joinExistingLobby(id: string): Promise<string | null> {
       throw new Error(err.error ?? `HTTP ${String(joinRes.status)}`);
     }
     return id;
-  } catch {
+  } catch (err) {
+    console.warn('[clungiverse] Failed to join lobby:', err);
     clearLobbyParam();
     return null;
   }

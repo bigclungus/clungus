@@ -3,10 +3,8 @@
 import type {
   MobBehavior,
   RoomShape,
-  Rarity,
   RunOutcome,
   PickupType,
-  TickEvent as SharedTickEvent,
   MobRosterSnapshot,
   PowerupChoiceSnapshot,
 } from '@clungiverse/shared';
