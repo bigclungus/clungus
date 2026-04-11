@@ -480,18 +480,18 @@ const server = Bun.serve({
 
       try {
         description = describeCron(expression);
-      } catch (e: any) {
+      } catch (e) {
         return new Response(
-          JSON.stringify({ error: `Could not parse expression: ${e.message}` }),
+          JSON.stringify({ error: `Could not parse expression: ${e instanceof Error ? e.message : String(e)}` }),
           { status: 400, headers: { "Content-Type": "application/json" } }
         );
       }
 
       try {
         next_runs = getNextRuns(expression, 10);
-      } catch (e: any) {
+      } catch (e) {
         return new Response(
-          JSON.stringify({ error: `Invalid cron expression: ${e.message}` }),
+          JSON.stringify({ error: `Invalid cron expression: ${e instanceof Error ? e.message : String(e)}` }),
           { status: 400, headers: { "Content-Type": "application/json" } }
         );
       }

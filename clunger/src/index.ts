@@ -2194,8 +2194,6 @@ async function restServeWalletBalance(res: http.ServerResponse): Promise<void> {
 
 // ── Native REST: GET /api/congress/tracking ──────────────────────────────
 
-const VERDICT_TRACKING_DB = "/home/clungus/work/bigclungus-meta/tasks.db";
-
 interface VerdictTrackingRow {
   id: number;
   session_id: string;
@@ -2210,11 +2208,11 @@ interface VerdictTrackingRow {
 }
 
 function restServeCongressTracking(res: http.ServerResponse, filter?: string): void {
-  if (!existsSync(VERDICT_TRACKING_DB)) {
+  if (!existsSync(TASKS_DB_REST)) {
     jsonResponse(res, { error: "verdict_tracking database not found" }, 500);
     return;
   }
-  const db = new Database(VERDICT_TRACKING_DB, { readonly: true });
+  const db = new Database(TASKS_DB_REST, { readonly: true });
   let query = "SELECT * FROM verdict_tracking ORDER BY verdict_ts DESC";
   if (filter === "unacted") {
     query = "SELECT * FROM verdict_tracking WHERE requires_ack = 1 AND ack_ts IS NULL ORDER BY verdict_ts DESC";
@@ -2273,12 +2271,12 @@ async function restPostCongressTrackingRecord(
     return;
   }
 
-  if (!existsSync(VERDICT_TRACKING_DB)) {
+  if (!existsSync(TASKS_DB_REST)) {
     jsonResponse(res, { error: "verdict_tracking database not found" }, 500);
     return;
   }
 
-  const db = new Database(VERDICT_TRACKING_DB);
+  const db = new Database(TASKS_DB_REST);
   try {
     db.run(
       `INSERT INTO verdict_tracking (session_id, topic, verdict_ts, mode, requires_ack, task_id, task_status)
@@ -2315,12 +2313,12 @@ async function restPatchCongressTracking(
     return;
   }
 
-  if (!existsSync(VERDICT_TRACKING_DB)) {
+  if (!existsSync(TASKS_DB_REST)) {
     jsonResponse(res, { error: "verdict_tracking database not found" }, 500);
     return;
   }
 
-  const db = new Database(VERDICT_TRACKING_DB);
+  const db = new Database(TASKS_DB_REST);
   const updates: string[] = [];
   const params: (string | number | null)[] = [];
 
