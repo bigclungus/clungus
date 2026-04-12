@@ -6,7 +6,16 @@
   <title>Job Board</title>
   <script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.js"></script>
   <style>
-    /* Reset to prevent injected sitenav.css from interfering */
+    /*
+     * Theme isolation: clunger injects sitenav.css (dark theme :root vars)
+     * before </head>. We must override those vars AND ensure AG Grid's
+     * Alpine light theme renders cleanly despite the inherited dark palette.
+     *
+     * Strategy: set :root vars with !important, then scope AG Grid overrides
+     * to .ag-theme-alpine with full variable coverage.
+     */
+
+    /* 1. Override sitenav dark :root vars with light equivalents */
     :root {
       --bg: #ffffff !important;
       --accent: #333333 !important;
@@ -16,19 +25,32 @@
       --nav-bg: #f8f9fa !important;
       --nav-border: #dee2e6 !important;
       --hover-fg: #111 !important;
+      color-scheme: light !important;
+    }
+
+    /* 2. Keep the nav bar styled with its own dark theme */
+    nav.sitenav {
+      --nav-bg: #1a1a2e;
+      --nav-border: #e94560;
+      --accent: #e94560;
+      --text-muted: #888;
+      --hover-fg: #fff;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    body {
+    html, body {
       background: #ffffff !important;
+      background-color: #ffffff !important;
       color: #333333 !important;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    }
+
+    body {
       height: 100vh;
       width: 100vw;
       display: flex;
       flex-direction: column;
-      /* Override sitenav's padding-top; account for nav bar */
       padding-top: 48px !important;
     }
 
@@ -79,30 +101,114 @@
       width: 100%;
     }
 
-    /* AG Grid light spreadsheet overrides — !important to resist injected parent CSS */
+    /*
+     * 3. Comprehensive AG Grid Alpine light theme overrides.
+     *    Cover every variable AG Grid uses so nothing leaks through from
+     *    sitenav's dark palette or inherited :root values.
+     */
     .ag-theme-alpine {
+      --ag-alpine-active-color: #2196f3 !important;
       --ag-background-color: #ffffff !important;
+      --ag-foreground-color: #333333 !important;
       --ag-header-background-color: #f8f9fa !important;
+      --ag-header-foreground-color: #333333 !important;
       --ag-odd-row-background-color: #fafbfc !important;
       --ag-row-hover-color: #e9ecef !important;
       --ag-selected-row-background-color: #d0e8ff !important;
       --ag-border-color: #dee2e6 !important;
-      --ag-header-foreground-color: #333333 !important;
-      --ag-foreground-color: #333333 !important;
+      --ag-secondary-border-color: #e9ecef !important;
+      --ag-row-border-color: #e9ecef !important;
+      --ag-header-cell-hover-background-color: #eef1f4 !important;
+      --ag-header-cell-moving-background-color: #d9dee4 !important;
+      --ag-control-panel-background-color: #ffffff !important;
+      --ag-subheader-background-color: #ffffff !important;
+      --ag-invalid-color: #e53935 !important;
+      --ag-checkbox-unchecked-color: #999 !important;
+      --ag-range-selection-background-color: rgba(33, 150, 243, 0.15) !important;
+      --ag-range-selection-border-color: #2196f3 !important;
+      --ag-modal-overlay-background-color: rgba(255, 255, 255, 0.66) !important;
+      --ag-input-focus-border-color: #2196f3 !important;
       --ag-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+      --ag-font-size: 13px !important;
+      --ag-card-shadow: 0 1px 4px 1px rgba(0, 0, 0, 0.1) !important;
+      --ag-popup-shadow: 0 5px 12px rgba(0, 0, 0, 0.15) !important;
+      --ag-side-button-selected-background-color: #ffffff !important;
+      --ag-chip-background-color: #e0e0e0 !important;
+      --ag-input-border-color: #ccc !important;
+      --ag-input-disabled-background-color: #f5f5f5 !important;
+      --ag-disabled-foreground-color: #999 !important;
+      --ag-tooltip-background-color: #f8f9fa !important;
+      --ag-value-change-delta-up-color: #43a047 !important;
+      --ag-value-change-delta-down-color: #e53935 !important;
+      --ag-value-change-value-highlight-background-color: rgba(22, 160, 133, 0.5) !important;
     }
 
-    .relevance-high { color: #1a7f4b; font-weight: 600; }
-    .relevance-mid { color: #b8860b; font-weight: 600; }
-    .relevance-low { color: #c0392b; font-weight: 600; }
+    /* Explicit overrides for AG Grid elements that might inherit from :root */
+    .ag-theme-alpine .ag-root-wrapper {
+      background-color: #ffffff !important;
+      color: #333333 !important;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    }
+    .ag-theme-alpine .ag-header {
+      background-color: #f8f9fa !important;
+      color: #333333 !important;
+    }
+    .ag-theme-alpine .ag-row {
+      color: #333333 !important;
+    }
+    .ag-theme-alpine .ag-row-odd {
+      background-color: #fafbfc !important;
+    }
+    .ag-theme-alpine .ag-row-even {
+      background-color: #ffffff !important;
+    }
+    .ag-theme-alpine .ag-cell {
+      color: #333333 !important;
+    }
+    .ag-theme-alpine .ag-header-cell {
+      color: #333333 !important;
+    }
+    .ag-theme-alpine .ag-popup {
+      background-color: #ffffff !important;
+      color: #333333 !important;
+    }
+    .ag-theme-alpine .ag-filter {
+      background-color: #ffffff !important;
+      color: #333333 !important;
+    }
+    .ag-theme-alpine .ag-menu {
+      background-color: #ffffff !important;
+      color: #333333 !important;
+    }
+    .ag-theme-alpine .ag-picker-field-wrapper {
+      background-color: #ffffff !important;
+    }
+    .ag-theme-alpine .ag-select .ag-picker-field-display {
+      color: #333333 !important;
+    }
+    .ag-theme-alpine .ag-tooltip {
+      background-color: #f8f9fa !important;
+      color: #333333 !important;
+      border: 1px solid #dee2e6 !important;
+    }
+    .ag-theme-alpine input,
+    .ag-theme-alpine select,
+    .ag-theme-alpine textarea {
+      background-color: #ffffff !important;
+      color: #333333 !important;
+    }
 
-    .status-new { background: #e8f4fd; color: #1565c0; }
-    .status-applied { background: #fff8e1; color: #f57f17; }
-    .status-referred { background: #e8eaf6; color: #283593; }
-    .status-interviewing { background: #e3f2fd; color: #0277bd; }
-    .status-denied { background: #fce4ec; color: #c62828; }
-    .status-offer { background: #e8f5e9; color: #2e7d32; font-weight: 600; }
-    .status-stale { background: #f5f5f5; color: #9e9e9e; }
+    .relevance-high { color: #1a7f4b !important; font-weight: 600; }
+    .relevance-mid { color: #b8860b !important; font-weight: 600; }
+    .relevance-low { color: #c0392b !important; font-weight: 600; }
+
+    .status-new { background: #e8f4fd !important; color: #1565c0 !important; }
+    .status-applied { background: #fff8e1 !important; color: #f57f17 !important; }
+    .status-referred { background: #e8eaf6 !important; color: #283593 !important; }
+    .status-interviewing { background: #e3f2fd !important; color: #0277bd !important; }
+    .status-denied { background: #fce4ec !important; color: #c62828 !important; }
+    .status-offer { background: #e8f5e9 !important; color: #2e7d32 !important; font-weight: 600; }
+    .status-stale { background: #f5f5f5 !important; color: #9e9e9e !important; }
 
     /* Filter pills */
     #filters {
