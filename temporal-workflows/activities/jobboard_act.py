@@ -8,6 +8,7 @@ inserts results, and optionally notifies Discord.
 import json
 import logging
 import os
+import re
 import sqlite3
 from pathlib import Path
 from typing import Any
@@ -18,35 +19,50 @@ from temporalio import activity
 logger = logging.getLogger(__name__)
 
 DB_PATH = "/mnt/data/labs/jobboard/jobs.db"
-API_KEY_PATH = "/mnt/data/secrets/anthropic_api_key"
 DISCORD_BOT_TOKEN_ENV = "DISCORD_BOT_TOKEN"
 
-RESUME_SUMMARY = """
-Justin Head — Principal/Staff Engineer, 15 years experience.
-Languages: JavaScript/TypeScript/Node.js, Go, Kotlin, Java, Rust, Bash, SQL.
-Frameworks: React, gRPC, GraphQL, Hono/Express.
-Infrastructure: MySQL, Redis, Postgres, AWS, Docker, Kubernetes, Terraform.
-Domains: AI tooling, distributed systems, platform architecture, observability,
-workflow engines, developer platforms, consumption/billing pipelines.
-Leadership: Led 100+ engineer org architecture group.
-Entrepreneurship: Founded cloud game server company to $500k ARR.
-Target roles: Staff/Principal/Distinguished in distributed systems, platform,
-infrastructure, developer tools.
-"""
+RESUME_FALLBACK = (
+    "Staff/Principal engineer, 15yr experience, distributed systems, "
+    "platform architecture, JS/TS/Go"
+)
+
+RESUME_URL = "https://resume.jxh.io"
 
 HN_HIRING_SEARCH_URL = "https://hn.algolia.com/api/v1/search"
 HN_ITEM_URL = "https://hacker-news.firebaseio.com/v0/item/{}.json"
 
 
-def _get_anthropic_api_key() -> str:
-    """Load Anthropic API key from file or environment."""
+def _get_anthropic_api_key() -> str | None:
+    """Load Anthropic API key from file or environment. Returns None if unavailable."""
     key_path = Path(API_KEY_PATH)
     if key_path.exists():
         return key_path.read_text().strip()
     key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if not key:
-        raise RuntimeError("No Anthropic API key found at %s or in ANTHROPIC_API_KEY env" % API_KEY_PATH)
-    return key
+    return key if key else None
+
+
+def _get_xai_api_key() -> str | None:
+    """Load xAI API key from file or environment."""
+    key_path = Path(XAI_KEY_PATH)
+    if key_path.exists():
+        return key_path.read_text().strip()
+    key = os.environ.get("XAI_API_KEY", "")
+    return key if key else None
+
+
+def _get_llm_backend() -> tuple[str, str]:
+    """Determine which LLM backend to use. Returns (backend_name, api_key).
+    Prefers Anthropic; falls back to xAI/Grok."""
+    anthropic_key = _get_anthropic_api_key()
+    if anthropic_key:
+        return ("anthropic", anthropic_key)
+    xai_key = _get_xai_api_key()
+    if xai_key:
+        return ("xai", xai_key)
+    raise RuntimeError(
+        "No LLM API key found. Checked: %s, %s, ANTHROPIC_API_KEY env, XAI_API_KEY env"
+        % (API_KEY_PATH, XAI_KEY_PATH)
+    )
 
 
 def _get_discord_bot_token() -> str:
@@ -155,9 +171,35 @@ async def _fetch_hn_whos_hiring() -> str:
         return f"Thread: {story_title}\n\n" + "\n\n---\n\n".join(comments)
 
 
+async def _fetch_resume() -> str:
+    """Fetch resume content from resume.jxh.io, stripping HTML to plain text."""
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.get(RESUME_URL)
+        resp.raise_for_status()
+        html = resp.text
+        # Strip HTML tags to get plain text
+        text = re.sub(r"<style[^>]*>.*?</style>", "", html, flags=re.DOTALL)
+        text = re.sub(r"<script[^>]*>.*?</script>", "", text, flags=re.DOTALL)
+        text = re.sub(r"<[^>]+>", " ", text)
+        # Collapse whitespace
+        text = re.sub(r"\s+", " ", text).strip()
+        return text
+
+
 @activity.defn
 async def research_and_score_jobs(existing_jobs: list[dict]) -> list[dict]:
     """Research new job postings using Claude API and score them for relevance."""
+    # Fetch live resume
+    resume_content = ""
+    try:
+        resume_content = await _fetch_resume()
+        logger.info("Fetched live resume: %d chars", len(resume_content))
+    except Exception as e:
+        logger.warning("Failed to fetch resume from %s: %s — using fallback", RESUME_URL, e)
+
+    if not resume_content:
+        resume_content = RESUME_FALLBACK
+
     # Fetch HN Who's Hiring content
     hn_content = ""
     try:
@@ -176,8 +218,6 @@ async def research_and_score_jobs(existing_jobs: list[dict]) -> list[dict]:
     )
     if not existing_summary:
         existing_summary = "(no existing jobs)"
-
-    api_key = _get_anthropic_api_key()
 
     system_prompt = """You are a job research assistant. Extract job postings from the provided
 source content that match the candidate profile. Score each posting 0.0-1.0 for relevance
@@ -203,7 +243,7 @@ Return ONLY a JSON array (no markdown, no explanation) where each element has th
 If no relevant jobs are found, return an empty array: []"""
 
     user_msg = f"""## Candidate Profile
-{RESUME_SUMMARY}
+{resume_content}
 
 ## Existing Jobs (DO NOT duplicate these)
 {existing_summary}
@@ -211,37 +251,59 @@ If no relevant jobs are found, return an empty array: []"""
 ## Source: Hacker News "Who is Hiring?"
 {hn_content[:80000]}"""
 
-    # Call Claude API via httpx
-    async with httpx.AsyncClient(timeout=120.0) as client:
-        resp = await client.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            },
-            json={
-                "model": "claude-sonnet-4-6",
-                "max_tokens": 8192,
-                "system": system_prompt,
-                "messages": [{"role": "user", "content": user_msg}],
-            },
-        )
-        resp.raise_for_status()
-        result = resp.json()
+    backend, api_key = _get_llm_backend()
+    logger.info("Using LLM backend: %s", backend)
 
-    # Extract text content from response
     text = ""
-    for block in result.get("content", []):
-        if block.get("type") == "text":
-            text += block["text"]
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        if backend == "anthropic":
+            resp = await client.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json",
+                },
+                json={
+                    "model": "claude-sonnet-4-6",
+                    "max_tokens": 8192,
+                    "system": system_prompt,
+                    "messages": [{"role": "user", "content": user_msg}],
+                },
+            )
+            resp.raise_for_status()
+            result = resp.json()
+            for block in result.get("content", []):
+                if block.get("type") == "text":
+                    text += block["text"]
+        else:
+            # xAI API (OpenAI-compatible format)
+            resp = await client.post(
+                XAI_API_BASE,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "grok-3",
+                    "max_tokens": 8192,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_msg},
+                    ],
+                },
+            )
+            resp.raise_for_status()
+            result = resp.json()
+            choices = result.get("choices", [])
+            if choices:
+                text = choices[0].get("message", {}).get("content", "")
 
     if not text.strip():
-        logger.warning("Empty response from Claude API")
+        logger.warning("Empty response from %s API", backend)
         return []
 
     # Parse JSON — handle potential markdown wrapping
-    text = text.strip()
     if text.startswith("```"):
         # Strip markdown code fence
         lines = text.split("\n")
@@ -258,7 +320,7 @@ If no relevant jobs are found, return an empty array: []"""
         logger.error("Claude response is not a list: %s", type(jobs))
         return []
 
-    logger.info("Claude returned %d job postings", len(jobs))
+    logger.info("LLM (%s) returned %d job postings", backend, len(jobs))
     return jobs
 
 
