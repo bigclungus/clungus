@@ -32,6 +32,24 @@ RESUME_URL = "https://resume.jxh.io"
 HN_HIRING_SEARCH_URL = "https://hn.algolia.com/api/v1/search"
 HN_ITEM_URL = "https://hacker-news.firebaseio.com/v0/item/{}.json"
 
+# Additional job sources: (name, url)
+EXTRA_JOB_SOURCES = [
+    ("Levels.fyi Staff/Principal", "https://www.levels.fyi/jobs?title=Staff+Engineer&title=Principal+Engineer&title=Senior+Staff+Engineer"),
+    ("Stripe Careers", "https://boards.greenhouse.io/stripe"),
+    ("Cloudflare Careers", "https://www.cloudflare.com/careers/jobs/"),
+    ("Vercel Careers", "https://jobs.ashbyhq.com/vercel"),
+    ("Anthropic Careers", "https://jobs.ashbyhq.com/anthropic"),
+    ("Databricks Careers", "https://www.databricks.com/company/careers"),
+    ("Netflix Jobs", "https://jobs.netflix.com/search"),
+    ("Meta Careers", "https://www.metacareers.com/jobs"),
+    ("Google Careers", "https://careers.google.com/jobs/results/?q=staff%20engineer"),
+    ("YC Work at a Startup", "https://www.workatastartup.com/jobs?role=eng&type=fullTime"),
+    ("Built In", "https://builtin.com/jobs?search=principal+engineer"),
+]
+
+MAX_SOURCE_CHARS = 30000
+MAX_TOTAL_PROMPT_CHARS = 100000
+
 
 def _get_discord_bot_token() -> str:
     """Load Discord bot token from environment."""
@@ -135,17 +153,51 @@ async def _fetch_hn_whos_hiring() -> str:
         return f"Thread: {story_title}\n\n" + "\n\n---\n\n".join(comments)
 
 
+def _strip_html(html: str) -> str:
+    """Strip HTML tags and collapse whitespace to plain text."""
+    text = re.sub(r"<style[^>]*>.*?</style>", "", html, flags=re.DOTALL)
+    text = re.sub(r"<script[^>]*>.*?</script>", "", text, flags=re.DOTALL)
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+async def _fetch_extra_source(name: str, url: str) -> tuple[str, str]:
+    """Fetch a single job source page. Returns (name, text_content)."""
+    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+        resp = await client.get(url, headers={
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+        })
+        resp.raise_for_status()
+        text = _strip_html(resp.text)
+        return (name, text[:MAX_SOURCE_CHARS])
+
+
+async def _fetch_all_extra_sources() -> list[tuple[str, str]]:
+    """Fetch all extra job sources concurrently. Skip failures."""
+    tasks = [_fetch_extra_source(name, url) for name, url in EXTRA_JOB_SOURCES]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    sources = []
+    for i, result in enumerate(results):
+        name = EXTRA_JOB_SOURCES[i][0]
+        if isinstance(result, Exception):
+            logger.warning("Failed to fetch %s: %s", name, result)
+            continue
+        src_name, content = result
+        if content and len(content) > 100:  # skip near-empty pages
+            sources.append((src_name, content))
+            logger.info("Fetched %s: %d chars", src_name, len(content))
+        else:
+            logger.warning("Skipping %s: too little content (%d chars)", src_name, len(content) if content else 0)
+    return sources
+
+
 async def _fetch_resume() -> str:
     """Fetch resume content from resume.jxh.io, stripping HTML to plain text."""
     async with httpx.AsyncClient(timeout=15.0) as client:
         resp = await client.get(RESUME_URL)
         resp.raise_for_status()
-        html = resp.text
-        text = re.sub(r"<style[^>]*>.*?</style>", "", html, flags=re.DOTALL)
-        text = re.sub(r"<script[^>]*>.*?</script>", "", text, flags=re.DOTALL)
-        text = re.sub(r"<[^>]+>", " ", text)
-        text = re.sub(r"\s+", " ", text).strip()
-        return text
+        return _strip_html(resp.text)
 
 
 @activity.defn
@@ -166,16 +218,30 @@ async def research_and_score_jobs(existing_jobs: list[dict]) -> list[dict]:
     if not resume_content:
         resume_content = RESUME_FALLBACK
 
-    hn_content = ""
-    try:
-        hn_content = await _fetch_hn_whos_hiring()
-        if hn_content:
-            logger.info("Fetched HN content: %d chars", len(hn_content))
-    except Exception as e:
-        logger.warning("Failed to fetch HN Who's Hiring: %s", e)
+    # Fetch HN and all extra sources concurrently
+    hn_task = _fetch_hn_whos_hiring()
+    extra_task = _fetch_all_extra_sources()
+    hn_result, extra_results = await asyncio.gather(
+        hn_task, extra_task, return_exceptions=True
+    )
 
-    if not hn_content:
-        hn_content = "(No HN content available this cycle)"
+    # Build source sections
+    source_sections: list[tuple[str, str]] = []
+
+    # HN first (highest priority)
+    if isinstance(hn_result, str) and hn_result:
+        source_sections.append(("HN Who's Hiring", hn_result))
+        logger.info("Fetched HN content: %d chars", len(hn_result))
+    else:
+        logger.warning("No HN content available this cycle")
+
+    # Extra sources
+    if isinstance(extra_results, Exception):
+        logger.warning("Failed to fetch extra sources: %s", extra_results)
+    elif isinstance(extra_results, list):
+        source_sections.extend(extra_results)
+
+    logger.info("Total sources fetched: %d", len(source_sections))
 
     existing_summary = "\n".join(
         f"- {j['company']} | {j['title']} | {j['link']}" for j in existing_jobs
@@ -189,6 +255,9 @@ to the candidate. Only include postings scoring >= 0.5.
 
 IMPORTANT: Do NOT include any jobs that appear in the existing jobs list (dedup by company+title or link).
 
+Multiple sources are provided below. Extract relevant postings from ALL of them.
+For each posting, set the "source" field to the name of the source it came from.
+
 Return ONLY a JSON array (no markdown, no explanation) where each element has these exact keys:
 - company (string)
 - title (string)
@@ -199,21 +268,30 @@ Return ONLY a JSON array (no markdown, no explanation) where each element has th
 - industry (string)
 - location (string)
 - remote (string: "remote", "hybrid", "onsite", or "unknown")
-- source (string: where you found it, e.g. "HN Who's Hiring April 2026")
+- source (string: which source this came from, e.g. "HN Who's Hiring", "Stripe Careers", etc.)
 - relevance (float 0.0-1.0)
 - fit_notes (string: 1-2 sentences on why this fits or doesn't)
 - tags (string: comma-separated relevant tags)
 
 If no relevant jobs are found, return an empty array: []"""
 
+    # Build user message with all sources, respecting total size limit
+    source_blocks = []
+    total_chars = 0
+    for name, content in source_sections:
+        block = f"\n\n## SOURCE: {name}\n{content}"
+        if total_chars + len(block) > MAX_TOTAL_PROMPT_CHARS - 5000:  # reserve room for profile/existing
+            logger.warning("Truncating sources at %s (total would exceed limit)", name)
+            break
+        source_blocks.append(block)
+        total_chars += len(block)
+
     user_msg = f"""## Candidate Profile
 {resume_content}
 
 ## Existing Jobs (DO NOT duplicate these)
 {existing_summary}
-
-## Source: Hacker News "Who is Hiring?"
-{hn_content[:80000]}"""
+{"".join(source_blocks)}"""
 
     # Call Claude via CLI with OAuth session auth.
     # Prompt passed via stdin (too large for argv).
