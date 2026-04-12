@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS jobs (
   tags          TEXT,
   posted_at     TEXT,
   discovered_at TEXT DEFAULT (datetime('now')),
-  status        TEXT CHECK(status IN ('new','interested','applied','rejected','stale')) DEFAULT 'new',
+  status        TEXT CHECK(status IN ('new','applied','referred','interviewing','denied','offer','stale')) DEFAULT 'new',
   hidden        INTEGER DEFAULT 0
 );
 
@@ -37,27 +37,14 @@ CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_link ON jobs(link);
 `);
 
-// Seed data if table is empty
-const count = db.query("SELECT COUNT(*) as c FROM jobs").get() as { c: number };
-if (count.c === 0) {
-  const seed = db.prepare(`
-    INSERT INTO jobs (company, title, link, salary_min, salary_max, level, industry, location, remote, source, relevance, fit_notes, tags, posted_at, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
+// Migrate status constraint (add new values, drop old ones)
+// SQLite doesn't support ALTER CHECK, so we update any old statuses
+db.exec(`UPDATE jobs SET status = 'new' WHERE status = 'interested'`);
+db.exec(`UPDATE jobs SET status = 'denied' WHERE status = 'rejected'`);
 
-  const seedData = [
-    ["Stripe", "Staff Engineer, Payment Infrastructure", "https://stripe.com/jobs/staff-payments-infra", 250, 350, "Staff", "Fintech", "San Francisco, CA", "hybrid", "LinkedIn", 0.92, "Strong match - distributed systems + payments experience", "distributed-systems,payments,go,typescript", "2026-04-10", "new"],
-    ["Cloudflare", "Principal Systems Engineer", "https://cloudflare.com/careers/principal-systems", 280, 380, "Principal", "Infrastructure", "Austin, TX", "remote", "careers page", 0.85, "Good fit - edge computing, Rust/Go, large scale", "rust,go,distributed-systems,edge-computing", "2026-04-08", "new"],
-    ["Anthropic", "Staff Software Engineer, Infrastructure", "https://anthropic.com/careers/staff-infra", 300, 400, "Staff", "AI/ML", "San Francisco, CA", "hybrid", "HN Who's Hiring", 0.88, "AI infra scaling - relevant background in distributed training", "python,infrastructure,ml-ops,distributed-systems", "2026-04-11", "interested"],
-    ["Datadog", "Principal Engineer, Real-Time Analytics", "https://datadog.com/careers/principal-realtime", 270, 360, "Principal", "Observability", "New York, NY", "hybrid", "recruiter outreach", 0.72, "Decent fit - metrics pipeline experience overlaps", "go,kafka,time-series,analytics", "2026-04-05", "new"],
-    ["Fly.io", "Senior Staff Engineer", "https://fly.io/jobs/senior-staff", 220, 320, "Senior Staff", "Infrastructure", "Remote", "remote", "Twitter", 0.78, "Interesting - container orchestration and edge compute", "rust,go,containers,edge-computing", "2026-04-09", "new"],
-  ];
+// Clean up seed data
+db.exec(`DELETE FROM jobs WHERE company IN ('Stripe', 'Cloudflare', 'Anthropic', 'Datadog', 'Fly.io') AND source IN ('seed', 'LinkedIn', 'careers page', 'HN Who''s Hiring', 'recruiter outreach', 'Twitter')`);
 
-  for (const row of seedData) {
-    seed.run(...row);
-  }
-  console.log("Seeded 5 sample jobs");
-}
 
 // Load static HTML
 const indexHtml = readFileSync(join(LAB_DIR, "public", "index.html"), "utf-8");
