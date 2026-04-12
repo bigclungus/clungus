@@ -6,16 +6,30 @@
   <title>Job Board</title>
   <script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.js"></script>
   <style>
+    /* Reset to prevent injected sitenav.css from interfering */
+    :root {
+      --bg: #ffffff !important;
+      --accent: #333333 !important;
+      --text: #333333 !important;
+      --text-muted: #555 !important;
+      --text-dim: #777 !important;
+      --nav-bg: #f8f9fa !important;
+      --nav-border: #dee2e6 !important;
+      --hover-fg: #111 !important;
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      background: #ffffff;
-      color: #333333;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #ffffff !important;
+      color: #333333 !important;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
       height: 100vh;
       width: 100vw;
       display: flex;
       flex-direction: column;
+      /* Override sitenav's padding-top; account for nav bar */
+      padding-top: 48px !important;
     }
 
     .toolbar {
@@ -65,16 +79,17 @@
       width: 100%;
     }
 
-    /* AG Grid light spreadsheet overrides */
+    /* AG Grid light spreadsheet overrides — !important to resist injected parent CSS */
     .ag-theme-alpine {
-      --ag-background-color: #ffffff;
-      --ag-header-background-color: #f8f9fa;
-      --ag-odd-row-background-color: #fafbfc;
-      --ag-row-hover-color: #e9ecef;
-      --ag-selected-row-background-color: #d0e8ff;
-      --ag-border-color: #dee2e6;
-      --ag-header-foreground-color: #333333;
-      --ag-foreground-color: #333333;
+      --ag-background-color: #ffffff !important;
+      --ag-header-background-color: #f8f9fa !important;
+      --ag-odd-row-background-color: #fafbfc !important;
+      --ag-row-hover-color: #e9ecef !important;
+      --ag-selected-row-background-color: #d0e8ff !important;
+      --ag-border-color: #dee2e6 !important;
+      --ag-header-foreground-color: #333333 !important;
+      --ag-foreground-color: #333333 !important;
+      --ag-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
     }
 
     .relevance-high { color: #1a7f4b; font-weight: 600; }
