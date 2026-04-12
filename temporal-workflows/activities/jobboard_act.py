@@ -48,6 +48,7 @@ EXTRA_JOB_SOURCES = [
     # Frontiers
     ("OpenAI Careers", "https://openai.com/careers/search"),
     ("NVIDIA Careers", "https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite"),
+    ("Intel Careers", "https://jobs.intel.com/en/search-jobs"),
     # SaaS
     ("CrowdStrike Careers", "https://www.crowdstrike.com/careers/"),
     ("Okta Careers", "https://www.okta.com/company/careers/"),
