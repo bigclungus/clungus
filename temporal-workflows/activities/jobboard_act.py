@@ -95,6 +95,15 @@ def _get_discord_bot_token() -> str:
     return token
 
 
+def _bool_to_sqlite(val) -> int | None:
+    """Convert a Python bool (or truthy/falsy) to SQLite integer, or None."""
+    if val is True:
+        return 1
+    if val is False:
+        return 0
+    return None
+
+
 def _ensure_db() -> sqlite3.Connection:
     """Open SQLite connection and ensure the jobs table exists."""
     conn = sqlite3.connect(DB_PATH)
@@ -118,7 +127,7 @@ def _ensure_db() -> sqlite3.Connection:
             tags          TEXT,
             posted_at     TEXT,
             discovered_at TEXT DEFAULT (datetime('now')),
-            status        TEXT CHECK(status IN ('new','interested','applied','rejected','stale')) DEFAULT 'new',
+            status        TEXT CHECK(status IN ('new','applied','referred','interviewing','denied','offer','stale')) DEFAULT 'new',
             hidden        INTEGER DEFAULT 0
         )
     """)
@@ -398,15 +407,7 @@ async def insert_new_jobs(jobs: list[dict]) -> int:
     try:
         for job in jobs:
             try:
-                # Convert founder_led from bool to int for SQLite
-                founder_led_val = job.get("founder_led")
-                if founder_led_val is True:
-                    founder_led_val = 1
-                elif founder_led_val is False:
-                    founder_led_val = 0
-                else:
-                    founder_led_val = None
-
+                changes_before = conn.total_changes
                 conn.execute(
                     """INSERT OR IGNORE INTO jobs
                        (company, title, link, salary_min, salary_max, level, industry,
@@ -431,13 +432,13 @@ async def insert_new_jobs(jobs: list[dict]) -> int:
                         job.get("employee_count"),
                         job.get("total_funding"),
                         job.get("ticker"),
-                        founder_led_val,
+                        _bool_to_sqlite(job.get("founder_led")),
                         job.get("glassdoor_rating"),
                         job.get("glassdoor_recommend_pct"),
                     ),
                 )
-                if conn.total_changes > inserted:
-                    inserted = conn.total_changes
+                if conn.total_changes > changes_before:
+                    inserted += 1
             except Exception as e:
                 logger.warning("Failed to insert job %s at %s: %s", job.get("title"), job.get("company"), e)
                 continue
@@ -547,15 +548,8 @@ async def update_company_data(enrichment: list[dict]) -> int:
             if not company:
                 continue
 
-            founder_led_val = item.get("founder_led")
-            if founder_led_val is True:
-                founder_led_val = 1
-            elif founder_led_val is False:
-                founder_led_val = 0
-            else:
-                founder_led_val = None
-
             enriched_at = datetime.now(timezone.utc).isoformat()
+            changes_before = conn.total_changes
             conn.execute(
                 """UPDATE jobs SET employee_count=?, total_funding=?, ticker=?,
                    founder_led=?, glassdoor_rating=?, glassdoor_recommend_pct=?,
@@ -565,14 +559,14 @@ async def update_company_data(enrichment: list[dict]) -> int:
                     item.get("employee_count"),
                     item.get("total_funding"),
                     item.get("ticker"),
-                    founder_led_val,
+                    _bool_to_sqlite(item.get("founder_led")),
                     item.get("glassdoor_rating"),
                     item.get("glassdoor_recommend_pct"),
                     enriched_at,
                     company,
                 ),
             )
-            if conn.total_changes > updated:
+            if conn.total_changes > changes_before:
                 updated += 1
         conn.commit()
     finally:

@@ -37,11 +37,6 @@ CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_link ON jobs(link);
 `);
 
-// Migrate status constraint (add new values, drop old ones)
-// SQLite doesn't support ALTER CHECK, so we update any old statuses
-db.exec(`UPDATE jobs SET status = 'new' WHERE status = 'interested'`);
-db.exec(`UPDATE jobs SET status = 'denied' WHERE status = 'rejected'`);
-
 // Add company enrichment columns (no-op if they already exist)
 for (const col of [
   "employee_count INTEGER",
@@ -58,10 +53,6 @@ for (const col of [
     // column already exists
   }
 }
-
-// Clean up seed data
-db.exec(`DELETE FROM jobs WHERE company IN ('Stripe', 'Cloudflare', 'Anthropic', 'Datadog', 'Fly.io') AND source IN ('seed', 'LinkedIn', 'careers page', 'HN Who''s Hiring', 'recruiter outreach', 'Twitter')`);
-
 
 // Load static HTML
 const indexHtml = readFileSync(join(LAB_DIR, "public", "index.html"), "utf-8");
