@@ -1,20 +1,17 @@
 """
 Activities for the job board research workflow.
 
-Fetches existing jobs from SQLite, researches new postings via LLM API,
+Fetches existing jobs from SQLite, researches new postings via Claude CLI,
 inserts results, and optionally notifies Discord.
-
-Backend selection: Anthropic (if key at /mnt/data/secrets/anthropic_api_key),
-otherwise xAI/Grok (key at /mnt/data/secrets/xai_api_key).
 """
 
+import asyncio
 import json
 import logging
 import os
 import re
 import sqlite3
 from pathlib import Path
-from typing import Any
 
 import httpx
 from temporalio import activity
@@ -22,9 +19,7 @@ from temporalio import activity
 logger = logging.getLogger(__name__)
 
 DB_PATH = "/mnt/data/labs/jobboard/jobs.db"
-API_KEY_PATH = "/mnt/data/secrets/anthropic_api_key"
-XAI_KEY_PATH = "/mnt/data/secrets/xai_api_key"
-XAI_API_BASE = "https://api.x.ai/v1/chat/completions"
+CLAUDE_CLI = "/home/clungus/.local/bin/claude"
 DISCORD_BOT_TOKEN_ENV = "DISCORD_BOT_TOKEN"
 
 RESUME_FALLBACK = (
@@ -36,39 +31,6 @@ RESUME_URL = "https://resume.jxh.io"
 
 HN_HIRING_SEARCH_URL = "https://hn.algolia.com/api/v1/search"
 HN_ITEM_URL = "https://hacker-news.firebaseio.com/v0/item/{}.json"
-
-
-def _get_anthropic_api_key() -> str | None:
-    """Load Anthropic API key from file or environment. Returns None if unavailable."""
-    key_path = Path(API_KEY_PATH)
-    if key_path.exists():
-        return key_path.read_text().strip()
-    key = os.environ.get("ANTHROPIC_API_KEY", "")
-    return key if key else None
-
-
-def _get_xai_api_key() -> str | None:
-    """Load xAI API key from file or environment."""
-    key_path = Path(XAI_KEY_PATH)
-    if key_path.exists():
-        return key_path.read_text().strip()
-    key = os.environ.get("XAI_API_KEY", "")
-    return key if key else None
-
-
-def _get_llm_backend() -> tuple[str, str]:
-    """Determine which LLM backend to use. Returns (backend_name, api_key).
-    Prefers Anthropic; falls back to xAI/Grok."""
-    anthropic_key = _get_anthropic_api_key()
-    if anthropic_key:
-        return ("anthropic", anthropic_key)
-    xai_key = _get_xai_api_key()
-    if xai_key:
-        return ("xai", xai_key)
-    raise RuntimeError(
-        "No LLM API key found. Checked: %s, %s, ANTHROPIC_API_KEY env, XAI_API_KEY env"
-        % (API_KEY_PATH, XAI_KEY_PATH)
-    )
 
 
 def _get_discord_bot_token() -> str:
@@ -188,11 +150,11 @@ async def _fetch_resume() -> str:
 
 @activity.defn
 async def research_and_score_jobs(existing_jobs: list[dict]) -> list[dict]:
-    """Research new job postings using LLM API and score them for relevance.
+    """Research new job postings using Claude CLI and score them for relevance.
 
-    Uses Anthropic Claude if API key available, otherwise falls back to xAI Grok.
-    DO NOT replace this with claude CLI subprocess -- it does not work reliably
-    in the temporal worker context. The xAI API fallback is intentional.
+    Uses `claude -p` with OAuth session auth (no API key needed).
+    Prompt is passed via stdin to avoid argv length limits.
+    Do NOT use --bare flag (it disables OAuth and requires ANTHROPIC_API_KEY).
     """
     resume_content = ""
     try:
@@ -253,58 +215,35 @@ If no relevant jobs are found, return an empty array: []"""
 ## Source: Hacker News "Who is Hiring?"
 {hn_content[:80000]}"""
 
-    backend, api_key = _get_llm_backend()
-    logger.info("Using LLM backend: %s", backend)
+    # Call Claude via CLI with OAuth session auth.
+    # Prompt passed via stdin (too large for argv).
+    # Do NOT use --bare (it disables OAuth, requires ANTHROPIC_API_KEY).
+    full_prompt = f"{system_prompt}\n\n{user_msg}"
+    logger.info("Calling Claude CLI (prompt: %d chars)", len(full_prompt))
 
-    text = ""
-    async with httpx.AsyncClient(timeout=120.0) as client:
-        if backend == "anthropic":
-            resp = await client.post(
-                "https://api.anthropic.com/v1/messages",
-                headers={
-                    "x-api-key": api_key,
-                    "anthropic-version": "2023-06-01",
-                    "content-type": "application/json",
-                },
-                json={
-                    "model": "claude-sonnet-4-6",
-                    "max_tokens": 8192,
-                    "system": system_prompt,
-                    "messages": [{"role": "user", "content": user_msg}],
-                },
-            )
-            resp.raise_for_status()
-            result = resp.json()
-            for block in result.get("content", []):
-                if block.get("type") == "text":
-                    text += block["text"]
-        else:
-            resp = await client.post(
-                XAI_API_BASE,
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": "grok-3",
-                    "max_tokens": 8192,
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_msg},
-                    ],
-                },
-            )
-            resp.raise_for_status()
-            result = resp.json()
-            choices = result.get("choices", [])
-            if choices:
-                text = choices[0].get("message", {}).get("content", "")
+    proc = await asyncio.create_subprocess_exec(
+        CLAUDE_CLI, "-p", "-",
+        "--output-format", "text",
+        "--model", "sonnet",
+        stdin=asyncio.subprocess.PIPE,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await asyncio.wait_for(
+        proc.communicate(input=full_prompt.encode("utf-8")), timeout=240
+    )
 
-    if not text.strip():
-        logger.warning("Empty response from %s API", backend)
+    if proc.returncode != 0:
+        err_msg = stderr.decode("utf-8", errors="replace").strip()
+        raise RuntimeError(f"claude CLI failed (rc={proc.returncode}): {err_msg}")
+
+    text = stdout.decode("utf-8", errors="replace").strip()
+
+    if not text:
+        logger.warning("Empty response from Claude CLI")
         return []
 
-    text = text.strip()
+    # Parse JSON -- handle potential markdown wrapping
     if text.startswith("```"):
         lines = text.split("\n")
         lines = [l for l in lines if not l.strip().startswith("```")]
@@ -313,14 +252,14 @@ If no relevant jobs are found, return an empty array: []"""
     try:
         jobs = json.loads(text)
     except json.JSONDecodeError as e:
-        logger.error("Failed to parse LLM response as JSON: %s\nResponse: %s", e, text[:500])
+        logger.error("Failed to parse Claude response as JSON: %s\nResponse: %s", e, text[:500])
         return []
 
     if not isinstance(jobs, list):
-        logger.error("LLM response is not a list: %s", type(jobs))
+        logger.error("Claude response is not a list: %s", type(jobs))
         return []
 
-    logger.info("LLM (%s) returned %d job postings", backend, len(jobs))
+    logger.info("Claude returned %d job postings", len(jobs))
     return jobs
 
 

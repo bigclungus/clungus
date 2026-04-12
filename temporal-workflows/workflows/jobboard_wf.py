@@ -39,7 +39,7 @@ class JobBoardWorkflow:
         )
         workflow.logger.info("Fetched %d existing jobs for dedup", len(existing_jobs))
 
-        # Step 2: Research and score new jobs (long timeout — Claude API call)
+        # Step 2: Research and score new jobs (long timeout — Claude CLI call)
         try:
             new_jobs = await workflow.execute_activity(
                 research_and_score_jobs,
