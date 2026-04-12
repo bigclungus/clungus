@@ -272,6 +272,10 @@ Return ONLY a JSON array (no markdown, no explanation) where each element has th
 - relevance (float 0.0-1.0)
 - fit_notes (string: 1-2 sentences on why this fits or doesn't)
 - tags (string: comma-separated relevant tags)
+- employee_count (integer or null: approximate number of employees at the company)
+- total_funding (string or null: e.g. "$2.1B", "Series D $150M", "Public", or null if unknown)
+- ticker (string or null: stock ticker symbol if publicly traded, e.g. "GOOG", "NET", null if private)
+- founder_led (boolean or null: true if a founder is currently CEO, false if not, null if unknown)
 
 If no relevant jobs are found, return an empty array: []"""
 
@@ -352,11 +356,21 @@ async def insert_new_jobs(jobs: list[dict]) -> int:
     try:
         for job in jobs:
             try:
+                # Convert founder_led from bool to int for SQLite
+                founder_led_val = job.get("founder_led")
+                if founder_led_val is True:
+                    founder_led_val = 1
+                elif founder_led_val is False:
+                    founder_led_val = 0
+                else:
+                    founder_led_val = None
+
                 conn.execute(
                     """INSERT OR IGNORE INTO jobs
                        (company, title, link, salary_min, salary_max, level, industry,
-                        location, remote, source, relevance, fit_notes, tags, status)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new')""",
+                        location, remote, source, relevance, fit_notes, tags,
+                        employee_count, total_funding, ticker, founder_led, status)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new')""",
                     (
                         job.get("company", "Unknown"),
                         job.get("title", "Unknown"),
@@ -371,6 +385,10 @@ async def insert_new_jobs(jobs: list[dict]) -> int:
                         job.get("relevance"),
                         job.get("fit_notes"),
                         job.get("tags"),
+                        job.get("employee_count"),
+                        job.get("total_funding"),
+                        job.get("ticker"),
+                        founder_led_val,
                     ),
                 )
                 if conn.total_changes > inserted:

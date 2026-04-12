@@ -42,6 +42,20 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_link ON jobs(link);
 db.exec(`UPDATE jobs SET status = 'new' WHERE status = 'interested'`);
 db.exec(`UPDATE jobs SET status = 'denied' WHERE status = 'rejected'`);
 
+// Add company enrichment columns (no-op if they already exist)
+for (const col of [
+  "employee_count INTEGER",
+  "total_funding TEXT",
+  "ticker TEXT",
+  "founder_led INTEGER",
+]) {
+  try {
+    db.exec(`ALTER TABLE jobs ADD COLUMN ${col}`);
+  } catch (_) {
+    // column already exists
+  }
+}
+
 // Clean up seed data
 db.exec(`DELETE FROM jobs WHERE company IN ('Stripe', 'Cloudflare', 'Anthropic', 'Datadog', 'Fly.io') AND source IN ('seed', 'LinkedIn', 'careers page', 'HN Who''s Hiring', 'recruiter outreach', 'Twitter')`);
 
@@ -127,7 +141,7 @@ const server = Bun.serve({
         const updates: string[] = [];
         const params: (string | number)[] = [];
 
-        for (const key of ["status", "hidden", "relevance", "fit_notes", "tags"]) {
+        for (const key of ["status", "hidden", "relevance", "fit_notes", "tags", "employee_count", "total_funding", "ticker", "founder_led"]) {
           if (key in body) {
             updates.push(`${key} = ?`);
             params.push(body[key] as string | number);

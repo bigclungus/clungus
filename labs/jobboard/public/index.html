@@ -146,6 +146,23 @@
       return 'status-' + params.value;
     }
 
+    function employeeFormatter(params) {
+      if (params.value == null) return '';
+      return Number(params.value).toLocaleString();
+    }
+
+    function founderLedRenderer(params) {
+      if (params.value === 1) return '<span title="Founder-led">&#x2705;</span>';
+      if (params.value === 0) return '<span title="Not founder-led">&#x274C;</span>';
+      return '<span style="color:#999;">?</span>';
+    }
+
+    function tickerRenderer(params) {
+      if (!params.value) return '';
+      const t = params.value;
+      return '<a href="https://www.google.com/finance/quote/' + t + '" target="_blank" rel="noopener" style="color:#1a73e8;font-weight:600;">' + t + '</a>';
+    }
+
     const columnDefs = [
       { field: 'company', headerName: 'Company', tooltipField: 'company', filter: true, sortable: true, width: 140 },
       { field: 'title', headerName: 'Title', tooltipField: 'title', filter: true, sortable: true, flex: 1, minWidth: 200 },
@@ -157,6 +174,10 @@
         sortable: true,
         width: 150
       },
+      { field: 'employee_count', headerName: 'Employees', valueFormatter: employeeFormatter, filter: 'agNumberColumnFilter', sortable: true, width: 110 },
+      { field: 'total_funding', headerName: 'Funding', tooltipField: 'total_funding', filter: true, sortable: true, width: 130 },
+      { field: 'ticker', headerName: 'Stock', cellRenderer: tickerRenderer, filter: true, sortable: true, width: 90 },
+      { field: 'founder_led', headerName: 'Founder-led', cellRenderer: founderLedRenderer, filter: true, sortable: true, width: 110 },
       { field: 'location', headerName: 'Location', tooltipField: 'location', filter: true, sortable: true, width: 160 },
       { field: 'remote', headerName: 'Remote', filter: true, sortable: true, width: 100 },
       { field: 'industry', headerName: 'Industry', tooltipField: 'industry', filter: true, sortable: true, width: 130 },
