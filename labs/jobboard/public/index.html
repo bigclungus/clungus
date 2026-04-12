@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Board</title>
+  <script src="https://cdn.jsdelivr.net/npm/ag-grid-community/dist/ag-grid-community.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #1a1a2e;
+      color: #e0e0e0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 20px;
+      background: #16213e;
+      border-bottom: 1px solid #0f3460;
+    }
+
+    .toolbar h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #e94560;
+      margin-right: auto;
+    }
+
+    .toolbar label {
+      font-size: 13px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toolbar input[type="checkbox"] {
+      margin-right: 4px;
+    }
+
+    .toolbar button {
+      padding: 6px 14px;
+      background: #0f3460;
+      color: #e0e0e0;
+      border: 1px solid #e94560;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .toolbar button:hover {
+      background: #e94560;
+      color: #fff;
+    }
+
+    #grid-container {
+      flex: 1;
+      width: 100%;
+    }
+
+    /* AG Grid dark overrides */
+    .ag-theme-alpine-dark {
+      --ag-background-color: #1a1a2e;
+      --ag-header-background-color: #16213e;
+      --ag-odd-row-background-color: #1a1a2e;
+      --ag-row-hover-color: #0f3460;
+      --ag-selected-row-background-color: #0f3460;
+      --ag-border-color: #0f3460;
+      --ag-header-foreground-color: #e94560;
+    }
+
+    .relevance-high { color: #4ecca3; font-weight: 600; }
+    .relevance-mid { color: #f0c040; font-weight: 600; }
+    .relevance-low { color: #e94560; font-weight: 600; }
+
+    .hide-btn {
+      background: none;
+      border: 1px solid #555;
+      color: #aaa;
+      border-radius: 3px;
+      padding: 2px 8px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .hide-btn:hover { border-color: #e94560; color: #e94560; }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <h1>Job Board</h1>
+    <label>
+      <input type="checkbox" id="showHidden"> Show hidden
+    </label>
+    <button id="refreshBtn">Refresh</button>
+  </div>
+  <div id="grid-container" class="ag-theme-alpine-dark"></div>
+
+  <script>
+    const BASE = window.location.pathname.replace(/\/+$/, '');
+
+    function salaryFormatter(params) {
+      const min = params.data.salary_min;
+      const max = params.data.salary_max;
+      if (!min && !max) return '';
+      const fmt = (v) => '$' + v + 'k';
+      if (min && max) return fmt(min) + ' - ' + fmt(max);
+      if (min) return fmt(min) + '+';
+      return 'up to ' + fmt(max);
+    }
+
+    function relevanceCellClass(params) {
+      const v = params.value;
+      if (v == null) return '';
+      if (v > 0.7) return 'relevance-high';
+      if (v >= 0.4) return 'relevance-mid';
+      return 'relevance-low';
+    }
+
+    function linkRenderer(params) {
+      if (!params.value) return '';
+      return '<a href="' + params.value + '" target="_blank" rel="noopener" style="color:#4ea8de;">Link</a>';
+    }
+
+    function hideRenderer(params) {
+      const btn = document.createElement('button');
+      btn.className = 'hide-btn';
+      btn.textContent = params.data.hidden ? 'Unhide' : 'Hide';
+      btn.addEventListener('click', async () => {
+        const newVal = params.data.hidden ? 0 : 1;
+        await fetch(BASE + '/api/jobs/' + params.data.id, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hidden: newVal })
+        });
+        loadData();
+      });
+      return btn;
+    }
+
+    const columnDefs = [
+      { field: 'company', headerName: 'Company', filter: true, sortable: true, width: 140 },
+      { field: 'title', headerName: 'Title', filter: true, sortable: true, flex: 1, minWidth: 200 },
+      { field: 'level', headerName: 'Level', filter: true, sortable: true, width: 110 },
+      {
+        headerName: 'Salary',
+        valueGetter: (p) => (p.data.salary_min || 0) + (p.data.salary_max || 0),
+        valueFormatter: salaryFormatter,
+        sortable: true,
+        width: 150
+      },
+      { field: 'location', headerName: 'Location', filter: true, sortable: true, width: 160 },
+      { field: 'remote', headerName: 'Remote', filter: true, sortable: true, width: 100 },
+      { field: 'industry', headerName: 'Industry', filter: true, sortable: true, width: 130 },
+      {
+        field: 'relevance',
+        headerName: 'Relevance',
+        sortable: true,
+        filter: 'agNumberColumnFilter',
+        width: 110,
+        cellClass: relevanceCellClass,
+        valueFormatter: (p) => p.value != null ? p.value.toFixed(2) : ''
+      },
+      { field: 'source', headerName: 'Source', filter: true, sortable: true, width: 120 },
+      {
+        field: 'status',
+        headerName: 'Status',
+        editable: true,
+        cellEditor: 'agSelectCellEditor',
+        cellEditorParams: { values: ['new', 'interested', 'applied', 'rejected', 'stale'] },
+        filter: true,
+        sortable: true,
+        width: 120
+      },
+      { field: 'fit_notes', headerName: 'Fit Notes', filter: true, sortable: true, width: 200 },
+      { field: 'posted_at', headerName: 'Posted', sortable: true, width: 110 },
+      { field: 'discovered_at', headerName: 'Discovered', sortable: true, width: 160 },
+      { field: 'link', headerName: 'Link', cellRenderer: linkRenderer, width: 70 },
+      { headerName: '', cellRenderer: hideRenderer, width: 80, sortable: false, filter: false }
+    ];
+
+    const gridOptions = {
+      columnDefs: columnDefs,
+      defaultColDef: {
+        resizable: true,
+      },
+      rowData: [],
+      animateRows: true,
+      onCellValueChanged: async (event) => {
+        if (event.colDef.field === 'status') {
+          await fetch(BASE + '/api/jobs/' + event.data.id, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: event.newValue })
+          });
+        }
+      }
+    };
+
+    const gridDiv = document.getElementById('grid-container');
+    const grid = agGrid.createGrid(gridDiv, gridOptions);
+
+    async function loadData() {
+      const showHidden = document.getElementById('showHidden').checked;
+      const params = new URLSearchParams();
+      if (showHidden) params.set('hidden', '1');
+      const res = await fetch(BASE + '/api/jobs?' + params.toString());
+      const data = await res.json();
+      grid.setGridOption('rowData', data);
+    }
+
+    document.getElementById('showHidden').addEventListener('change', loadData);
+    document.getElementById('refreshBtn').addEventListener('click', loadData);
+
+    loadData();
+  </script>
+</body>
+</html>

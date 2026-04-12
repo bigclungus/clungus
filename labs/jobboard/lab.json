@@ -1,0 +1,7 @@
+{
+  "name": "jobboard",
+  "title": "Job Board",
+  "description": "AI-powered job search for jaboostin",
+  "port": 8106,
+  "status": "active"
+}
