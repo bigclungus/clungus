@@ -87,8 +87,8 @@ class ListingsWorkflow:
                     )
                     if commentary:
                         listing["commentary"] = commentary
-                except Exception:
-                    pass  # Fall back to deterministic commentary
+                except Exception as exc:
+                    workflow.logger.warning("Commentary generation failed for %s: %s", listing.get("id", "?"), exc)
 
             await workflow.execute_activity(
                 post_listings_summary,
