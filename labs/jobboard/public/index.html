@@ -9,8 +9,8 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      background: #1a1a2e;
-      color: #e0e0e0;
+      background: #ffffff;
+      color: #333333;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       height: 100vh;
       width: 100vw;
@@ -23,19 +23,20 @@
       align-items: center;
       gap: 16px;
       padding: 12px 20px;
-      background: #16213e;
-      border-bottom: 1px solid #0f3460;
+      background: #f8f9fa;
+      border-bottom: 1px solid #dee2e6;
     }
 
     .toolbar h1 {
       font-size: 18px;
       font-weight: 600;
-      color: #e94560;
+      color: #333333;
       margin-right: auto;
     }
 
     .toolbar label {
       font-size: 13px;
+      color: #555;
       cursor: pointer;
       user-select: none;
     }
@@ -46,17 +47,17 @@
 
     .toolbar button {
       padding: 6px 14px;
-      background: #0f3460;
-      color: #e0e0e0;
-      border: 1px solid #e94560;
+      background: #ffffff;
+      color: #333;
+      border: 1px solid #ced4da;
       border-radius: 4px;
       cursor: pointer;
       font-size: 13px;
     }
 
     .toolbar button:hover {
-      background: #e94560;
-      color: #fff;
+      background: #e9ecef;
+      color: #111;
     }
 
     #grid-container {
@@ -64,31 +65,32 @@
       width: 100%;
     }
 
-    /* AG Grid dark overrides */
-    .ag-theme-alpine-dark {
-      --ag-background-color: #1a1a2e;
-      --ag-header-background-color: #16213e;
-      --ag-odd-row-background-color: #1a1a2e;
-      --ag-row-hover-color: #0f3460;
-      --ag-selected-row-background-color: #0f3460;
-      --ag-border-color: #0f3460;
-      --ag-header-foreground-color: #e94560;
+    /* AG Grid light spreadsheet overrides */
+    .ag-theme-alpine {
+      --ag-background-color: #ffffff;
+      --ag-header-background-color: #f8f9fa;
+      --ag-odd-row-background-color: #fafbfc;
+      --ag-row-hover-color: #e9ecef;
+      --ag-selected-row-background-color: #d0e8ff;
+      --ag-border-color: #dee2e6;
+      --ag-header-foreground-color: #333333;
+      --ag-foreground-color: #333333;
     }
 
-    .relevance-high { color: #4ecca3; font-weight: 600; }
-    .relevance-mid { color: #f0c040; font-weight: 600; }
-    .relevance-low { color: #e94560; font-weight: 600; }
+    .relevance-high { color: #1a7f4b; font-weight: 600; }
+    .relevance-mid { color: #b8860b; font-weight: 600; }
+    .relevance-low { color: #c0392b; font-weight: 600; }
 
     .hide-btn {
       background: none;
-      border: 1px solid #555;
-      color: #aaa;
+      border: 1px solid #ced4da;
+      color: #666;
       border-radius: 3px;
       padding: 2px 8px;
       cursor: pointer;
       font-size: 12px;
     }
-    .hide-btn:hover { border-color: #e94560; color: #e94560; }
+    .hide-btn:hover { border-color: #999; color: #333; }
   </style>
 </head>
 <body>
@@ -99,7 +101,7 @@
     </label>
     <button id="refreshBtn">Refresh</button>
   </div>
-  <div id="grid-container" class="ag-theme-alpine-dark"></div>
+  <div id="grid-container" class="ag-theme-alpine"></div>
 
   <script>
     const BASE = window.location.pathname.replace(/\/+$/, '');
@@ -124,7 +126,7 @@
 
     function linkRenderer(params) {
       if (!params.value) return '';
-      return '<a href="' + params.value + '" target="_blank" rel="noopener" style="color:#4ea8de;">Link</a>';
+      return '<a href="' + params.value + '" target="_blank" rel="noopener" style="color:#1a73e8;">Link</a>';
     }
 
     function hideRenderer(params) {
