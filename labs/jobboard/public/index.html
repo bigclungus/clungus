@@ -147,9 +147,9 @@
     }
 
     const columnDefs = [
-      { field: 'company', headerName: 'Company', filter: true, sortable: true, width: 140 },
-      { field: 'title', headerName: 'Title', filter: true, sortable: true, flex: 1, minWidth: 200 },
-      { field: 'level', headerName: 'Level', filter: true, sortable: true, width: 110 },
+      { field: 'company', headerName: 'Company', tooltipField: 'company', filter: true, sortable: true, width: 140 },
+      { field: 'title', headerName: 'Title', tooltipField: 'title', filter: true, sortable: true, flex: 1, minWidth: 200 },
+      { field: 'level', headerName: 'Level', tooltipField: 'level', filter: true, sortable: true, width: 110 },
       {
         headerName: 'Salary',
         valueGetter: (p) => (p.data.salary_min || 0) + (p.data.salary_max || 0),
@@ -157,9 +157,9 @@
         sortable: true,
         width: 150
       },
-      { field: 'location', headerName: 'Location', filter: true, sortable: true, width: 160 },
+      { field: 'location', headerName: 'Location', tooltipField: 'location', filter: true, sortable: true, width: 160 },
       { field: 'remote', headerName: 'Remote', filter: true, sortable: true, width: 100 },
-      { field: 'industry', headerName: 'Industry', filter: true, sortable: true, width: 130 },
+      { field: 'industry', headerName: 'Industry', tooltipField: 'industry', filter: true, sortable: true, width: 130 },
       {
         field: 'relevance',
         headerName: 'Relevance',
@@ -181,7 +181,7 @@
         sortable: true,
         width: 130
       },
-      { field: 'fit_notes', headerName: 'Fit Notes', filter: true, sortable: true, width: 200 },
+      { field: 'fit_notes', headerName: 'Fit Notes', tooltipField: 'fit_notes', filter: true, sortable: true, width: 200 },
       { field: 'posted_at', headerName: 'Posted', sortable: true, width: 110 },
       { field: 'discovered_at', headerName: 'Discovered', sortable: true, width: 160 },
       { field: 'link', headerName: 'Link', cellRenderer: linkRenderer, width: 70 }
@@ -192,6 +192,8 @@
       defaultColDef: {
         resizable: true,
       },
+      tooltipShowDelay: 300,
+      tooltipInteraction: true,
       rowData: [],
       animateRows: true,
       onCellValueChanged: async (event) => {
