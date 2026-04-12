@@ -305,7 +305,7 @@ Return ONLY a JSON array (no markdown, no explanation) where each element has th
 - fit_notes (string: 1-2 sentences on why this fits or doesn't)
 - tags (string: comma-separated relevant tags)
 - employee_count (integer or null: approximate number of employees at the company)
-- total_funding (string or null: e.g. "$2.1B", "Series D $150M", "Public", or null if unknown)
+- total_funding (string or null: funding stage only — e.g. "Series A", "Series C", "Public", "Bootstrapped", or null if unknown)
 - ticker (string or null: stock ticker symbol if publicly traded, e.g. "GOOG", "NET", null if private)
 - founder_led (boolean or null: true if a founder is currently CEO, false if not, null if unknown)
 - glassdoor_rating (float or null: Glassdoor overall rating e.g. 4.2, null if unknown)
@@ -471,7 +471,7 @@ async def enrich_companies(unenriched_companies: list[str]) -> list[dict]:
 Return ONLY a JSON array (no markdown, no explanation) where each element has these exact keys:
 - company (string: exact company name as given)
 - employee_count (integer or null: approximate number of employees)
-- total_funding (string or null: e.g. "$2.1B", "Series D $150M", "Public", or null if unknown)
+- total_funding (string or null: funding stage only — e.g. "Series A", "Series C", "Public", "Bootstrapped", or null if unknown)
 - ticker (string or null: stock ticker if publicly traded, e.g. "GOOG", "NET", null if private)
 - founder_led (boolean or null: true if a founder is currently CEO, false if not, null if unknown)
 - glassdoor_rating (float or null: Glassdoor overall rating e.g. 4.2, null if unknown)
