@@ -122,7 +122,11 @@
       const min = params.data.salary_min;
       const max = params.data.salary_max;
       if (!min && !max) return '';
-      const fmt = (v) => '$' + v + 'k';
+      const fmt = (v) => {
+        if (v >= 1000000) return '$' + (v / 1000000).toFixed(1) + 'M';
+        if (v >= 1000) return '$' + Math.round(v / 1000) + 'k';
+        return '$' + v;
+      };
       if (min && max) return fmt(min) + ' - ' + fmt(max);
       if (min) return fmt(min) + '+';
       return 'up to ' + fmt(max);

@@ -45,6 +45,28 @@ EXTRA_JOB_SOURCES = [
     ("Google Careers", "https://careers.google.com/jobs/results/?q=staff%20engineer"),
     ("YC Work at a Startup", "https://www.workatastartup.com/jobs?role=eng&type=fullTime"),
     ("Built In", "https://builtin.com/jobs?search=principal+engineer"),
+    # Frontiers
+    ("OpenAI Careers", "https://openai.com/careers/search"),
+    ("NVIDIA Careers", "https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite"),
+    # SaaS
+    ("CrowdStrike Careers", "https://www.crowdstrike.com/careers/"),
+    ("Okta Careers", "https://www.okta.com/company/careers/"),
+    ("ServiceNow Careers", "https://careers.servicenow.com/"),
+    # Neoclouds
+    ("CoreWeave Careers", "https://boards.greenhouse.io/coreweave"),
+    ("Lambda Careers", "https://jobs.ashbyhq.com/lambda"),
+    ("Together AI Careers", "https://jobs.ashbyhq.com/together-ai"),
+    # Chad Corps
+    ("Anduril Careers", "https://jobs.lever.co/anduril"),
+    ("Palantir Careers", "https://www.palantir.com/careers/"),
+    ("Coinbase Careers", "https://www.coinbase.com/careers/positions"),
+    # Artisanal
+    ("Valve Careers", "https://www.valvesoftware.com/en/jobs"),
+    # Normie but good
+    ("Dropbox Careers", "https://jobs.dropbox.com/all-jobs"),
+    ("Zillow Careers", "https://zillow.wd5.myworkdayjobs.com/Zillow_Group_Careers"),
+    ("Reddit Careers", "https://boards.greenhouse.io/reddit"),
+    ("Apple Careers", "https://jobs.apple.com/en-us/search?sort=relevance&search=staff%20engineer"),
 ]
 
 MAX_SOURCE_CHARS = 30000
