@@ -43,8 +43,16 @@ async def fetch_redfin_listings(location: str, min_price: int, max_price: int, l
 
             photo = str(row.get('primary_photo') or '')
 
+            # Extra fields for neighborhood vibe (may be missing)
+            neighborhood = str(row.get('neighborhoods', '') or '')
+            year_built = int(row.get('year_built', 0) or 0) or None
+            lot_sqft_val = float(row.get('lot_sqft', 0) or 0) or None
+            lat = float(row.get('latitude', 0) or 0) or None
+            lon = float(row.get('longitude', 0) or 0) or None
+            hoa_fee = float(row.get('hoa_fee', 0) or 0) or None
+
             if listing_id and price > 0:
-                results.append({
+                entry = {
                     'id': listing_id,
                     'address': address,
                     'price': price,
@@ -54,7 +62,20 @@ async def fetch_redfin_listings(location: str, min_price: int, max_price: int, l
                     'url': url,
                     'list_date': list_date,
                     'photo': photo,
-                })
+                }
+                if neighborhood:
+                    entry['neighborhood'] = neighborhood
+                if year_built:
+                    entry['year_built'] = year_built
+                if lot_sqft_val:
+                    entry['lot_sqft'] = lot_sqft_val
+                if lat:
+                    entry['latitude'] = lat
+                if lon:
+                    entry['longitude'] = lon
+                if hoa_fee:
+                    entry['hoa_fee'] = hoa_fee
+                results.append(entry)
         return results
 
     return await loop.run_in_executor(None, _fetch)

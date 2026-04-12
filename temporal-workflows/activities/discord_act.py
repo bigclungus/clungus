@@ -1,6 +1,8 @@
 import asyncio
 import datetime as _dt
+import hashlib
 import json
+import random
 from datetime import date
 
 import aiohttp
@@ -76,6 +78,106 @@ def _days_on_market(list_date_str: str) -> int | None:
     return None
 
 
+def _grug_commentary(listing: dict) -> str:
+    """Deterministic caveman comment based on listing attributes."""
+    price = listing.get("price", 0) or 0
+    sqft = listing.get("sqft", 0) or 0
+    beds = listing.get("beds", 0) or 0
+    ppsf = price / sqft if sqft else 0
+
+    # Seed RNG with listing ID for deterministic picks
+    seed = int(hashlib.md5(str(listing.get("id", "")).encode()).hexdigest()[:8], 16)
+    rng = random.Random(seed)
+
+    # Categorize and pick from matching pools
+    pool: list[str] = []
+
+    if price >= 2_000_000:
+        pool += [
+            "grug say too many rock for cave",
+            "price make grug eyes water. many many rock",
+            "grug need sell whole tribe to afford this",
+        ]
+    elif price <= 600_000:
+        pool += [
+            "cheap cave. grug suspicious but interested",
+            "low rock count. grug intrigued",
+            "grug can almost afford. exciting and scary",
+        ]
+
+    if sqft and sqft < 1000 and price >= 1_000_000:
+        pool += [
+            "grug say too many rock for tiny cave",
+            "small cave big price. grug confused",
+            "closet cost this much? grug baffled",
+        ]
+
+    if sqft and sqft >= 2500:
+        pool += [
+            "big cave. room for whole tribe",
+            "much space. grug could do zoomies inside",
+            "grug get lost walking to other end",
+        ]
+
+    if beds >= 5:
+        pool += [
+            "many sleep room. grug impressed",
+            "so many room. grug forget which one grug sleep in",
+            "enough room for grug, tribe, AND in-laws",
+        ]
+
+    if ppsf and ppsf < _PPSF_GOOD:
+        pool += [
+            "grug approve. good value per rock",
+            "rock-per-sqft ratio please grug brain",
+            "efficient use of rock. grug nod approvingly",
+        ]
+    elif ppsf and ppsf > _PPSF_FAIR:
+        pool += [
+            "price per sqft make grug wince",
+            "each square foot cost too many rock",
+            "grug do math. grug not happy with math",
+        ]
+
+    if not pool:
+        pool = [
+            "grug look at cave. grug think about it",
+            "cave is cave. grug neutral",
+            "grug has seen worse. grug has seen better",
+            "decent cave. grug shrug",
+        ]
+
+    return rng.choice(pool)
+
+
+def _neighborhood_vibe(listing: dict) -> str:
+    """Build a neighborhood/vibe info line from extra listing fields."""
+    parts: list[str] = []
+
+    neighborhood = listing.get("neighborhood")
+    if neighborhood:
+        parts.append(f"📍 {neighborhood}")
+
+    year_built = listing.get("year_built")
+    if year_built:
+        parts.append(f"🏗 Built {year_built}")
+
+    lot_sqft = listing.get("lot_sqft")
+    if lot_sqft:
+        if lot_sqft >= 43560:
+            acres = lot_sqft / 43560
+            parts.append(f"🌳 {acres:.1f} acres")
+        else:
+            parts.append(f"🌳 {lot_sqft:,.0f} sqft lot")
+
+    hoa_fee = listing.get("hoa_fee")
+    if hoa_fee:
+        warning = " ⚠️" if hoa_fee >= 500 else ""
+        parts.append(f"🏘 HOA ${hoa_fee:,.0f}/mo{warning}")
+
+    return "  ".join(parts)
+
+
 @activity.defn
 async def post_listings_summary(channel_id: str, listings: list) -> str:
     """Post a single Discord message summarising up to 3 listings.
@@ -125,6 +227,10 @@ async def post_listings_summary(channel_id: str, listings: list) -> str:
         description_lines = [f"**{stats_bar}**"]
         if ppsf_line:
             description_lines.append(ppsf_line)
+        vibe_line = _neighborhood_vibe(listing)
+        if vibe_line:
+            description_lines.append(vibe_line)
+        description_lines.append(f"*{_grug_commentary(listing)}*")
         if listing_url:
             description_lines.append(f"[View listing]({listing_url})")
 
