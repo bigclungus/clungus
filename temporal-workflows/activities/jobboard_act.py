@@ -19,6 +19,9 @@ from temporalio import activity
 logger = logging.getLogger(__name__)
 
 DB_PATH = "/mnt/data/labs/jobboard/jobs.db"
+API_KEY_PATH = "/mnt/data/secrets/anthropic_api_key"
+XAI_KEY_PATH = "/mnt/data/secrets/xai_api_key"
+XAI_API_BASE = "https://api.x.ai/v1/chat/completions"
 DISCORD_BOT_TOKEN_ENV = "DISCORD_BOT_TOKEN"
 
 RESUME_FALLBACK = (
