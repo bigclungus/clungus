@@ -55,7 +55,10 @@ EXTRA_JOB_SOURCES = [
     ("Okta Careers", "https://www.okta.com/company/careers/"),
     ("ServiceNow Careers", "https://careers.servicenow.com/"),
     # Neoclouds
+    ("Crusoe Energy Careers", "https://boards.greenhouse.io/crusoe"),
     ("CoreWeave Careers", "https://boards.greenhouse.io/coreweave"),
+    ("Nebius Careers", "https://boards.greenhouse.io/nebius"),
+    ("FluidStack Careers", "https://jobs.ashbyhq.com/fluidstack"),
     ("Lambda Careers", "https://jobs.ashbyhq.com/lambda"),
     ("Together AI Careers", "https://jobs.ashbyhq.com/together-ai"),
     # Chad Corps
