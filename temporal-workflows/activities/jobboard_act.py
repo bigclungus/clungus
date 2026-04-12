@@ -11,6 +11,7 @@ import logging
 import os
 import re
 import sqlite3
+from datetime import datetime, timezone
 from pathlib import Path
 
 import httpx
@@ -554,9 +555,11 @@ async def update_company_data(enrichment: list[dict]) -> int:
             else:
                 founder_led_val = None
 
+            enriched_at = datetime.now(timezone.utc).isoformat()
             conn.execute(
                 """UPDATE jobs SET employee_count=?, total_funding=?, ticker=?,
-                   founder_led=?, glassdoor_rating=?, glassdoor_recommend_pct=?
+                   founder_led=?, glassdoor_rating=?, glassdoor_recommend_pct=?,
+                   enriched_at=?
                    WHERE company=?""",
                 (
                     item.get("employee_count"),
@@ -565,6 +568,7 @@ async def update_company_data(enrichment: list[dict]) -> int:
                     founder_led_val,
                     item.get("glassdoor_rating"),
                     item.get("glassdoor_recommend_pct"),
+                    enriched_at,
                     company,
                 ),
             )
