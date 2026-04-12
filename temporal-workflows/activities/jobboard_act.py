@@ -67,6 +67,9 @@ EXTRA_JOB_SOURCES = [
     ("Zillow Careers", "https://zillow.wd5.myworkdayjobs.com/Zillow_Group_Careers"),
     ("Reddit Careers", "https://boards.greenhouse.io/reddit"),
     ("Apple Careers", "https://jobs.apple.com/en-us/search?sort=relevance&search=staff%20engineer"),
+    # Prediction markets
+    ("Kalshi Careers", "https://boards.greenhouse.io/kalshi"),
+    ("Polymarket Careers", "https://boards.greenhouse.io/polymarket"),
 ]
 
 MAX_SOURCE_CHARS = 30000
