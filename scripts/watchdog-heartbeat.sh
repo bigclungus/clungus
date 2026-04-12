@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# watchdog-heartbeat.sh — alert Discord if [heartbeat] inject has not landed in > 20 minutes.
+# watchdog-heartbeat.sh — alert Discord if [heartbeat] inject has not landed recently.
 #
 # Called from the startup workflow and can also be run as a standalone cron.
 # Reads /tmp/last-heartbeat.txt (written by inject_act.py on each heartbeat inject).
 # If the file is missing or stale, fires an alert to Discord via the omni inject endpoint.
-# Threshold: 90 minutes (1.5x the 60-minute HeartbeatWorkflow interval).
+# Threshold: 30 minutes (2x the 15-minute heartbeat timer interval).
 
 set -euo pipefail
 
 TIMESTAMP_FILE="/tmp/last-heartbeat.txt"
-MAX_AGE_SECONDS=5400  # 90 minutes (1.5x the 60-minute heartbeat interval)
+MAX_AGE_SECONDS=1800  # 30 minutes (2x the 15-minute heartbeat timer interval)
 INJECT_URL="http://127.0.0.1:8085/webhooks/bigclungus-main"
 
 now=$(date +%s)
