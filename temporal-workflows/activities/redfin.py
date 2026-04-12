@@ -1,7 +1,20 @@
 import asyncio
 
+import pandas as pd
 from homeharvest import scrape_property
 from temporalio import activity
+
+
+def _safe(val, default=''):
+    """Safely extract a value from a pandas row, replacing NA/NaN with default."""
+    if val is None or (isinstance(val, float) and pd.isna(val)):
+        return default
+    try:
+        if pd.isna(val):
+            return default
+    except (TypeError, ValueError):
+        pass
+    return val
 
 
 @activity.defn
@@ -32,24 +45,24 @@ async def fetch_redfin_listings(location: str, min_price: int, max_price: int, l
 
         results = []
         for _, row in filtered.iterrows():
-            listing_id = str(row.get('listing_id') or row.get('property_id') or row.get('mls_id') or '')
-            address = row.get('formatted_address') or f"{row.get('full_street_line', '')}, {row.get('city', '')}, {row.get('state', '')} {row.get('zip_code', '')}".strip(', ')
-            url = row.get('property_url', '')
-            price = float(row.get('list_price', 0) or 0)
-            beds = int(row.get('beds', 0) or 0)
-            baths = float(row.get('full_baths', 0) or 0)
-            sqft = int(row.get('sqft', 0) or 0)
-            list_date = str(row.get('list_date', '') or '')
+            listing_id = str(_safe(row.get('listing_id'), '') or _safe(row.get('property_id'), '') or _safe(row.get('mls_id'), '') or '')
+            address = _safe(row.get('formatted_address'), '') or f"{_safe(row.get('full_street_line'), '')}, {_safe(row.get('city'), '')}, {_safe(row.get('state'), '')} {_safe(row.get('zip_code'), '')}".strip(', ')
+            url = str(_safe(row.get('property_url'), ''))
+            price = float(_safe(row.get('list_price'), 0))
+            beds = int(_safe(row.get('beds'), 0))
+            baths = float(_safe(row.get('full_baths'), 0))
+            sqft = int(_safe(row.get('sqft'), 0))
+            list_date = str(_safe(row.get('list_date'), ''))
 
-            photo = str(row.get('primary_photo') or '')
+            photo = str(_safe(row.get('primary_photo'), ''))
 
             # Extra fields for neighborhood vibe (may be missing)
-            neighborhood = str(row.get('neighborhoods', '') or '')
-            year_built = int(row.get('year_built', 0) or 0) or None
-            lot_sqft_val = float(row.get('lot_sqft', 0) or 0) or None
-            lat = float(row.get('latitude', 0) or 0) or None
-            lon = float(row.get('longitude', 0) or 0) or None
-            hoa_fee = float(row.get('hoa_fee', 0) or 0) or None
+            neighborhood = str(_safe(row.get('neighborhoods'), ''))
+            year_built = int(_safe(row.get('year_built'), 0)) or None
+            lot_sqft_val = float(_safe(row.get('lot_sqft'), 0)) or None
+            lat = float(_safe(row.get('latitude'), 0)) or None
+            lon = float(_safe(row.get('longitude'), 0)) or None
+            hoa_fee = float(_safe(row.get('hoa_fee'), 0)) or None
 
             if listing_id and price > 0:
                 entry = {
