@@ -48,6 +48,8 @@ for (const col of [
   "total_funding TEXT",
   "ticker TEXT",
   "founder_led INTEGER",
+  "glassdoor_rating REAL",
+  "glassdoor_recommend_pct INTEGER",
 ]) {
   try {
     db.exec(`ALTER TABLE jobs ADD COLUMN ${col}`);
@@ -141,7 +143,7 @@ const server = Bun.serve({
         const updates: string[] = [];
         const params: (string | number)[] = [];
 
-        for (const key of ["status", "hidden", "relevance", "fit_notes", "tags", "employee_count", "total_funding", "ticker", "founder_led"]) {
+        for (const key of ["status", "hidden", "relevance", "fit_notes", "tags", "employee_count", "total_funding", "ticker", "founder_led", "glassdoor_rating", "glassdoor_recommend_pct"]) {
           if (key in body) {
             updates.push(`${key} = ?`);
             params.push(body[key] as string | number);

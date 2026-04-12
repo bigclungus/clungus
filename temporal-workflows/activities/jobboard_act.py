@@ -276,6 +276,8 @@ Return ONLY a JSON array (no markdown, no explanation) where each element has th
 - total_funding (string or null: e.g. "$2.1B", "Series D $150M", "Public", or null if unknown)
 - ticker (string or null: stock ticker symbol if publicly traded, e.g. "GOOG", "NET", null if private)
 - founder_led (boolean or null: true if a founder is currently CEO, false if not, null if unknown)
+- glassdoor_rating (float or null: Glassdoor overall rating e.g. 4.2, null if unknown)
+- glassdoor_recommend_pct (integer or null: Glassdoor "recommend to a friend" percentage e.g. 85, null if unknown)
 
 If no relevant jobs are found, return an empty array: []"""
 
@@ -369,8 +371,9 @@ async def insert_new_jobs(jobs: list[dict]) -> int:
                     """INSERT OR IGNORE INTO jobs
                        (company, title, link, salary_min, salary_max, level, industry,
                         location, remote, source, relevance, fit_notes, tags,
-                        employee_count, total_funding, ticker, founder_led, status)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new')""",
+                        employee_count, total_funding, ticker, founder_led,
+                        glassdoor_rating, glassdoor_recommend_pct, status)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new')""",
                     (
                         job.get("company", "Unknown"),
                         job.get("title", "Unknown"),
@@ -389,6 +392,8 @@ async def insert_new_jobs(jobs: list[dict]) -> int:
                         job.get("total_funding"),
                         job.get("ticker"),
                         founder_led_val,
+                        job.get("glassdoor_rating"),
+                        job.get("glassdoor_recommend_pct"),
                     ),
                 )
                 if conn.total_changes > inserted:
@@ -402,6 +407,135 @@ async def insert_new_jobs(jobs: list[dict]) -> int:
 
     logger.info("Inserted %d new jobs", inserted)
     return inserted
+
+
+@activity.defn
+async def get_unenriched_companies() -> list[str]:
+    """Return distinct company names that have NULL employee_count (unenriched)."""
+    conn = _ensure_db()
+    try:
+        rows = conn.execute(
+            "SELECT DISTINCT company FROM jobs WHERE employee_count IS NULL"
+        ).fetchall()
+        return [r["company"] for r in rows]
+    finally:
+        conn.close()
+
+
+@activity.defn
+async def enrich_companies(unenriched_companies: list[str]) -> list[dict]:
+    """Research company data via Claude CLI for companies missing enrichment.
+
+    Returns list of dicts with keys: company, employee_count, total_funding,
+    ticker, founder_led, glassdoor_rating, glassdoor_recommend_pct.
+    """
+    if not unenriched_companies:
+        return []
+
+    company_list = "\n".join(f"- {c}" for c in unenriched_companies)
+    prompt = f"""You are a company research assistant. For each company below, provide enrichment data.
+
+Return ONLY a JSON array (no markdown, no explanation) where each element has these exact keys:
+- company (string: exact company name as given)
+- employee_count (integer or null: approximate number of employees)
+- total_funding (string or null: e.g. "$2.1B", "Series D $150M", "Public", or null if unknown)
+- ticker (string or null: stock ticker if publicly traded, e.g. "GOOG", "NET", null if private)
+- founder_led (boolean or null: true if a founder is currently CEO, false if not, null if unknown)
+- glassdoor_rating (float or null: Glassdoor overall rating e.g. 4.2, null if unknown)
+- glassdoor_recommend_pct (integer or null: Glassdoor "recommend to a friend" percentage e.g. 85, null if unknown)
+
+Use your best knowledge. If you're not sure about a value, use null.
+
+Companies to research:
+{company_list}"""
+
+    logger.info("Enriching %d companies via Claude CLI", len(unenriched_companies))
+
+    proc = await asyncio.create_subprocess_exec(
+        CLAUDE_CLI, "-p", "-",
+        "--output-format", "text",
+        "--model", "sonnet",
+        stdin=asyncio.subprocess.PIPE,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await asyncio.wait_for(
+        proc.communicate(input=prompt.encode("utf-8")), timeout=120
+    )
+
+    if proc.returncode != 0:
+        err_msg = stderr.decode("utf-8", errors="replace").strip()
+        raise RuntimeError(f"claude CLI failed (rc={proc.returncode}): {err_msg}")
+
+    text = stdout.decode("utf-8", errors="replace").strip()
+    if not text:
+        logger.warning("Empty response from Claude CLI for company enrichment")
+        return []
+
+    # Strip markdown fences if present
+    if text.startswith("```"):
+        lines = text.split("\n")
+        lines = [l for l in lines if not l.strip().startswith("```")]
+        text = "\n".join(lines)
+
+    try:
+        enrichments = json.loads(text)
+    except json.JSONDecodeError as e:
+        logger.error("Failed to parse enrichment JSON: %s\nResponse: %s", e, text[:500])
+        return []
+
+    if not isinstance(enrichments, list):
+        logger.error("Enrichment response is not a list: %s", type(enrichments))
+        return []
+
+    logger.info("Enriched %d companies", len(enrichments))
+    return enrichments
+
+
+@activity.defn
+async def update_company_data(enrichment: list[dict]) -> int:
+    """Update jobs table with company enrichment data. Returns count of updated companies."""
+    if not enrichment:
+        return 0
+
+    conn = _ensure_db()
+    updated = 0
+    try:
+        for item in enrichment:
+            company = item.get("company")
+            if not company:
+                continue
+
+            founder_led_val = item.get("founder_led")
+            if founder_led_val is True:
+                founder_led_val = 1
+            elif founder_led_val is False:
+                founder_led_val = 0
+            else:
+                founder_led_val = None
+
+            conn.execute(
+                """UPDATE jobs SET employee_count=?, total_funding=?, ticker=?,
+                   founder_led=?, glassdoor_rating=?, glassdoor_recommend_pct=?
+                   WHERE company=?""",
+                (
+                    item.get("employee_count"),
+                    item.get("total_funding"),
+                    item.get("ticker"),
+                    founder_led_val,
+                    item.get("glassdoor_rating"),
+                    item.get("glassdoor_recommend_pct"),
+                    company,
+                ),
+            )
+            if conn.total_changes > updated:
+                updated += 1
+        conn.commit()
+    finally:
+        conn.close()
+
+    logger.info("Updated enrichment data for %d companies", updated)
+    return updated
 
 
 @activity.defn

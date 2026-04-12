@@ -13,10 +13,13 @@ from temporalio.common import RetryPolicy
 
 with workflow.unsafe.imports_passed_through():
     from activities.jobboard_act import (
+        enrich_companies,
         fetch_existing_jobs,
+        get_unenriched_companies,
         insert_new_jobs,
         notify_discord_new_jobs,
         research_and_score_jobs,
+        update_company_data,
     )
 
 
@@ -64,7 +67,33 @@ class JobBoardWorkflow:
             retry_policy=RetryPolicy(maximum_attempts=2),
         )
 
-        # Step 4: Notify Discord if any high-relevance jobs
+        # Step 4: Enrich companies that haven't been researched yet
+        try:
+            unenriched = await workflow.execute_activity(
+                get_unenriched_companies,
+                start_to_close_timeout=timedelta(seconds=30),
+                retry_policy=RetryPolicy(maximum_attempts=2),
+            )
+            if unenriched:
+                workflow.logger.info("Found %d unenriched companies", len(unenriched))
+                enrichment_data = await workflow.execute_activity(
+                    enrich_companies,
+                    unenriched,
+                    start_to_close_timeout=timedelta(seconds=180),
+                    retry_policy=RetryPolicy(maximum_attempts=2),
+                )
+                if enrichment_data:
+                    await workflow.execute_activity(
+                        update_company_data,
+                        enrichment_data,
+                        start_to_close_timeout=timedelta(seconds=30),
+                        retry_policy=RetryPolicy(maximum_attempts=2),
+                    )
+                    workflow.logger.info("Enriched %d companies", len(enrichment_data))
+        except Exception as e:
+            workflow.logger.warning("Company enrichment failed (non-fatal): %s", e)
+
+        # Step 5: Notify Discord if any high-relevance jobs
         high_rel = [j for j in new_jobs if (j.get("relevance") or 0) > 0.7]
         if high_rel:
             try:

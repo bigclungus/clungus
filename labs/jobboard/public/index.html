@@ -157,6 +157,19 @@
       return '<span style="color:#999;">?</span>';
     }
 
+    function glassdoorRatingCellClass(params) {
+      const v = params.value;
+      if (v == null) return '';
+      if (v >= 4.0) return 'relevance-high';
+      if (v >= 3.0) return 'relevance-mid';
+      return 'relevance-low';
+    }
+
+    function glassdoorRecommendFormatter(params) {
+      if (params.value == null) return '';
+      return params.value + '%';
+    }
+
     function tickerRenderer(params) {
       if (!params.value) return '';
       const t = params.value;
@@ -178,6 +191,8 @@
       { field: 'total_funding', headerName: 'Funding', tooltipField: 'total_funding', filter: true, sortable: true, width: 130 },
       { field: 'ticker', headerName: 'Stock', cellRenderer: tickerRenderer, filter: true, sortable: true, width: 90 },
       { field: 'founder_led', headerName: 'Founder-led', cellRenderer: founderLedRenderer, filter: true, sortable: true, width: 110 },
+      { field: 'glassdoor_rating', headerName: 'GD Rating', cellClass: glassdoorRatingCellClass, filter: 'agNumberColumnFilter', sortable: true, width: 100, valueFormatter: (p) => p.value != null ? p.value.toFixed(1) : '' },
+      { field: 'glassdoor_recommend_pct', headerName: 'GD Recommend', valueFormatter: glassdoorRecommendFormatter, filter: 'agNumberColumnFilter', sortable: true, width: 120 },
       { field: 'location', headerName: 'Location', tooltipField: 'location', filter: true, sortable: true, width: 160 },
       { field: 'remote', headerName: 'Remote', filter: true, sortable: true, width: 100 },
       { field: 'industry', headerName: 'Industry', tooltipField: 'industry', filter: true, sortable: true, width: 130 },
