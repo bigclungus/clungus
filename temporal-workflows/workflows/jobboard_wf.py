@@ -44,7 +44,7 @@ class JobBoardWorkflow:
             new_jobs = await workflow.execute_activity(
                 research_and_score_jobs,
                 existing_jobs,
-                start_to_close_timeout=timedelta(seconds=180),
+                start_to_close_timeout=timedelta(seconds=300),
                 retry_policy=RetryPolicy(maximum_attempts=2),
             )
         except Exception as e:
