@@ -60,6 +60,12 @@ from activities.healthcheck_act import check_sites, send_alert
 from activities.history_ingest_act import run_history_ingest
 from activities.http import rate_limited_get
 from activities.inject_act import inject_message
+from activities.jobboard_act import (
+    fetch_existing_jobs,
+    insert_new_jobs,
+    notify_discord_new_jobs,
+    research_and_score_jobs,
+)
 from activities.persona_polls_act import run_create_persona_polls
 from activities.mob_gen_act import (
     check_mob_cache,
@@ -104,6 +110,7 @@ from workflows.github_wf import GitHubWebhookWorkflow
 from workflows.healthcheck_wf import HealthcheckWorkflow
 from workflows.heartbeat_wf import HeartbeatWorkflow
 from workflows.history_ingest_wf import HistoryIngestWorkflow
+from workflows.jobboard_wf import JobBoardWorkflow
 from workflows.listings import ListingsWorkflow, filter_new_listings
 from workflows.mob_gen_wf import MobGenerationWorkflow
 from workflows.persona_polls_wf import PersonaPollsWorkflow
@@ -297,6 +304,21 @@ async def main() -> None:
     except Exception as exc:
         logger.info("Discord ingest cron already exists or scheduling skipped: %s", exc)
 
+    # Schedule the job board research workflow — runs every 12 hours
+    try:
+        handle = await client.start_workflow(
+            JobBoardWorkflow.run,
+            id="jobboard-research-cron",
+            task_queue=TASK_QUEUE,
+            cron_schedule="0 */12 * * *",
+        )
+        logger.info(
+            "Job board cron scheduled: id=jobboard-research-cron run_id=%s",
+            handle.result_run_id,
+        )
+    except Exception as exc:
+        logger.info("Job board cron already exists or scheduling skipped: %s", exc)
+
     worker = Worker(
         client,
         task_queue=TASK_QUEUE,
@@ -323,6 +345,7 @@ async def main() -> None:
             DiscordIngestWorkflow,
             Bokoen1IngestWorkflow,
             PersonaPollsWorkflow,
+            JobBoardWorkflow,
         ],
         activities=[
             rate_limited_get,
@@ -398,6 +421,10 @@ async def main() -> None:
             generate_mob_stats,
             save_mob_stats,
             generate_mob_sprite,
+            fetch_existing_jobs,
+            research_and_score_jobs,
+            insert_new_jobs,
+            notify_discord_new_jobs,
         ],
     )
     logger.info("Worker started on task queue %r", TASK_QUEUE)
