@@ -283,6 +283,8 @@ to the candidate. Only include postings scoring >= 0.5.
 IMPORTANT: Do NOT include any jobs that appear in the existing jobs list (dedup by company+title or link).
 
 Multiple sources are provided below. Extract relevant postings from ALL of them.
+You also have WebSearch and WebFetch tools — use them to search for additional job openings
+at the companies listed in the sources, especially if a source page didn't return useful content.
 For each posting, set the "source" field to the name of the source it came from.
 
 Return ONLY a JSON array (no markdown, no explanation) where each element has these exact keys:
@@ -336,6 +338,7 @@ If no relevant jobs are found, return an empty array: []"""
         CLAUDE_CLI, "-p", "-",
         "--output-format", "text",
         "--model", "sonnet",
+        "--allowedTools", "WebSearch", "WebFetch",
         stdin=asyncio.subprocess.PIPE,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
@@ -471,7 +474,7 @@ Return ONLY a JSON array (no markdown, no explanation) where each element has th
 - glassdoor_rating (float or null: Glassdoor overall rating e.g. 4.2, null if unknown)
 - glassdoor_recommend_pct (integer or null: Glassdoor "recommend to a friend" percentage e.g. 85, null if unknown)
 
-Use your best knowledge. If you're not sure about a value, use null.
+Use WebSearch to verify company data — do NOT guess. If you can't find a value, use null.
 
 Companies to research:
 {company_list}"""
@@ -482,12 +485,13 @@ Companies to research:
         CLAUDE_CLI, "-p", "-",
         "--output-format", "text",
         "--model", "sonnet",
+        "--allowedTools", "WebSearch", "WebFetch",
         stdin=asyncio.subprocess.PIPE,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
     stdout, stderr = await asyncio.wait_for(
-        proc.communicate(input=prompt.encode("utf-8")), timeout=120
+        proc.communicate(input=prompt.encode("utf-8")), timeout=180
     )
 
     if proc.returncode != 0:
