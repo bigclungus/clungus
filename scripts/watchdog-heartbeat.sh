@@ -4,12 +4,14 @@
 # Called from the startup workflow and can also be run as a standalone cron.
 # Reads /tmp/last-heartbeat.txt (written by inject_act.py on each heartbeat inject).
 # If the file is missing or stale, fires an alert to Discord via the omni inject endpoint.
-# Threshold: 30 minutes (2x the 15-minute heartbeat timer interval).
+# Threshold: 90 minutes (1.5x the 60-minute HeartbeatWorkflow interval).
+# Note: the 15-min systemd timer only READS this file; the 60-min Temporal
+# HeartbeatWorkflow is what WRITES it via inject_act.py.
 
 set -euo pipefail
 
 TIMESTAMP_FILE="/tmp/last-heartbeat.txt"
-MAX_AGE_SECONDS=1800  # 30 minutes (2x the 15-minute heartbeat timer interval)
+MAX_AGE_SECONDS=5400  # 90 minutes (1.5x the 60-minute HeartbeatWorkflow interval)
 INJECT_URL="http://127.0.0.1:8085/webhooks/bigclungus-main"
 
 now=$(date +%s)

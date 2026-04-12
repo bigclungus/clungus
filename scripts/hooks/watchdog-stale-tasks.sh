@@ -173,9 +173,9 @@ fi
 
 echo "watchdog: $STALE_COUNT task(s) marked stale"
 
-# Heartbeat liveness check: alert if no heartbeat in >45 minutes (3x the 15-min interval)
+# Heartbeat liveness check: alert if no heartbeat in >90 minutes (1.5x the 60-min HeartbeatWorkflow interval)
 HEARTBEAT_FILE="/tmp/last-heartbeat.txt"
-HEARTBEAT_MAX_AGE=2700  # 45 minutes
+HEARTBEAT_MAX_AGE=5400  # 90 minutes
 if [ -f "$HEARTBEAT_FILE" ]; then
     LAST_HB=$(cat "$HEARTBEAT_FILE" 2>/dev/null || echo "0")
     HB_AGE=$(python3 -c "import time; print(int(time.time() - $LAST_HB))" 2>/dev/null || echo "9999")
