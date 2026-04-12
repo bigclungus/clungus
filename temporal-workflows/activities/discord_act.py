@@ -230,7 +230,8 @@ async def post_listings_summary(channel_id: str, listings: list) -> str:
         vibe_line = _neighborhood_vibe(listing)
         if vibe_line:
             description_lines.append(vibe_line)
-        description_lines.append(f"*{_grug_commentary(listing)}*")
+        commentary = listing.get("commentary") or _grug_commentary(listing)
+        description_lines.append(f"*{commentary}*")
         if listing_url:
             description_lines.append(f"[View listing]({listing_url})")
 

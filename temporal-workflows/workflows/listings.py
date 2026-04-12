@@ -6,6 +6,7 @@ from temporalio.common import RetryPolicy
 
 with workflow.unsafe.imports_passed_through():
     from activities.discord_act import post_listings_summary
+    from activities.listing_commentary import generate_listing_commentary
     from activities.redfin import fetch_redfin_listings
     from activities.storage import load_seen_ids, save_seen_ids
     from activities.constants import TEMPORAL_WORKFLOWS_DIR
@@ -75,6 +76,20 @@ class ListingsWorkflow:
         # Cap at 1 and post a single summary message if there are any new listings
         top_listings = new_listings[:1]
         if top_listings:
+            # Generate LLM commentary for each listing (best-effort)
+            for listing in top_listings:
+                try:
+                    commentary = await workflow.execute_activity(
+                        generate_listing_commentary,
+                        args=[listing],
+                        start_to_close_timeout=timedelta(seconds=60),
+                        retry_policy=RetryPolicy(maximum_attempts=1),
+                    )
+                    if commentary:
+                        listing["commentary"] = commentary
+                except Exception:
+                    pass  # Fall back to deterministic commentary
+
             await workflow.execute_activity(
                 post_listings_summary,
                 args=[search["discord_channel_id"], top_listings],

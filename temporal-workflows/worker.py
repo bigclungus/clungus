@@ -69,6 +69,7 @@ from activities.mob_gen_act import (
     select_entities_from_graph,
 )
 from activities.nightowl_act import nightowl_flag_risky, nightowl_inject, nightowl_poll_status
+from activities.listing_commentary import generate_listing_commentary
 from activities.redfin import fetch_redfin_listings
 from activities.reminder_act import send_reminder
 from activities.simplify_act import run_simplify_review
@@ -330,6 +331,7 @@ async def main() -> None:
             load_seen_ids,
             save_seen_ids,
             fetch_redfin_listings,
+            generate_listing_commentary,
             filter_new_listings,  # local activity — still needs registration
             check_open_tasks,
             check_sites,

@@ -56,6 +56,10 @@ async def fetch_redfin_listings(location: str, min_price: int, max_price: int, l
 
             photo = str(_safe(row.get('primary_photo'), ''))
 
+            # Extract alternate photos (comma-separated string from homeharvest)
+            alt_photos_raw = str(_safe(row.get('alt_photos'), ''))
+            alt_photos = [u.strip() for u in alt_photos_raw.split(',') if u.strip()][:5] if alt_photos_raw else []
+
             # Extra fields for neighborhood vibe (may be missing)
             neighborhood = str(_safe(row.get('neighborhoods'), ''))
             year_built = int(_safe(row.get('year_built'), 0)) or None
@@ -76,6 +80,8 @@ async def fetch_redfin_listings(location: str, min_price: int, max_price: int, l
                     'list_date': list_date,
                     'photo': photo,
                 }
+                if alt_photos:
+                    entry['alt_photos'] = alt_photos
                 if neighborhood:
                     entry['neighborhood'] = neighborhood
                 if year_built:
