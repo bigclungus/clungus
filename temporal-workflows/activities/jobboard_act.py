@@ -283,6 +283,12 @@ async def research_and_score_jobs(existing_jobs: list[dict]) -> list[dict]:
 source content that match the candidate profile. Score each posting 0.0-1.0 for relevance
 to the candidate. Only include postings scoring >= 0.5.
 
+LOCATION PREFERENCE: Candidate is based in the San Francisco Bay Area. Prioritize:
+1. Remote roles (highest priority)
+2. Bay Area / SF / Silicon Valley hybrid or onsite roles
+3. Other US locations only if remote-friendly
+Do NOT include roles that require onsite presence outside the Bay Area (e.g. Toronto, NYC, Seattle onsite).
+
 IMPORTANT: Do NOT include any jobs that appear in the existing jobs list (dedup by company+title or link).
 
 Multiple sources are provided below. Extract relevant postings from ALL of them.
