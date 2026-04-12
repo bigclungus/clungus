@@ -1,5 +1,4 @@
 import type { ServiceImpl } from "@connectrpc/connect";
-import type { ConnectRouter } from "@connectrpc/connect";
 // Use the GenService from congress_pb (bufbuild/protobuf v2 API)
 import { CongressService } from "../../gen/congress/v1/congress_pb.js";
 import type {
@@ -44,7 +43,7 @@ const CLAUDE_SHORT_NAMES = new Set(["haiku", "opus", "sonnet"]);
 
 // ─── Module-level stream state ──────────────────────────────────────────────
 
-export interface StreamState {
+interface StreamState {
   identity: string;
   displayName: string;
   text: string;
@@ -658,7 +657,3 @@ export const congressServiceImpl: ServiceImpl<typeof CongressService> = {
     return { ok: true, sessionId } satisfies PatchSessionResponse;
   },
 };
-
-export function registerCongressRoutes(router: ConnectRouter): void {
-  router.service(CongressService, congressServiceImpl);
-}

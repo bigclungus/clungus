@@ -17,7 +17,7 @@ def load_env_key(filepath, key):
             for line in f:
                 if line.startswith(key) and "=" in line:
                     return line.split("=", 1)[1].strip()
-    except:
+    except (OSError, ValueError):
         pass
     return os.environ.get(key, "")
 
