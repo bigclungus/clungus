@@ -126,11 +126,11 @@ const server = Bun.serve({
       })();
     }
 
-    // PATCH /api/jobs/:id
-    const patchMatch = route.match(/^\/api\/jobs\/(\d+)$/);
-    if (patchMatch && req.method === "PATCH") {
+    // PATCH/DELETE /api/jobs/:id
+    const jobIdMatch = route.match(/^\/api\/jobs\/(\d+)$/);
+    if (jobIdMatch && req.method === "PATCH") {
       return (async () => {
-        const id = parseInt(patchMatch[1]);
+        const id = parseInt(jobIdMatch[1]);
         const body = await req.json() as Record<string, unknown>;
         const updates: string[] = [];
         const params: (string | number)[] = [];
@@ -152,10 +152,8 @@ const server = Bun.serve({
       })();
     }
 
-    // DELETE /api/jobs/:id
-    const deleteMatch = route.match(/^\/api\/jobs\/(\d+)$/);
-    if (deleteMatch && req.method === "DELETE") {
-      const id = parseInt(deleteMatch[1]);
+    if (jobIdMatch && req.method === "DELETE") {
+      const id = parseInt(jobIdMatch[1]);
       db.run("DELETE FROM jobs WHERE id = ?", id);
       return Response.json({ ok: true });
     }

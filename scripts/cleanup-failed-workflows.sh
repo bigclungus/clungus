@@ -39,8 +39,8 @@ for NS in "${NAMESPACES[@]}"; do
     continue
   fi
 
-  # Parse each workflow
-  echo "$WORKFLOWS" | jq -c '.[]' 2>/dev/null | while read -r WF; do
+  # Use process substitution to avoid subshell (pipe loses counter updates)
+  while read -r WF; do
     WF_ID=$(echo "$WF" | jq -r '.execution.workflowId // empty')
     RUN_ID=$(echo "$WF" | jq -r '.execution.runId // empty')
     START_TIME=$(echo "$WF" | jq -r '.startTime // empty')
@@ -64,7 +64,7 @@ for NS in "${NAMESPACES[@]}"; do
     else
       SKIPPED=$((SKIPPED + 1))
     fi
-  done
+  done < <(echo "$WORKFLOWS" | jq -c '.[]' 2>/dev/null)
 done
 
 echo "cleanup done: deleted=$DELETED skipped=$SKIPPED (max_age=${MAX_AGE_HOURS}h)"
