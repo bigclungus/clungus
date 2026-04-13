@@ -35,47 +35,174 @@ HN_ITEM_URL = "https://hacker-news.firebaseio.com/v0/item/{}.json"
 
 # Additional job sources: (name, url)
 EXTRA_JOB_SOURCES = [
+    # --- Aggregators / Meta-sources ---
     ("Levels.fyi Staff/Principal", "https://www.levels.fyi/jobs?title=Staff+Engineer&title=Principal+Engineer&title=Senior+Staff+Engineer"),
+    ("YC Work at a Startup", "https://www.workatastartup.com/jobs?role=eng&type=fullTime"),
+    ("Built In", "https://builtin.com/jobs?search=principal+engineer"),
+    ("Wellfound (AngelList)", "https://wellfound.com/jobs?role=Engineering&seniorityLevel=Senior&seniorityLevel=Lead&seniorityLevel=Staff"),
+    ("Otta Engineering", "https://app.otta.com/jobs?title=Staff+Engineer&title=Principal+Engineer"),
+
+    # --- Frontier AI / ML ---
+    ("Anthropic Careers (Greenhouse)", "https://job-boards.greenhouse.io/anthropic"),
+    ("Anthropic Careers (Ashby)", "https://jobs.ashbyhq.com/anthropic"),
+    ("OpenAI Careers", "https://openai.com/careers/search"),
+    ("xAI Careers", "https://boards.greenhouse.io/xai"),
+    ("Cohere Careers", "https://jobs.lever.co/cohere"),
+    ("Mistral AI Careers", "https://jobs.lever.co/mistral"),
+    ("Databricks Careers", "https://www.databricks.com/company/careers"),
+    ("Scale AI Careers", "https://boards.greenhouse.io/scaleai"),
+    ("Hugging Face Careers", "https://apply.workable.com/huggingface/"),
+    ("Perplexity AI Careers", "https://jobs.ashbyhq.com/perplexity"),
+    ("Character AI Careers", "https://boards.greenhouse.io/characterai"),
+    ("Midjourney Careers", "https://boards.greenhouse.io/midjourney"),
+    ("Stability AI Careers", "https://jobs.lever.co/stability"),
+    ("Runway ML Careers", "https://boards.greenhouse.io/runwayml"),
+    ("Cursor/Anysphere Careers", "https://jobs.ashbyhq.com/anysphere"),
+    ("Replit Careers", "https://jobs.ashbyhq.com/replit"),
+    ("DeepMind Careers", "https://deepmind.google/about/careers/"),
+    ("Inflection AI Careers", "https://boards.greenhouse.io/inflectionai"),
+    ("Adept AI Careers", "https://boards.greenhouse.io/adeptailabs"),
+    ("Magic AI Careers", "https://boards.greenhouse.io/magic"),
+    ("Reka AI Careers", "https://jobs.ashbyhq.com/reka"),
+    ("AI21 Labs Careers", "https://jobs.lever.co/AI21"),
+    ("Imbue Careers", "https://boards.greenhouse.io/imbue"),
+    ("Weights & Biases Careers", "https://boards.greenhouse.io/wandb"),
+    ("Glean Careers", "https://boards.greenhouse.io/glaboratories"),
+
+    # --- GPU Cloud / Neoclouds / Infra ---
+    ("CoreWeave Careers", "https://boards.greenhouse.io/coreweave"),
+    ("Lambda Careers", "https://jobs.ashbyhq.com/lambda"),
+    ("Together AI Careers", "https://jobs.ashbyhq.com/together-ai"),
+    ("Modal Careers", "https://jobs.ashbyhq.com/modal"),
+    ("Baseten Careers", "https://jobs.ashbyhq.com/baseten"),
+    ("Fireworks AI Careers", "https://boards.greenhouse.io/fireworks"),
+    ("Groq Careers", "https://boards.greenhouse.io/groq"),
+    ("Cerebras Careers", "https://boards.greenhouse.io/cerebrassystems"),
+    ("Crusoe Energy Careers", "https://boards.greenhouse.io/crusoe"),
+    ("Nebius Careers", "https://boards.greenhouse.io/nebius"),
+    ("FluidStack Careers", "https://jobs.ashbyhq.com/fluidstack"),
+    ("Vultr Careers", "https://www.vultr.com/company/careers/"),
+    ("OctoAI Careers", "https://boards.greenhouse.io/octoml"),
+
+    # --- Big Tech ---
+    ("Google Careers", "https://www.google.com/about/careers/applications/jobs/results/?q=Staff+Software+Engineer&location=San+Francisco%2C+CA%2C+USA&hl=en"),
+    ("Meta Careers", "https://www.metacareers.com/jobs"),
+    ("Apple Careers", "https://jobs.apple.com/en-us/search?sort=relevance&search=staff%20engineer"),
+    ("Netflix Jobs", "https://jobs.netflix.com/search"),
+    ("NVIDIA Careers", "https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite"),
+    ("Microsoft Careers", "https://careers.microsoft.com/us/en/search-results?keywords=staff%20engineer"),
+    ("Amazon Careers", "https://www.amazon.jobs/en/search?base_query=principal+engineer&loc_query=&latitude=&longitude=&loc_group_id=&invalid_location=false&country=USA"),
+
+    # --- SaaS / Cloud ---
     ("Stripe Careers", "https://boards.greenhouse.io/stripe"),
     ("Cloudflare Careers", "https://www.cloudflare.com/careers/jobs/"),
     ("Vercel Careers", "https://jobs.ashbyhq.com/vercel"),
-    ("Anthropic Careers (Greenhouse)", "https://job-boards.greenhouse.io/anthropic"),
-    ("Anthropic Careers (Ashby)", "https://jobs.ashbyhq.com/anthropic"),
-    ("Databricks Careers", "https://www.databricks.com/company/careers"),
-    ("Netflix Jobs", "https://jobs.netflix.com/search"),
-    ("Meta Careers", "https://www.metacareers.com/jobs"),
-    ("Google Careers", "https://www.google.com/about/careers/applications/jobs/results/?q=Staff+Software+Engineer&location=San+Francisco%2C+CA%2C+USA&hl=en"),
-    ("YC Work at a Startup", "https://www.workatastartup.com/jobs?role=eng&type=fullTime"),
-    ("Built In", "https://builtin.com/jobs?search=principal+engineer"),
-    # Frontiers
-    ("OpenAI Careers", "https://openai.com/careers/search"),
-    ("NVIDIA Careers", "https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite"),
-    ("Intel Careers", "https://jobs.intel.com/en/search-jobs"),
-    # SaaS
+    ("Datadog Careers", "https://careers.datadoghq.com/"),
+    ("HashiCorp Careers", "https://www.hashicorp.com/careers"),
+    ("Confluent Careers", "https://careers.confluent.io/search/jobs"),
+    ("Elastic Careers", "https://jobs.elastic.co/"),
+    ("MongoDB Careers", "https://www.mongodb.com/careers"),
+    ("Supabase Careers", "https://boards.greenhouse.io/supabase"),
+    ("Netlify Careers", "https://boards.greenhouse.io/netlify"),
+    ("Neon Careers", "https://jobs.ashbyhq.com/neon"),
+    ("Fly.io Careers", "https://fly.io/jobs/"),
+    ("Railway Careers", "https://jobs.ashbyhq.com/railway"),
+    ("Render Careers", "https://jobs.lever.co/render"),
     ("CrowdStrike Careers", "https://www.crowdstrike.com/careers/"),
     ("Okta Careers", "https://www.okta.com/company/careers/"),
     ("ServiceNow Careers", "https://careers.servicenow.com/"),
-    # Neoclouds
-    ("Crusoe Energy Careers", "https://boards.greenhouse.io/crusoe"),
-    ("CoreWeave Careers", "https://boards.greenhouse.io/coreweave"),
-    ("Nebius Careers", "https://boards.greenhouse.io/nebius"),
-    ("FluidStack Careers", "https://jobs.ashbyhq.com/fluidstack"),
-    ("Lambda Careers", "https://jobs.ashbyhq.com/lambda"),
-    ("Together AI Careers", "https://jobs.ashbyhq.com/together-ai"),
-    # Chad Corps
+    ("PlanetScale Careers", "https://jobs.ashbyhq.com/planetscale"),
+    ("Grafana Labs Careers", "https://grafana.com/about/careers/open-positions/"),
+    ("Cockroach Labs Careers", "https://www.cockroachlabs.com/careers/open-positions/"),
+    ("Aiven Careers", "https://aiven.io/careers"),
+    ("Snowflake Careers", "https://careers.snowflake.com/"),
+
+    # --- Developer Tools ---
+    ("GitHub Careers", "https://www.github.careers/careers"),
+    ("GitLab Careers", "https://about.gitlab.com/jobs/all-jobs/"),
+    ("JetBrains Careers", "https://www.jetbrains.com/careers/jobs/"),
+    ("Linear Careers", "https://jobs.ashbyhq.com/linear"),
+    ("Figma Careers", "https://boards.greenhouse.io/figma"),
+    ("Retool Careers", "https://boards.greenhouse.io/retool"),
+    ("Temporal Careers", "https://boards.greenhouse.io/temporaltechnologies"),
+    ("PostHog Careers", "https://boards.greenhouse.io/posthog"),
+    ("Sentry Careers", "https://boards.greenhouse.io/sentry"),
+    ("Sourcegraph Careers", "https://boards.greenhouse.io/sourcegraph"),
+    ("LaunchDarkly Careers", "https://boards.greenhouse.io/launchdarkly"),
+    ("Snyk Careers", "https://boards.greenhouse.io/snyk"),
+    ("Cypress Careers", "https://boards.greenhouse.io/cypress"),
+    ("Deno Careers", "https://jobs.ashbyhq.com/deno"),
+
+    # --- Fintech ---
+    ("Plaid Careers", "https://boards.greenhouse.io/plaid"),
+    ("Brex Careers", "https://boards.greenhouse.io/brex"),
+    ("Ramp Careers", "https://boards.greenhouse.io/ramp"),
+    ("Mercury Careers", "https://boards.greenhouse.io/mercury"),
+    ("Affirm Careers", "https://boards.greenhouse.io/affirm"),
+    ("Marqeta Careers", "https://boards.greenhouse.io/marqeta"),
+    ("Column Careers", "https://boards.greenhouse.io/column"),
+    ("Moov Careers", "https://boards.greenhouse.io/moov"),
+    ("Coinbase Careers", "https://www.coinbase.com/careers/positions"),
+    ("Robinhood Careers", "https://boards.greenhouse.io/robinhood"),
+    ("Square/Block Careers", "https://block.xyz/careers?teams=engineering"),
+    ("Bolt Careers", "https://boards.greenhouse.io/bolt"),
+
+    # --- Chad Corps ---
     ("Anduril Careers", "https://jobs.lever.co/anduril"),
     ("Palantir Careers", "https://www.palantir.com/careers/"),
-    ("Coinbase Careers", "https://www.coinbase.com/careers/positions"),
-    # Artisanal
+    ("SpaceX Careers", "https://boards.greenhouse.io/spacex"),
+    ("Discord Careers", "https://discord.com/careers"),
+    ("Snap Careers", "https://careers.snap.com/"),
+    ("Twitch Careers", "https://www.twitch.tv/jobs/en/"),
+    ("Epic Games Careers", "https://www.epicgames.com/site/en-US/careers"),
     ("Valve Careers", "https://www.valvesoftware.com/en/jobs"),
-    # Normie but good
+    ("Roblox Careers", "https://careers.roblox.com/"),
+    ("Riot Games Careers", "https://www.riotgames.com/en/work-with-us"),
+    ("Spotify Careers", "https://www.lifeatspotify.com/jobs?l=category-engineering"),
+    ("Notion Careers", "https://boards.greenhouse.io/notion"),
+    ("Canva Careers", "https://www.canva.com/careers/"),
+    ("Airtable Careers", "https://boards.greenhouse.io/airtable"),
+
+    # --- Normie but good ---
     ("Dropbox Careers", "https://jobs.dropbox.com/all-jobs"),
     ("Zillow Careers", "https://zillow.wd5.myworkdayjobs.com/Zillow_Group_Careers"),
     ("Reddit Careers", "https://boards.greenhouse.io/reddit"),
-    ("Apple Careers", "https://jobs.apple.com/en-us/search?sort=relevance&search=staff%20engineer"),
-    # Prediction markets
+    ("Pinterest Careers", "https://www.pinterestcareers.com/en/jobs/"),
+    ("Lyft Careers", "https://www.lyft.com/careers"),
+    ("DoorDash Careers", "https://boards.greenhouse.io/doordash"),
+    ("Instacart Careers", "https://boards.greenhouse.io/instacart"),
+    ("Airbnb Careers", "https://careers.airbnb.com/"),
+    ("Uber Careers", "https://www.uber.com/us/en/careers/"),
+    ("Slack/Salesforce Careers", "https://careers.salesforce.com/en/jobs/?search=staff+engineer&team=Engineering"),
+    ("Twitter/X Careers", "https://careers.twitter.com/en/roles.html"),
+    ("LinkedIn Careers", "https://careers.linkedin.com/"),
+    ("Shopify Careers", "https://www.shopify.com/careers"),
+    ("Twilio Careers", "https://boards.greenhouse.io/twilio"),
+    ("Atlassian Careers", "https://www.atlassian.com/company/careers/all-jobs"),
+    ("Asana Careers", "https://boards.greenhouse.io/asana"),
+
+    # --- Intel / Hardware ---
+    ("Intel Careers", "https://jobs.intel.com/en/search-jobs"),
+    ("AMD Careers", "https://careers.amd.com/careers-home/jobs"),
+    ("Qualcomm Careers", "https://careers.qualcomm.com/careers"),
+
+    # --- Prediction markets ---
     ("Kalshi Careers", "https://boards.greenhouse.io/kalshi"),
     ("Polymarket Careers", "https://boards.greenhouse.io/polymarket"),
+
+    # --- Security / Infra ---
+    ("Tailscale Careers", "https://tailscale.com/jobs"),
+    ("1Password Careers", "https://jobs.lever.co/1password"),
+    ("Palo Alto Networks Careers", "https://jobs.paloaltonetworks.com/en/jobs/"),
+    ("Wiz Careers", "https://boards.greenhouse.io/waboratory"),
+    ("Lacework Careers", "https://boards.greenhouse.io/lacework"),
+
+    # --- Data / Analytics ---
+    ("Fivetran Careers", "https://boards.greenhouse.io/fivetran"),
+    ("dbt Labs Careers", "https://boards.greenhouse.io/daboratories"),
+    ("Hex Careers", "https://boards.greenhouse.io/hex"),
+    ("Monte Carlo Careers", "https://boards.greenhouse.io/montecarlodata"),
+    ("Preset Careers", "https://boards.greenhouse.io/preset"),
 ]
 
 MAX_SOURCE_CHARS = 30000
@@ -302,8 +429,13 @@ Do NOT include roles that require onsite presence outside the Bay Area (e.g. Tor
 IMPORTANT: Do NOT include any jobs that appear in the existing jobs list (dedup by company+title or link).
 
 Multiple sources are provided below. Extract relevant postings from ALL of them.
-You also have WebSearch and WebFetch tools — use them to search for additional job openings
-at the companies listed in the sources, especially if a source page didn't return useful content.
+You also have WebSearch and WebFetch tools — use them AGGRESSIVELY:
+  - For EVERY company source, search for "staff engineer" / "principal engineer" / "senior engineer" openings
+  - If a careers page didn't load useful content, WebSearch for "[company] staff engineer jobs" or visit their Greenhouse/Lever/Ashby board directly
+  - Search job aggregators like levels.fyi, wellfound.com, otta.com for additional matches
+  - Try to find MULTIPLE relevant roles per company — not just one. Many companies have 3-5 matching roles.
+  - Also search for "distributed systems", "platform engineer", "infrastructure engineer" roles at these companies
+  - Your goal is to find 100+ relevant postings. Be thorough.
 For each posting, set the "source" field to the name of the source it came from.
 
 Return ONLY a JSON array (no markdown, no explanation) where each element has these exact keys:
@@ -363,7 +495,7 @@ If no relevant jobs are found, return an empty array: []"""
         stderr=asyncio.subprocess.PIPE,
     )
     stdout, stderr = await asyncio.wait_for(
-        proc.communicate(input=full_prompt.encode("utf-8")), timeout=240
+        proc.communicate(input=full_prompt.encode("utf-8")), timeout=420
     )
 
     if proc.returncode != 0:
