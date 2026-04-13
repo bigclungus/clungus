@@ -15,8 +15,21 @@ with workflow.unsafe.imports_passed_through():
     from activities.healthcheck_act import check_sites, send_alert
 
 
+_CHECK_SITES_TIMEOUT = timedelta(seconds=60)
+_CHECK_SITES_RETRY = RetryPolicy(maximum_attempts=3, initial_interval=timedelta(seconds=5))
+
+
 @workflow.defn
 class HealthcheckWorkflow:
+
+    async def _run_check(self) -> dict:
+        """Execute the check_sites activity with standard timeout and retry."""
+        return await workflow.execute_activity(
+            check_sites,
+            start_to_close_timeout=_CHECK_SITES_TIMEOUT,
+            retry_policy=_CHECK_SITES_RETRY,
+        )
+
     @workflow.run
     async def run(self, previously_down: Optional[list[str]] = None) -> None:
         """
@@ -29,17 +42,10 @@ class HealthcheckWorkflow:
 
         prev_down_set = set(previously_down)
 
-        # Run the healthcheck activity — no retries, fire-and-forget style.
+        # Run the healthcheck activity with retries.
         # A transient failure is treated as "site unreachable" for this cycle;
         # the next iteration will correct it automatically.
-        results: dict = await workflow.execute_activity(
-            check_sites,
-            start_to_close_timeout=timedelta(seconds=60),
-            retry_policy=RetryPolicy(
-                maximum_attempts=3,
-                initial_interval=timedelta(seconds=5),
-            ),
-        )
+        results: dict = await self._run_check()
 
         now_down_set: set[str] = {url for url, info in results.items() if not info["ok"]}
 
@@ -58,14 +64,7 @@ class HealthcheckWorkflow:
                 ", ".join(sorted(newly_down)),
             )
             await workflow.sleep(timedelta(seconds=30))
-            confirm_results: dict = await workflow.execute_activity(
-                check_sites,
-                start_to_close_timeout=timedelta(seconds=60),
-                retry_policy=RetryPolicy(
-                    maximum_attempts=3,
-                    initial_interval=timedelta(seconds=5),
-                ),
-            )
+            confirm_results: dict = await self._run_check()
             # Only alert for sites that are still down after the confirmation check
             confirmed_down = {
                 url for url in newly_down
