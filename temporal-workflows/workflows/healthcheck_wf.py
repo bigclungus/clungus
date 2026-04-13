@@ -34,8 +34,11 @@ class HealthcheckWorkflow:
         # the next iteration will correct it automatically.
         results: dict = await workflow.execute_activity(
             check_sites,
-            start_to_close_timeout=timedelta(seconds=30),
-            retry_policy=RetryPolicy(maximum_attempts=1),
+            start_to_close_timeout=timedelta(seconds=60),
+            retry_policy=RetryPolicy(
+                maximum_attempts=3,
+                initial_interval=timedelta(seconds=5),
+            ),
         )
 
         now_down_set: set[str] = {url for url, info in results.items() if not info["ok"]}
@@ -57,8 +60,11 @@ class HealthcheckWorkflow:
             await workflow.sleep(timedelta(seconds=30))
             confirm_results: dict = await workflow.execute_activity(
                 check_sites,
-                start_to_close_timeout=timedelta(seconds=30),
-                retry_policy=RetryPolicy(maximum_attempts=1),
+                start_to_close_timeout=timedelta(seconds=60),
+                retry_policy=RetryPolicy(
+                    maximum_attempts=3,
+                    initial_interval=timedelta(seconds=5),
+                ),
             )
             # Only alert for sites that are still down after the confirmation check
             confirmed_down = {
