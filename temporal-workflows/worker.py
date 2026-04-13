@@ -137,190 +137,47 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+async def _ensure_workflow(client: Client, workflow_fn, workflow_id: str, *, arg=None, cron_schedule: str = "") -> None:
+    """Start or schedule a workflow idempotently (no-op if already running)."""
+    kwargs: dict = {"id": workflow_id, "task_queue": TASK_QUEUE}
+    if cron_schedule:
+        kwargs["cron_schedule"] = cron_schedule
+    try:
+        if arg is not None:
+            handle = await client.start_workflow(workflow_fn, arg, **kwargs)
+        else:
+            handle = await client.start_workflow(workflow_fn, **kwargs)
+        logger.info("Workflow started: id=%s run_id=%s", workflow_id, handle.result_run_id)
+    except Exception as exc:
+        logger.info("Workflow %s already running or skipped: %s", workflow_id, exc)
+
+
 async def main() -> None:
     logger.info("Connecting to Temporal at %s", TEMPORAL_HOST)
     client = await Client.connect(TEMPORAL_HOST)
 
-    # Trigger the startup checklist (fire-and-forget — worker handles it once running).
-    # Use a unique ID per run so it always executes; don't await the result.
-    try:
-        await client.start_workflow(
-            StartupWorkflow.run,
-            id=f"startup-{int(time.time())}",
-            task_queue=TASK_QUEUE,
-        )
-        logger.info("StartupWorkflow triggered")
-    except Exception as exc:
-        logger.info("StartupWorkflow trigger skipped: %s", exc)
+    # Trigger the startup checklist (fire-and-forget — unique ID per run)
+    await _ensure_workflow(client, StartupWorkflow.run, f"startup-{int(time.time())}")
 
-    # Schedule each search as a daily cron workflow (idempotent: start_workflow
-    # with the same workflow ID is a no-op if already running).
+    # Schedule each search as a daily cron workflow
     criteria = json.loads(CRITERIA_PATH.read_text())
     for search in criteria["searches"]:
         workflow_id = f"listings-{search['name'].replace(' ', '-').lower()}"
-        try:
-            handle = await client.start_workflow(
-                ListingsWorkflow.run,
-                search,
-                id=workflow_id,
-                task_queue=TASK_QUEUE,
-                cron_schedule="0 8 * * *",  # 8 AM daily
-            )
-            logger.info(
-                "Cron workflow scheduled: id=%s run_id=%s",
-                workflow_id,
-                handle.result_run_id,
-            )
-        except Exception as exc:
-            logger.info("Workflow %r already exists or scheduling skipped: %s", workflow_id, exc)
+        await _ensure_workflow(client, ListingsWorkflow.run, workflow_id, arg=search, cron_schedule="0 8 * * *")
 
-    # Start the 15-minute task sweeper workflow (no-op if already running)
-    try:
-        handle = await client.start_workflow(
-            TaskSweeperWorkflow.run,
-            id="task-sweeper",
-            task_queue=TASK_QUEUE,
-        )
-        logger.info(
-            "Task sweeper workflow started: id=task-sweeper run_id=%s",
-            handle.result_run_id,
-        )
-    except Exception as exc:
-        logger.info("Task sweeper workflow already running or start skipped: %s", exc)
+    # Singleton workflows (no cron — self-scheduling via continue_as_new)
+    await _ensure_workflow(client, TaskSweeperWorkflow.run, "task-sweeper")
+    await _ensure_workflow(client, HealthcheckWorkflow.run, "healthcheck-loop")
+    await _ensure_workflow(client, HeartbeatWorkflow.run, "heartbeat")
 
-    # Start the healthcheck workflow singleton (no-op if already running)
-    try:
-        handle = await client.start_workflow(
-            HealthcheckWorkflow.run,
-            id="healthcheck-loop",
-            task_queue=TASK_QUEUE,
-        )
-        logger.info(
-            "Healthcheck workflow started: id=healthcheck-loop run_id=%s",
-            handle.result_run_id,
-        )
-    except Exception as exc:
-        logger.info("Healthcheck workflow already running or start skipped: %s", exc)
-
-    # Start the heartbeat workflow (no-op if already running)
-    try:
-        handle = await client.start_workflow(
-            HeartbeatWorkflow.run,
-            id="heartbeat",
-            task_queue=TASK_QUEUE,
-        )
-        logger.info(
-            "Heartbeat workflow started: id=heartbeat run_id=%s",
-            handle.result_run_id,
-        )
-    except Exception as exc:
-        logger.info("Heartbeat workflow already running or start skipped: %s", exc)
-
-    # Schedule the simplify cron — runs every hour (idempotent: fixed workflow ID)
-    try:
-        handle = await client.start_workflow(
-            SimplifyCronWorkflow.run,
-            id="simplify-cron",
-            task_queue=TASK_QUEUE,
-            cron_schedule="0 * * * *",
-        )
-        logger.info(
-            "Simplify cron workflow scheduled: id=simplify-cron run_id=%s",
-            handle.result_run_id,
-        )
-    except Exception as exc:
-        logger.info("Simplify cron workflow already exists or scheduling skipped: %s", exc)
-
-    # Schedule the tasks.db backup cron — commits to git every 6 hours
-    try:
-        handle = await client.start_workflow(
-            TaskDbBackupWorkflow.run,
-            id="tasks-db-backup-cron",
-            task_queue=TASK_QUEUE,
-            cron_schedule="0 */6 * * *",
-        )
-        logger.info(
-            "Tasks DB backup cron scheduled: id=tasks-db-backup-cron run_id=%s",
-            handle.result_run_id,
-        )
-    except Exception as exc:
-        logger.info("Tasks DB backup cron already exists or scheduling skipped: %s", exc)
-
-    # Schedule the integration test cron — runs every 6 hours, alerts Discord on failure
-    try:
-        handle = await client.start_workflow(
-            TestCronWorkflow.run,
-            id="test-cron",
-            task_queue=TASK_QUEUE,
-            cron_schedule="0 */6 * * *",
-        )
-        logger.info(
-            "Test cron workflow scheduled: id=test-cron run_id=%s",
-            handle.result_run_id,
-        )
-    except Exception as exc:
-        logger.info("Test cron workflow already exists or scheduling skipped: %s", exc)
-
-    # Schedule the daily congress audit — runs at 20:00 UTC (noon Pacific)
-    try:
-        handle = await client.start_workflow(
-            CongressAuditWorkflow.run,
-            id="congress-audit-cron",
-            task_queue=TASK_QUEUE,
-            cron_schedule="0 20 * * *",
-        )
-        logger.info(
-            "Congress audit cron scheduled: id=congress-audit-cron run_id=%s",
-            handle.result_run_id,
-        )
-    except Exception as exc:
-        logger.info("Congress audit cron already exists or scheduling skipped: %s", exc)
-
-    # Schedule the daily drift scan — runs at 13:00 UTC (6am Pacific)
-    try:
-        handle = await client.start_workflow(
-            DriftScanWorkflow.run,
-            id="drift-scan-daily",
-            task_queue=TASK_QUEUE,
-            cron_schedule="0 13 * * *",
-        )
-        logger.info(
-            "Drift scan cron scheduled: id=drift-scan-daily run_id=%s",
-            handle.result_run_id,
-        )
-    except Exception as exc:
-        logger.info("Drift scan cron already exists or scheduling skipped: %s", exc)
-
-    # Schedule daily Discord → Graphiti ingestion — runs at 02:00 UTC
-    try:
-        handle = await client.start_workflow(
-            DiscordIngestWorkflow.run,
-            7,  # ingest last 7 days
-            id="discord-ingest-daily",
-            task_queue=TASK_QUEUE,
-            cron_schedule="0 2 * * *",
-        )
-        logger.info(
-            "Discord ingest cron scheduled: id=discord-ingest-daily run_id=%s",
-            handle.result_run_id,
-        )
-    except Exception as exc:
-        logger.info("Discord ingest cron already exists or scheduling skipped: %s", exc)
-
-    # Schedule the job board research workflow — runs every 12 hours
-    try:
-        handle = await client.start_workflow(
-            JobBoardWorkflow.run,
-            id="jobboard-research-cron",
-            task_queue=TASK_QUEUE,
-            cron_schedule="0 */12 * * *",
-        )
-        logger.info(
-            "Job board cron scheduled: id=jobboard-research-cron run_id=%s",
-            handle.result_run_id,
-        )
-    except Exception as exc:
-        logger.info("Job board cron already exists or scheduling skipped: %s", exc)
+    # Cron-scheduled workflows
+    await _ensure_workflow(client, SimplifyCronWorkflow.run, "simplify-cron", cron_schedule="0 * * * *")
+    await _ensure_workflow(client, TaskDbBackupWorkflow.run, "tasks-db-backup-cron", cron_schedule="0 */6 * * *")
+    await _ensure_workflow(client, TestCronWorkflow.run, "test-cron", cron_schedule="0 */6 * * *")
+    await _ensure_workflow(client, CongressAuditWorkflow.run, "congress-audit-cron", cron_schedule="0 20 * * *")
+    await _ensure_workflow(client, DriftScanWorkflow.run, "drift-scan-daily", cron_schedule="0 13 * * *")
+    await _ensure_workflow(client, DiscordIngestWorkflow.run, "discord-ingest-daily", arg=7, cron_schedule="0 2 * * *")
+    await _ensure_workflow(client, JobBoardWorkflow.run, "jobboard-research-cron", cron_schedule="0 */12 * * *")
 
     worker = Worker(
         client,

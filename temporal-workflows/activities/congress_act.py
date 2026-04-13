@@ -1474,10 +1474,15 @@ def _codebase_search(topic_text: str) -> str:
         SCRIPTS_DIR,
         AGENTS_DIR,
     ]
+    MAX_FILES = 8
     found_files: dict = {}  # path -> first matching line snippet
 
     for keyword in keywords:
+        if len(found_files) >= MAX_FILES:
+            break
         for search_dir in SEARCH_DIRS:
+            if len(found_files) >= MAX_FILES:
+                break
             if not os.path.isdir(search_dir):
                 continue
             try:
@@ -1503,26 +1508,22 @@ def _codebase_search(topic_text: str) -> str:
                     timeout=4,
                 )
                 for fpath in result.stdout.strip().splitlines():
-                    if fpath not in found_files:
-                        # Get the first matching line as a snippet
-                        try:
-                            snip_result = subprocess.run(
-                                ["grep", "-im", "1", keyword, fpath], capture_output=True, text=True, timeout=2
-                            )
-                            snippet = snip_result.stdout.strip()[:120] if snip_result.stdout else ""
-                        except Exception as exc:
-                            logger.debug("snippet grep failed for %s: %s", fpath, exc)
-                            snippet = ""
-                        rel_path = os.path.relpath(fpath, BASE_DIR)
-                        found_files[fpath] = (rel_path, snippet)
-                    if len(found_files) >= 8:
+                    if len(found_files) >= MAX_FILES:
                         break
+                    if fpath in found_files:
+                        continue
+                    try:
+                        snip_result = subprocess.run(
+                            ["grep", "-im", "1", keyword, fpath], capture_output=True, text=True, timeout=2
+                        )
+                        snippet = snip_result.stdout.strip()[:120] if snip_result.stdout else ""
+                    except Exception as exc:
+                        logger.debug("snippet grep failed for %s: %s", fpath, exc)
+                        snippet = ""
+                    rel_path = os.path.relpath(fpath, BASE_DIR)
+                    found_files[fpath] = (rel_path, snippet)
             except Exception as exc:
                 logger.warning("codebase search failed for dir %s keyword %s: %s", search_dir, keyword, exc)
-            if len(found_files) >= 8:
-                break
-        if len(found_files) >= 8:
-            break
 
     if not found_files:
         return ""

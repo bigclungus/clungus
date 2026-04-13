@@ -129,6 +129,16 @@ def _resolve_persona(slug: str, lookup: dict) -> object:
     )
 
 
+def _trim_synthesis(text: str) -> str:
+    """Trim synthesis to a safe Discord-postable length."""
+    if not text:
+        return ""
+    if len(text) <= 1800:
+        return text.strip()
+    cut = text[:1800].rfind('. ')
+    return (text[:cut + 1] if cut > 0 else text[:1800]).strip()
+
+
 def _parse_jury_vote(speech: str) -> str:
     """Extract a jury vote from their deliberation text.
 
@@ -698,15 +708,6 @@ class SessionWorkflow:
                 "recommendations for the topic at hand.\n\n"
             )
             synthesis_context = no_evolution_instruction + (graphiti_ctx + dissent_note if (graphiti_ctx or dissent_note) else "") + pre_debate_section
-
-            def _trim_synthesis(text: str) -> str:
-                """Trim synthesis to a safe length."""
-                if not text:
-                    return ""
-                if len(text) <= 1800:
-                    return text.strip()
-                cut = text[:1800].rfind('. ')
-                return (text[:cut + 1] if cut > 0 else text[:1800]).strip()
 
             if duel_mode:
                 # --- SYNTHESIS DUEL ---
