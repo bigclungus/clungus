@@ -61,12 +61,13 @@ from activities.history_ingest_act import run_history_ingest
 from activities.http import rate_limited_get
 from activities.inject_act import inject_message
 from activities.jobboard_act import (
+    analyze_scraped_jobs,
     enrich_companies,
     fetch_existing_jobs,
     get_unenriched_companies,
     insert_new_jobs,
     notify_discord_new_jobs,
-    research_and_score_jobs,
+    scrape_career_pages,
     update_company_data,
 )
 from activities.persona_polls_act import run_create_persona_polls
@@ -282,7 +283,8 @@ async def main() -> None:
             save_mob_stats,
             generate_mob_sprite,
             fetch_existing_jobs,
-            research_and_score_jobs,
+            scrape_career_pages,
+            analyze_scraped_jobs,
             insert_new_jobs,
             notify_discord_new_jobs,
             get_unenriched_companies,

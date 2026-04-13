@@ -165,16 +165,14 @@ EXTRA_JOB_SOURCES = [
 
     # --- Normie but good ---
     ("Dropbox Careers", "https://jobs.dropbox.com/all-jobs"),
-    ("Zillow Careers", "https://zillow.wd5.myworkdayjobs.com/Zillow_Group_Careers"),
+    ("Intuit Careers", "https://jobs.intuit.com/search-jobs"),
     ("Reddit Careers", "https://boards.greenhouse.io/reddit"),
     ("Pinterest Careers", "https://www.pinterestcareers.com/en/jobs/"),
     ("Lyft Careers", "https://www.lyft.com/careers"),
-    ("DoorDash Careers", "https://boards.greenhouse.io/doordash"),
     ("Instacart Careers", "https://boards.greenhouse.io/instacart"),
     ("Airbnb Careers", "https://careers.airbnb.com/"),
     ("Uber Careers", "https://www.uber.com/us/en/careers/"),
     ("Slack/Salesforce Careers", "https://careers.salesforce.com/en/jobs/?search=staff+engineer&team=Engineering"),
-    ("Twitter/X Careers", "https://careers.twitter.com/en/roles.html"),
     ("LinkedIn Careers", "https://careers.linkedin.com/"),
     ("Shopify Careers", "https://www.shopify.com/careers"),
     ("Twilio Careers", "https://boards.greenhouse.io/twilio"),
@@ -195,14 +193,9 @@ EXTRA_JOB_SOURCES = [
     ("1Password Careers", "https://jobs.lever.co/1password"),
     ("Palo Alto Networks Careers", "https://jobs.paloaltonetworks.com/en/jobs/"),
     ("Wiz Careers", "https://boards.greenhouse.io/waboratory"),
-    ("Lacework Careers", "https://boards.greenhouse.io/lacework"),
 
     # --- Data / Analytics ---
     ("Fivetran Careers", "https://boards.greenhouse.io/fivetran"),
-    ("dbt Labs Careers", "https://boards.greenhouse.io/daboratories"),
-    ("Hex Careers", "https://boards.greenhouse.io/hex"),
-    ("Monte Carlo Careers", "https://boards.greenhouse.io/montecarlodata"),
-    ("Preset Careers", "https://boards.greenhouse.io/preset"),
 ]
 
 MAX_SOURCE_CHARS = 30000
@@ -329,35 +322,6 @@ def _strip_html(html: str) -> str:
     return text
 
 
-async def _fetch_extra_source(name: str, url: str) -> tuple[str, str]:
-    """Fetch a single job source page. Returns (name, text_content)."""
-    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
-        resp = await client.get(url, headers={
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
-        })
-        resp.raise_for_status()
-        text = _strip_html(resp.text)
-        return (name, text[:MAX_SOURCE_CHARS])
-
-
-async def _fetch_all_extra_sources() -> list[tuple[str, str]]:
-    """Fetch all extra job sources concurrently. Skip failures."""
-    tasks = [_fetch_extra_source(name, url) for name, url in EXTRA_JOB_SOURCES]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-    sources = []
-    for i, result in enumerate(results):
-        name = EXTRA_JOB_SOURCES[i][0]
-        if isinstance(result, Exception):
-            logger.warning("Failed to fetch %s: %s", name, result)
-            continue
-        src_name, content = result
-        if content and len(content) > 100:  # skip near-empty pages
-            sources.append((src_name, content))
-            logger.info("Fetched %s: %d chars", src_name, len(content))
-        else:
-            logger.warning("Skipping %s: too little content (%d chars)", src_name, len(content) if content else 0)
-    return sources
-
 
 async def _fetch_resume() -> str:
     """Fetch resume content from resume.jxh.io, stripping HTML to plain text."""
@@ -367,58 +331,115 @@ async def _fetch_resume() -> str:
         return _strip_html(resp.text)
 
 
-@activity.defn
-async def research_and_score_jobs(existing_jobs: list[dict]) -> list[dict]:
-    """Research new job postings using Claude CLI and score them for relevance.
+BATCH_SIZE = 30  # Sources per Claude CLI call
+BATCH_TIMEOUT = 420  # Timeout per batch in seconds
 
-    Uses `claude -p` with OAuth session auth (no API key needed).
-    Prompt is passed via stdin to avoid argv length limits.
-    Do NOT use --bare flag (it disables OAuth and requires ANTHROPIC_API_KEY).
-    """
-    resume_content = ""
+
+def _parse_claude_json(text: str) -> list[dict]:
+    """Parse JSON array from Claude CLI output, handling markdown fences and prose preamble."""
+    text = text.strip()
+    if not text:
+        return []
+
+    # Strip markdown fences if present
+    if text.startswith("```"):
+        lines = text.split("\n")
+        lines = [l for l in lines if not l.strip().startswith("```")]
+        text = "\n".join(lines)
+
+    # First try direct parse
     try:
-        resume_content = await _fetch_resume()
-        logger.info("Fetched live resume: %d chars", len(resume_content))
+        result = json.loads(text)
+        if isinstance(result, list):
+            return result
+    except json.JSONDecodeError:
+        pass
+
+    # Claude sometimes returns prose before/after the JSON array.
+    # Extract the JSON array by finding the first '[' and last ']'.
+    first_bracket = text.find("[")
+    last_bracket = text.rfind("]")
+    if first_bracket != -1 and last_bracket != -1 and last_bracket > first_bracket:
+        json_str = text[first_bracket : last_bracket + 1]
+        try:
+            result = json.loads(json_str)
+            if isinstance(result, list):
+                logger.info("Extracted JSON array from prose-wrapped response (chars %d-%d)", first_bracket, last_bracket)
+                return result
+        except json.JSONDecodeError as e:
+            logger.error("Failed to parse extracted JSON substring: %s\nSubstring: %s", e, json_str[:500])
+            return []
+
+    logger.error("No JSON array found in Claude response. Response: %s", text[:500])
+    return []
+
+
+@activity.defn
+async def scrape_career_pages() -> dict[str, str]:
+    """Phase 1: Fetch all career page URLs in parallel using plain HTTP.
+
+    Returns a dict mapping company name -> extracted text content.
+    Pure HTTP, no LLM. Should complete in under a minute.
+    """
+    semaphore = asyncio.Semaphore(20)
+
+    async def _fetch_one(name: str, url: str) -> tuple[str, str | None]:
+        async with semaphore:
+            try:
+                async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+                    resp = await client.get(url, headers={
+                        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+                    })
+                    resp.raise_for_status()
+                    text = _strip_html(resp.text)
+                    if len(text) < 100:
+                        logger.warning("Skipping %s: too little content (%d chars)", name, len(text))
+                        return (name, None)
+                    return (name, text[:MAX_SOURCE_CHARS])
+            except Exception as e:
+                logger.warning("Failed to fetch %s: %s", name, e)
+                return (name, None)
+
+    # Also fetch HN Who's Hiring
+    hn_content = None
+    try:
+        hn_content = await asyncio.wait_for(_fetch_hn_whos_hiring(), timeout=60)
+        if hn_content:
+            logger.info("Fetched HN content: %d chars", len(hn_content))
     except Exception as e:
-        logger.warning("Failed to fetch resume from %s: %s -- using fallback", RESUME_URL, e)
+        logger.warning("Failed to fetch HN Who's Hiring: %s", e)
 
-    if not resume_content:
-        resume_content = RESUME_FALLBACK
-
-    # Fetch HN and all extra sources concurrently
-    hn_task = _fetch_hn_whos_hiring()
-    extra_task = _fetch_all_extra_sources()
-    hn_result, extra_results = await asyncio.gather(
-        hn_task, extra_task, return_exceptions=True
+    # Fetch all extra sources concurrently
+    tasks = [_fetch_one(name, url) for name, url in EXTRA_JOB_SOURCES]
+    results = await asyncio.wait_for(
+        asyncio.gather(*tasks, return_exceptions=True),
+        timeout=120,
     )
 
-    # Build source sections
-    source_sections: list[tuple[str, str]] = []
+    scraped: dict[str, str] = {}
+    if hn_content:
+        scraped["HN Who's Hiring"] = hn_content
 
-    # HN first (highest priority)
-    if isinstance(hn_result, str) and hn_result:
-        source_sections.append(("HN Who's Hiring", hn_result))
-        logger.info("Fetched HN content: %d chars", len(hn_result))
-    else:
-        logger.warning("No HN content available this cycle")
+    for i, result in enumerate(results):
+        name = EXTRA_JOB_SOURCES[i][0]
+        if isinstance(result, Exception):
+            logger.warning("Gather exception for %s: %s", name, result)
+            continue
+        src_name, content = result
+        if content:
+            scraped[src_name] = content
+            logger.info("Fetched %s: %d chars", src_name, len(content))
 
-    # Extra sources
-    if isinstance(extra_results, Exception):
-        logger.warning("Failed to fetch extra sources: %s", extra_results)
-    elif isinstance(extra_results, list):
-        source_sections.extend(extra_results)
+    logger.info("Scraped %d / %d career pages successfully", len(scraped), len(EXTRA_JOB_SOURCES) + 1)
+    return scraped
 
-    logger.info("Total sources fetched: %d", len(source_sections))
 
-    existing_summary = "\n".join(
-        f"- {j['company']} | {j['title']} | {j['link']}" for j in existing_jobs
-    )
-    if not existing_summary:
-        existing_summary = "(no existing jobs)"
-
-    system_prompt = """You are a job research assistant. Extract job postings from the provided
+ANALYSIS_SYSTEM_PROMPT = """You are a job research assistant. Extract job postings from the provided
 source content that match the candidate profile. Score each posting 0.0-1.0 for relevance
 to the candidate. Only include postings scoring >= 0.5.
+
+CRITICAL: Output ONLY a JSON array. No preamble, no explanation, no commentary, no markdown
+fences. Your entire response must be valid JSON starting with [ and ending with ].
 
 LOCATION PREFERENCE: Candidate is based in the San Francisco Bay Area. Prioritize:
 1. Remote roles (highest priority)
@@ -428,14 +449,13 @@ Do NOT include roles that require onsite presence outside the Bay Area (e.g. Tor
 
 IMPORTANT: Do NOT include any jobs that appear in the existing jobs list (dedup by company+title or link).
 
-Multiple sources are provided below. Extract relevant postings from ALL of them.
-You also have WebSearch and WebFetch tools — use them AGGRESSIVELY:
-  - For EVERY company source, search for "staff engineer" / "principal engineer" / "senior engineer" openings
-  - If a careers page didn't load useful content, WebSearch for "[company] staff engineer jobs" or visit their Greenhouse/Lever/Ashby board directly
-  - Search job aggregators like levels.fyi, wellfound.com, otta.com for additional matches
-  - Try to find MULTIPLE relevant roles per company — not just one. Many companies have 3-5 matching roles.
-  - Also search for "distributed systems", "platform engineer", "infrastructure engineer" roles at these companies
-  - Your goal is to find 100+ relevant postings. Be thorough.
+Multiple career page contents are provided below. The HTML has already been stripped — you are
+reading the extracted text from each company's careers page. Read carefully and extract ALL
+relevant postings. Try to find MULTIPLE relevant roles per company where applicable.
+
+Look for: "staff engineer", "principal engineer", "senior engineer", "distinguished engineer",
+"platform engineer", "infrastructure engineer", "distributed systems" roles.
+
 For each posting, set the "source" field to the name of the source it came from.
 
 Return ONLY a JSON array (no markdown, no explanation) where each element has these exact keys:
@@ -461,13 +481,29 @@ Return ONLY a JSON array (no markdown, no explanation) where each element has th
 
 If no relevant jobs are found, return an empty array: []"""
 
-    # Build user message with all sources, respecting total size limit
+
+async def _run_analysis_batch(
+    batch_num: int,
+    total_batches: int,
+    source_sections: list[tuple[str, str]],
+    resume_content: str,
+    existing_summary: str,
+) -> list[dict]:
+    """Run a single batch of pre-scraped sources through Claude CLI for analysis.
+    No WebSearch/WebFetch — Claude just reads the provided text."""
+    source_names = [name for name, _ in source_sections]
+    logger.info(
+        "Analysis batch %d/%d: processing %d sources: %s",
+        batch_num, total_batches, len(source_sections), source_names,
+    )
+
+    # Build source blocks respecting size limit
     source_blocks = []
     total_chars = 0
     for name, content in source_sections:
         block = f"\n\n## SOURCE: {name}\n{content}"
-        if total_chars + len(block) > MAX_TOTAL_PROMPT_CHARS - 5000:  # reserve room for profile/existing
-            logger.warning("Truncating sources at %s (total would exceed limit)", name)
+        if total_chars + len(block) > MAX_TOTAL_PROMPT_CHARS - 5000:
+            logger.warning("Batch %d: truncating sources at %s (size limit)", batch_num, name)
             break
         source_blocks.append(block)
         total_chars += len(block)
@@ -479,53 +515,94 @@ If no relevant jobs are found, return an empty array: []"""
 {existing_summary}
 {"".join(source_blocks)}"""
 
-    # Call Claude via CLI with OAuth session auth.
-    # Prompt passed via stdin (too large for argv).
-    # Do NOT use --bare (it disables OAuth, requires ANTHROPIC_API_KEY).
-    full_prompt = f"{system_prompt}\n\n{user_msg}"
-    logger.info("Calling Claude CLI (prompt: %d chars)", len(full_prompt))
+    full_prompt = f"{ANALYSIS_SYSTEM_PROMPT}\n\n{user_msg}"
+    logger.info("Analysis batch %d/%d: calling Claude CLI (%d chars, no web tools)", batch_num, total_batches, len(full_prompt))
 
     proc = await asyncio.create_subprocess_exec(
         CLAUDE_CLI, "-p", "-",
         "--output-format", "text",
         "--model", "sonnet",
-        "--allowedTools", "WebSearch", "WebFetch",
         stdin=asyncio.subprocess.PIPE,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
     stdout, stderr = await asyncio.wait_for(
-        proc.communicate(input=full_prompt.encode("utf-8")), timeout=420
+        proc.communicate(input=full_prompt.encode("utf-8")), timeout=BATCH_TIMEOUT
     )
 
     if proc.returncode != 0:
         err_msg = stderr.decode("utf-8", errors="replace").strip()
-        raise RuntimeError(f"claude CLI failed (rc={proc.returncode}): {err_msg}")
+        raise RuntimeError(f"Analysis batch {batch_num}: claude CLI failed (rc={proc.returncode}): {err_msg}")
 
     text = stdout.decode("utf-8", errors="replace").strip()
-
-    if not text:
-        logger.warning("Empty response from Claude CLI")
-        return []
-
-    # Parse JSON -- handle potential markdown wrapping
-    if text.startswith("```"):
-        lines = text.split("\n")
-        lines = [l for l in lines if not l.strip().startswith("```")]
-        text = "\n".join(lines)
-
-    try:
-        jobs = json.loads(text)
-    except json.JSONDecodeError as e:
-        logger.error("Failed to parse Claude response as JSON: %s\nResponse: %s", e, text[:500])
-        return []
-
-    if not isinstance(jobs, list):
-        logger.error("Claude response is not a list: %s", type(jobs))
-        return []
-
-    logger.info("Claude returned %d job postings", len(jobs))
+    jobs = _parse_claude_json(text)
+    logger.info("Analysis batch %d/%d: got %d jobs", batch_num, total_batches, len(jobs))
     return jobs
+
+
+@activity.defn
+async def analyze_scraped_jobs(scraped_content: dict[str, str], existing_jobs: list[dict]) -> list[dict]:
+    """Phase 2: Analyze pre-scraped career page content using Claude CLI.
+
+    Claude reads the already-fetched text and extracts/scores relevant job postings.
+    No WebSearch/WebFetch needed — all content is pre-loaded.
+    Sources are split into batches of ~30 and processed sequentially.
+    """
+    resume_content = ""
+    try:
+        resume_content = await _fetch_resume()
+        logger.info("Fetched live resume: %d chars", len(resume_content))
+    except Exception as e:
+        logger.warning("Failed to fetch resume from %s: %s -- using fallback", RESUME_URL, e)
+
+    if not resume_content:
+        resume_content = RESUME_FALLBACK
+
+    # Build source sections from scraped content
+    source_sections: list[tuple[str, str]] = list(scraped_content.items())
+    logger.info("Analyzing %d scraped sources", len(source_sections))
+
+    existing_summary = "\n".join(
+        f"- {j['company']} | {j['title']} | {j['link']}" for j in existing_jobs
+    )
+    if not existing_summary:
+        existing_summary = "(no existing jobs)"
+
+    # Split sources into batches of BATCH_SIZE
+    batches = []
+    for i in range(0, len(source_sections), BATCH_SIZE):
+        batches.append(source_sections[i : i + BATCH_SIZE])
+
+    logger.info("Split %d sources into %d batches of ~%d", len(source_sections), len(batches), BATCH_SIZE)
+
+    # Process batches sequentially, collecting results
+    all_jobs: list[dict] = []
+    failed_batches = 0
+
+    for batch_idx, batch in enumerate(batches, start=1):
+        activity.heartbeat(f"Analyzing batch {batch_idx}/{len(batches)}")
+        try:
+            batch_jobs = await _run_analysis_batch(
+                batch_num=batch_idx,
+                total_batches=len(batches),
+                source_sections=batch,
+                resume_content=resume_content,
+                existing_summary=existing_summary,
+            )
+            all_jobs.extend(batch_jobs)
+            # Add newly found jobs to existing summary for cross-batch dedup
+            for j in batch_jobs:
+                existing_summary += f"\n- {j.get('company', '?')} | {j.get('title', '?')} | {j.get('link', '')}"
+        except Exception as e:
+            failed_batches += 1
+            logger.error("Analysis batch %d/%d failed: %s", batch_idx, len(batches), e)
+            # Continue with remaining batches
+
+    logger.info(
+        "All analysis batches complete: %d jobs from %d batches (%d failed)",
+        len(all_jobs), len(batches), failed_batches,
+    )
+    return all_jobs
 
 
 @activity.defn
@@ -628,7 +705,7 @@ Companies to research:
         CLAUDE_CLI, "-p", "-",
         "--output-format", "text",
         "--model", "sonnet",
-        "--allowedTools", "WebSearch", "WebFetch",
+        "--allowedTools", "WebSearch,WebFetch",
         stdin=asyncio.subprocess.PIPE,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
@@ -646,22 +723,7 @@ Companies to research:
         logger.warning("Empty response from Claude CLI for company enrichment")
         return []
 
-    # Strip markdown fences if present
-    if text.startswith("```"):
-        lines = text.split("\n")
-        lines = [l for l in lines if not l.strip().startswith("```")]
-        text = "\n".join(lines)
-
-    try:
-        enrichments = json.loads(text)
-    except json.JSONDecodeError as e:
-        logger.error("Failed to parse enrichment JSON: %s\nResponse: %s", e, text[:500])
-        return []
-
-    if not isinstance(enrichments, list):
-        logger.error("Enrichment response is not a list: %s", type(enrichments))
-        return []
-
+    enrichments = _parse_claude_json(text)
     logger.info("Enriched %d companies", len(enrichments))
     return enrichments
 
