@@ -25,7 +25,7 @@ from .constants import DISCORD_API, SCRIPTS_DIR
 sys.path.insert(0, SCRIPTS_DIR)
 from common import (
     DB_PATH, LOCAL_EMBED_DIMS,
-    EMBED_MODEL, EMBED_DIMS, local_embed_texts,
+    EMBED_DIMS, local_embed_texts,
 )
 
 # ---- Constants ---------------------------------------------------------------
@@ -357,17 +357,6 @@ def describe_attachments(client, msg: dict, discord_token: str) -> str:
         parts.append(original_content)
     parts.extend(descriptions)
     return " ".join(parts)
-
-
-# ---- Embeddings --------------------------------------------------------------
-
-def embed_batch(client, texts: list[str]) -> list[list[float]]:
-    """Legacy OpenAI embedding (kept for backward compat)."""
-    response = client.embeddings.create(
-        model=EMBED_MODEL,
-        input=texts,
-    )
-    return [item.embedding for item in response.data]
 
 
 # ---- Main ingest loop --------------------------------------------------------
