@@ -2,16 +2,16 @@
 # Usage: new-lab.sh <name> [title] [description]
 set -euo pipefail
 
+if [[ $# -lt 1 ]]; then
+  echo "Usage: new-lab.sh <name> [title] [description]" >&2
+  exit 1
+fi
+
 NAME=$1
 TITLE=${2:-$NAME}
 DESC=${3:-"A labs experiment"}
 TEMPLATE=/mnt/data/labs/template
 DEST=/mnt/data/labs/$NAME
-
-if [[ -z "$NAME" ]]; then
-  echo "Usage: new-lab.sh <name> [title] [description]" >&2
-  exit 1
-fi
 
 if [[ -d "$DEST" ]]; then
   echo "Error: lab '$NAME' already exists at $DEST" >&2
