@@ -8,11 +8,9 @@ inserts results, and optionally notifies Discord.
 import asyncio
 import json
 import logging
-import os
 import re
 import sqlite3
 from datetime import datetime, timezone
-from pathlib import Path
 
 import httpx
 from temporalio import activity
@@ -21,7 +19,6 @@ logger = logging.getLogger(__name__)
 
 DB_PATH = "/mnt/data/labs/jobboard/jobs.db"
 CLAUDE_CLI = "/home/clungus/.local/bin/claude"
-DISCORD_BOT_TOKEN_ENV = "DISCORD_BOT_TOKEN"
 
 RESUME_FALLBACK = (
     "Staff/Principal engineer, 15yr experience, distributed systems, "
@@ -200,19 +197,6 @@ EXTRA_JOB_SOURCES = [
 
 MAX_SOURCE_CHARS = 30000
 MAX_TOTAL_PROMPT_CHARS = 100000
-
-
-def _get_discord_bot_token() -> str:
-    """Load Discord bot token from environment."""
-    env_path = Path("/home/clungus/.claude/channels/discord/.env")
-    if env_path.exists():
-        for line in env_path.read_text().splitlines():
-            if line.startswith("DISCORD_BOT_TOKEN="):
-                return line.split("=", 1)[1].strip().strip('"').strip("'")
-    token = os.environ.get(DISCORD_BOT_TOKEN_ENV, "")
-    if not token:
-        raise RuntimeError("No Discord bot token found")
-    return token
 
 
 def _bool_to_sqlite(val) -> int | None:
