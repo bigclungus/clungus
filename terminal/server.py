@@ -17,6 +17,7 @@ import struct
 import subprocess
 import termios
 import time
+import traceback
 import urllib.parse
 import urllib.request
 import falkordb as _fdb
@@ -1742,6 +1743,16 @@ async def websocket_handler(request):
                         pass
                 else:
                     break
+        except asyncio.CancelledError:
+            raise
+        except (ConnectionResetError, aiohttp.ClientConnectionResetError, aiohttp.ServerConnectionError):
+            # Client dropped the websocket mid-iteration — normal disconnect.
+            return
+        except Exception as exc:
+            # Anything else is unexpected; surface it to logs so we can debug.
+            print(f'[terminal ws_to_pty] error: {type(exc).__name__}: {exc}')
+            traceback.print_exc()
+            return
     read_task  = asyncio.ensure_future(pty_to_ws())
     write_task = asyncio.ensure_future(ws_to_pty())
     try:
