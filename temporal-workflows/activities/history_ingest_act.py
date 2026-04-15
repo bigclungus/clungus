@@ -2,13 +2,9 @@
 Activity: run_history_ingest
 
 Incrementally reads Claude session JSONL files, extracts Discord messages,
-embeds them with OpenAI, and stores them in the sqlite-vec database at
+embeds them with local embeddings, and stores them in the sqlite-vec database at
 /mnt/data/data/discord-history.db.
-
-Attachment handling: messages with image attachments are described using
-gpt-4o-mini vision before embedding, so the vector captures actual content.
 """
-import base64
 import json
 import glob
 import os
@@ -16,11 +12,10 @@ import re
 import sys
 import sqlite3
 import time
-import urllib.request
 
 from temporalio import activity
 
-from .constants import DISCORD_API, SCRIPTS_DIR
+from .constants import SCRIPTS_DIR
 
 sys.path.insert(0, SCRIPTS_DIR)
 from common import (
@@ -33,10 +28,6 @@ from common import (
 _HOME_DIR = os.path.expanduser("~")
 JSONL_GLOB = _HOME_DIR + "/.claude/projects/*/*.jsonl"
 BATCH_SIZE = 100
-
-IMAGE_MIMES = {"image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp"}
-VISION_MODEL = "gpt-4o-mini"
-MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB limit for vision API
 
 _UPSERT_STATE = (
     "INSERT INTO ingest_state (filepath, byte_offset, last_size) VALUES (?, ?, ?) "
@@ -239,124 +230,6 @@ def extract_messages_from_jsonl(filepath: str, start_offset: int) -> tuple[list[
         activity.logger.warning("could not read %s: %s", filepath, e)
 
     return messages, new_offset
-
-
-# ---- Attachment description --------------------------------------------------
-
-
-
-def _parse_attachment_meta(meta: str) -> list[dict]:
-    attachments = []
-    if not meta:
-        return attachments
-    for part in meta.split("; "):
-        part = part.strip()
-        m = re.match(r'^(.+?)\s+\(([^,]+),\s*([^)]+)\)$', part)
-        if m:
-            attachments.append({
-                "filename": m.group(1),
-                "content_type": m.group(2),
-                "size_str": m.group(3),
-            })
-        elif part:
-            attachments.append({"filename": part, "content_type": "unknown", "size_str": ""})
-    return attachments
-
-
-def _fetch_attachment_urls(channel_id: str, message_id: str, token: str) -> list[dict]:
-    url = f"{DISCORD_API}/channels/{channel_id}/messages/{message_id}"
-    req = urllib.request.Request(
-        url,
-        headers={
-            "Authorization": f"Bot {token}",
-            "User-Agent": "DiscordBot (https://clung.us, 1.0)",
-        },
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.loads(resp.read().decode())
-            return data.get("attachments", [])
-    except Exception as e:
-        activity.logger.warning("failed to fetch message %s: %s", message_id, e)
-        return []
-
-
-def _download_image(url: str) -> bytes | None:
-    try:
-        req = urllib.request.Request(url, headers={"User-Agent": "DiscordBot (https://clung.us, 1.0)"})
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            data = resp.read()
-            if len(data) > MAX_IMAGE_SIZE:
-                return None
-            return data
-    except Exception as e:
-        activity.logger.warning("failed to download image: %s", e)
-        return None
-
-
-def _describe_image(client, image_bytes: bytes, content_type: str, filename: str) -> str:
-    b64 = base64.b64encode(image_bytes).decode("ascii")
-    media_type = content_type if content_type in IMAGE_MIMES else "image/png"
-    try:
-        resp = client.chat.completions.create(
-            model=VISION_MODEL,
-            messages=[{
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "Describe this Discord image attachment in one concise sentence. Focus on the key visual content — what is shown, any text visible, the subject matter. Be specific and factual."},
-                    {"type": "image_url", "image_url": {"url": f"data:{media_type};base64,{b64}", "detail": "low"}},
-                ],
-            }],
-            max_tokens=150,
-        )
-        return resp.choices[0].message.content.strip()
-    except Exception as e:
-        activity.logger.warning("vision describe failed for %s: %s", filename, e)
-        return f"Image: {filename}"
-
-
-def describe_attachments(client, msg: dict, discord_token: str) -> str:
-    original_content = msg.get("content", "").strip()
-    if original_content == "(attachment)":
-        original_content = ""
-
-    attachment_meta = msg.get("attachment_meta", "")
-    parsed = _parse_attachment_meta(attachment_meta)
-
-    if not parsed:
-        return original_content or "(attachment)"
-
-    channel_id = msg.get("channel_id", "")
-    message_id = msg.get("message_id", "")
-    api_attachments = []
-    if channel_id and message_id:
-        api_attachments = _fetch_attachment_urls(channel_id, message_id, discord_token)
-
-    url_map = {}
-    for a in api_attachments:
-        url_map[a.get("filename", "")] = a
-
-    descriptions = []
-    for att in parsed:
-        filename = att["filename"]
-        content_type = att["content_type"]
-        api_att = url_map.get(filename, {})
-
-        if content_type in IMAGE_MIMES and api_att.get("url"):
-            image_bytes = _download_image(api_att["url"])
-            if image_bytes:
-                desc = _describe_image(client, image_bytes, content_type, filename)
-                descriptions.append(f"[Image: {desc}]")
-            else:
-                descriptions.append(f"[Image attachment: {filename}]")
-        else:
-            descriptions.append(f"[Attachment: {filename} ({content_type})]")
-
-    parts = []
-    if original_content:
-        parts.append(original_content)
-    parts.extend(descriptions)
-    return " ".join(parts)
 
 
 # ---- Main ingest loop --------------------------------------------------------
