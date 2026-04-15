@@ -242,7 +242,6 @@ export const personaServiceImpl: ServiceImpl<typeof PersonaService> = {
 
         const frontmatter = buildFrontmatter(meta as Record<string, string>);
         writeFileSync(mdPath, `${frontmatter}\n\n${updatedPrompt}`);
-        db.run("UPDATE personas SET md_path = ? WHERE name = ?", [mdPath, req.name]);
       }
 
       const updated = db.query("SELECT * FROM personas WHERE name = ?").get(req.name) as Record<string, unknown>;
@@ -309,7 +308,6 @@ export const personaServiceImpl: ServiceImpl<typeof PersonaService> = {
             // non-fatal — DB is already updated
           }
         }
-        db.run("UPDATE personas SET md_path=? WHERE name=?", [mdPath, req.name]);
       } else if (effectiveVerdict === "EVOLVE") {
         db.run(
           `UPDATE personas SET last_verdict=?, last_verdict_date=?, times_evolved=times_evolved+1,
