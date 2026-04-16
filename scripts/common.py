@@ -12,9 +12,6 @@ EMBED_DIMS = 1536
 LOCAL_EMBED_MODEL = "all-MiniLM-L6-v2"
 LOCAL_EMBED_DIMS = 384
 
-# Default to local embeddings
-USE_LOCAL_EMBEDDINGS = True
-
 
 def get_openai_key() -> str:
     key = os.environ.get("OPENAI_API_KEY")
@@ -56,14 +53,6 @@ def local_embed_texts(texts: list[str]) -> list[list[float]]:
     model = get_local_model()
     embeddings = model.encode(texts, show_progress_bar=False)
     return [emb.tolist() for emb in embeddings]
-
-
-def local_embed_query(query: str) -> bytes:
-    """Embed a single query string and return sqlite-vec bytes."""
-    import sqlite_vec
-    model = get_local_model()
-    emb = model.encode([query], show_progress_bar=False)[0]
-    return sqlite_vec.serialize_float32(emb.tolist())
 
 
 def get_bot_token() -> str:
