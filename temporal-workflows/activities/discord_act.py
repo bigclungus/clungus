@@ -19,21 +19,6 @@ _COLOR_RED = 0xE74C3C
 _COLOR_NEUTRAL = 0x95A5A6
 
 
-@activity.defn
-async def post_discord_message(channel_id: str, content: str) -> str:
-    """Post a message to Discord. Returns message ID."""
-    url = f"{DISCORD_API}/channels/{channel_id}/messages"
-    payload = {"content": content}
-
-    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
-        async with session.post(url, headers=_discord_headers(), json=payload) as resp:
-            if resp.status not in (200, 201):
-                body = await resp.text()
-                raise RuntimeError(f"Discord API error {resp.status}: {body}")
-            data = await resp.json()
-            return data["id"]
-
-
 def _format_price(price: float) -> str:
     """Format a price as $X.XXM or $XXXk."""
     if price >= 1_000_000:

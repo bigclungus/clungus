@@ -10,7 +10,7 @@ worker.py
         ├── load_seen_ids          (remote activity — SQLite read)
         ├── fetch_redfin_listings  (remote activity — HTTP, per location)
         ├── filter_new_listings    (local activity  — pure dedup, in-process)
-        ├── post_discord_message   (remote activity — Discord API, per listing)
+        ├── post_listings_summary  (remote activity — Discord API, batch post)
         └── save_seen_ids          (remote activity — SQLite write)
 ```
 

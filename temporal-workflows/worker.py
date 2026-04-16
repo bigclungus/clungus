@@ -51,14 +51,13 @@ from activities.congress_act import (
     congress_vote,
 )
 from activities.bokoen1_ingest_act import run_bokoen1_ingest
-from activities.discord_act import post_discord_message, post_listings_summary
+from activities.discord_act import post_listings_summary
 from activities.discord_ingest_act import run_discord_ingest
 from activities.drift_scan_act import run_drift_scan
 from activities.email_act import check_new_emails, inject_email_notification
 from activities.github_act import github_inject_discord_notification, github_post_ack_comment
 from activities.healthcheck_act import check_sites, send_alert
 from activities.history_ingest_act import run_history_ingest
-from activities.http import rate_limited_get
 from activities.inject_act import inject_message
 from activities.jobboard_act import (
     analyze_scraped_jobs,
@@ -209,8 +208,6 @@ async def main() -> None:
             JobBoardWorkflow,
         ],
         activities=[
-            rate_limited_get,
-            post_discord_message,
             post_listings_summary,
             load_seen_ids,
             save_seen_ids,
