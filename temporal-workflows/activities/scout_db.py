@@ -117,19 +117,6 @@ def update_status(model_id: str, status: str) -> None:
         conn.close()
 
 
-def get_model(model_id: str) -> dict | None:
-    """Fetch a model by ID. Returns dict or None."""
-    conn = _get_conn()
-    conn.row_factory = sqlite3.Row
-    try:
-        row = conn.execute(
-            "SELECT * FROM scouted_models WHERE model_id = ?", (model_id,)
-        ).fetchone()
-        return dict(row) if row else None
-    finally:
-        conn.close()
-
-
 # --- Temporal activity wrappers ---
 # Workflows must not call DB functions directly; these activities wrap them.
 
