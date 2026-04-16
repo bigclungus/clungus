@@ -58,18 +58,6 @@ def _get_conn() -> sqlite3.Connection:
     return sqlite3.connect(DB_PATH)
 
 
-def model_exists(model_id: str) -> bool:
-    """Check if a model_id is already in the database."""
-    conn = _get_conn()
-    try:
-        row = conn.execute(
-            "SELECT 1 FROM scouted_models WHERE model_id = ?", (model_id,)
-        ).fetchone()
-        return row is not None
-    finally:
-        conn.close()
-
-
 def get_all_model_ids() -> list[str]:
     """Return a list of all model_id values in the database."""
     conn = _get_conn()
@@ -139,12 +127,6 @@ async def db_insert_model(
 async def db_update_status(model_id: str, status: str) -> None:
     """Activity wrapper for update_status."""
     update_status(model_id, status)
-
-
-@activity.defn
-async def db_model_exists(model_id: str) -> bool:
-    """Activity wrapper for model_exists."""
-    return model_exists(model_id)
 
 
 @activity.defn
