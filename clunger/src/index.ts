@@ -444,16 +444,6 @@ const WALLET_FILE_REST = "/mnt/data/secrets/eth_wallet";
 const WALLET_ADDRESS_FALLBACK = "0x425bC492E43b2a5Eb7E02c9F5dd9c1D2F378f02f";
 const BASE_RPC_URL_REST = "https://base-mainnet.public.blastapi.io";
 
-const EMOJI_MAP_REST: Record<string, string> = {
-  architect: "🏗️", critic: "🔍", ux: "🎨",
-  otto: "🌪️", spengler: "🕰️", chairman: "⚖️",
-  wolf: "🐺", hume: "🔬", adelbert: "🗡️",
-};
-const COLOR_MAP_REST: Record<string, string> = {
-  architect: "#f59e0b", critic: "#f87171", ux: "#60a5fa",
-  otto: "#a78bfa", spengler: "#94a3b8",
-  wolf: "#f97316", hume: "#38bdf8", adelbert: "#e879f9",
-};
 
 function getGithubUser(req: http.IncomingMessage): string {
   const cookieSecret = process.env.COOKIE_SECRET ?? "";
@@ -1618,8 +1608,8 @@ function restServeAgents(res: http.ServerResponse): void {
           const dname = String(meta.display_name ?? name);
           const vh = verdictHistory.get(dname) ?? { retained: 0, evolved: 0, retired: 0, lastVerdict: "" };
           agents.push({
-            id: name, name, role: meta.role ?? "", emoji: EMOJI_MAP_REST[name] ?? "🤖",
-            color: COLOR_MAP_REST[name] ?? "#888888", description: meta.role ?? "",
+            id: name, name, role: meta.role ?? "", emoji: "🤖",
+            color: "#888888", description: meta.role ?? "",
             traits: meta.traits ?? [], is_moderator: name === "chairman",
             model: meta.model ?? "claude", display_name: dname,
             avatar_url: meta.avatar_url ?? "", title: meta.title ?? "",

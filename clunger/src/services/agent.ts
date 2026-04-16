@@ -19,17 +19,6 @@ const PERSONAS_DB = "/mnt/data/hello-world/personas.db";
 const SESSIONS_DIR = "/mnt/data/hello-world/sessions";
 const AGENTS_DIR = "/mnt/data/bigclungus-meta/agents";
 
-const EMOJI_MAP: Record<string, string> = {
-  architect: "🏗️", critic: "🔍", ux: "🎨",
-  otto: "🌪️", spengler: "🕰️", chairman: "⚖️",
-  wolf: "🐺", hume: "🔬", adelbert: "🗡️",
-};
-
-const COLOR_MAP: Record<string, string> = {
-  architect: "#f59e0b", critic: "#f87171", ux: "#60a5fa",
-  otto: "#a78bfa", spengler: "#94a3b8",
-  wolf: "#f97316", hume: "#38bdf8", adelbert: "#e879f9",
-};
 
 interface VerdictCounts {
   retained: number;
@@ -107,8 +96,8 @@ function rowToAgent(row: Record<string, unknown>, verdictHistory: Map<string, Ve
     id: name,
     name,
     role: String(row.role ?? ""),
-    emoji: EMOJI_MAP[name] ?? "🤖",
-    color: COLOR_MAP[name] ?? "#888888",
+    emoji: "🤖",
+    color: "#888888",
     description: String(row.role ?? ""),
     model: String(row.model ?? ""),
     displayName,
