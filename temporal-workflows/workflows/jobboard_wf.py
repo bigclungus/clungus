@@ -16,6 +16,7 @@ from temporalio import workflow
 from temporalio.common import RetryPolicy
 
 with workflow.unsafe.imports_passed_through():
+    from activities.constants import MAIN_CHANNEL_ID
     from activities.jobboard_act import (
         analyze_scraped_jobs,
         enrich_companies,
@@ -124,7 +125,7 @@ class JobBoardWorkflow:
             try:
                 await workflow.execute_activity(
                     notify_discord_new_jobs,
-                    args=[new_jobs, "1485343472952148008"],  # main Discord channel
+                    args=[new_jobs, MAIN_CHANNEL_ID],
                     start_to_close_timeout=timedelta(seconds=30),
                     retry_policy=RetryPolicy(maximum_attempts=2),
                 )
