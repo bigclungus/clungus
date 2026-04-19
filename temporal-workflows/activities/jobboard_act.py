@@ -651,11 +651,11 @@ async def insert_new_jobs(jobs: list[dict]) -> int:
 
 @activity.defn
 async def get_unenriched_companies() -> list[str]:
-    """Return distinct company names that have NULL employee_count (unenriched)."""
+    """Return distinct company names that haven't been enriched yet (enriched_at IS NULL)."""
     conn = _ensure_db()
     try:
         rows = conn.execute(
-            "SELECT DISTINCT company FROM jobs WHERE employee_count IS NULL"
+            "SELECT DISTINCT company FROM jobs WHERE enriched_at IS NULL"
         ).fetchall()
         return [r["company"] for r in rows]
     finally:
