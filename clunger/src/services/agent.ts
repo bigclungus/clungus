@@ -19,7 +19,6 @@ const PERSONAS_DB = "/mnt/data/hello-world/personas.db";
 const SESSIONS_DIR = "/mnt/data/hello-world/sessions";
 const AGENTS_DIR = "/mnt/data/bigclungus-meta/agents";
 
-
 interface VerdictCounts {
   retained: number;
   evolved: number;

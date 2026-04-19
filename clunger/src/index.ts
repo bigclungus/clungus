@@ -444,7 +444,6 @@ const WALLET_FILE_REST = "/mnt/data/secrets/eth_wallet";
 const WALLET_ADDRESS_FALLBACK = "0x425bC492E43b2a5Eb7E02c9F5dd9c1D2F378f02f";
 const BASE_RPC_URL_REST = "https://base-mainnet.public.blastapi.io";
 
-
 function getGithubUser(req: http.IncomingMessage): string {
   const cookieSecret = process.env.COOKIE_SECRET ?? "";
   const cookieHeader = req.headers["cookie"] ?? "";
