@@ -215,24 +215,31 @@ def _ensure_db() -> sqlite3.Connection:
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("""
         CREATE TABLE IF NOT EXISTS jobs (
-            id            INTEGER PRIMARY KEY AUTOINCREMENT,
-            company       TEXT NOT NULL,
-            title         TEXT NOT NULL,
-            link          TEXT NOT NULL UNIQUE,
-            salary_min    INTEGER,
-            salary_max    INTEGER,
-            level         TEXT,
-            industry      TEXT,
-            location      TEXT,
-            remote        TEXT CHECK(remote IN ('remote','hybrid','onsite','unknown')) DEFAULT 'unknown',
-            source        TEXT,
-            relevance     REAL,
-            fit_notes     TEXT,
-            tags          TEXT,
-            posted_at     TEXT,
-            discovered_at TEXT DEFAULT (datetime('now')),
-            status        TEXT CHECK(status IN ('new','applied','referred','interviewing','denied','offer','stale')) DEFAULT 'new',
-            hidden        INTEGER DEFAULT 0
+            id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+            company                 TEXT NOT NULL,
+            title                   TEXT NOT NULL,
+            link                    TEXT NOT NULL UNIQUE,
+            salary_min              INTEGER,
+            salary_max              INTEGER,
+            level                   TEXT,
+            industry                TEXT,
+            location                TEXT,
+            remote                  TEXT CHECK(remote IN ('remote','hybrid','onsite','unknown')) DEFAULT 'unknown',
+            source                  TEXT,
+            relevance               REAL,
+            fit_notes               TEXT,
+            tags                    TEXT,
+            posted_at               TEXT,
+            discovered_at           TEXT DEFAULT (datetime('now')),
+            status                  TEXT CHECK(status IN ('new','applied','referred','interviewing','denied','offer','stale')) DEFAULT 'new',
+            hidden                  INTEGER DEFAULT 0,
+            employee_count          INTEGER,
+            total_funding           TEXT,
+            ticker                  TEXT,
+            founder_led             INTEGER,
+            glassdoor_rating        REAL,
+            glassdoor_recommend_pct INTEGER,
+            enriched_at             TEXT
         )
     """)
     conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_link ON jobs(link)")
@@ -304,7 +311,6 @@ def _strip_html(html: str) -> str:
     text = re.sub(r"<[^>]+>", " ", text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
-
 
 
 async def _fetch_resume() -> str:
