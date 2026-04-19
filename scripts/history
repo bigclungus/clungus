@@ -20,7 +20,7 @@ from datetime import datetime, timezone
 
 import sqlite_vec
 
-from common import DB_PATH, local_embed_query, get_openai_key
+from common import DB_PATH, get_openai_key, get_local_model, serialize_f32
 
 
 def open_db() -> sqlite3.Connection:
@@ -129,7 +129,9 @@ def search(query: str, limit: int = 5, author_filter: str = None,
 
     if local_count > 0:
         # Use local embeddings
-        query_emb = local_embed_query(query)
+        model = get_local_model()
+        emb = model.encode([query], show_progress_bar=False)[0]
+        query_emb = serialize_f32(emb.tolist())
         vec_table = "messages_vec_local"
     else:
         # Fall back to OpenAI embeddings
