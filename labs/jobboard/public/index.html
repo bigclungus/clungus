@@ -8,8 +8,9 @@
   <style>
     /*
      * Theme isolation: clunger injects sitenav.css (dark theme :root vars)
-     * before </head>. We must override those vars AND ensure AG Grid's
-     * Alpine light theme renders cleanly despite the inherited dark palette.
+     * before the closing head tag. We must override those vars AND ensure
+     * AG Grid's Alpine light theme renders cleanly despite the inherited
+     * dark palette.
      *
      * Strategy: set :root vars with !important, then scope AG Grid overrides
      * to .ag-theme-alpine with full variable coverage.

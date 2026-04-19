@@ -12,7 +12,7 @@ import { runPostMergeReview } from "./services/post-merge-review.js";
 // ── Error monitoring: inject alerts to bot on critical failures ────────────
 async function injectAlert(message: string): Promise<void> {
   try {
-    await injectDiscord(`⚠️ ${message}`, "1485343472952148008", "clunger-monitor");
+    await injectDiscord(`⚠️ ${message}`, undefined, "clunger-monitor");
   } catch (e) {
     console.error("[clunger] injectAlert error:", e);
   }
