@@ -9,7 +9,6 @@ Activities for the MobGenerationWorkflow.
 
 import asyncio
 import json
-import os
 import random
 import re
 import sqlite3
@@ -20,6 +19,7 @@ import openai
 from temporalio import activity
 
 from .constants import BASE_DIR, FALKORDB_HOST, FALKORDB_PORT, HELLO_WORLD_DIR, SCRIPTS_DIR
+from .utils import get_openai_key
 
 _falkordb_client = _falkordb.FalkorDB(
     host=FALKORDB_HOST,
@@ -42,9 +42,7 @@ def _get_openai_client() -> openai.AsyncOpenAI:
     """
     global _openai_client
     if _openai_client is None:
-        api_key = os.environ.get("OPENAI_API_KEY")
-        if not api_key:
-            raise RuntimeError("OPENAI_API_KEY is not set in the environment")
+        api_key = get_openai_key()
         _openai_client = openai.AsyncOpenAI(api_key=api_key)
     return _openai_client
 

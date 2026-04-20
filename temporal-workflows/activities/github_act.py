@@ -1,11 +1,10 @@
 """GitHub webhook activities — ack comments and Discord notifications."""
-import os
-
 import aiohttp
 from temporalio import activity
 
 from .constants import MAIN_CHANNEL_ID
 from .inject_act import _do_inject
+from .utils import load_env_key
 
 GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
 
@@ -13,8 +12,9 @@ GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
 @activity.defn
 async def github_post_ack_comment(repo: str, number: int, event_type: str) -> str:
     """Post a '👋 seen' acknowledgment comment on a GitHub issue or PR."""
-    token = os.environ.get(GITHUB_TOKEN_ENV, "")
-    if not token:
+    try:
+        token = load_env_key(GITHUB_TOKEN_ENV)
+    except RuntimeError:
         activity.logger.warning("GITHUB_TOKEN not set — skipping ack comment")
         return "skipped (no token)"
 
