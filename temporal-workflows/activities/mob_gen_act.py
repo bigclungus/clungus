@@ -19,11 +19,11 @@ import falkordb as _falkordb
 import openai
 from temporalio import activity
 
-from .constants import BASE_DIR, HELLO_WORLD_DIR, SCRIPTS_DIR
+from .constants import BASE_DIR, FALKORDB_HOST, FALKORDB_PORT, HELLO_WORLD_DIR, SCRIPTS_DIR
 
 _falkordb_client = _falkordb.FalkorDB(
-    host=os.environ.get("FALKORDB_HOST", "localhost"),
-    port=int(os.environ.get("FALKORDB_PORT", "6379")),
+    host=FALKORDB_HOST,
+    port=FALKORDB_PORT,
 )
 
 CLUNGIVERSE_DB = Path(BASE_DIR) / "commons-server/db/commons.db"

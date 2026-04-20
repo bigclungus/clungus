@@ -42,6 +42,8 @@ from .constants import (
     CLUNGER_BASE_URL,
     CLUNGER_DIR,
     DISCORD_API,
+    FALKORDB_HOST,
+    FALKORDB_PORT,
     HELLO_WORLD_DIR,
     HELLO_WORLD_SESSIONS_DIR,
     INTERNAL_TOKEN,
@@ -63,8 +65,8 @@ from .utils import DISCORD_TIMEOUT, _discord_headers
 logger = logging.getLogger(__name__)
 
 _falkordb_client = _falkordb.FalkorDB(
-    host=os.environ.get("FALKORDB_HOST", "localhost"),
-    port=int(os.environ.get("FALKORDB_PORT", "6379")),
+    host=FALKORDB_HOST,
+    port=FALKORDB_PORT,
 )
 MAX_DEBATERS = 5  # Ibrahim selects seats when active personas exceed this count
 MAX_ROUNDS = 3  # Fixed round count — congress-0007 verdict: three rounds, no dynamic extension

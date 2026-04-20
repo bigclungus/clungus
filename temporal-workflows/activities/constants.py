@@ -36,6 +36,10 @@ TEMPORAL_HOST = os.environ.get("TEMPORAL_HOST", "localhost:7233")
 # Internal auth token forwarded to clunger via X-Internal-Token header
 INTERNAL_TOKEN = os.environ.get("INTERNAL_TOKEN", "")
 
+# FalkorDB connection — overridable via env for non-local deployments
+FALKORDB_HOST = os.environ.get("FALKORDB_HOST", "localhost")
+FALKORDB_PORT = int(os.environ.get("FALKORDB_PORT", "6379"))
+
 # Discord REST API base URL
 DISCORD_API = "https://discord.com/api/v10"
 
