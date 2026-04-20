@@ -9,6 +9,7 @@ load_dotenv(Path(__file__).parent / ".env")
 
 from temporalio.client import Client
 
+from activities.constants import MAIN_CHANNEL_ID
 from workflows.listings import ListingsWorkflow
 
 TEST_SEARCH = {
@@ -17,7 +18,7 @@ TEST_SEARCH = {
     "min_price": 900000,
     "max_price": 1300000,
     "home_type": "sfh",
-    "discord_channel_id": "1485343472952148008",  # main chat channel for test
+    "discord_channel_id": MAIN_CHANNEL_ID,
     "dry_run": True,
 }
 
