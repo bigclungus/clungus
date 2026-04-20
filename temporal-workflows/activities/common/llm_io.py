@@ -16,10 +16,6 @@ logger = logging.getLogger(__name__)
 TOGETHER_API_URL = "https://api.together.xyz/v1/chat/completions"
 
 
-def _get_together_key() -> str:
-    return get_together_key()
-
-
 @activity.defn
 async def call_llm(
     model: str,
@@ -37,7 +33,7 @@ async def call_llm(
         max_tokens: maximum tokens in the response (default 2048)
         temperature: sampling temperature (default 0.8)
     """
-    api_key = _get_together_key()
+    api_key = get_together_key()
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
