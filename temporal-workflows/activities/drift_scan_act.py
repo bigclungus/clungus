@@ -10,10 +10,9 @@ import glob
 
 from temporalio import activity
 
-from .constants import BASE_DIR, MAIN_CHANNEL_ID
+from .constants import BASE_DIR, LABS_DIR, MAIN_CHANNEL_ID
 from .inject_act import _do_inject
 
-LABS_DIR = f"{BASE_DIR}/labs"
 STALE_DAYS = 14
 
 
