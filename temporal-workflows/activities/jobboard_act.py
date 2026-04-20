@@ -15,10 +15,11 @@ from datetime import datetime, timezone
 import httpx
 from temporalio import activity
 
+from .constants import CLAUDE_CLI, LABS_DIR
+
 logger = logging.getLogger(__name__)
 
-DB_PATH = "/mnt/data/labs/jobboard/jobs.db"
-CLAUDE_CLI = "/home/clungus/.local/bin/claude"
+DB_PATH = LABS_DIR + "/jobboard/jobs.db"
 
 RESUME_FALLBACK = (
     "Staff/Principal engineer, 15yr experience, distributed systems, "
