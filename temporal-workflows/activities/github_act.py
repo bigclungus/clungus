@@ -4,16 +4,14 @@ from temporalio import activity
 
 from .constants import MAIN_CHANNEL_ID
 from .inject_act import _do_inject
-from .utils import load_env_key
-
-GITHUB_TOKEN_ENV = "GITHUB_TOKEN"
+from .utils import get_github_token
 
 
 @activity.defn
 async def github_post_ack_comment(repo: str, number: int, event_type: str) -> str:
     """Post a '👋 seen' acknowledgment comment on a GitHub issue or PR."""
     try:
-        token = load_env_key(GITHUB_TOKEN_ENV)
+        token = get_github_token()
     except RuntimeError:
         activity.logger.warning("GITHUB_TOKEN not set — skipping ack comment")
         return "skipped (no token)"

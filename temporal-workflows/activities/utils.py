@@ -52,6 +52,10 @@ def get_gemini_key() -> str:
     raise RuntimeError("Neither GEMINI_API_KEY nor GOOGLE_API_KEY found in environment or any .env file")
 
 
+def get_github_token() -> str:
+    return load_env_key("GITHUB_TOKEN")
+
+
 def get_discord_token() -> str:
     return load_env_key("DISCORD_BOT_TOKEN")
 
