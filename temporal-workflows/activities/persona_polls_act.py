@@ -14,8 +14,8 @@ from pathlib import Path
 
 from temporalio import activity
 
+from .constants import AGENTS_DIR, CLAUDE_CLI, HELLO_WORLD_DIR, MAIN_CHANNEL_ID, SCRIPTS_DIR
 from .inject_act import _do_inject
-from .constants import AGENTS_DIR, HELLO_WORLD_DIR, MAIN_CHANNEL_ID, SCRIPTS_DIR
 
 POLLS_DIR = f"{HELLO_WORLD_DIR}/polls"
 AVATARS_DIR = f"{HELLO_WORLD_DIR}/static/avatars"
@@ -50,7 +50,7 @@ def _read_persona(slug: str) -> dict:
 def _run_claude(system_prompt: str, user_msg: str) -> str:
     """Run claude CLI and return output. Raises on failure or empty output."""
     proc = subprocess.run(
-        ["claude", "-p", system_prompt, "--output-format", "text"],
+        [CLAUDE_CLI, "-p", system_prompt, "--output-format", "text"],
         input=user_msg,
         capture_output=True,
         text=True,

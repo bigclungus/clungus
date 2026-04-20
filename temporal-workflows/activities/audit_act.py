@@ -15,7 +15,7 @@ from pathlib import Path
 import aiohttp
 from temporalio import activity
 
-from .constants import DISCORD_API, HELLO_WORLD_SESSIONS_DIR, MAIN_CHANNEL_ID
+from .constants import CLAUDE_CLI, DISCORD_API, HELLO_WORLD_SESSIONS_DIR, MAIN_CHANNEL_ID
 from .inject_act import _do_inject
 from .utils import DISCORD_TIMEOUT, _discord_headers
 
@@ -194,7 +194,7 @@ async def audit_sessions(sessions: list[dict]) -> str:
     activity.logger.info("Calling Claude CLI to audit %d session(s)", len(sessions))
 
     proc = await asyncio.create_subprocess_exec(
-        "claude",
+        CLAUDE_CLI,
         "-p",
         AUDIT_SYSTEM_PROMPT,
         "--output-format",
