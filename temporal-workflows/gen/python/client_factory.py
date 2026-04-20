@@ -8,19 +8,17 @@ Both helpers accept an optional ``token`` which is sent as ``X-Internal-Token``.
 """
 from __future__ import annotations
 
-import os
 from contextlib import asynccontextmanager
 
 from connectrpc.client import ConnectClient
 
+from activities.constants import CLUNGER_BASE_URL, INTERNAL_TOKEN
 from congress.v1.congress_connect import CongressServiceClient
 from persona.v1.persona_connect import PersonaServiceClient
 
-CLUNGER_BASE_URL = os.environ.get("CLUNGER_BASE_URL", "http://localhost:8081")
-
 
 def _auth_headers(token: str | None = None) -> dict[str, str]:
-    tok = token or os.environ.get("INTERNAL_TOKEN", "")
+    tok = token or INTERNAL_TOKEN
     if tok:
         return {"X-Internal-Token": tok}
     return {}
