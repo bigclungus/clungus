@@ -10,7 +10,6 @@ Requires DISCORD_BOT_TOKEN in the environment (loaded from .env if present).
 import asyncio
 import json
 import logging
-import os
 import time
 from pathlib import Path
 
