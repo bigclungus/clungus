@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 import aiohttp
 from temporalio import activity
 
-from .utils import load_env_key
+from .utils import get_xai_key
 
 logger = logging.getLogger(__name__)
 
@@ -474,7 +474,7 @@ async def generate_model_description(
     Returns:
         A 2-3 sentence plain-English description. Raises RuntimeError on API failure.
     """
-    api_key = load_env_key("XAI_API_KEY")
+    api_key = get_xai_key()
 
     # Build a structured prompt from available metadata
     parts = [f"Model name: {model_name}", f"Model ID: {model_id}"]
