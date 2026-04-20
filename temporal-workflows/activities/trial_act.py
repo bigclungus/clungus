@@ -27,14 +27,11 @@ from client_factory import congress_client  # noqa: E402
 from congress.v1.congress_pb2 import PatchSessionRequest, StartSessionRequest  # noqa: E402
 
 from .congress_act import _call_congress_api, _query_graphiti_facts
-from .constants import AGENTS_DIR, CLUNGER_BASE_URL, DISCORD_API, HELLO_WORLD_SESSIONS_DIR, MAIN_CHANNEL_ID, SESSION_MODE_MEME, SESSION_MODE_STANDARD
+from .constants import AGENTS_DIR, CLUNGER_BASE_URL, DISCORD_API, HELLO_WORLD_SESSIONS_DIR, INTERNAL_TOKEN, MAIN_CHANNEL_ID, SESSION_MODE_MEME, SESSION_MODE_STANDARD
 from .inject_act import _do_inject
 from .utils import DISCORD_TIMEOUT, _discord_headers
 
 SESSIONS_DIR = Path(HELLO_WORLD_SESSIONS_DIR)
-
-# INTERNAL_TOKEN: shared secret forwarded to clunger via X-Internal-Token header
-INTERNAL_TOKEN = os.environ.get("INTERNAL_TOKEN", "")
 
 
 async def _post_to_thread(thread_id: str, content: str) -> None:

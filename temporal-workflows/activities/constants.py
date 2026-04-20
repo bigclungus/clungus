@@ -33,6 +33,9 @@ SCRIPTS_DIR = BASE_DIR + "/scripts"
 # Temporal server host — overridable via env for non-local deployments
 TEMPORAL_HOST = os.environ.get("TEMPORAL_HOST", "localhost:7233")
 
+# Internal auth token forwarded to clunger via X-Internal-Token header
+INTERNAL_TOKEN = os.environ.get("INTERNAL_TOKEN", "")
+
 # Discord REST API base URL
 DISCORD_API = "https://discord.com/api/v10"
 

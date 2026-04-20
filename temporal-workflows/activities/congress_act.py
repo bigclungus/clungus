@@ -44,6 +44,7 @@ from .constants import (
     DISCORD_API,
     HELLO_WORLD_DIR,
     HELLO_WORLD_SESSIONS_DIR,
+    INTERNAL_TOKEN,
     MAIN_CHANNEL_ID,
     META_REPO_PATH,
     SCRIPTS_DIR,
@@ -65,8 +66,6 @@ _falkordb_client = _falkordb.FalkorDB(
     host=os.environ.get("FALKORDB_HOST", "localhost"),
     port=int(os.environ.get("FALKORDB_PORT", "6379")),
 )
-# INTERNAL_TOKEN: shared secret forwarded to clunger via X-Internal-Token header
-INTERNAL_TOKEN = os.environ.get("INTERNAL_TOKEN", "")
 MAX_DEBATERS = 5  # Ibrahim selects seats when active personas exceed this count
 MAX_ROUNDS = 3  # Fixed round count — congress-0007 verdict: three rounds, no dynamic extension
 
