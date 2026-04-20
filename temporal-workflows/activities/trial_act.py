@@ -1,7 +1,7 @@
 """
 Activities for TrialWorkflow (Show Trials).
 
-Reuses _discord_headers, _call_congress_api from congress_act.
+Reuses _call_congress_api from congress_act; discord_post_message from common.discord_io.
 Each trial is a self-contained adversarial proceeding: prosecution, defense,
 cross-examination, character witness, jury, Scalia verdict (always GUILTY).
 
@@ -26,23 +26,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "gen", "python"
 from client_factory import congress_client  # noqa: E402
 from congress.v1.congress_pb2 import PatchSessionRequest, StartSessionRequest  # noqa: E402
 
+from .common.discord_io import discord_post_message
 from .congress_act import _call_congress_api, _query_graphiti_facts
 from .constants import AGENTS_DIR, CLUNGER_BASE_URL, DISCORD_API, HELLO_WORLD_SESSIONS_DIR, INTERNAL_TOKEN, MAIN_CHANNEL_ID, SESSION_MODE_MEME, SESSION_MODE_STANDARD
 from .inject_act import _do_inject
 from .utils import DISCORD_TIMEOUT, _discord_headers
 
 SESSIONS_DIR = Path(HELLO_WORLD_SESSIONS_DIR)
-
-
-async def _post_to_thread(thread_id: str, content: str) -> None:
-    """Post a message to a Discord thread. Raises on failure."""
-    url = f"{DISCORD_API}/channels/{thread_id}/messages"
-    truncated = content[:1990]
-    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
-        async with session.post(url, headers=_discord_headers(), json={"content": truncated}) as resp:
-            if resp.status not in (200, 201):
-                body = await resp.text()
-                raise RuntimeError(f"_post_to_thread failed {resp.status}: {body}")
 
 
 # ---------------------------------------------------------------------------
@@ -187,7 +177,7 @@ async def trial_announce(
         f"_The proceedings will unfold in phases. Justice Antonin Scalia will deliver final judgment._"
     )
 
-    await _post_to_thread(thread_id, opening)
+    await discord_post_message(thread_id, opening[:1990])
 
     return {"thread_id": thread_id, "session_number": session_number, "session_id": session_id}
 
@@ -198,12 +188,10 @@ async def trial_phase_separator(thread_id: str, phase_title: str, subtitle: str 
     content = f"\n─── ⚖️ **{phase_title}** ───"
     if subtitle:
         content += f"\n_{subtitle}_"
-    url = f"{DISCORD_API}/channels/{thread_id}/messages"
-    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
-        async with session.post(url, headers=_discord_headers(), json={"content": content}) as resp:
-            if resp.status not in (200, 201):
-                body = await resp.text()
-                activity.logger.warning(f"trial_phase_separator failed {resp.status}: {body}")
+    try:
+        await discord_post_message(thread_id, content)
+    except Exception as exc:
+        activity.logger.warning(f"trial_phase_separator failed: {exc}")
 
 
 @activity.defn
@@ -301,14 +289,7 @@ async def trial_generate_speech(
     label = role_labels.get(role, "")
     post_content = f"{name_label} {label}: {response_text[:1800]}"
 
-    url = f"{DISCORD_API}/channels/{thread_id}/messages"
-    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
-        async with session.post(url, headers=_discord_headers(), json={"content": post_content}) as resp:
-            if resp.status not in (200, 201):
-                body = await resp.text()
-                activity.logger.error(
-                    f"trial_generate_speech: failed to post {identity!r} ({role}) to thread: HTTP {resp.status}: {body}"
-                )
+    await discord_post_message(thread_id, post_content)
 
     return response_text
 
@@ -363,12 +344,7 @@ async def trial_verdict(
 
     # Post Scalia's verdict to thread
     scalia_post = f"**Justice Antonin Scalia** [Presiding]: {verdict_text[:1800]}"
-    url = f"{DISCORD_API}/channels/{thread_id}/messages"
-    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
-        async with session.post(url, headers=_discord_headers(), json={"content": scalia_post}) as resp:
-            if resp.status not in (200, 201):
-                body = await resp.text()
-                activity.logger.error(f"trial_verdict: failed to post Scalia verdict: HTTP {resp.status}: {body}")
+    await discord_post_message(thread_id, scalia_post)
 
     return {"verdict": verdict, "verdict_text": verdict_text}
 
