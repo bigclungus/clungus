@@ -16,7 +16,6 @@ from typing import Any
 import httpx
 from temporalio import activity
 
-from .constants import BASE_DIR
 from .utils import get_xai_key
 
 XAI_API_URL = "https://api.x.ai/v1/chat/completions"
@@ -219,7 +218,7 @@ async def run_xai_agent(
     """
     Agentic tool-use loop against xAI chat completions API.
 
-    If api_key is empty, reads from /mnt/data/secrets/xai_api_key.
+    If api_key is empty, resolved via get_xai_key() (env or .env file lookup).
 
     Supports tools: read_file, write_file, list_dir, bash (sandboxed).
     Loops up to MAX_TOOL_ITERATIONS times before forcing a final answer.
