@@ -198,6 +198,11 @@ EXTRA_JOB_SOURCES = [
 MAX_SOURCE_CHARS = 30000
 MAX_TOTAL_PROMPT_CHARS = 100000
 
+# Fields that indicate a job has already been enriched with company data.
+# Used both to detect pre-enriched inserts and as the canonical enrichment key set.
+ENRICHMENT_KEYS = ("employee_count", "total_funding", "ticker", "founder_led",
+                   "glassdoor_rating", "glassdoor_recommend_pct")
+
 
 def _bool_to_sqlite(val) -> int | None:
     """Convert a Python bool (or truthy/falsy) to SQLite integer, or None."""
@@ -609,11 +614,7 @@ async def insert_new_jobs(jobs: list[dict]) -> int:
                 changes_before = conn.total_changes
                 # If the analysis phase already provided enrichment data, mark enriched_at now
                 # so get_unenriched_companies won't re-research these companies.
-                has_enrichment = any(
-                    job.get(k) is not None
-                    for k in ("employee_count", "total_funding", "ticker", "founder_led",
-                               "glassdoor_rating", "glassdoor_recommend_pct")
-                )
+                has_enrichment = any(job.get(k) is not None for k in ENRICHMENT_KEYS)
                 enriched_at = datetime.now(timezone.utc).isoformat() if has_enrichment else None
                 conn.execute(
                     """INSERT OR IGNORE INTO jobs
