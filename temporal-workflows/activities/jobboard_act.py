@@ -248,6 +248,20 @@ def _ensure_db() -> sqlite3.Connection:
         )
     """)
     conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_link ON jobs(link)")
+    # Migrate: add enrichment columns if the table pre-dates them
+    existing_cols = {r[1] for r in conn.execute("PRAGMA table_info(jobs)").fetchall()}
+    migrations = [
+        ("employee_count",          "INTEGER"),
+        ("total_funding",           "TEXT"),
+        ("ticker",                  "TEXT"),
+        ("founder_led",             "INTEGER"),
+        ("glassdoor_rating",        "REAL"),
+        ("glassdoor_recommend_pct", "INTEGER"),
+        ("enriched_at",             "TEXT"),
+    ]
+    for col, col_type in migrations:
+        if col not in existing_cols:
+            conn.execute(f"ALTER TABLE jobs ADD COLUMN {col} {col_type}")
     conn.commit()
     return conn
 
