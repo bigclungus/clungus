@@ -6,11 +6,11 @@ Usage:
 """
 
 import asyncio
-import os
 
 from temporalio.client import Client
 
-TEMPORAL_HOST = os.environ.get("TEMPORAL_HOST", "localhost:7233")
+from activities.constants import TEMPORAL_HOST
+
 TASK_QUEUE = "listings-queue"
 
 
