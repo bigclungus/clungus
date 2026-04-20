@@ -1,13 +1,12 @@
 """LLM-based listing commentary using xAI vision API."""
 
-from pathlib import Path
-
 import httpx
 from temporalio import activity
 
+from .utils import get_xai_key
+
 _API_URL = "https://api.x.ai/v1/chat/completions"
 _MODEL = "grok-4-fast-non-reasoning"
-_KEY_PATH = Path("/mnt/data/secrets/xai_api_key")
 
 _SYSTEM_PROMPT = (
     "You are grug, a caveman house critic. You look at house photos and listing stats "
@@ -17,10 +16,6 @@ _SYSTEM_PROMPT = (
     "Example style: 'kitchen have granite counter, grug approve. backyard tiny though, "
     "no room for tribe fire pit. overall decent cave for price.'"
 )
-
-
-def _read_api_key() -> str:
-    return _KEY_PATH.read_text().strip()
 
 
 def _build_image_content(urls: list[str]) -> list[dict]:
@@ -62,7 +57,7 @@ async def generate_listing_commentary(listing: dict) -> str:
     to deterministic commentary).
     """
     try:
-        api_key = _read_api_key()
+        api_key = get_xai_key()
 
         # Collect photo URLs: primary + up to 4 alt photos
         photo_urls: list[str] = []

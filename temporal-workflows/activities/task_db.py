@@ -6,7 +6,7 @@ All three functions are designed to be idempotent:
   - finalize_task: UPDATE tasks row with final status/completed_at
   - record_error: UPDATE failure_reason + status on tasks row
 
-tasks.db path: /home/clungus/work/bigclungus-meta/tasks.db
+tasks.db path: META_REPO_PATH/tasks.db
 Schema:
   tasks(id TEXT PK, title TEXT, status TEXT, created_at TEXT, updated_at TEXT, data TEXT)
   task_events(id INTEGER PK, task_id TEXT, event TEXT, message TEXT, ts TEXT)
@@ -20,8 +20,9 @@ from datetime import datetime, timezone
 from temporalio import activity
 
 from agent_types import AgentTaskInput
+from .constants import META_REPO_PATH
 
-TASKS_DB = "/home/clungus/work/bigclungus-meta/tasks.db"
+TASKS_DB = META_REPO_PATH + "/tasks.db"
 
 
 def _iso_now() -> str:

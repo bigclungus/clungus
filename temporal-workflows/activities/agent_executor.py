@@ -17,9 +17,9 @@ import httpx
 from temporalio import activity
 
 from .constants import BASE_DIR
+from .utils import get_xai_key
 
 XAI_API_URL = "https://api.x.ai/v1/chat/completions"
-XAI_API_KEY_PATH = f"{BASE_DIR}/secrets/xai_api_key"
 MAX_TOOL_ITERATIONS = 20
 
 # Rough pricing per 1M tokens (input, output)
@@ -235,12 +235,9 @@ async def run_xai_agent(
             "tool_calls_made": int,
         }
     """
-    # Resolve API key — prefer passed value, fall back to secrets file
+    # Resolve API key — prefer passed value, fall back to env/.env lookup
     if not api_key:
-        try:
-            api_key = Path(XAI_API_KEY_PATH).read_text().strip()
-        except Exception as e:
-            raise RuntimeError(f"api_key not provided and could not read {XAI_API_KEY_PATH}: {e}")
+        api_key = get_xai_key()
 
     headers = {
         "Authorization": f"Bearer {api_key}",
