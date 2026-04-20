@@ -38,6 +38,20 @@ def get_openai_key() -> str:
     return load_env_key("OPENAI_API_KEY")
 
 
+def get_xai_key() -> str:
+    return load_env_key("XAI_API_KEY")
+
+
+def get_gemini_key() -> str:
+    """Return Gemini API key, checking GEMINI_API_KEY then GOOGLE_API_KEY."""
+    for var in ("GEMINI_API_KEY", "GOOGLE_API_KEY"):
+        try:
+            return load_env_key(var)
+        except RuntimeError:
+            continue
+    raise RuntimeError("Neither GEMINI_API_KEY nor GOOGLE_API_KEY found in environment or any .env file")
+
+
 def get_discord_token() -> str:
     return load_env_key("DISCORD_BOT_TOKEN")
 

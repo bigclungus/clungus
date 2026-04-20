@@ -60,7 +60,7 @@ from .constants import (
     TEMPORAL_WORKFLOWS_DIR,
 )
 from .inject_act import _do_inject
-from .utils import DISCORD_TIMEOUT, _discord_headers
+from .utils import DISCORD_TIMEOUT, _discord_headers, get_gemini_key, get_xai_key
 
 logger = logging.getLogger(__name__)
 
@@ -1844,7 +1844,10 @@ async def congress_preflight_check(debaters: list) -> list:
     # Grok proxy check
     # ------------------------------------------------------------------
     if need_grok:
-        xai_key = os.environ.get("XAI_API_KEY", "")
+        try:
+            xai_key = get_xai_key()
+        except RuntimeError:
+            xai_key = ""
         if not xai_key:
             errors.append(
                 "Grok model required but XAI_API_KEY is not set in the worker environment. "
@@ -1910,7 +1913,10 @@ async def congress_preflight_check(debaters: list) -> list:
     # Gemini check
     # ------------------------------------------------------------------
     if need_gemini:
-        gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or ""
+        try:
+            gemini_key = get_gemini_key()
+        except RuntimeError:
+            gemini_key = ""
         missing: list[str] = []
         if not gemini_key:
             missing.append("GEMINI_API_KEY (or GOOGLE_API_KEY) is not set")
