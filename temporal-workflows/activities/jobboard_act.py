@@ -607,13 +607,21 @@ async def insert_new_jobs(jobs: list[dict]) -> int:
         for job in jobs:
             try:
                 changes_before = conn.total_changes
+                # If the analysis phase already provided enrichment data, mark enriched_at now
+                # so get_unenriched_companies won't re-research these companies.
+                has_enrichment = any(
+                    job.get(k) is not None
+                    for k in ("employee_count", "total_funding", "ticker", "founder_led",
+                               "glassdoor_rating", "glassdoor_recommend_pct")
+                )
+                enriched_at = datetime.now(timezone.utc).isoformat() if has_enrichment else None
                 conn.execute(
                     """INSERT OR IGNORE INTO jobs
                        (company, title, link, salary_min, salary_max, level, industry,
                         location, remote, source, relevance, fit_notes, tags,
                         employee_count, total_funding, ticker, founder_led,
-                        glassdoor_rating, glassdoor_recommend_pct, status)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new')""",
+                        glassdoor_rating, glassdoor_recommend_pct, status, enriched_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?)""",
                     (
                         job.get("company", "Unknown"),
                         job.get("title", "Unknown"),
@@ -634,6 +642,7 @@ async def insert_new_jobs(jobs: list[dict]) -> int:
                         _bool_to_sqlite(job.get("founder_led")),
                         job.get("glassdoor_rating"),
                         job.get("glassdoor_recommend_pct"),
+                        enriched_at,
                     ),
                 )
                 if conn.total_changes > changes_before:
