@@ -9,7 +9,7 @@ import logging
 import aiohttp
 from temporalio import activity
 
-from ..utils import load_env_key
+from ..utils import get_together_key
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +17,7 @@ TOGETHER_API_URL = "https://api.together.xyz/v1/chat/completions"
 
 
 def _get_together_key() -> str:
-    """Load TOGETHER_API_KEY from env or .env files."""
-    return load_env_key("TOGETHER_API_KEY")
+    return get_together_key()
 
 
 @activity.defn

@@ -60,6 +60,10 @@ def get_discord_token() -> str:
     return load_env_key("DISCORD_BOT_TOKEN")
 
 
+def get_together_key() -> str:
+    return load_env_key("TOGETHER_API_KEY")
+
+
 def _discord_headers() -> dict:
     token = get_discord_token()
     return {
