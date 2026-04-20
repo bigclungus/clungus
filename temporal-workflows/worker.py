@@ -21,6 +21,7 @@ from temporalio.worker import Worker
 # Load .env relative to this file
 load_dotenv(Path(__file__).parent / ".env")
 
+from activities.constants import TEMPORAL_HOST
 from activities.audit_act import (
     audit_sessions,
     load_sessions_since_last_audit,
@@ -127,7 +128,6 @@ from workflows.tasks_backup_wf import TaskDbBackupWorkflow
 from workflows.test_cron_wf import TestCronWorkflow
 
 TASK_QUEUE = "listings-queue"
-TEMPORAL_HOST = os.environ.get("TEMPORAL_HOST", "localhost:7233")
 CRITERIA_PATH = Path(__file__).parent / "criteria.json"
 
 logging.basicConfig(

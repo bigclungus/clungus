@@ -13,7 +13,6 @@ Environment:
 
 import asyncio
 import logging
-import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -22,6 +21,7 @@ from temporalio.worker import Worker
 
 load_dotenv(Path(__file__).parent / ".env")
 
+from activities.constants import TEMPORAL_HOST
 from activities.agent_executor import run_xai_agent
 from activities.task_db import create_task_record, finalize_task, record_error, poll_agent_status
 from activities.context_snapshot import generate_context_snapshot
@@ -35,7 +35,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger("tasks-worker")
 
-TEMPORAL_HOST = os.environ.get("TEMPORAL_HOST", "localhost:7233")
 NAMESPACE = "tasks"
 TASK_QUEUE = "agent-tasks-queue"
 

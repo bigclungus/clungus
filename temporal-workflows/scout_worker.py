@@ -10,7 +10,6 @@ Run with:
 
 import asyncio
 import logging
-import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -19,6 +18,8 @@ from temporalio.worker import Worker
 
 # Load .env relative to this file
 load_dotenv(Path(__file__).parent / ".env")
+
+from activities.constants import TEMPORAL_HOST
 
 # Common I/O activities
 from activities.common.discord_io import (
@@ -53,7 +54,6 @@ from activities.scout_db import (
 from workflows.model_scout_wf import ModelScoutWorkflow, PersonaOnboardingWorkflow
 
 TASK_QUEUE = "scout-queue"
-TEMPORAL_HOST = os.environ.get("TEMPORAL_HOST", "localhost:7233")
 
 logging.basicConfig(
     level=logging.INFO,

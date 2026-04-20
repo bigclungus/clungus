@@ -9,7 +9,7 @@ load_dotenv(Path(__file__).parent / ".env")
 
 from temporalio.client import Client
 
-from activities.constants import MAIN_CHANNEL_ID
+from activities.constants import MAIN_CHANNEL_ID, TEMPORAL_HOST
 from workflows.listings import ListingsWorkflow
 
 TEST_SEARCH = {
@@ -23,7 +23,7 @@ TEST_SEARCH = {
 }
 
 async def main():
-    client = await Client.connect("localhost:7233")
+    client = await Client.connect(TEMPORAL_HOST)
     run_id = f"listings-test-{int(time.time())}"
     print(f"Starting workflow with id={run_id}")
     result = await client.execute_workflow(
