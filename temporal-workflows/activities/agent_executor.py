@@ -7,7 +7,6 @@ run_xai_agent: used by the xAI path — calls the xAI API with a full
 """
 
 import json
-import os
 import subprocess
 import shlex
 from pathlib import Path
@@ -89,7 +88,7 @@ def _tool_bash(command: str) -> str:
 
     first = tokens[0]
     # Strip any path prefix (e.g. /bin/ls -> ls)
-    first_base = os.path.basename(first)
+    first_base = Path(first).name
 
     if first_base not in _BASH_ALLOWED:
         return f"ERROR: command '{first_base}' not in allowlist ({', '.join(sorted(_BASH_ALLOWED))})"
