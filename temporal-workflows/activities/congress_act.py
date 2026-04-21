@@ -474,18 +474,8 @@ async def congress_create_thread(channel_id: str, message_id: str, session_numbe
 @activity.defn
 async def congress_announce(chat_id: str, topic: str) -> str:
     """Post a congress announcement to Discord and return the message ID."""
-    url = f"{DISCORD_API}/channels/{chat_id}/messages"
-    data = {"content": f"⚖️ **I'm calling a congress on:** {topic}\n*verdict will follow when the panel deliberates*"}
-    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
-        async with session.post(url, json=data, headers=_discord_headers()) as r:
-            if r.status not in (200, 201):
-                body = await r.text()
-                raise RuntimeError(f"congress_announce: Discord returned {r.status}: {body}")
-            msg = await r.json()
-            msg_id = msg.get("id")
-            if not msg_id:
-                raise RuntimeError(f"congress_announce: Discord response missing 'id' field: {msg}")
-            return str(msg_id)
+    content = f"⚖️ **I'm calling a congress on:** {topic}\n*verdict will follow when the panel deliberates*"
+    return await discord_post_message(chat_id, content)
 
 
 @activity.defn
