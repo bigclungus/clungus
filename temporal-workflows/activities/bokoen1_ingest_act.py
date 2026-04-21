@@ -8,7 +8,6 @@ file so interrupted runs can be resumed.
 import asyncio
 import json
 import logging
-import os
 import re
 import subprocess
 from datetime import datetime, timezone
@@ -24,7 +23,7 @@ logger = logging.getLogger(__name__)
 TRANSCRIPTS_DIR = Path(BASE_DIR) / "data/bokoen1-transcripts"
 STATUS_FILE = Path(BASE_DIR) / "data/bokoen1-ingestion-status.json"
 DATABASE_NAME = "bokoen1_transcripts"
-YT_DLP = os.path.expanduser("~/.local/bin/yt-dlp")
+YT_DLP = str(Path.home() / ".local/bin/yt-dlp")
 
 
 def _load_status() -> dict:
