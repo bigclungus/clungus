@@ -59,6 +59,7 @@ from .constants import (
     TEMPORAL_HOST,
     TEMPORAL_WORKFLOWS_DIR,
 )
+from .common.discord_io import discord_post_message
 from .inject_act import _do_inject
 from .utils import DISCORD_TIMEOUT, _discord_headers, get_gemini_key, get_xai_key
 
@@ -607,17 +608,9 @@ async def congress_debate(
 
     # Post to thread if thread_id is provided
     if thread_id and response_text:
-        post_url = f"{DISCORD_API}/channels/{thread_id}/messages"
-        truncated = response_text[:1900]
-        post_content = f"**{name}**: {truncated}"
+        post_content = f"**{name}**: {response_text[:1900]}"
         try:
-            async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as s:
-                async with s.post(post_url, headers=_discord_headers(), json={"content": post_content}) as resp:
-                    if resp.status not in (200, 201):
-                        body = await resp.text()
-                        activity.logger.error(
-                            f"congress_debate: failed to post {identity!r} response to thread {thread_id}: HTTP {resp.status}: {body}"
-                        )
+            await discord_post_message(thread_id, post_content)
         except Exception as e:
             activity.logger.error(
                 f"congress_debate: exception posting {identity!r} response to thread {thread_id}: {e}"
@@ -632,12 +625,10 @@ async def congress_debate(
 @activity.defn
 async def congress_post_separator(thread_id: str, text: str) -> None:
     """Post a separator/announcement message to a Discord thread."""
-    url = f"{DISCORD_API}/channels/{thread_id}/messages"
-    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
-        async with session.post(url, headers=_discord_headers(), json={"content": text}) as resp:
-            if resp.status not in (200, 201):
-                body = await resp.text()
-                activity.logger.warning(f"congress_post_separator failed {resp.status}: {body}")
+    try:
+        await discord_post_message(thread_id, text)
+    except Exception as exc:
+        activity.logger.warning(f"congress_post_separator failed: {exc}")
 
 
 @activity.defn
@@ -1730,25 +1721,15 @@ async def congress_report(
     if len(closing) > 1990:
         closing = closing[:1987] + "…"
 
-    headers = _discord_headers()
-    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
-        if thread_id:
-            # Post full closing summary to the thread
-            thread_url = f"{DISCORD_API}/channels/{thread_id}/messages"
-            async with session.post(thread_url, headers=headers, json={"content": closing}) as resp:
-                if resp.status not in (200, 201):
-                    body = await resp.text()
-                    raise RuntimeError(f"Discord thread summary error {resp.status}: {body}")
-            notice = f"⚖️ **Congress #{session_number}** has adjourned — see the thread. 🔗 {session_link}"
-        else:
-            # No thread — post the full closing to main channel directly
-            notice = closing
+    if thread_id:
+        # Post full closing summary to the thread
+        await discord_post_message(thread_id, closing)
+        notice = f"⚖️ **Congress #{session_number}** has adjourned — see the thread. 🔗 {session_link}"
+    else:
+        # No thread — post the full closing to main channel directly
+        notice = closing
 
-        main_url = f"{DISCORD_API}/channels/{main_channel_id}/messages"
-        async with session.post(main_url, headers=headers, json={"content": notice}) as resp:
-            if resp.status not in (200, 201):
-                body = await resp.text()
-                raise RuntimeError(f"Discord main channel notice error {resp.status}: {body}")
+    await discord_post_message(main_channel_id, notice)
 
     # Inject verdict back to BigClungus for self-implementation (skipped in meme mode)
     if mode != SESSION_MODE_MEME:
