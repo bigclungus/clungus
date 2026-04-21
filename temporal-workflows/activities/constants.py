@@ -47,6 +47,9 @@ FALKORDB_PORT = int(os.environ.get("FALKORDB_PORT", "6379"))
 # Discord REST API base URL
 DISCORD_API = "https://discord.com/api/v10"
 
+# xAI (Grok) API URL
+XAI_API_URL = "https://api.x.ai/v1/chat/completions"
+
 # Congress/trial session mode constants
 SESSION_MODE_MEME = "meme"
 SESSION_MODE_STANDARD = "standard"

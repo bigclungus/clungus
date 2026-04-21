@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 import aiohttp
 from temporalio import activity
 
+from .constants import XAI_API_URL
 from .utils import get_xai_key
 
 logger = logging.getLogger(__name__)
@@ -340,7 +341,6 @@ async def build_persona_frontmatter(
 # Grok-powered model description generation
 # ---------------------------------------------------------------------------
 
-_XAI_API_URL = "https://api.x.ai/v1/chat/completions"
 _DESCRIPTION_SYSTEM = (
     "You write plain-English descriptions of AI models for non-technical people. "
     "No jargon, no technical terms, no ML buzzwords. "
@@ -559,7 +559,7 @@ async def generate_model_description(
     timeout = aiohttp.ClientTimeout(total=30)
     async with aiohttp.ClientSession(timeout=timeout) as session:
         async with session.post(
-            _XAI_API_URL,
+            XAI_API_URL,
             headers={
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",

@@ -3,9 +3,8 @@
 import httpx
 from temporalio import activity
 
+from .constants import XAI_API_URL as _API_URL
 from .utils import get_xai_key
-
-_API_URL = "https://api.x.ai/v1/chat/completions"
 _MODEL = "grok-4-fast-non-reasoning"
 
 _SYSTEM_PROMPT = (

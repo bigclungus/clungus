@@ -16,9 +16,8 @@ from typing import Any
 import httpx
 from temporalio import activity
 
+from .constants import XAI_API_URL
 from .utils import get_xai_key
-
-XAI_API_URL = "https://api.x.ai/v1/chat/completions"
 MAX_TOOL_ITERATIONS = 20
 
 # Rough pricing per 1M tokens (input, output)
