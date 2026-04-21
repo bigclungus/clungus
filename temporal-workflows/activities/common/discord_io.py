@@ -108,6 +108,20 @@ async def discord_create_thread(channel_id: str, message_id: str, name: str) -> 
             return data["id"]
 
 
+async def discord_fetch_messages(channel_id: str, limit: int = 50) -> list[dict]:
+    """Fetch recent messages from a Discord channel (newest-first). Returns [] on failure.
+
+    This is a plain async helper (not a Temporal activity) for use inside other activities.
+    """
+    url = f"{DISCORD_API}/channels/{channel_id}/messages?limit={limit}"
+    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
+        async with session.get(url, headers=_discord_headers()) as resp:
+            if resp.status != 200:
+                body = await resp.text()
+                raise RuntimeError(f"discord_fetch_messages: Discord API returned {resp.status}: {body[:200]}")
+            return await resp.json()
+
+
 async def discord_create_thread_or_reuse(channel_id: str, message_id: str, name: str) -> str:
     """Create a thread on a message, or reuse an existing one if Discord returns 400.
 

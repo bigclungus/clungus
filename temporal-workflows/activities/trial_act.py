@@ -17,7 +17,6 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-import aiohttp
 from temporalio import activity
 from temporalio.exceptions import ApplicationError
 
@@ -26,12 +25,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "gen", "python"
 from client_factory import congress_client  # noqa: E402
 from congress.v1.congress_pb2 import PatchSessionRequest, StartSessionRequest  # noqa: E402
 
-from .common.discord_io import discord_create_thread_or_reuse, discord_post_message
+from .common.discord_io import discord_create_thread_or_reuse, discord_fetch_messages, discord_post_message
 from .common.http_io import clunger_patch_session
 from .congress_act import _call_congress_api, _query_graphiti_facts
-from .constants import AGENTS_DIR, CLUNGER_BASE_URL, DISCORD_API, HELLO_WORLD_SESSIONS_DIR, MAIN_CHANNEL_ID, SESSION_MODE_MEME, SESSION_MODE_STANDARD
+from .constants import AGENTS_DIR, CLUNGER_BASE_URL, HELLO_WORLD_SESSIONS_DIR, MAIN_CHANNEL_ID, SESSION_MODE_MEME, SESSION_MODE_STANDARD
 from .inject_act import _do_inject
-from .utils import DISCORD_TIMEOUT, _discord_headers
 
 SESSIONS_DIR = Path(HELLO_WORLD_SESSIONS_DIR)
 
@@ -345,17 +343,7 @@ async def _fetch_discord_messages_for_user(username: str, channel_id: str, limit
     Returns a list of message content strings (up to 20 most recent), or [] on any failure.
     """
     try:
-        url = f"{DISCORD_API}/channels/{channel_id}/messages?limit={limit}"
-        async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
-            async with session.get(url, headers=_discord_headers()) as resp:
-                if resp.status != 200:
-                    body = await resp.text()
-                    activity.logger.warning(
-                        f"_fetch_discord_messages_for_user: Discord API returned {resp.status}: {body[:200]}"
-                    )
-                    return []
-                messages = await resp.json()
-
+        messages = await discord_fetch_messages(channel_id, limit=limit)
         # Filter to messages authored by this username (Discord username, not display name)
         user_messages = [
             m.get("content", "").strip()

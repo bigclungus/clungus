@@ -41,7 +41,6 @@ from .constants import (
     BASE_DIR,
     CLUNGER_BASE_URL,
     CLUNGER_DIR,
-    DISCORD_API,
     FALKORDB_HOST,
     FALKORDB_PORT,
     HELLO_WORLD_DIR,
@@ -58,10 +57,10 @@ from .constants import (
     TEMPORAL_HOST,
     TEMPORAL_WORKFLOWS_DIR,
 )
-from .common.discord_io import discord_create_thread_or_reuse, discord_post_message
+from .common.discord_io import discord_create_thread_or_reuse, discord_fetch_messages, discord_post_message
 from .common.http_io import clunger_patch_session
 from .inject_act import _do_inject
-from .utils import DISCORD_TIMEOUT, _discord_headers, get_gemini_key, get_xai_key
+from .utils import get_gemini_key, get_xai_key
 
 logger = logging.getLogger(__name__)
 
@@ -522,24 +521,20 @@ async def congress_debate(
     if round_num == 2 and thread_id:
         prior_lines = []
         try:
-            fetch_url = f"{DISCORD_API}/channels/{thread_id}/messages?limit=50"
-            async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as s:
-                async with s.get(fetch_url, headers=_discord_headers()) as resp:
-                    if resp.status == 200:
-                        messages = await resp.json()
-                        # Messages come newest-first; reverse for chronological order
-                        for msg in reversed(messages):
-                            content = msg.get("content", "").strip()
-                            if not content:
-                                continue
-                            # Exclude this debater's own Round 1 message so they don't
-                            # respond to themselves. Thread messages are formatted as
-                            # "**Display Name**: <text>" — filter on that prefix.
-                            debater_name = display_name or identity
-                            own_prefix = f"**{debater_name}**:"
-                            if content.startswith(own_prefix):
-                                continue
-                            prior_lines.append(content)
+            messages = await discord_fetch_messages(thread_id, limit=50)
+            # Messages come newest-first; reverse for chronological order
+            for msg in reversed(messages):
+                content = msg.get("content", "").strip()
+                if not content:
+                    continue
+                # Exclude this debater's own Round 1 message so they don't
+                # respond to themselves. Thread messages are formatted as
+                # "**Display Name**: <text>" — filter on that prefix.
+                debater_name = display_name or identity
+                own_prefix = f"**{debater_name}**:"
+                if content.startswith(own_prefix):
+                    continue
+                prior_lines.append(content)
         except Exception as _fetch_err:
             activity.logger.warning(f"congress_debate: failed to fetch thread context for rebuttal: {_fetch_err}")
 
