@@ -14,7 +14,6 @@ Steps:
 
 import json
 import logging
-import os
 import subprocess
 from collections import Counter
 from datetime import datetime, timezone
@@ -126,10 +125,10 @@ def _repo_tree() -> str:
         if not p.exists():
             continue
         try:
-            entries = sorted(os.listdir(subdir))
+            entries = sorted(p.iterdir(), key=lambda x: x.name)
             lines.append(f"\n## {subdir}")
-            for e in entries:
-                full = p / e
+            for full in entries:
+                e = full.name
                 suffix = "/" if full.is_dir() else ""
                 lines.append(f"  {e}{suffix}")
         except Exception as exc:
