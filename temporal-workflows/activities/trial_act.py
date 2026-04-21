@@ -11,7 +11,6 @@ Persistence uses clunger's REST PATCH endpoint instead of direct file writes.
 
 import asyncio
 import json
-import os
 import re
 import sys
 from datetime import datetime, timezone
@@ -21,7 +20,7 @@ from temporalio import activity
 from temporalio.exceptions import ApplicationError
 
 # ConnectRPC generated stubs
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "gen", "python"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "gen" / "python"))
 from client_factory import congress_client  # noqa: E402
 from congress.v1.congress_pb2 import PatchSessionRequest, StartSessionRequest  # noqa: E402
 
@@ -368,7 +367,7 @@ async def trial_load_defendant(slug: str) -> dict:
     If no persona file exists for the slug, queries Graphiti and Discord history
     to build a rich system prompt representing the real human Discord user.
     """
-    fpath = os.path.join(AGENTS_DIR, f"{slug}.md")
+    fpath = Path(AGENTS_DIR) / f"{slug}.md"
     try:
         with open(fpath) as f:
             content = f.read()
@@ -544,20 +543,20 @@ async def trial_apply_retire_verdict(defendant: str, defendant_display: str, mod
         return
 
     # Standard mode: apply the same status mutation as congress_act congress_evolve RETIRE.
-    agents_dir = AGENTS_DIR
-    agents_dir_real = os.path.realpath(agents_dir)
+    agents_dir = Path(AGENTS_DIR)
+    agents_dir_real = agents_dir.resolve()
 
     # Validate defendant slug is a safe basename
     persona_name = f"{defendant}.md"
-    if os.path.basename(persona_name) != persona_name or ".." in persona_name:
+    if Path(persona_name).name != persona_name or ".." in persona_name:
         activity.logger.warning(
             f"trial_apply_retire_verdict: unsafe defendant slug '{defendant}', skipping file mutation"
         )
         return
 
-    persona_file = os.path.join(agents_dir, persona_name)
-    resolved = os.path.realpath(persona_file)
-    if not resolved.startswith(agents_dir_real):
+    persona_file = agents_dir / persona_name
+    resolved = persona_file.resolve()
+    if not str(resolved).startswith(str(agents_dir_real)):
         activity.logger.warning(
             f"trial_apply_retire_verdict: persona_file resolved outside agents_dir for '{defendant}', skipping"
         )
