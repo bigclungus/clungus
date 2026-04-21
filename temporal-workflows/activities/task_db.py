@@ -16,6 +16,7 @@ import glob
 import json
 import sqlite3
 from datetime import datetime, timezone
+from pathlib import Path
 
 from temporalio import activity
 
@@ -248,19 +249,17 @@ async def poll_agent_status(agent_id: str, task_id: str) -> dict:
       }
     Also updates tasks.db with current token counts (intermediate update).
     """
-    import os
-
     # jsonl_size: glob for output file
     jsonl_size = 0
     matches = glob.glob(f"/tmp/claude-1001/**/tasks/{agent_id}.output", recursive=True)
     if matches:
         try:
-            jsonl_size = os.path.getsize(matches[0])
+            jsonl_size = Path(matches[0]).stat().st_size
         except OSError:
             jsonl_size = 0
 
     # state_file_exists
-    state_file_exists = os.path.exists(f"/tmp/bc-agents/{agent_id}.json")
+    state_file_exists = Path(f"/tmp/bc-agents/{agent_id}.json").exists()
 
     # token counts from JSONL
     token_data = _parse_jsonl_tokens(agent_id)
