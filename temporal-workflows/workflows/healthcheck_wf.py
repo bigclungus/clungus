@@ -6,7 +6,6 @@ Alerts via Discord inject on state transitions only (up→down or down→up reco
 Loops forever via continue_as_new to avoid memory growth.
 """
 from datetime import timedelta
-from typing import Optional
 
 from temporalio import workflow
 from temporalio.common import RetryPolicy
@@ -31,7 +30,7 @@ class HealthcheckWorkflow:
         )
 
     @workflow.run
-    async def run(self, previously_down: Optional[list[str]] = None) -> None:
+    async def run(self, previously_down: list[str] | None = None) -> None:
         """
         Run one healthcheck iteration, sleep 60s, then continue_as_new.
 
