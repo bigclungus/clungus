@@ -5,6 +5,9 @@ HTTP I/O activities — reusable across all workflows.
 import aiohttp
 from temporalio import activity
 
+from ..constants import CLUNGER_BASE_URL, INTERNAL_TOKEN
+from ..utils import DISCORD_TIMEOUT
+
 
 @activity.defn
 async def fetch_json(url: str, headers: dict | None = None) -> dict | list:
@@ -17,3 +20,24 @@ async def fetch_json(url: str, headers: dict | None = None) -> dict | list:
                 body = await resp.text()
                 raise RuntimeError(f"HTTP GET {url} failed ({resp.status}): {body[:500]}")
             return await resp.json()
+
+
+async def clunger_patch_session(session_id: str, payload: dict, caller: str = "clunger_patch_session") -> None:
+    """PATCH fields onto a clunger congress session via the internal REST API.
+
+    No-op if INTERNAL_TOKEN is not set or payload is empty.
+    Raises RuntimeError on non-2xx responses.
+    This is a plain async helper (not a Temporal activity) for use inside other activities.
+    """
+    if not INTERNAL_TOKEN or not payload:
+        return
+    url = f"{CLUNGER_BASE_URL}/api/congress/sessions/{session_id}"
+    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
+        async with session.patch(
+            url,
+            json=payload,
+            headers={"x-internal-token": INTERNAL_TOKEN},
+        ) as resp:
+            if resp.status not in (200, 201):
+                body = await resp.text()
+                raise RuntimeError(f"{caller}: REST PATCH failed {resp.status}: {body}")

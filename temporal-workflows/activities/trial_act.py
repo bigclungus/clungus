@@ -27,8 +27,9 @@ from client_factory import congress_client  # noqa: E402
 from congress.v1.congress_pb2 import PatchSessionRequest, StartSessionRequest  # noqa: E402
 
 from .common.discord_io import discord_create_thread_or_reuse, discord_post_message
+from .common.http_io import clunger_patch_session
 from .congress_act import _call_congress_api, _query_graphiti_facts
-from .constants import AGENTS_DIR, CLUNGER_BASE_URL, DISCORD_API, HELLO_WORLD_SESSIONS_DIR, INTERNAL_TOKEN, MAIN_CHANNEL_ID, SESSION_MODE_MEME, SESSION_MODE_STANDARD
+from .constants import AGENTS_DIR, CLUNGER_BASE_URL, DISCORD_API, HELLO_WORLD_SESSIONS_DIR, MAIN_CHANNEL_ID, SESSION_MODE_MEME, SESSION_MODE_STANDARD
 from .inject_act import _do_inject
 from .utils import DISCORD_TIMEOUT, _discord_headers
 
@@ -65,17 +66,10 @@ async def trial_announce(
 
     # PATCH to set flavor and trial-specific fields
     patch_payload = {"flavor": "trial", "defendant": defendant_display, "charges": charges}
-    if INTERNAL_TOKEN:
-        rest_url = f"{CLUNGER_BASE_URL}/api/congress/sessions/{session_id}"
-        async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as http_session:
-            async with http_session.patch(
-                rest_url,
-                json=patch_payload,
-                headers={"x-internal-token": INTERNAL_TOKEN},
-            ) as patch_resp:
-                if patch_resp.status not in (200, 201):
-                    body = await patch_resp.text()
-                    activity.logger.warning(f"trial_announce: PATCH flavor/defendant/charges failed {patch_resp.status}: {body}")
+    try:
+        await clunger_patch_session(session_id, patch_payload, caller="trial_announce")
+    except RuntimeError as patch_err:
+        activity.logger.warning(f"trial_announce: PATCH flavor/defendant/charges failed: {patch_err}")
 
     thread_name = f"Trial #{session_number}: {defendant_display}"
     if len(thread_name) > 100:
@@ -327,17 +321,7 @@ async def trial_save_session(session_id: str, trial_data: dict) -> None:
     trial_data["status"] = "done"
     trial_data["finished_at"] = finished_at
 
-    if INTERNAL_TOKEN:
-        rest_url = f"{CLUNGER_BASE_URL}/api/congress/sessions/{session_id}"
-        async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as http_session:
-            async with http_session.patch(
-                rest_url,
-                json=rest_payload,
-                headers={"x-internal-token": INTERNAL_TOKEN},
-            ) as resp:
-                if resp.status not in (200, 201):
-                    body = await resp.text()
-                    raise RuntimeError(f"trial_save_session: REST PATCH failed {resp.status}: {body}")
+    await clunger_patch_session(session_id, rest_payload, caller="trial_save_session")
 
     # 3. Write the full trial data to the session file (supplements the clunger-managed file)
     #    This ensures all trial-specific fields (speeches, votes, etc.) are persisted.

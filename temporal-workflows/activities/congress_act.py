@@ -46,7 +46,6 @@ from .constants import (
     FALKORDB_PORT,
     HELLO_WORLD_DIR,
     HELLO_WORLD_SESSIONS_DIR,
-    INTERNAL_TOKEN,
     MAIN_CHANNEL_ID,
     META_REPO_PATH,
     SCRIPTS_DIR,
@@ -60,6 +59,7 @@ from .constants import (
     TEMPORAL_WORKFLOWS_DIR,
 )
 from .common.discord_io import discord_create_thread_or_reuse, discord_post_message
+from .common.http_io import clunger_patch_session
 from .inject_act import _do_inject
 from .utils import DISCORD_TIMEOUT, _discord_headers, get_gemini_key, get_xai_key
 
@@ -624,17 +624,8 @@ async def congress_finalize(
         rest_payload["vote_summary"] = vote_summary
     rest_payload["mode"] = mode or "standard"
     rest_payload["requires_ack"] = mode != SESSION_MODE_MEME
-    if rest_payload and INTERNAL_TOKEN:
-        rest_url = f"{CLUNGER_BASE_URL}/api/congress/sessions/{session_id}"
-        async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as http_session:
-            async with http_session.patch(
-                rest_url,
-                json=rest_payload,
-                headers={"x-internal-token": INTERNAL_TOKEN},
-            ) as resp:
-                if resp.status not in (200, 201):
-                    body = await resp.text()
-                    raise RuntimeError(f"congress_finalize: REST PATCH failed {resp.status}: {body}")
+    if rest_payload:
+        await clunger_patch_session(session_id, rest_payload, caller="congress_finalize")
 
 
 @activity.defn
