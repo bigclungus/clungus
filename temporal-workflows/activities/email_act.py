@@ -1,13 +1,13 @@
 import asyncio
-import os
 import re
+from pathlib import Path
 
 from temporalio import activity
 
 from .constants import MAIN_CHANNEL_ID
 from .inject_act import _do_inject
 
-PROTON_SESSION = os.path.expanduser("~/.cache/proton_session.json")
+PROTON_SESSION = str(Path.home() / ".cache" / "proton_session.json")
 
 
 @activity.defn
