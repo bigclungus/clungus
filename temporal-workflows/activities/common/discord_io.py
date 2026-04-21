@@ -106,3 +106,34 @@ async def discord_create_thread(channel_id: str, message_id: str, name: str) -> 
                 raise RuntimeError(f"Discord create_thread failed ({resp.status}): {body}")
             data = await resp.json()
             return data["id"]
+
+
+async def discord_create_thread_or_reuse(channel_id: str, message_id: str, name: str) -> str:
+    """Create a thread on a message, or reuse an existing one if Discord returns 400.
+
+    Returns the thread channel_id. Raises RuntimeError on unrecoverable failures.
+    This is a plain async helper (not a Temporal activity) for use inside other activities.
+    """
+    url = f"{DISCORD_API}/channels/{channel_id}/messages/{message_id}/threads"
+    payload = {"name": name[:100], "auto_archive_duration": 1440}
+    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
+        async with session.post(url, headers=_discord_headers(), json=payload) as resp:
+            if resp.status in (200, 201):
+                data = await resp.json()
+                return data["id"]
+            body = await resp.text()
+            if resp.status == 400:
+                # Discord returns 400 when a thread already exists on this message.
+                # Fetch the message to retrieve the existing thread id.
+                msg_url = f"{DISCORD_API}/channels/{channel_id}/messages/{message_id}"
+                async with session.get(msg_url, headers=_discord_headers()) as msg_resp:
+                    if msg_resp.status == 200:
+                        msg_data = await msg_resp.json()
+                        thread = msg_data.get("thread")
+                        if thread and thread.get("id"):
+                            return thread["id"]
+                raise RuntimeError(
+                    f"discord_create_thread_or_reuse: thread already exists but could not retrieve id; "
+                    f"original 400 body: {body}"
+                )
+            raise RuntimeError(f"discord_create_thread_or_reuse failed {resp.status}: {body}")

@@ -59,7 +59,7 @@ from .constants import (
     TEMPORAL_HOST,
     TEMPORAL_WORKFLOWS_DIR,
 )
-from .common.discord_io import discord_post_message
+from .common.discord_io import discord_create_thread_or_reuse, discord_post_message
 from .inject_act import _do_inject
 from .utils import DISCORD_TIMEOUT, _discord_headers, get_gemini_key, get_xai_key
 
@@ -439,36 +439,7 @@ async def congress_create_thread(channel_id: str, message_id: str, session_numbe
     the existing thread id from the message object instead of failing.
     """
     thread_name = f"Congress #{session_number}: {topic[:80]}"
-    url = f"{DISCORD_API}/channels/{channel_id}/messages/{message_id}/threads"
-    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
-        async with session.post(
-            url,
-            headers=_discord_headers(),
-            json={"name": thread_name, "auto_archive_duration": 1440},
-        ) as resp:
-            if resp.status in (200, 201):
-                data = await resp.json()
-                return data["id"]
-            body = await resp.text()
-            # Discord returns 400 when a thread already exists on this message.
-            # Fetch the message to retrieve the existing thread id.
-            if resp.status == 400:
-                activity.logger.warning(
-                    f"congress_create_thread: 400 from Discord ({body!r}), checking for existing thread on message"
-                )
-                msg_url = f"{DISCORD_API}/channels/{channel_id}/messages/{message_id}"
-                async with session.get(msg_url, headers=_discord_headers()) as msg_resp:
-                    if msg_resp.status == 200:
-                        msg_data = await msg_resp.json()
-                        thread = msg_data.get("thread")
-                        if thread and thread.get("id"):
-                            activity.logger.info(f"congress_create_thread: reusing existing thread {thread['id']}")
-                            return thread["id"]
-                raise RuntimeError(
-                    f"congress_create_thread: thread already exists but could not retrieve id; "
-                    f"original 400 body: {body}"
-                )
-            raise RuntimeError(f"congress_create_thread failed {resp.status}: {body}")
+    return await discord_create_thread_or_reuse(channel_id, message_id, thread_name)
 
 
 @activity.defn
