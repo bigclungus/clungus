@@ -4,9 +4,8 @@ Checks: labs with no commits in 14+ days, GitHub issues stale 14+ days.
 """
 import subprocess
 import json
-import os
 import datetime
-import glob
+from pathlib import Path
 
 from temporalio import activity
 
@@ -22,8 +21,11 @@ def _run_drift_scan_sync() -> str | None:
     findings = []
 
     # 1. Labs with no recent commits
-    for lab_path in sorted(glob.glob(os.path.join(LABS_DIR, "*/"))):
-        lab_name = os.path.basename(lab_path.rstrip("/"))
+    for lab_dir in sorted(Path(LABS_DIR).iterdir()):
+        if not lab_dir.is_dir():
+            continue
+        lab_name = lab_dir.name
+        lab_path = str(lab_dir)
         try:
             result = subprocess.run(
                 ["git", "-C", lab_path, "log", "--oneline", "-1", "--format=%ct"],
