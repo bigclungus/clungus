@@ -10,12 +10,11 @@ import os
 from datetime import datetime, timezone
 from typing import Optional
 
-import aiohttp
 from temporalio import activity
 
-from .constants import DISCORD_API, MAIN_CHANNEL_ID, TASKS_DIR
+from .common.discord_io import discord_post_message
+from .constants import MAIN_CHANNEL_ID, TASKS_DIR
 from .inject_act import _do_inject
-from .utils import DISCORD_TIMEOUT, _discord_headers
 
 
 def _age_str(iso_str: str) -> str:
@@ -145,16 +144,7 @@ async def check_open_tasks() -> Optional[str]:
     except Exception as _e:
         activity.logger.warning(f"inject endpoint unavailable, falling back to Discord API: {_e}")
 
-    api_url = f"{DISCORD_API}/channels/{MAIN_CHANNEL_ID}/messages"
-    payload = {"content": message}
-
-    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
-        async with session.post(api_url, headers=_discord_headers(), json=payload) as resp:
-            if resp.status not in (200, 201):
-                body = await resp.text()
-                raise RuntimeError(f"Discord API error {resp.status}: {body}")
-            response_data = await resp.json()
-            return response_data["id"]
+    return await discord_post_message(MAIN_CHANNEL_ID, message)
 
 
 def _write_status_file(checked_at: str, items: list) -> None:
