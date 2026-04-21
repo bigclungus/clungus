@@ -26,7 +26,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "gen", "python"
 from client_factory import congress_client  # noqa: E402
 from congress.v1.congress_pb2 import PatchSessionRequest, StartSessionRequest  # noqa: E402
 
-from .common.discord_io import discord_post_message
+from .common.discord_io import discord_create_thread_or_reuse, discord_post_message
 from .congress_act import _call_congress_api, _query_graphiti_facts
 from .constants import AGENTS_DIR, CLUNGER_BASE_URL, DISCORD_API, HELLO_WORLD_SESSIONS_DIR, INTERNAL_TOKEN, MAIN_CHANNEL_ID, SESSION_MODE_MEME, SESSION_MODE_STANDARD
 from .inject_act import _do_inject
@@ -84,9 +84,7 @@ async def trial_announce(
     # Create the thread — mirror the congress_announce + congress_create_thread pattern.
     # If there is no message_id (bot-initiated, no triggering message), post an
     # announcement first so we have a message to attach the thread to.
-    thread_id: str | None = None
     if not message_id:
-        # Post an announcement to obtain a message_id we can thread from.
         announce_content = (
             f"⚖️ **SHOW TRIAL #{session_number} — {defendant_display}**\n"
             f"Charged with: _{charges}_\n"
@@ -94,64 +92,18 @@ async def trial_announce(
         )
         message_id = await discord_post_message(chat_id, announce_content)
 
-    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
-
-        url = f"{DISCORD_API}/channels/{chat_id}/messages/{message_id}/threads"
-        async with session.post(
-            url,
-            headers=_discord_headers(),
-            json={"name": thread_name, "auto_archive_duration": 1440},
-        ) as resp:
-            if resp.status in (200, 201):
-                data = await resp.json()
-                thread_id = data["id"]
-            elif resp.status == 400:
-                body = await resp.text()
-                activity.logger.warning(
-                    f"trial_announce: 400 from Discord ({body!r}), checking for existing thread on message"
-                )
-                # Discord returns 400 when a thread already exists on this message.
-                msg_url = f"{DISCORD_API}/channels/{chat_id}/messages/{message_id}"
-                async with session.get(msg_url, headers=_discord_headers()) as msg_resp:
-                    if msg_resp.status == 200:
-                        msg_data = await msg_resp.json()
-                        existing = msg_data.get("thread")
-                        if existing and existing.get("id"):
-                            activity.logger.info(
-                                f"trial_announce: reusing existing thread {existing['id']}"
-                            )
-                            thread_id = existing["id"]
-                if not thread_id:
-                    if chat_id != MAIN_CHANNEL_ID:
-                        thread_id = chat_id
-                    else:
-                        raise ApplicationError(
-                            f"trial_announce: thread already exists but could not retrieve id; "
-                            f"original 400 body: {body}",
-                            non_retryable=True,
-                        )
-            else:
-                body = await resp.text()
-                # Discord error 50024 means the channel cannot have threads (e.g. already
-                # inside a thread). Fall back to using chat_id directly when not on main.
-                if chat_id != MAIN_CHANNEL_ID:
-                    activity.logger.warning(
-                        f"trial_announce: thread creation returned {resp.status} ({body!r}); "
-                        f"falling back to chat_id as thread_id"
-                    )
-                    thread_id = chat_id
-                else:
-                    raise ApplicationError(
-                        f"trial_announce: thread creation failed on main channel "
-                        f"({resp.status}): {body}",
-                        non_retryable=True,
-                    )
-
-    if not thread_id:
-        raise ApplicationError(
-            "trial_announce: could not obtain a thread ID for the trial.",
-            non_retryable=True,
-        )
+    try:
+        thread_id: str = await discord_create_thread_or_reuse(chat_id, message_id, thread_name)
+    except RuntimeError as exc:
+        # Discord error 50024 means the channel cannot have threads (e.g. already inside a
+        # thread). Fall back to chat_id when not on main channel; raise on main channel.
+        if chat_id != MAIN_CHANNEL_ID:
+            activity.logger.warning(
+                f"trial_announce: thread creation failed ({exc!r}); falling back to chat_id"
+            )
+            thread_id = chat_id
+        else:
+            raise ApplicationError(str(exc), non_retryable=True) from exc
 
     prosecutors_str = ", ".join(prosecutor_displays)
     jury_str = ", ".join(jury_displays)
