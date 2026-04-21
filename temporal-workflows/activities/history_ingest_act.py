@@ -6,12 +6,11 @@ embeds them with local embeddings, and stores them in the sqlite-vec database at
 /mnt/data/data/discord-history.db.
 """
 import json
-import glob
-import os
 import re
 import sys
 import sqlite3
 import time
+from pathlib import Path
 
 from temporalio import activity
 
@@ -25,8 +24,6 @@ from common import (
 
 # ---- Constants ---------------------------------------------------------------
 
-_HOME_DIR = os.path.expanduser("~")
-JSONL_GLOB = _HOME_DIR + "/.claude/projects/*/*.jsonl"
 BATCH_SIZE = 100
 
 _UPSERT_STATE = (
@@ -181,7 +178,7 @@ def extract_from_fetch_result(text: str) -> list[dict]:
     return messages
 
 
-def extract_messages_from_jsonl(filepath: str, start_offset: int) -> tuple[list[dict], int]:
+def extract_messages_from_jsonl(filepath: Path, start_offset: int) -> tuple[list[dict], int]:
     messages = []
     new_offset = start_offset
 
@@ -240,7 +237,7 @@ def _run_history_ingest_sync() -> str:
 
     conn = open_db()
 
-    jsonl_files = sorted(glob.glob(JSONL_GLOB))
+    jsonl_files = sorted(Path.home().glob(".claude/projects/*/*.jsonl"))
     activity.logger.info("Found %d JSONL files", len(jsonl_files))
 
     total_new = 0
@@ -251,9 +248,9 @@ def _run_history_ingest_sync() -> str:
         # and with thousands of files we'd overflow it immediately.
         _now = time.monotonic()
         if _now - _last_heartbeat >= 10.0:
-            activity.heartbeat(f"processing {os.path.basename(filepath)}")
+            activity.heartbeat(f"processing {filepath.name}")
             _last_heartbeat = _now
-        current_size = os.path.getsize(filepath)
+        current_size = filepath.stat().st_size
 
         row = conn.execute(
             "SELECT byte_offset, last_size FROM ingest_state WHERE filepath = ?",
@@ -303,7 +300,7 @@ def _run_history_ingest_sync() -> str:
             conn.commit()
             continue
 
-        activity.logger.info("%s: %d new messages", os.path.basename(filepath), len(new_messages))
+        activity.logger.info("%s: %d new messages", filepath.name, len(new_messages))
 
         for i in range(0, len(new_messages), BATCH_SIZE):
             batch = new_messages[i:i + BATCH_SIZE]
