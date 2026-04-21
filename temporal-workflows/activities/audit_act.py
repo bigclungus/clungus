@@ -12,12 +12,11 @@ import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
-import aiohttp
 from temporalio import activity
 
-from .constants import CLAUDE_CLI, DISCORD_API, HELLO_WORLD_SESSIONS_DIR, MAIN_CHANNEL_ID
+from .common.discord_io import discord_create_thread, discord_post_message
+from .constants import CLAUDE_CLI, HELLO_WORLD_SESSIONS_DIR, MAIN_CHANNEL_ID
 from .inject_act import _do_inject
-from .utils import DISCORD_TIMEOUT, _discord_headers
 
 logger = logging.getLogger(__name__)
 
@@ -291,46 +290,17 @@ async def _post_to_thread(anchor_message_id: str, content: str) -> None:
     Create a Discord thread off anchor_message_id and post content there.
     The thread channel_id equals the message_id for Discord threads.
     """
-    headers = {**_discord_headers(), "User-Agent": "BigClungus/1.0"}
+    try:
+        thread_id = await discord_create_thread(MAIN_CHANNEL_ID, anchor_message_id, "full congress audit")
+    except Exception as exc:
+        logger.warning("Thread creation failed: %s", exc)
+        return
 
-    # Create thread off the anchor message
-    thread_url = (
-        f"{DISCORD_API}/channels/{MAIN_CHANNEL_ID}"
-        f"/messages/{anchor_message_id}/threads"
-    )
-    thread_payload = {
-        "name": "full congress audit",
-        "auto_archive_duration": 1440,  # 24h
-    }
-    async with aiohttp.ClientSession() as session:
-        async with session.post(
-            thread_url,
-            json=thread_payload,
-            headers=headers,
-            timeout=DISCORD_TIMEOUT,
-        ) as resp:
-            if resp.status not in (200, 201):
-                text = await resp.text()
-                logger.warning("Thread creation failed %s: %s", resp.status, text)
-                return
-            thread_data = await resp.json()
-            thread_id = thread_data.get("id")
-
-        if not thread_id:
-            logger.warning("No thread_id in Discord response")
-            return
-
-        # Post full audit content to thread (chunk if needed)
-        chunk_size = 1900
-        chunks = [content[i:i + chunk_size] for i in range(0, len(content), chunk_size)]
-        msg_url = f"{DISCORD_API}/channels/{thread_id}/messages"
-        for chunk in chunks:
-            async with session.post(
-                msg_url,
-                json={"content": chunk},
-                headers=headers,
-                timeout=DISCORD_TIMEOUT,
-            ) as resp:
-                if resp.status not in (200, 201):
-                    text = await resp.text()
-                    logger.warning("Thread post failed %s: %s", resp.status, text)
+    # Post full audit content to thread (chunk if needed)
+    chunk_size = 1900
+    chunks = [content[i:i + chunk_size] for i in range(0, len(content), chunk_size)]
+    for chunk in chunks:
+        try:
+            await discord_post_message(thread_id, chunk)
+        except Exception as exc:
+            logger.warning("Thread post failed: %s", exc)
