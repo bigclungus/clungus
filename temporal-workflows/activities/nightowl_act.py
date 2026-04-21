@@ -4,9 +4,9 @@ nightowl_act — activities for injecting NightOwl queued tasks into the bot ses
 Reuses the shared inject endpoint (_do_inject from inject_act) so all injection
 logic stays in one place.
 """
-import aiohttp
 from temporalio import activity
 
+from .common.http_io import fetch_json
 from .constants import CLUNGER_BASE_URL, MAIN_CHANNEL_ID
 from .inject_act import _do_inject
 
@@ -42,9 +42,5 @@ async def nightowl_flag_risky(task: str) -> bool:
 async def nightowl_poll_status(task_id: str) -> bool:
     """Poll clunger to check if a NightOwl task has been marked complete."""
     url = f"{CLUNGER_BASE_URL}/api/nightowl/status/{task_id}"
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url, timeout=aiohttp.ClientTimeout(total=8)) as resp:
-            if resp.status != 200:
-                raise RuntimeError(f"nightowl_poll_status: clunger returned {resp.status}")
-            data = await resp.json()
-            return bool(data.get("done", False))
+    data = await fetch_json(url)
+    return bool(data.get("done", False))
