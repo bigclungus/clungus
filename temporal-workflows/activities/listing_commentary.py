@@ -5,6 +5,7 @@ from temporalio import activity
 
 from .constants import XAI_API_URL as _API_URL
 from .utils import get_xai_key
+
 _MODEL = "grok-4-fast-non-reasoning"
 
 _SYSTEM_PROMPT = (

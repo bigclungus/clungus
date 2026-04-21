@@ -34,10 +34,6 @@ async def discord_post_message(
             return data["id"]
 
 
-# Backward-compatible alias
-discord_post_embed = discord_post_message
-
-
 @activity.defn
 async def discord_poll_reactions(channel_id: str, message_id: str) -> dict:
     """Fetch all reactions on a message. Returns {emoji_name: [user_id, ...]}."""
