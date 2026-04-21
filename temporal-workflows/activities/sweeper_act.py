@@ -4,11 +4,9 @@ Activity: check_open_tasks
 Reads task files from bigclungus-meta/tasks/ and posts a summary of in_progress
 tasks to the main Discord channel. Silent if nothing is open.
 """
-import glob
 import json
-import os
 from datetime import datetime, timezone
-from typing import Optional
+from pathlib import Path
 
 from temporalio import activity
 
@@ -81,7 +79,7 @@ def _get_started_ts(task: dict) -> str:
 
 
 @activity.defn
-async def check_open_tasks() -> Optional[str]:
+async def check_open_tasks() -> str | None:
     """
     Read task files from bigclungus-meta/tasks/ and post to Discord if any
     in_progress tasks exist.
@@ -90,9 +88,9 @@ async def check_open_tasks() -> Optional[str]:
     open_items = []
 
     try:
-        task_files = glob.glob(os.path.join(TASKS_DIR, "*.json"))
+        task_files = list(Path(TASKS_DIR).glob("*.json"))
         for fpath in task_files:
-            if os.path.basename(fpath) == ".gitkeep":
+            if Path(fpath).name == ".gitkeep":
                 continue
             try:
                 with open(fpath, "r") as f:
