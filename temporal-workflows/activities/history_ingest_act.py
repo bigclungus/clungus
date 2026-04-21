@@ -254,7 +254,7 @@ def _run_history_ingest_sync() -> str:
 
         row = conn.execute(
             "SELECT byte_offset, last_size FROM ingest_state WHERE filepath = ?",
-            (filepath,)
+            (str(filepath),)
         ).fetchone()
 
         if row:
@@ -268,7 +268,7 @@ def _run_history_ingest_sync() -> str:
         messages, new_offset = extract_messages_from_jsonl(filepath, start_offset)
 
         if not messages:
-            conn.execute(_UPSERT_STATE, (filepath, new_offset, current_size))
+            conn.execute(_UPSERT_STATE, (str(filepath), new_offset, current_size))
             conn.commit()
             continue
 
@@ -296,7 +296,7 @@ def _run_history_ingest_sync() -> str:
             new_messages = []
 
         if not new_messages:
-            conn.execute(_UPSERT_STATE, (filepath, new_offset, current_size))
+            conn.execute(_UPSERT_STATE, (str(filepath), new_offset, current_size))
             conn.commit()
             continue
 
@@ -333,7 +333,7 @@ def _run_history_ingest_sync() -> str:
             conn.commit()
             total_new += len(batch)
 
-        conn.execute(_UPSERT_STATE, (filepath, new_offset, current_size))
+        conn.execute(_UPSERT_STATE, (str(filepath), new_offset, current_size))
         conn.commit()
 
     total_messages = conn.execute("SELECT COUNT(*) FROM messages").fetchone()[0]
