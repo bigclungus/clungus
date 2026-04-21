@@ -85,27 +85,16 @@ async def trial_announce(
     # If there is no message_id (bot-initiated, no triggering message), post an
     # announcement first so we have a message to attach the thread to.
     thread_id: str | None = None
+    if not message_id:
+        # Post an announcement to obtain a message_id we can thread from.
+        announce_content = (
+            f"⚖️ **SHOW TRIAL #{session_number} — {defendant_display}**\n"
+            f"Charged with: _{charges}_\n"
+            f"_The proceedings will begin shortly._"
+        )
+        message_id = await discord_post_message(chat_id, announce_content)
+
     async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
-        if not message_id:
-            # Post an announcement to obtain a message_id we can thread from.
-            announce_url = f"{DISCORD_API}/channels/{chat_id}/messages"
-            announce_data = {
-                "content": (
-                    f"⚖️ **SHOW TRIAL #{session_number} — {defendant_display}**\n"
-                    f"Charged with: _{charges}_\n"
-                    f"_The proceedings will begin shortly._"
-                )
-            }
-            async with session.post(announce_url, headers=_discord_headers(), json=announce_data) as ann_resp:
-                if ann_resp.status in (200, 201):
-                    ann_data = await ann_resp.json()
-                    message_id = ann_data.get("id")
-                else:
-                    body = await ann_resp.text()
-                    raise ApplicationError(
-                        f"trial_announce: failed to post announcement message ({ann_resp.status}): {body}",
-                        non_retryable=True,
-                    )
 
         url = f"{DISCORD_API}/channels/{chat_id}/messages/{message_id}/threads"
         async with session.post(
