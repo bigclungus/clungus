@@ -5,7 +5,6 @@ create poll files, commit to git, and notify Discord.
 Called from CongressWorkflow after a CREATE directive, or triggered manually.
 """
 import json
-import os
 import re
 import subprocess
 import sys
@@ -24,8 +23,8 @@ SPRITES_DIR = HELLO_WORLD_DIR
 
 def _read_persona(slug: str) -> dict:
     """Read persona .md and extract frontmatter fields + first 500 chars of prose."""
-    path = os.path.join(AGENTS_DIR, f"{slug}.md")
-    if not os.path.exists(path):
+    path = Path(AGENTS_DIR) / f"{slug}.md"
+    if not path.exists():
         raise FileNotFoundError(f"Persona file not found: {path}")
 
     with open(path) as f:
@@ -99,13 +98,13 @@ def _generate_avatar_scripts(slug: str, persona: dict) -> list[tuple[str, str, s
     ]
 
     for label, concept in zip(variant_labels, variant_concepts):
-        out_path = os.path.join(AVATARS_DIR, f"{slug}_{label.lower()}.gif")
+        out_path = Path(AVATARS_DIR) / f"{slug}_{label.lower()}.gif"
         user_msg = (
             f"Create a 64x64 animated GIF pixel art avatar for '{display_name}' "
             f"({role}, {title}). Traits: {traits}.\n"
             f"Character context: {prose[:300]}\n\n"
             f"This is variant {label} ({concept}).\n"
-            f"Set OUT_PATH = {json.dumps(out_path)} at the top of the script.\n"
+            f"Set OUT_PATH = {json.dumps(str(out_path))} at the top of the script.\n"
             "Save the animated GIF to OUT_PATH at the end."
         )
         script = _run_claude(system_prompt, user_msg)
@@ -115,13 +114,12 @@ def _generate_avatar_scripts(slug: str, persona: dict) -> list[tuple[str, str, s
     return scripts
 
 
-def _execute_avatar_scripts(scripts: list[tuple[str, str, str]]) -> list[str]:
+def _execute_avatar_scripts(scripts: list[tuple[str, Path, str]]) -> list[Path]:
     """Execute each avatar generation script and return paths of generated files."""
     generated = []
     for label, out_path, script in scripts:
-        script_path = os.path.join(SCRIPTS_DIR, f"_gen_{os.path.basename(out_path).replace('.gif', '')}.py")
-        with open(script_path, "w") as f:
-            f.write(script)
+        script_path = Path(SCRIPTS_DIR) / f"_gen_{out_path.stem}.py"
+        script_path.write_text(script)
 
         proc = subprocess.run(
             [sys.executable, script_path],
@@ -130,7 +128,7 @@ def _execute_avatar_scripts(scripts: list[tuple[str, str, str]]) -> list[str]:
             timeout=60,
         )
         try:
-            os.unlink(script_path)
+            script_path.unlink()
         except OSError:
             pass
 
@@ -138,7 +136,7 @@ def _execute_avatar_scripts(scripts: list[tuple[str, str, str]]) -> list[str]:
             activity.logger.warning("avatar variant %s script failed: %s", label, proc.stderr[:300])
             continue
 
-        if os.path.exists(out_path):
+        if out_path.exists():
             generated.append(out_path)
             activity.logger.info("Generated avatar: %s", out_path)
         else:
@@ -217,7 +215,7 @@ def _write_sprite_batch(slug: str, sprite_code: str) -> str:
     else:
         new_name = "sprites-batch1.js"
 
-    new_path = os.path.join(SPRITES_DIR, new_name)
+    new_path = Path(SPRITES_DIR) / new_name
     with open(new_path, "w") as f:
         f.write(f"// {new_name} -- Auto-generated sprite variants\n")
         f.write("// Format: drawSprite_<name>_<variant>(ctx, cx, cy)\n\n")
@@ -232,16 +230,15 @@ def _write_sprite_batch(slug: str, sprite_code: str) -> str:
 def _update_html_script_refs(new_batch_name: str) -> None:
     """Add a script tag for the new batch file to HTML files that reference sprites."""
     html_files = [
-        os.path.join(SPRITES_DIR, "sprites-vote.html"),
-        os.path.join(SPRITES_DIR, "grazing.html"),
+        Path(SPRITES_DIR) / "sprites-vote.html",
+        Path(SPRITES_DIR) / "grazing.html",
     ]
     tag = f'  <script src="/{new_batch_name}"></script>'
 
     for html_path in html_files:
-        if not os.path.exists(html_path):
+        if not html_path.exists():
             continue
-        with open(html_path) as f:
-            content = f.read()
+        content = html_path.read_text()
         if new_batch_name in content:
             continue
         pattern = r'(  <script src="/sprites-batch\d+\.js"></script>)'
@@ -250,20 +247,19 @@ def _update_html_script_refs(new_batch_name: str) -> None:
             last_match = matches[-1]
             insert_pos = last_match.end()
             content = content[:insert_pos] + "\n" + tag + content[insert_pos:]
-            with open(html_path, "w") as f:
-                f.write(content)
-            activity.logger.info("Added %s script tag to %s", new_batch_name, os.path.basename(html_path))
+            html_path.write_text(content)
+            activity.logger.info("Added %s script tag to %s", new_batch_name, html_path.name)
 
 
 def _create_avatar_poll(slug: str, persona: dict) -> str:
     """Create avatar poll markdown file. Returns poll file path."""
     display_name = persona.get("display_name", slug.replace("-", " ").title())
     poll_id = f"avatar-{slug}"
-    poll_path = os.path.join(POLLS_DIR, f"{poll_id}.md")
+    poll_path = Path(POLLS_DIR) / f"{poll_id}.md"
 
-    if os.path.exists(poll_path):
+    if poll_path.exists():
         activity.logger.info("Avatar poll already exists: %s", poll_path)
-        return poll_path
+        return str(poll_path)
 
     labels = ["A", "B", "C", "D"]
     options_yaml = "\n".join(f"  {l}: Variant {l}" for l in labels)
@@ -289,18 +285,18 @@ def _create_avatar_poll(slug: str, persona: dict) -> str:
         f.write(content)
 
     activity.logger.info("Created avatar poll: %s", poll_path)
-    return poll_path
+    return str(poll_path)
 
 
 def _create_sprite_poll(slug: str, persona: dict, sprite_code: str) -> str:
     """Create sprite poll markdown file. Returns poll file path."""
     display_name = persona.get("display_name", slug.replace("-", " ").title())
     poll_id = f"sprite-{slug}"
-    poll_path = os.path.join(POLLS_DIR, f"{poll_id}.md")
+    poll_path = Path(POLLS_DIR) / f"{poll_id}.md"
 
-    if os.path.exists(poll_path):
+    if poll_path.exists():
         activity.logger.info("Sprite poll already exists: %s", poll_path)
-        return poll_path
+        return str(poll_path)
 
     js_slug = slug.replace("-", "_")
     descs: dict[str, str] = {}
@@ -334,7 +330,7 @@ def _create_sprite_poll(slug: str, persona: dict, sprite_code: str) -> str:
         f.write(content)
 
     activity.logger.info("Created sprite poll: %s", poll_path)
-    return poll_path
+    return str(poll_path)
 
 
 def _git_commit_and_push() -> None:
