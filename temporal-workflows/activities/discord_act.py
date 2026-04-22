@@ -1,16 +1,11 @@
-import asyncio
 import datetime as _dt
 import hashlib
-import json
 import random
 from datetime import date
 
-import aiohttp
 from temporalio import activity
 
-from .common.discord_io import discord_post_message
-from .constants import DISCORD_API
-from .utils import DISCORD_TIMEOUT, _discord_headers
+from .common.discord_io import discord_add_reaction, discord_post_message
 
 _PPSF_GOOD = 600
 _PPSF_FAIR = 750
@@ -240,30 +235,10 @@ async def post_listings_summary(channel_id: str, listings: list) -> str:
     # Reactions are best-effort: a failure here must NOT cause the activity
     # to raise, because the message has already been posted and Temporal
     # would retry the whole activity (re-posting the message as a duplicate).
-    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
-        for emoji in ("%F0%9F%91%8D", "%F0%9F%91%8E"):
-            reaction_url = (
-                f"{DISCORD_API}/channels/{channel_id}/messages/{message_id}/reactions/{emoji}/@me"
-            )
-            for attempt in range(3):
-                async with session.put(reaction_url, headers=_discord_headers()) as react_resp:
-                    if react_resp.status in (200, 201, 204):
-                        break
-                    body = await react_resp.text()
-                    if react_resp.status == 429:
-                        # Rate limited — parse retry_after and wait, then retry
-                        try:
-                            retry_after = json.loads(body).get("retry_after", 1.0)
-                        except Exception as e:
-                            activity.logger.warning("[discord_act] failed to parse rate-limit retry_after body: %s", e)
-                            retry_after = 1.0
-                        await asyncio.sleep(float(retry_after) + 0.1)
-                    else:
-                        # Non-rate-limit error: log and give up on this reaction
-                        activity.logger.warning(f"Discord reaction API error {react_resp.status} (giving up): {body}")
-                        break
-            else:
-                # Exhausted retries for this reaction — log and continue
-                activity.logger.warning(f"Gave up adding reaction {emoji} to message {message_id} after 3 attempts")
+    for emoji in ("%F0%9F%91%8D", "%F0%9F%91%8E"):
+        try:
+            await discord_add_reaction(channel_id, message_id, emoji)
+        except Exception as e:
+            activity.logger.warning("[discord_act] failed to add reaction %s: %s", emoji, e)
 
     return message_id
