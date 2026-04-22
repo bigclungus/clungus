@@ -12,7 +12,6 @@ Schema:
   task_events(id INTEGER PK, task_id TEXT, event TEXT, message TEXT, ts TEXT)
 """
 
-import glob
 import json
 import sqlite3
 from datetime import datetime, timezone
@@ -104,7 +103,7 @@ def _parse_jsonl_tokens(agent_id: str) -> dict:
     if not agent_id:
         return empty
 
-    matches = glob.glob(f"/tmp/claude-1001/**/tasks/{agent_id}.output", recursive=True)
+    matches = list(Path("/tmp/claude-1001").glob(f"**/tasks/{agent_id}.output"))
     if not matches:
         return empty
 
@@ -251,10 +250,10 @@ async def poll_agent_status(agent_id: str, task_id: str) -> dict:
     """
     # jsonl_size: glob for output file
     jsonl_size = 0
-    matches = glob.glob(f"/tmp/claude-1001/**/tasks/{agent_id}.output", recursive=True)
+    matches = list(Path("/tmp/claude-1001").glob(f"**/tasks/{agent_id}.output"))
     if matches:
         try:
-            jsonl_size = Path(matches[0]).stat().st_size
+            jsonl_size = matches[0].stat().st_size
         except OSError:
             jsonl_size = 0
 
