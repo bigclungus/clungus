@@ -6,11 +6,11 @@ call_llm routes through together.ai's OpenAI-compatible endpoint.
 
 import logging
 
-import aiohttp
 from temporalio import activity
 
 from ..constants import TOGETHER_API_URL
 from ..utils import get_together_key
+from .http_io import post_json
 
 logger = logging.getLogger(__name__)
 
@@ -47,13 +47,9 @@ async def call_llm(
         "temperature": temperature,
     }
 
-    timeout = aiohttp.ClientTimeout(total=60)
-    async with aiohttp.ClientSession(timeout=timeout) as session:
-        async with session.post(TOGETHER_API_URL, headers=headers, json=payload) as resp:
-            if resp.status != 200:
-                body = await resp.text()
-                raise RuntimeError(f"together.ai API error ({resp.status}): {body}")
-            data = await resp.json()
+    status, data = await post_json(TOGETHER_API_URL, payload, headers=headers, timeout_s=60)
+    if status != 200:
+        raise RuntimeError(f"together.ai API error ({status}): {data}")
 
     choices = data.get("choices", [])
     if not choices:
