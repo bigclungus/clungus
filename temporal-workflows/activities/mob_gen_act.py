@@ -29,7 +29,7 @@ _falkordb_client = _falkordb.FalkorDB(
 CLUNGIVERSE_DB = Path(BASE_DIR) / "commons-server/db/commons.db"
 MOB_SPRITES_JS = Path(HELLO_WORLD_DIR) / "static/clungiverse/mob-sprites.js"
 MOB_IMAGES_DIR = Path(HELLO_WORLD_DIR) / "static/mob-images"
-RENDER_SPRITE_SCRIPT = Path(SCRIPTS_DIR) / "render-mob-sprite.js"
+RENDER_SPRITE_SCRIPT = SCRIPTS_DIR / "render-mob-sprite.js"
 
 _OPENAI_MODEL = "gpt-4o-mini"
 _openai_client: openai.AsyncOpenAI | None = None

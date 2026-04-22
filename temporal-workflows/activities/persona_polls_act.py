@@ -119,7 +119,7 @@ def _execute_avatar_scripts(scripts: list[tuple[str, Path, str]]) -> list[Path]:
     """Execute each avatar generation script and return paths of generated files."""
     generated = []
     for label, out_path, script in scripts:
-        script_path = Path(SCRIPTS_DIR) / f"_gen_{out_path.stem}.py"
+        script_path = SCRIPTS_DIR / f"_gen_{out_path.stem}.py"
         script_path.write_text(script)
 
         proc = subprocess.run(

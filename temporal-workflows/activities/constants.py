@@ -29,7 +29,7 @@ HELLO_WORLD_SESSIONS_DIR = Path(HELLO_WORLD_DIR) / "sessions"
 CLUNGER_DIR = BASE_DIR + "/clunger"
 TEMPORAL_WORKFLOWS_DIR = BASE_DIR + "/temporal-workflows"
 GRAPHITI_ENV = BASE_DIR + "/graphiti/repo/mcp_server/.env"
-SCRIPTS_DIR = BASE_DIR + "/scripts"
+SCRIPTS_DIR = Path(BASE_DIR) / "scripts"
 LABS_DIR = BASE_DIR + "/labs"
 
 # Claude CLI binary path

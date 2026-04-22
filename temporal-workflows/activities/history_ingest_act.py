@@ -16,7 +16,7 @@ from temporalio import activity
 
 from .constants import SCRIPTS_DIR
 
-sys.path.insert(0, SCRIPTS_DIR)
+sys.path.insert(0, str(SCRIPTS_DIR))
 from common import (
     DB_PATH, LOCAL_EMBED_DIMS,
     EMBED_DIMS, local_embed_texts,
