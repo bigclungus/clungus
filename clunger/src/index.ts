@@ -3614,12 +3614,6 @@ const server = http.createServer(async (req, res) => {
       }
     }
 
-    // POST /api/agents/complete — deprecated alias (ID in body); kept for backward compat
-    if (pathname === "/api/agents/complete" && req.method === "POST") {
-      await restHandleAgentComplete(req, res);
-      return;
-    }
-
     // GET /api/congress/identities — public
     if (pathname === "/api/congress/identities" && req.method === "GET") {
       restServeCongressIdentities(res);
