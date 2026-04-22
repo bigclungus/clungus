@@ -90,7 +90,7 @@ async def check_open_tasks() -> str | None:
     try:
         task_files = list(Path(TASKS_DIR).glob("*.json"))
         for fpath in task_files:
-            if Path(fpath).name == ".gitkeep":
+            if fpath.name == ".gitkeep":
                 continue
             try:
                 with open(fpath, "r") as f:
