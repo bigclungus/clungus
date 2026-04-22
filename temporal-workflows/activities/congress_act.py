@@ -87,7 +87,7 @@ async def _inject_alert(message: str) -> None:
 # Context-brief cache
 # ---------------------------------------------------------------------------
 
-CONTEXT_CACHE_PATH = Path(HELLO_WORLD_SESSIONS_DIR) / "context-brief.json"
+CONTEXT_CACHE_PATH = HELLO_WORLD_SESSIONS_DIR / "context-brief.json"
 CONTEXT_CACHE_TTL = timedelta(minutes=30)
 
 
@@ -365,7 +365,7 @@ async def congress_load_session(session_number: int) -> dict:
     re-running a debate that already completed.
     """
     num_str = str(session_number).zfill(4)
-    session_file = Path(HELLO_WORLD_SESSIONS_DIR) / f"congress-{num_str}.json"
+    session_file = HELLO_WORLD_SESSIONS_DIR / f"congress-{num_str}.json"
     if not session_file.exists():
         activity.logger.info(f"congress_load_session: no file at {session_file} — returning empty")
         return {}

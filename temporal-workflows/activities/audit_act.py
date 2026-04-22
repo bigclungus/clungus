@@ -10,7 +10,6 @@ import asyncio
 import json
 import logging
 from datetime import datetime, timezone
-from pathlib import Path
 
 from temporalio import activity
 
@@ -20,7 +19,7 @@ from .inject_act import _do_inject
 
 logger = logging.getLogger(__name__)
 
-SESSIONS_DIR = Path(HELLO_WORLD_SESSIONS_DIR)
+SESSIONS_DIR = HELLO_WORLD_SESSIONS_DIR
 AUDIT_STATE_PATH = SESSIONS_DIR / "audit-state.json"
 
 AUDIT_SYSTEM_PROMPT = (

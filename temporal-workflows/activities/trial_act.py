@@ -30,7 +30,7 @@ from .congress_act import _call_congress_api, _query_graphiti_facts
 from .constants import AGENTS_DIR, CLUNGER_BASE_URL, HELLO_WORLD_SESSIONS_DIR, MAIN_CHANNEL_ID, SESSION_MODE_MEME, SESSION_MODE_STANDARD
 from .inject_act import _do_inject
 
-SESSIONS_DIR = Path(HELLO_WORLD_SESSIONS_DIR)
+SESSIONS_DIR = HELLO_WORLD_SESSIONS_DIR
 
 
 # ---------------------------------------------------------------------------
