@@ -1,7 +1,7 @@
 """GitHub webhook activities — ack comments and Discord notifications."""
-import aiohttp
 from temporalio import activity
 
+from .common.http_io import post_json
 from .constants import MAIN_CHANNEL_ID
 from .inject_act import _do_inject
 from .utils import get_github_token
@@ -30,21 +30,14 @@ async def github_post_ack_comment(repo: str, number: int, event_type: str) -> st
     url = f"https://api.github.com/repos/{repo}/issues/{number}/comments"
 
     try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                url,
-                json={"body": body_text},
-                headers=headers,
-                timeout=aiohttp.ClientTimeout(total=15),
-            ) as resp:
-                if resp.status in (200, 201):
-                    return "ok"
-                text = await resp.text()
-                activity.logger.error(
-                    "github_post_ack_comment HTTP error %s for %s#%s: %s",
-                    resp.status, repo, number, text[:200],
-                )
-                return f"ERROR {resp.status}: {text[:200]}"
+        status, _ = await post_json(url, {"body": body_text}, headers=headers)
+        if status in (200, 201):
+            return "ok"
+        activity.logger.error(
+            "github_post_ack_comment HTTP error %s for %s#%s",
+            status, repo, number,
+        )
+        return f"ERROR {status}"
     except Exception as e:
         activity.logger.error("github_post_ack_comment request failed for %s#%s: %s", repo, number, e)
         return f"ERROR: {e}"
