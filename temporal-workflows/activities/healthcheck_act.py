@@ -4,12 +4,11 @@ Activities: check_sites, send_alert
 check_sites — HTTP-checks all public clung.us endpoints and returns a status dict.
 send_alert  — Sends an alert message via the omni inject endpoint.
 """
-import time
 from typing import Any
 
-import aiohttp
 from temporalio import activity
 
+from .common.http_io import fetch_status
 from .inject_act import _do_inject
 
 SITES = [
@@ -25,37 +24,18 @@ SITES = [
 async def check_sites() -> dict[str, Any]:
     """Check all public clung.us endpoints. Returns a dict keyed by URL."""
     results: dict[str, Any] = {}
-    timeout = aiohttp.ClientTimeout(total=10)
 
-    async with aiohttp.ClientSession() as session:
-        for site in SITES:
-            url = site["url"]
-            ok_codes = site["ok_codes"]
-            start = time.monotonic()
-            try:
-                async with session.get(
-                    url,
-                    timeout=timeout,
-                    allow_redirects=False,
-                    ssl=True,
-                ) as resp:
-                    latency_ms = int((time.monotonic() - start) * 1000)
-                    results[url] = {
-                        "url": url,
-                        "status_code": resp.status,
-                        "ok": resp.status in ok_codes,
-                        "latency_ms": latency_ms,
-                        "error": None,
-                    }
-            except Exception as exc:
-                latency_ms = int((time.monotonic() - start) * 1000)
-                results[url] = {
-                    "url": url,
-                    "status_code": None,
-                    "ok": False,
-                    "latency_ms": latency_ms,
-                    "error": str(exc),
-                }
+    for site in SITES:
+        url = site["url"]
+        ok_codes = site["ok_codes"]
+        status_code, latency_ms, error = await fetch_status(url, allow_redirects=False, ssl=True)
+        results[url] = {
+            "url": url,
+            "status_code": status_code,
+            "ok": status_code in ok_codes if status_code is not None else False,
+            "latency_ms": latency_ms,
+            "error": error,
+        }
 
     return results
 

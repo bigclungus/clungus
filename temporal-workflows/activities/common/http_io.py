@@ -2,6 +2,8 @@
 HTTP I/O activities — reusable across all workflows.
 """
 
+import time
+
 import aiohttp
 from temporalio import activity
 
@@ -39,6 +41,30 @@ async def post_json(url: str, payload: dict, headers: dict | None = None, timeou
                 body = await resp.text()
                 raise RuntimeError(f"post_json: could not parse JSON from {url} ({resp.status}): {e} — body: {body[:200]}")
             return resp.status, data
+
+
+async def fetch_status(
+    url: str,
+    *,
+    timeout_s: int = 10,
+    allow_redirects: bool = False,
+    ssl: bool = True,
+) -> tuple[int | None, int, str | None]:
+    """HTTP GET returning (status_code, latency_ms, error_str).
+
+    Never raises — on network error, status_code is None and error_str is set.
+    This is a plain async helper (not a Temporal activity) for use inside other activities.
+    """
+    timeout = aiohttp.ClientTimeout(total=timeout_s)
+    start = time.monotonic()
+    try:
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(url, allow_redirects=allow_redirects, ssl=ssl) as resp:
+                latency_ms = int((time.monotonic() - start) * 1000)
+                return resp.status, latency_ms, None
+    except Exception as exc:
+        latency_ms = int((time.monotonic() - start) * 1000)
+        return None, latency_ms, str(exc)
 
 
 async def clunger_patch_session(session_id: str, payload: dict, caller: str = "clunger_patch_session") -> None:
