@@ -8,45 +8,37 @@ endpoint is localhost-only.
 """
 
 import logging
-import aiohttp
 import time
 from temporalio import activity
 
 logger = logging.getLogger(__name__)
 
 from .constants import INJECT_URL
+from .common.http_io import post_json
 
 HEARTBEAT_TIMESTAMP_FILE = "/tmp/last-heartbeat.txt"
 
 
 async def _do_inject(
     content: str, chat_id: str, user: str = "system", return_message_id: bool = False
-) -> "str | None":
+) -> str | None:
     """Shared HTTP helper for inject endpoint calls. Not a Temporal activity.
 
     If ``return_message_id`` is True, attempts to parse and return the Discord
     message_id from the response JSON. Returns None if unavailable. Always returns
     None when ``return_message_id`` is False (default).
     """
-    headers = {
-        "Content-Type": "application/json",
-    }
     payload = {"content": content, "chat_id": chat_id, "user": user}
-    async with aiohttp.ClientSession() as session:
-        async with session.post(
-            INJECT_URL,
-            json=payload,
-            headers=headers,
-            timeout=aiohttp.ClientTimeout(total=10),
-        ) as resp:
-            resp.raise_for_status()
-            if return_message_id:
-                try:
-                    data = await resp.json()
-                    return data.get("message_id") or data.get("id")
-                except Exception as e:
-                    logger.warning("[inject] failed to parse message_id from response: %s", e)
-                    return None
+    status, data = await post_json(INJECT_URL, payload, timeout_s=10)
+    if status >= 400:
+        raise RuntimeError(f"[inject] inject endpoint returned {status}: {data}")
+    if return_message_id:
+        try:
+            assert isinstance(data, dict)
+            return data.get("message_id") or data.get("id")
+        except Exception as e:
+            logger.warning("[inject] failed to parse message_id from response: %s", e)
+            return None
     return None
 
 
