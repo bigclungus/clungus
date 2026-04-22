@@ -1262,8 +1262,7 @@ async def congress_create_tasks(
         if not tasks:
             return []
 
-        tasks_dir = TASKS_DIR
-        Path(tasks_dir).mkdir(parents=True, exist_ok=True)
+        TASKS_DIR.mkdir(parents=True, exist_ok=True)
         task_titles = []
         for task in tasks:
             try:
@@ -1299,7 +1298,7 @@ async def congress_create_tasks(
                         },
                     ],
                 }
-                task_path = str(Path(tasks_dir) / f"{task_id}.json")
+                task_path = str(TASKS_DIR / f"{task_id}.json")
                 with open(task_path, "w") as f:
                     json.dump(task_data, f, indent=2)
                 activity.logger.info(f"Created local task file: {task_path}")

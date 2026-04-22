@@ -6,7 +6,6 @@ tasks to the main Discord channel. Silent if nothing is open.
 """
 import json
 from datetime import datetime, timezone
-from pathlib import Path
 
 from temporalio import activity
 
@@ -88,7 +87,7 @@ async def check_open_tasks() -> str | None:
     open_items = []
 
     try:
-        task_files = list(Path(TASKS_DIR).glob("*.json"))
+        task_files = list(TASKS_DIR.glob("*.json"))
         for fpath in task_files:
             if fpath.name == ".gitkeep":
                 continue
