@@ -16,9 +16,10 @@ from temporalio import activity
 from .constants import AGENTS_DIR, CLAUDE_CLI, HELLO_WORLD_DIR, MAIN_CHANNEL_ID, SCRIPTS_DIR
 from .inject_act import _do_inject
 
-POLLS_DIR = f"{HELLO_WORLD_DIR}/polls"
-AVATARS_DIR = f"{HELLO_WORLD_DIR}/static/avatars"
-SPRITES_DIR = HELLO_WORLD_DIR
+_HELLO_WORLD = Path(HELLO_WORLD_DIR)
+POLLS_DIR = _HELLO_WORLD / "polls"
+AVATARS_DIR = _HELLO_WORLD / "static" / "avatars"
+SPRITES_DIR = _HELLO_WORLD
 
 
 def _read_persona(slug: str) -> dict:
@@ -98,7 +99,7 @@ def _generate_avatar_scripts(slug: str, persona: dict) -> list[tuple[str, str, s
     ]
 
     for label, concept in zip(variant_labels, variant_concepts):
-        out_path = Path(AVATARS_DIR) / f"{slug}_{label.lower()}.gif"
+        out_path = AVATARS_DIR / f"{slug}_{label.lower()}.gif"
         user_msg = (
             f"Create a 64x64 animated GIF pixel art avatar for '{display_name}' "
             f"({role}, {title}). Traits: {traits}.\n"
@@ -191,13 +192,13 @@ def _write_sprite_batch(slug: str, sprite_code: str) -> str:
     """Write sprite functions to a batch file. Returns the batch filename."""
     js_slug = slug.replace("-", "_")
 
-    for batch in sorted(Path(SPRITES_DIR).glob("sprites-batch*.js")):
+    for batch in sorted(SPRITES_DIR.glob("sprites-batch*.js")):
         with open(batch) as f:
             if f"drawSprite_{js_slug}_A" in f.read():
                 activity.logger.warning("%s sprites already exist in %s, skipping write", slug, batch.name)
                 return batch.name
 
-    batch_files = sorted(Path(SPRITES_DIR).glob("sprites-batch*.js"))
+    batch_files = sorted(SPRITES_DIR.glob("sprites-batch*.js"))
     if batch_files:
         latest = batch_files[-1]
         with open(latest) as f:
@@ -215,7 +216,7 @@ def _write_sprite_batch(slug: str, sprite_code: str) -> str:
     else:
         new_name = "sprites-batch1.js"
 
-    new_path = Path(SPRITES_DIR) / new_name
+    new_path = SPRITES_DIR / new_name
     with open(new_path, "w") as f:
         f.write(f"// {new_name} -- Auto-generated sprite variants\n")
         f.write("// Format: drawSprite_<name>_<variant>(ctx, cx, cy)\n\n")
@@ -230,8 +231,8 @@ def _write_sprite_batch(slug: str, sprite_code: str) -> str:
 def _update_html_script_refs(new_batch_name: str) -> None:
     """Add a script tag for the new batch file to HTML files that reference sprites."""
     html_files = [
-        Path(SPRITES_DIR) / "sprites-vote.html",
-        Path(SPRITES_DIR) / "grazing.html",
+        SPRITES_DIR / "sprites-vote.html",
+        SPRITES_DIR / "grazing.html",
     ]
     tag = f'  <script src="/{new_batch_name}"></script>'
 
@@ -255,7 +256,7 @@ def _create_avatar_poll(slug: str, persona: dict) -> str:
     """Create avatar poll markdown file. Returns poll file path."""
     display_name = persona.get("display_name", slug.replace("-", " ").title())
     poll_id = f"avatar-{slug}"
-    poll_path = Path(POLLS_DIR) / f"{poll_id}.md"
+    poll_path = POLLS_DIR / f"{poll_id}.md"
 
     if poll_path.exists():
         activity.logger.info("Avatar poll already exists: %s", poll_path)
@@ -280,7 +281,7 @@ def _create_avatar_poll(slug: str, persona: dict) -> str:
         f"Four animated GIF options are available ({slug}_a through {slug}_d).\n"
     )
 
-    Path(POLLS_DIR).mkdir(parents=True, exist_ok=True)
+    POLLS_DIR.mkdir(parents=True, exist_ok=True)
     with open(poll_path, "w") as f:
         f.write(content)
 
@@ -292,7 +293,7 @@ def _create_sprite_poll(slug: str, persona: dict, sprite_code: str) -> str:
     """Create sprite poll markdown file. Returns poll file path."""
     display_name = persona.get("display_name", slug.replace("-", " ").title())
     poll_id = f"sprite-{slug}"
-    poll_path = Path(POLLS_DIR) / f"{poll_id}.md"
+    poll_path = POLLS_DIR / f"{poll_id}.md"
 
     if poll_path.exists():
         activity.logger.info("Sprite poll already exists: %s", poll_path)
@@ -325,7 +326,7 @@ def _create_sprite_poll(slug: str, persona: dict, sprite_code: str) -> str:
         f"Vote on the commons sprite for {display_name}.\n"
     )
 
-    Path(POLLS_DIR).mkdir(parents=True, exist_ok=True)
+    POLLS_DIR.mkdir(parents=True, exist_ok=True)
     with open(poll_path, "w") as f:
         f.write(content)
 
