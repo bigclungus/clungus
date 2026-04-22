@@ -1,7 +1,7 @@
 """
 Shared utility helpers for temporal-workflows activities.
 """
-import os
+from os import environ
 from pathlib import Path
 
 from .constants import BASE_DIR, TEMPORAL_WORKFLOWS_DIR
@@ -16,7 +16,7 @@ _ENV_PATHS = [
 
 def load_env_key(var_name: str) -> str:
     """Load a key from environment or .env files. Raises RuntimeError if not found."""
-    key = os.environ.get(var_name)
+    key = environ.get(var_name)
     if key:
         return key
     for path in _ENV_PATHS:
