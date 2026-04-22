@@ -2,6 +2,7 @@
 Shared utility helpers for temporal-workflows activities.
 """
 import os
+from pathlib import Path
 
 import aiohttp
 
@@ -13,7 +14,7 @@ DISCORD_TIMEOUT = aiohttp.ClientTimeout(total=10)
 _ENV_PATHS = [
     TEMPORAL_WORKFLOWS_DIR + "/.env",
     BASE_DIR + "/.env",
-    os.path.expanduser("~/.claude/channels/discord/.env"),
+    Path.home() / ".claude/channels/discord/.env",
 ]
 
 
