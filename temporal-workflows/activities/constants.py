@@ -1,7 +1,7 @@
 """
 Shared constants for temporal-workflows activities.
 """
-import os
+from os import environ
 from pathlib import Path
 
 # The main Discord channel for BigClungus.
@@ -11,7 +11,7 @@ MAIN_CHANNEL_ID = "1485343472952148008"
 INJECT_URL = "http://127.0.0.1:8085/webhooks/bigclungus-main"
 
 # Clunger (TypeScript web server) base URL — overridable via env for non-local deployments.
-CLUNGER_BASE_URL = os.environ.get("CLUNGER_BASE_URL", "http://localhost:8081")
+CLUNGER_BASE_URL = environ.get("CLUNGER_BASE_URL", "http://localhost:8081")
 
 # Congress check-in signals
 SIGNAL_CONTINUE = "CONTINUE"
@@ -36,14 +36,14 @@ LABS_DIR = BASE_DIR + "/labs"
 CLAUDE_CLI = "/home/clungus/.local/bin/claude"
 
 # Temporal server host — overridable via env for non-local deployments
-TEMPORAL_HOST = os.environ.get("TEMPORAL_HOST", "localhost:7233")
+TEMPORAL_HOST = environ.get("TEMPORAL_HOST", "localhost:7233")
 
 # Internal auth token forwarded to clunger via X-Internal-Token header
-INTERNAL_TOKEN = os.environ.get("INTERNAL_TOKEN", "")
+INTERNAL_TOKEN = environ.get("INTERNAL_TOKEN", "")
 
 # FalkorDB connection — overridable via env for non-local deployments
-FALKORDB_HOST = os.environ.get("FALKORDB_HOST", "localhost")
-FALKORDB_PORT = int(os.environ.get("FALKORDB_PORT", "6379"))
+FALKORDB_HOST = environ.get("FALKORDB_HOST", "localhost")
+FALKORDB_PORT = int(environ.get("FALKORDB_PORT", "6379"))
 
 # Discord REST API base URL
 DISCORD_API = "https://discord.com/api/v10"
