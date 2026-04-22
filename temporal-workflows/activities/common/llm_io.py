@@ -9,11 +9,10 @@ import logging
 import aiohttp
 from temporalio import activity
 
+from ..constants import TOGETHER_API_URL
 from ..utils import get_together_key
 
 logger = logging.getLogger(__name__)
-
-TOGETHER_API_URL = "https://api.together.xyz/v1/chat/completions"
 
 
 @activity.defn

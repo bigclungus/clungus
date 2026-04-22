@@ -50,6 +50,9 @@ DISCORD_API = "https://discord.com/api/v10"
 # xAI (Grok) API URL
 XAI_API_URL = "https://api.x.ai/v1/chat/completions"
 
+# Together.ai API URL
+TOGETHER_API_URL = "https://api.together.xyz/v1/chat/completions"
+
 # Congress/trial session mode constants
 SESSION_MODE_MEME = "meme"
 SESSION_MODE_STANDARD = "standard"
