@@ -42,6 +42,7 @@ from .constants import (
     CLUNGER_DIR,
     FALKORDB_HOST,
     FALKORDB_PORT,
+    GROK_PROXY_URL,
     HELLO_WORLD_DIR,
     HELLO_WORLD_SESSIONS_DIR,
     MAIN_CHANNEL_ID,
@@ -1710,7 +1711,6 @@ async def congress_alert_failure(topic: str, session_id: str, error_type: str, e
 # Preflight check — multimodal reachability
 # ---------------------------------------------------------------------------
 
-_GROK_PROXY_URL = "http://127.0.0.1:4100/v1/messages"
 _GEMINI_BIN = "/usr/local/bin/gemini"
 
 # Models that prefix-match as grok or gemini
@@ -1791,7 +1791,7 @@ async def congress_preflight_check(debaters: list) -> list:
             try:
                 async with aiohttp.ClientSession() as session:
                     async with session.post(
-                        _GROK_PROXY_URL,
+                        GROK_PROXY_URL,
                         data=probe_payload,
                         headers={
                             "Content-Type": "application/json",
@@ -1826,7 +1826,7 @@ async def congress_preflight_check(debaters: list) -> list:
                             )
             except aiohttp.ClientConnectorError as e:
                 errors.append(
-                    f"Grok proxy at {_GROK_PROXY_URL} is unreachable (connection refused or no route). "
+                    f"Grok proxy at {GROK_PROXY_URL} is unreachable (connection refused or no route). "
                     f"Is the proxy service running? Error: {e} — "
                     f"Grok personas: {', '.join(grok_personas)}"
                 )

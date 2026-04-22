@@ -51,6 +51,9 @@ DISCORD_API = "https://discord.com/api/v10"
 # xAI (Grok) API URL
 XAI_API_URL = "https://api.x.ai/v1/chat/completions"
 
+# Grok proxy — local Anthropic-compatible proxy that forwards to xAI
+GROK_PROXY_URL = "http://127.0.0.1:4100/v1/messages"
+
 # Together.ai API URL
 TOGETHER_API_URL = "https://api.together.xyz/v1/chat/completions"
 
