@@ -6,7 +6,8 @@ import aiohttp
 from temporalio import activity
 
 from ..constants import CLUNGER_BASE_URL, INTERNAL_TOKEN
-from ..utils import DISCORD_TIMEOUT
+
+DISCORD_TIMEOUT = aiohttp.ClientTimeout(total=10)
 
 
 @activity.defn

@@ -11,7 +11,8 @@ import aiohttp
 from temporalio import activity
 
 from ..constants import DISCORD_API
-from ..utils import DISCORD_TIMEOUT, _discord_headers
+from ..utils import _discord_headers
+from .http_io import DISCORD_TIMEOUT
 
 logger = logging.getLogger(__name__)
 

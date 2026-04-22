@@ -4,11 +4,7 @@ Shared utility helpers for temporal-workflows activities.
 import os
 from pathlib import Path
 
-import aiohttp
-
 from .constants import BASE_DIR, TEMPORAL_WORKFLOWS_DIR
-
-DISCORD_TIMEOUT = aiohttp.ClientTimeout(total=10)
 
 # Standard .env search paths
 _ENV_PATHS = [
