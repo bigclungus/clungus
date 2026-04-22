@@ -1,5 +1,5 @@
 # BigClungus Context Snapshot
-Generated: 2026-04-20 00:00 UTC
+Generated: 2026-04-22 00:00 UTC
 Sessions analyzed: 10 (of 328 total)
 
 ## Top 15 Most-Read Files
@@ -41,10 +41,11 @@ from datetime import datetime, timezone
 import httpx
 from temporalio import activity
 
+from .constants import CLAUDE_CLI, LABS_DIR
+
 logger = logging.getLogger(__name__)
 
-DB_PATH = "/mnt/data/labs/jobboard/jobs.db"
-CLAUDE_CLI = "/home/clungus/.local/bin/claude"
+DB_PATH = LABS_DIR + "/jobboard/jobs.db"
 
 RESUME_FALLBACK = (
     "Staff/Principal engineer, 15yr experience, distributed systems, "
@@ -119,7 +120,7 @@ EXTRA_JOB_SOURCES = [
     # --- SaaS / Cloud ---
     ("Stripe Careers", "https://boards.greenhouse.io/stripe"),
     ("Cloudflare Careers", "https://www.cloudflare.com/careers/jobs/"),
-    ("Vercel Careers", "https://jobs.ashbyhq.com/
+    ("Vercel Careers", "https://jobs.ashbyhq.com/verce
 ```
 _(truncated at 5000 chars)_
 
