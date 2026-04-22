@@ -12,7 +12,6 @@ import asyncio
 import hashlib
 import json
 import logging
-import os
 import random
 import re
 import subprocess
@@ -27,7 +26,7 @@ from temporalio.client import Client as _TemporalClient
 from temporalio.exceptions import ApplicationError
 
 # ConnectRPC generated stubs — on sys.path via gen/python
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "gen", "python"))
+sys.path.insert(0, str(Path(__file__).parent / ".." / "gen" / "python"))
 from client_factory import congress_client, persona_client  # noqa: E402
 from congress.v1.congress_pb2 import (  # noqa: E402
     PatchSessionRequest,
@@ -633,7 +632,7 @@ async def congress_evolve(session_id: str, topic: str, debate_summaries: list) -
             debate_text += f"**{item['identity']}**: {snippet}\n\n"
 
     agents_dir = AGENTS_DIR
-    agents_dir_real = os.path.realpath(agents_dir) + os.sep
+    agents_dir_real = str(Path(agents_dir).resolve()) + "/"
 
     results: dict = {"evolved": [], "retired": [], "retained": [], "created": []}
 
@@ -642,10 +641,11 @@ async def congress_evolve(session_id: str, topic: str, debate_summaries: list) -
     name_to_file: dict = {}
     probationary_names: set = set()
     try:
-        for fname in os.listdir(agents_dir):
-            if not fname.endswith(".md"):
+        for fpath_obj in Path(agents_dir).iterdir():
+            if not fpath_obj.name.endswith(".md"):
                 continue
-            fpath = os.path.join(agents_dir, fname)
+            fname = fpath_obj.name
+            fpath = str(fpath_obj)
             try:
                 with open(fpath) as _f:
                     content = _f.read()
@@ -756,14 +756,14 @@ async def congress_evolve(session_id: str, topic: str, debate_summaries: list) -
         # Validate persona_name is a safe basename — no path separators, no traversal
         if (
             not persona_name
-            or os.path.basename(persona_name) != persona_name
+            or Path(persona_name).name != persona_name
             or "/" in persona_name
             or ".." in persona_name
         ):
             activity.logger.warning(f"congress_evolve: unsafe persona_name '{persona_name}', skipping")
             continue
         # Double-check the file is actually within agents_dir (defence in depth)
-        resolved = os.path.realpath(persona_file)
+        resolved = str(Path(persona_file).resolve())
         if not resolved.startswith(agents_dir_real):
             activity.logger.warning("congress_evolve: persona_file resolved outside agents_dir, skipping")
             continue
@@ -846,15 +846,15 @@ async def congress_evolve(session_id: str, topic: str, debate_summaries: list) -
             activity.logger.warning(f"congress_evolve: invalid CREATE slug '{slug}', skipping")
             continue
 
-        new_file_path = os.path.join(agents_dir, f"{slug}.md")
+        new_file_path = str(Path(agents_dir) / f"{slug}.md")
 
         # Don't overwrite an existing persona
-        if os.path.exists(new_file_path):
+        if Path(new_file_path).exists():
             activity.logger.warning(f"congress_evolve: CREATE slug '{slug}' already exists, skipping")
             continue
 
         # Double-check the resolved path stays within agents_dir
-        resolved_new = os.path.realpath(new_file_path)
+        resolved_new = str(Path(new_file_path).resolve())
         if not resolved_new.startswith(agents_dir_real):
             activity.logger.warning("congress_evolve: CREATE path resolved outside agents_dir, skipping")
             continue
@@ -950,7 +950,7 @@ async def congress_commit_evolutions(session_id: str) -> None:
         await _inject_alert(f"congress_commit_evolutions: git push failed for {session_id} — {str(e)[:200]}")
 
     sync_script = f"{SCRIPTS_DIR}/sync_personas_db.py"
-    if os.path.exists(sync_script):
+    if Path(sync_script).exists():
         try:
             sync_result = subprocess.run(["python3", sync_script], capture_output=True, text=True, timeout=30)
             if sync_result.returncode != 0:
@@ -1263,7 +1263,7 @@ async def congress_create_tasks(
             return []
 
         tasks_dir = TASKS_DIR
-        os.makedirs(tasks_dir, exist_ok=True)
+        Path(tasks_dir).mkdir(parents=True, exist_ok=True)
         task_titles = []
         for task in tasks:
             try:
@@ -1299,7 +1299,7 @@ async def congress_create_tasks(
                         },
                     ],
                 }
-                task_path = os.path.join(tasks_dir, f"{task_id}.json")
+                task_path = str(Path(tasks_dir) / f"{task_id}.json")
                 with open(task_path, "w") as f:
                     json.dump(task_data, f, indent=2)
                 activity.logger.info(f"Created local task file: {task_path}")
@@ -1422,7 +1422,7 @@ def _codebase_search(topic_text: str) -> str:
         for search_dir in SEARCH_DIRS:
             if len(found_files) >= MAX_FILES:
                 break
-            if not os.path.isdir(search_dir):
+            if not Path(search_dir).is_dir():
                 continue
             try:
                 result = subprocess.run(
@@ -1459,7 +1459,7 @@ def _codebase_search(topic_text: str) -> str:
                     except Exception as exc:
                         logger.debug("snippet grep failed for %s: %s", fpath, exc)
                         snippet = ""
-                    rel_path = os.path.relpath(fpath, BASE_DIR)
+                    rel_path = str(Path(fpath).relative_to(BASE_DIR))
                     found_files[fpath] = (rel_path, snippet)
             except Exception as exc:
                 logger.warning("codebase search failed for dir %s keyword %s: %s", search_dir, keyword, exc)
