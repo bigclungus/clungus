@@ -3,8 +3,6 @@ Activities for the CongressWorkflow.
 
 Congress API calls (start, debate, finalize, identities, patch session, persona
 verdict) are made via the ConnectRPC Python SDK against clunger on port 8081.
-Discord API calls remain plain aiohttp against discord.com.
-
 The congress_report activity posts results directly to Discord via the bot API.
 """
 
@@ -19,7 +17,6 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import aiohttp
 import falkordb as _falkordb
 from temporalio import activity
 from temporalio.client import Client as _TemporalClient
@@ -58,7 +55,7 @@ from .constants import (
     TEMPORAL_WORKFLOWS_DIR,
 )
 from .common.discord_io import discord_create_thread_or_reuse, discord_fetch_messages, discord_post_message
-from .common.http_io import clunger_patch_session
+from .common.http_io import clunger_patch_session, post_json
 from .inject_act import _do_inject
 from .utils import get_gemini_key, get_xai_key
 
@@ -1783,56 +1780,47 @@ async def congress_preflight_check(debaters: list) -> list:
         else:
             # Probe with a minimal request — we expect either a real completion response
             # or a structured error JSON. A "no credits" 403 is fatal; connection error is fatal.
-            probe_payload = json.dumps({
+            probe_payload = {
                 "model": "grok-3-mini",
                 "max_tokens": 1,
                 "messages": [{"role": "user", "content": "ping"}],
-            }).encode()
+            }
             try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(
-                        GROK_PROXY_URL,
-                        data=probe_payload,
-                        headers={
-                            "Content-Type": "application/json",
-                            "x-api-key": xai_key,
-                            "anthropic-version": "2023-06-01",
-                        },
-                        timeout=aiohttp.ClientTimeout(total=15),
-                    ) as resp:
-                        body = await resp.json(content_type=None)
-                        status = resp.status
-                        activity.logger.info(f"congress_preflight_check: Grok proxy returned HTTP {status}: {str(body)[:200]}")
-
-                        if status == 403:
-                            err_msg = (body.get("error") or body.get("code") or str(body))[:300]
-                            errors.append(
-                                f"Grok API unavailable — congress requires multimodel. "
-                                f"Response: {err_msg} "
-                                f"Top up credits at https://console.x.ai — "
-                                f"Grok personas: {', '.join(grok_personas)}"
-                            )
-                        elif status == 401:
-                            errors.append(
-                                f"Grok API rejected the API key (HTTP 401). "
-                                f"Check XAI_API_KEY in {TEMPORAL_WORKFLOWS_DIR}/.env — "
-                                f"Grok personas: {', '.join(grok_personas)}"
-                            )
-                        elif status not in (200, 400, 429):
-                            # 200 = success, 400 = bad request (proxy up), 429 = rate limit (key works)
-                            # Anything else unexpected — treat as reachable but log warning
-                            activity.logger.warning(
-                                f"congress_preflight_check: Grok proxy unexpected HTTP {status} — treating as reachable"
-                            )
-            except aiohttp.ClientConnectorError as e:
-                errors.append(
-                    f"Grok proxy at {GROK_PROXY_URL} is unreachable (connection refused or no route). "
-                    f"Is the proxy service running? Error: {e} — "
-                    f"Grok personas: {', '.join(grok_personas)}"
+                status, body = await post_json(
+                    GROK_PROXY_URL,
+                    probe_payload,
+                    headers={
+                        "Content-Type": "application/json",
+                        "x-api-key": xai_key,
+                        "anthropic-version": "2023-06-01",
+                    },
+                    timeout_s=15,
                 )
+                activity.logger.info(f"congress_preflight_check: Grok proxy returned HTTP {status}: {str(body)[:200]}")
+
+                if status == 403:
+                    err_msg = (body.get("error") or body.get("code") or str(body))[:300]
+                    errors.append(
+                        f"Grok API unavailable — congress requires multimodel. "
+                        f"Response: {err_msg} "
+                        f"Top up credits at https://console.x.ai — "
+                        f"Grok personas: {', '.join(grok_personas)}"
+                    )
+                elif status == 401:
+                    errors.append(
+                        f"Grok API rejected the API key (HTTP 401). "
+                        f"Check XAI_API_KEY in {TEMPORAL_WORKFLOWS_DIR}/.env — "
+                        f"Grok personas: {', '.join(grok_personas)}"
+                    )
+                elif status not in (200, 400, 429):
+                    # 200 = success, 400 = bad request (proxy up), 429 = rate limit (key works)
+                    # Anything else unexpected — treat as reachable but log warning
+                    activity.logger.warning(
+                        f"congress_preflight_check: Grok proxy unexpected HTTP {status} — treating as reachable"
+                    )
             except Exception as e:
                 errors.append(
-                    f"Grok proxy check failed with unexpected error: {type(e).__name__}: {e} — "
+                    f"Grok proxy check failed: {type(e).__name__}: {e} — "
                     f"Grok personas: {', '.join(grok_personas)}"
                 )
 
