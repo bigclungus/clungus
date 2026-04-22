@@ -16,6 +16,7 @@ import httpx
 from temporalio import activity
 
 from .constants import CLAUDE_CLI, LABS_DIR
+from .inject_act import _do_inject
 
 logger = logging.getLogger(__name__)
 
@@ -810,7 +811,6 @@ async def notify_discord_new_jobs(jobs: list[dict], channel_id: str) -> str:
     lines.append(f"\n*{len(high_rel)} new matches found. View all at labs.clung.us/jobboard*")
     message = "\n".join(lines)
 
-    from .inject_act import _do_inject
     await _do_inject(message, channel_id, user="jobboard-research")
 
     logger.info("Notified Discord with %d high-relevance jobs", len(high_rel))
