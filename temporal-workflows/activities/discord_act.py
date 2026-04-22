@@ -8,6 +8,7 @@ from datetime import date
 import aiohttp
 from temporalio import activity
 
+from .common.discord_io import discord_post_message
 from .constants import DISCORD_API
 from .utils import DISCORD_TIMEOUT, _discord_headers
 
@@ -175,8 +176,6 @@ async def post_listings_summary(channel_id: str, listings: list) -> str:
     if not listings:
         raise ValueError("post_listings_summary called with empty listings list")
 
-    url = f"{DISCORD_API}/channels/{channel_id}/messages"
-
     # Discord allows up to 10 embeds per message; we cap at 3.
     embeds = []
     content_parts = []
@@ -235,20 +234,13 @@ async def post_listings_summary(channel_id: str, listings: list) -> str:
 
     content = "\n".join(content_parts)
 
-    payload = {"content": content, "embeds": embeds}
+    message_id = await discord_post_message(channel_id, content, embeds)
 
+    # Add thumbs up and thumbs down reactions.
+    # Reactions are best-effort: a failure here must NOT cause the activity
+    # to raise, because the message has already been posted and Temporal
+    # would retry the whole activity (re-posting the message as a duplicate).
     async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
-        async with session.post(url, headers=_discord_headers(), json=payload) as resp:
-            if resp.status not in (200, 201):
-                body = await resp.text()
-                raise RuntimeError(f"Discord API error {resp.status}: {body}")
-            data = await resp.json()
-            message_id = data["id"]
-
-        # Add thumbs up and thumbs down reactions.
-        # Reactions are best-effort: a failure here must NOT cause the activity
-        # to raise, because the message has already been posted and Temporal
-        # would retry the whole activity (re-posting the message as a duplicate).
         for emoji in ("%F0%9F%91%8D", "%F0%9F%91%8E"):
             reaction_url = (
                 f"{DISCORD_API}/channels/{channel_id}/messages/{message_id}/reactions/{emoji}/@me"
