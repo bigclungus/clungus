@@ -10,9 +10,9 @@ import logging
 import re
 from datetime import datetime, timezone
 
-import aiohttp
 from temporalio import activity
 
+from .common.http_io import post_json
 from .constants import XAI_API_URL
 from .utils import get_xai_key
 
@@ -556,23 +556,17 @@ async def generate_model_description(
         "temperature": 0.4,
     }
 
-    timeout = aiohttp.ClientTimeout(total=30)
-    async with aiohttp.ClientSession(timeout=timeout) as session:
-        async with session.post(
-            XAI_API_URL,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
-            json=payload,
-        ) as resp:
-            if resp.status != 200:
-                body = await resp.text()
-                raise RuntimeError(
-                    f"xAI API error generating description for {model_name} "
-                    f"(HTTP {resp.status}): {body[:300]}"
-                )
-            data = await resp.json()
+    status, data = await post_json(
+        XAI_API_URL,
+        payload,
+        headers={"Authorization": f"Bearer {api_key}"},
+        timeout_s=30,
+    )
+    if status != 200:
+        raise RuntimeError(
+            f"xAI API error generating description for {model_name} "
+            f"(HTTP {status}): {str(data)[:300]}"
+        )
 
     choices = data.get("choices", [])
     if not choices:
