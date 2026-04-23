@@ -11,7 +11,7 @@ Environment:
     TEMPORAL_HOST — defaults to localhost:7233
 """
 
-import asyncio
+from asyncio import run
 import logging
 from pathlib import Path
 
@@ -55,4 +55,4 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    run(main())
