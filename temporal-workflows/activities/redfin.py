@@ -1,4 +1,4 @@
-import asyncio
+from asyncio import get_running_loop
 
 import pandas as pd
 from homeharvest import scrape_property
@@ -28,7 +28,7 @@ async def fetch_redfin_listings(location: str, min_price: int, max_price: int, l
         listing_type: homeharvest listing type — 'for_sale' (default), 'for_rent', or 'sold'
     """
     # homeharvest is sync, run in executor to not block the event loop
-    loop = asyncio.get_running_loop()
+    loop = get_running_loop()
 
     def _fetch():
         props = scrape_property(
