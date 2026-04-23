@@ -1,5 +1,5 @@
-import asyncio
 import re
+from asyncio import get_running_loop
 from pathlib import Path
 
 from temporalio import activity
@@ -14,7 +14,7 @@ PROTON_SESSION = str(Path.home() / ".cache" / "proton_session.json")
 async def check_new_emails(last_check_ts: float) -> list[dict]:
     """Poll ProtonMail for emails newer than last_check_ts (unix timestamp).
     Returns list of dicts with: message_id, subject, sender, snippet, ts."""
-    loop = asyncio.get_running_loop()
+    loop = get_running_loop()
     return await loop.run_in_executor(None, _check_emails_sync, last_check_ts)
 
 
