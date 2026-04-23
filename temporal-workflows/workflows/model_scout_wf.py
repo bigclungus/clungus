@@ -11,8 +11,6 @@ One model per day. Human-in-the-loop voting with 24h deadline.
 
 import re
 from datetime import timedelta
-from typing import Any
-
 from temporalio import workflow
 from temporalio.common import RetryPolicy
 
@@ -81,7 +79,7 @@ IO_RETRY = RetryPolicy(
 LOCAL_RETRY = RetryPolicy(maximum_attempts=1)
 
 
-def _normalize_hf_models(data: Any) -> list[dict]:
+def _normalize_hf_models(data: object) -> list[dict]:
     """Normalize HuggingFace trending API response into candidate dicts."""
     models = []
     # HF trending returns {"recentlyTrending": [...]} or a list directly
@@ -105,7 +103,7 @@ def _normalize_hf_models(data: Any) -> list[dict]:
     return models
 
 
-def _normalize_together_models(data: Any) -> list[dict]:
+def _normalize_together_models(data: object) -> list[dict]:
     """Normalize together.ai model catalog into candidate dicts."""
     models = []
     items = data if isinstance(data, list) else data.get("data", data.get("models", []))
@@ -237,8 +235,8 @@ class ModelScoutWorkflow:
         workflow.logger.info("ModelScoutWorkflow started")
 
         # ---- Step 1: Fetch model catalogs ----
-        hf_data: Any = {}
-        together_data: Any = {}
+        hf_data: object = {}
+        together_data: object = {}
 
         # Fetch both sources; tolerate individual failures
         try:
