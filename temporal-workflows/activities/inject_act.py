@@ -8,7 +8,7 @@ endpoint is localhost-only.
 """
 
 import logging
-import time
+from time import time
 from temporalio import activity
 
 logger = logging.getLogger(__name__)
@@ -50,6 +50,6 @@ async def inject_message(content: str, user: str, chat_id: str) -> None:
     if "[heartbeat]" in content:
         try:
             with open(HEARTBEAT_TIMESTAMP_FILE, "w") as f:
-                f.write(str(time.time()))
+                f.write(str(time()))
         except Exception as e:
             activity.logger.warning("[inject] failed to write heartbeat timestamp: %s", e)
