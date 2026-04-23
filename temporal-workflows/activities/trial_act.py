@@ -9,7 +9,7 @@ Session numbering is unified with congress via clunger's StartSession RPC.
 Persistence uses clunger's REST PATCH endpoint instead of direct file writes.
 """
 
-import asyncio
+from asyncio import get_running_loop
 import json
 import re
 import sys
@@ -378,7 +378,7 @@ async def trial_load_defendant(slug: str) -> dict:
         )
 
         # 1. Query Graphiti for facts about this entity/person
-        loop = asyncio.get_running_loop()
+        loop = get_running_loop()
         facts: list = []
         try:
             facts = await loop.run_in_executor(None, _query_graphiti_facts, slug)
