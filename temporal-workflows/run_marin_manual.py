@@ -1,5 +1,5 @@
 """One-off manual runner for Marin SFH ListingsWorkflow."""
-import asyncio
+from asyncio import run
 import json
 import subprocess
 import time
@@ -51,7 +51,7 @@ async def main():
     print(f"Workflow completed. New listings posted: {result}")
     return result, criteria
 
-result, criteria = asyncio.run(main())
+result, criteria = run(main())
 
 min_p = format_price(criteria.get("min_price", 0))
 max_p = format_price(criteria.get("max_price", 0))
