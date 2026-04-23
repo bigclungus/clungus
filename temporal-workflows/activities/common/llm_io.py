@@ -4,15 +4,11 @@ LLM I/O activities — reusable across all workflows.
 call_llm routes through together.ai's OpenAI-compatible endpoint.
 """
 
-import logging
-
 from temporalio import activity
 
 from ..constants import TOGETHER_API_URL
 from ..utils import get_together_key
 from .http_io import post_json
-
-logger = logging.getLogger(__name__)
 
 
 @activity.defn
