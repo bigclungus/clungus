@@ -1,5 +1,5 @@
 """One-off test runner for ListingsWorkflow, posting to main chat channel."""
-import asyncio
+from asyncio import run
 import time
 from pathlib import Path
 
@@ -34,4 +34,4 @@ async def main():
     )
     print(f"Workflow completed. New listings posted: {result}")
 
-asyncio.run(main())
+run(main())
