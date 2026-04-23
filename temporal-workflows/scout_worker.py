@@ -8,7 +8,7 @@ Run with:
     python scout_worker.py
 """
 
-import asyncio
+from asyncio import run
 import logging
 from pathlib import Path
 
@@ -117,4 +117,4 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    run(main())
