@@ -4,8 +4,6 @@ Activities: check_sites, send_alert
 check_sites — HTTP-checks all public clung.us endpoints and returns a status dict.
 send_alert  — Sends an alert message via the omni inject endpoint.
 """
-from typing import Any
-
 from temporalio import activity
 
 from .common.http_io import fetch_status
@@ -21,9 +19,9 @@ SITES = [
 
 
 @activity.defn
-async def check_sites() -> dict[str, Any]:
+async def check_sites() -> dict[str, object]:
     """Check all public clung.us endpoints. Returns a dict keyed by URL."""
-    results: dict[str, Any] = {}
+    results: dict[str, object] = {}
 
     for site in SITES:
         url = site["url"]
