@@ -7,7 +7,7 @@ Run with:
 Requires DISCORD_BOT_TOKEN in the environment (loaded from .env if present).
 """
 
-import asyncio
+from asyncio import run as asyncio_run
 import json
 import logging
 import time
@@ -293,4 +293,4 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio_run(main())
