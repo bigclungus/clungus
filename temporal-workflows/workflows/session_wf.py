@@ -32,8 +32,6 @@ import asyncio
 import json
 import re
 from datetime import timedelta
-from typing import Any
-
 from temporalio import workflow
 from temporalio.common import RetryPolicy
 from temporalio.exceptions import ActivityError, ApplicationError
@@ -170,7 +168,7 @@ class SessionWorkflow:
     # ====================================================================== #
 
     @workflow.run
-    async def run(self, input: Any) -> dict:
+    async def run(self, input: dict | str) -> dict:
         # Coerce a bare string into a dict (guards against CLI invocations that
         # pass the topic as a plain JSON string instead of an object).
         if isinstance(input, str):
@@ -1346,7 +1344,7 @@ class CongressWorkflow:
     """Backward-compatible alias for SessionWorkflow (congress/meme flavor)."""
 
     @workflow.run
-    async def run(self, input: Any) -> dict:
+    async def run(self, input: dict | str) -> dict:
         if isinstance(input, str):
             input = {"topic": input}
         # Ensure flavor is set for congress (mode may already be set for meme)
@@ -1361,7 +1359,7 @@ class TrialWorkflow:
     """Backward-compatible alias for SessionWorkflow (trial flavor)."""
 
     @workflow.run
-    async def run(self, input: Any) -> dict:
+    async def run(self, input: dict | str) -> dict:
         if isinstance(input, str):
             input = {"charges": input}
         input["flavor"] = "trial"
