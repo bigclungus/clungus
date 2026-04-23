@@ -10,8 +10,6 @@ import json
 import subprocess
 import shlex
 from pathlib import Path
-from typing import Any
-
 import httpx
 from temporalio import activity
 
@@ -123,7 +121,7 @@ def _tool_bash(command: str) -> str:
 # Tool definitions (OpenAI function-calling format)
 # ---------------------------------------------------------------------------
 
-TOOLS: list[dict[str, Any]] = [
+TOOLS: list[dict] = [
     {
         "type": "function",
         "function": {
@@ -270,7 +268,7 @@ async def run_xai_agent(
                     estimated_tokens, old_len, len(messages),
                 )
 
-            payload: dict[str, Any] = {
+            payload: dict = {
                 "model": model,
                 "messages": messages,
                 "tools": TOOLS,
