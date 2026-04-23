@@ -1,7 +1,6 @@
-import datetime as _dt
 import hashlib
 import random
-from datetime import date
+from datetime import date, datetime
 
 from temporalio import activity
 
@@ -52,7 +51,7 @@ def _days_on_market(list_date_str: str) -> int | None:
         return None
     for fmt in ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M:%S"):
         try:
-            listed = _dt.datetime.strptime(list_date_str, fmt).date()
+            listed = datetime.strptime(list_date_str, fmt).date()
             return (date.today() - listed).days
         except ValueError:
             continue
