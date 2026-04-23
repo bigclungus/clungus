@@ -11,7 +11,7 @@ load_dotenv(Path(__file__).parent / ".env")
 
 from temporalio.client import Client
 
-from activities.constants import MAIN_CHANNEL_ID, TEMPORAL_HOST
+from activities.constants import DISCORD_API, MAIN_CHANNEL_ID, TEMPORAL_HOST
 from activities.utils import get_discord_token
 from workflows.listings import ListingsWorkflow
 
@@ -63,7 +63,7 @@ msg = f"marin manual run ({price_range}, {listing_type}): found {result} new lis
 token = get_discord_token()
 subprocess.run([
     "curl", "-s", "-X", "POST",
-    f"https://discord.com/api/v10/channels/{MAIN_CHANNEL_ID}/messages",
+    f"{DISCORD_API}/channels/{MAIN_CHANNEL_ID}/messages",
     "-H", f"Authorization: Bot {token}",
     "-H", "Content-Type: application/json",
     "-H", "User-Agent: DiscordBot (https://clung.us, 1.0)",
