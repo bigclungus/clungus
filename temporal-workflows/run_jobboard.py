@@ -5,7 +5,7 @@ Usage:
     python run_jobboard.py
 """
 
-import asyncio
+from asyncio import run
 
 from temporalio.client import Client
 
@@ -32,4 +32,4 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    run(main())
