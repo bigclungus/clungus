@@ -59,11 +59,3 @@ def get_discord_token() -> str:
 
 def get_together_key() -> str:
     return load_env_key("TOGETHER_API_KEY")
-
-
-def _discord_headers() -> dict:
-    token = get_discord_token()
-    return {
-        "Authorization": f"Bot {token}",
-        "Content-Type": "application/json",
-    }

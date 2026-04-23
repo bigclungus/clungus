@@ -11,10 +11,18 @@ import aiohttp
 from temporalio import activity
 
 from ..constants import DISCORD_API
-from ..utils import _discord_headers
+from ..utils import get_discord_token
 from .http_io import DISCORD_TIMEOUT
 
 logger = logging.getLogger(__name__)
+
+
+def _discord_headers() -> dict:
+    token = get_discord_token()
+    return {
+        "Authorization": f"Bot {token}",
+        "Content-Type": "application/json",
+    }
 
 
 @activity.defn
