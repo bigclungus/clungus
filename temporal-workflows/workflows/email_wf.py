@@ -1,4 +1,4 @@
-import asyncio
+from asyncio import gather
 from datetime import timedelta
 
 from temporalio import workflow
@@ -26,7 +26,7 @@ class EmailPollerWorkflow:
                 retry_policy=RetryPolicy(maximum_attempts=2),
             )
 
-            await asyncio.gather(*[
+            await gather(*[
                 workflow.execute_activity(
                     inject_email_notification,
                     email,
