@@ -5,7 +5,7 @@ Downloads missing Bokoen1 YouTube transcripts via yt-dlp and ingests them
 into the bokoen1_transcripts Graphiti graph. Tracks progress in a status
 file so interrupted runs can be resumed.
 """
-import asyncio
+from asyncio import sleep
 import json
 import logging
 import re
@@ -252,9 +252,9 @@ async def _ingest_transcripts(limit: int = 0) -> int:
             logger.error("  FAILED: %s", e)
             if "429" in str(e) or "rate" in str(e).lower():
                 logger.info("  Rate limited, waiting 30s...")
-                await asyncio.sleep(30)
+                await sleep(30)
             else:
-                await asyncio.sleep(1)
+                await sleep(1)
 
     await client.close()
 
