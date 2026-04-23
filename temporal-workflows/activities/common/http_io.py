@@ -2,7 +2,7 @@
 HTTP I/O activities — reusable across all workflows.
 """
 
-import time
+from time import monotonic
 
 import aiohttp
 from temporalio import activity
@@ -56,14 +56,14 @@ async def fetch_status(
     This is a plain async helper (not a Temporal activity) for use inside other activities.
     """
     timeout = aiohttp.ClientTimeout(total=timeout_s)
-    start = time.monotonic()
+    start = monotonic()
     try:
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.get(url, allow_redirects=allow_redirects, ssl=ssl) as resp:
-                latency_ms = int((time.monotonic() - start) * 1000)
+                latency_ms = int((monotonic() - start) * 1000)
                 return resp.status, latency_ms, None
     except Exception as exc:
-        latency_ms = int((time.monotonic() - start) * 1000)
+        latency_ms = int((monotonic() - start) * 1000)
         return None, latency_ms, str(exc)
 
 
