@@ -8,7 +8,7 @@ Requires DISCORD_BOT_TOKEN in the environment (loaded from .env if present).
 """
 
 from asyncio import run as asyncio_run
-import json
+from json import loads as json_loads
 import logging
 import time
 from pathlib import Path
@@ -159,7 +159,7 @@ async def main() -> None:
     await _ensure_workflow(client, StartupWorkflow.run, f"startup-{int(time.time())}")
 
     # Schedule each search as a daily cron workflow
-    criteria = json.loads(CRITERIA_PATH.read_text())
+    criteria = json_loads(CRITERIA_PATH.read_text())
     for search in criteria["searches"]:
         workflow_id = f"listings-{search['name'].replace(' ', '-').lower()}"
         await _ensure_workflow(client, ListingsWorkflow.run, workflow_id, arg=search, cron_schedule="0 8 * * *")
