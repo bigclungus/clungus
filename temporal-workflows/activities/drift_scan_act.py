@@ -3,7 +3,7 @@ Drift scan activity — daily check for dropped BigClungus projects.
 Checks: labs with no commits in 14+ days, GitHub issues stale 14+ days.
 """
 import subprocess
-import json
+from json import loads as json_loads
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -53,7 +53,7 @@ def _run_drift_scan_sync() -> str | None:
             capture_output=True, text=True, timeout=30
         )
         if result.returncode == 0:
-            issues = json.loads(result.stdout)
+            issues = json_loads(result.stdout)
             for issue in issues:
                 updated = datetime.fromisoformat(issue["updatedAt"].replace("Z", "+00:00")).replace(tzinfo=None)
                 age_days = (now - updated).days
