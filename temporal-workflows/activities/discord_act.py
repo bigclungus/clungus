@@ -1,4 +1,4 @@
-import hashlib
+from hashlib import md5
 import random
 from datetime import date, datetime
 
@@ -66,7 +66,7 @@ def _grug_commentary(listing: dict) -> str:
     ppsf = price / sqft if sqft else 0
 
     # Seed RNG with listing ID for deterministic picks
-    seed = int(hashlib.md5(str(listing.get("id", "")).encode()).hexdigest()[:8], 16)
+    seed = int(md5(str(listing.get("id", "")).encode()).hexdigest()[:8], 16)
     rng = random.Random(seed)
 
     # Categorize and pick from matching pools
