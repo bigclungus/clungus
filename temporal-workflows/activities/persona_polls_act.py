@@ -4,7 +4,7 @@ create poll files, commit to git, and notify Discord.
 
 Called from CongressWorkflow after a CREATE directive, or triggered manually.
 """
-import json
+from json import dumps as json_dumps
 import re
 import subprocess
 import sys
@@ -105,7 +105,7 @@ def _generate_avatar_scripts(slug: str, persona: dict) -> list[tuple[str, str, s
             f"({role}, {title}). Traits: {traits}.\n"
             f"Character context: {prose[:300]}\n\n"
             f"This is variant {label} ({concept}).\n"
-            f"Set OUT_PATH = {json.dumps(str(out_path))} at the top of the script.\n"
+            f"Set OUT_PATH = {json_dumps(str(out_path))} at the top of the script.\n"
             "Save the animated GIF to OUT_PATH at the end."
         )
         script = _run_claude(system_prompt, user_msg)
