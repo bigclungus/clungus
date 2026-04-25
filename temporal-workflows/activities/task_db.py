@@ -12,7 +12,7 @@ Schema:
   task_events(id INTEGER PK, task_id TEXT, event TEXT, message TEXT, ts TEXT)
 """
 
-import json
+from json import dumps as json_dumps, loads as json_loads, JSONDecodeError
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -47,7 +47,7 @@ async def create_task_record(input: AgentTaskInput) -> None:
     now = _iso_now()
     title = input.description or input.prompt or input.task_id
 
-    task_data = json.dumps({
+    task_data = json_dumps({
         "id": input.task_id,
         "title": title,
         "status": "open",
@@ -120,8 +120,8 @@ def _parse_jsonl_tokens(agent_id: str) -> dict:
         if not line:
             continue
         try:
-            entry = json.loads(line)
-        except json.JSONDecodeError:
+            entry = json_loads(line)
+        except JSONDecodeError:
             continue
 
         # Support both top-level agentId check and plain assistant messages
@@ -199,7 +199,7 @@ async def finalize_task(input: AgentTaskInput, result: dict) -> None:
         updated_data = None
         if row and row[0]:
             try:
-                blob = json.loads(row[0])
+                blob = json_loads(row[0])
                 blob["status"] = status
                 blob["finished_at"] = now
                 blob["input_tokens"] = token_data["input_tokens"]
@@ -211,8 +211,8 @@ async def finalize_task(input: AgentTaskInput, result: dict) -> None:
                 blob["model"] = result.get("model", blob.get("model", ""))
                 if isinstance(blob.get("log"), list):
                     blob["log"].append({"ts": now, "event": status, "context": context or "agent finished"})
-                updated_data = json.dumps(blob)
-            except (json.JSONDecodeError, TypeError) as e:
+                updated_data = json_dumps(blob)
+            except (JSONDecodeError, TypeError) as e:
                 activity.logger.warning("[finalize_task] failed to update blob for task %s: %s", input.task_id, e)
 
         if updated_data is not None:

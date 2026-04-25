@@ -5,7 +5,7 @@ Incrementally reads Claude session JSONL files, extracts Discord messages,
 embeds them with local embeddings, and stores them in the sqlite-vec database at
 /mnt/data/data/discord-history.db.
 """
-import json
+from json import loads as json_loads, JSONDecodeError
 import re
 import sys
 import sqlite3
@@ -136,8 +136,8 @@ def extract_from_omni_channel_tag(text: str) -> list[dict]:
         received_at, body = m.groups()
         body = body.strip()
         try:
-            data = json.loads(body)
-        except json.JSONDecodeError:
+            data = json_loads(body)
+        except JSONDecodeError:
             continue
         author_obj = data.get("author", {})
         if author_obj.get("bot"):
@@ -191,8 +191,8 @@ def extract_messages_from_jsonl(filepath: Path, start_offset: int) -> tuple[list
                     break
                 new_offset = f.tell()
                 try:
-                    obj = json.loads(line.decode("utf-8", errors="replace"))
-                except json.JSONDecodeError:
+                    obj = json_loads(line.decode("utf-8", errors="replace"))
+                except JSONDecodeError:
                     continue
 
                 msg = obj.get("message", {})

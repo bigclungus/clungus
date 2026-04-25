@@ -6,7 +6,7 @@ into the bokoen1_transcripts Graphiti graph. Tracks progress in a status
 file so interrupted runs can be resumed.
 """
 from asyncio import sleep
-import json
+from json import dumps as json_dumps, loads as json_loads, JSONDecodeError
 import logging
 import re
 import subprocess
@@ -28,14 +28,14 @@ YT_DLP = str(Path.home() / ".local/bin/yt-dlp")
 
 def _load_status() -> dict:
     try:
-        return json.loads(STATUS_FILE.read_text())
-    except (FileNotFoundError, json.JSONDecodeError):
+        return json_loads(STATUS_FILE.read_text())
+    except (FileNotFoundError, JSONDecodeError):
         return {}
 
 
 def _save_status(data: dict) -> None:
     STATUS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    STATUS_FILE.write_text(json.dumps(data, indent=2))
+    STATUS_FILE.write_text(json_dumps(data, indent=2))
 
 
 def _get_ingested_episode_names() -> set[str]:
@@ -131,7 +131,7 @@ def _download_transcripts(video_ids: list[str], limit: int = 100) -> int:
                     txt_path = TRANSCRIPTS_DIR / txt_name
                     if not txt_path.exists():
                         try:
-                            data = json.loads(jf.read_text())
+                            data = json_loads(jf.read_text())
                             events = data.get("events", [])
                             texts = []
                             for e in events:

@@ -1,6 +1,6 @@
 """One-off manual runner for Marin SFH ListingsWorkflow."""
 from asyncio import run
-import json
+from json import dumps as json_dumps, load as json_load
 import subprocess
 import time
 from pathlib import Path
@@ -20,7 +20,7 @@ CRITERIA_PATH = Path(__file__).parent / "criteria.json"
 def load_marin_criteria() -> dict:
     """Load Marin SFH search criteria from criteria.json."""
     with open(CRITERIA_PATH) as f:
-        data = json.load(f)
+        data = json_load(f)
     for search in data["searches"]:
         if search.get("name") == "Marin SFH":
             return search
@@ -67,6 +67,6 @@ subprocess.run([
     "-H", f"Authorization: Bot {token}",
     "-H", "Content-Type: application/json",
     "-H", "User-Agent: DiscordBot (https://clung.us, 1.0)",
-    "-d", json.dumps({"content": msg}),
+    "-d", json_dumps({"content": msg}),
 ], check=True)
 print(f"Discord notified: {msg}")
