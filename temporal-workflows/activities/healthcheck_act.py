@@ -6,8 +6,7 @@ send_alert  — Sends an alert message via the omni inject endpoint.
 """
 from __future__ import annotations
 
-from typing import Any, Optional
-from typing_extensions import TypedDict
+from typing import TypedDict
 
 from temporalio import activity
 
@@ -25,16 +24,16 @@ SITES = [
 
 class SiteStatus(TypedDict):
     url: str
-    status_code: Optional[int]
+    status_code: int | None
     ok: bool
-    latency_ms: Optional[float]
-    error: Optional[str]
+    latency_ms: float | None
+    error: str | None
 
 
 @activity.defn
-async def check_sites() -> dict[str, Any]:
+async def check_sites() -> dict[str, SiteStatus]:
     """Check all public clung.us endpoints. Returns a dict keyed by URL."""
-    results: dict[str, Any] = {}
+    results: dict[str, SiteStatus] = {}
 
     for site in SITES:
         url = site["url"]
