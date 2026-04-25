@@ -4,6 +4,11 @@ Activities: check_sites, send_alert
 check_sites — HTTP-checks all public clung.us endpoints and returns a status dict.
 send_alert  — Sends an alert message via the omni inject endpoint.
 """
+from __future__ import annotations
+
+from typing import Any, Optional
+from typing_extensions import TypedDict
+
 from temporalio import activity
 
 from .common.http_io import fetch_status
@@ -18,22 +23,31 @@ SITES = [
 ]
 
 
+class SiteStatus(TypedDict):
+    url: str
+    status_code: Optional[int]
+    ok: bool
+    latency_ms: Optional[float]
+    error: Optional[str]
+
+
 @activity.defn
-async def check_sites() -> dict[str, object]:
+async def check_sites() -> dict[str, Any]:
     """Check all public clung.us endpoints. Returns a dict keyed by URL."""
-    results: dict[str, object] = {}
+    results: dict[str, Any] = {}
 
     for site in SITES:
         url = site["url"]
         ok_codes = site["ok_codes"]
         status_code, latency_ms, error = await fetch_status(url, allow_redirects=False, ssl=True)
-        results[url] = {
+        entry: SiteStatus = {
             "url": url,
             "status_code": status_code,
             "ok": status_code in ok_codes if status_code is not None else False,
             "latency_ms": latency_ms,
             "error": error,
         }
+        results[url] = entry
 
     return results
 
