@@ -8,7 +8,7 @@ Activities for the MobGenerationWorkflow.
 """
 
 import asyncio
-import json
+from json import loads as json_loads, JSONDecodeError
 import random
 import re
 import sqlite3
@@ -211,8 +211,8 @@ async def generate_mob_stats(entity_name: str, entity_summary: str) -> dict:
     raw = await _run_llm(prompt, entity_name)
 
     try:
-        stats = json.loads(raw)
-    except json.JSONDecodeError as exc:
+        stats = json_loads(raw)
+    except JSONDecodeError as exc:
         raise RuntimeError(f"Failed to parse LLM response for '{entity_name}': {exc}\nRaw: {raw[:500]}")
 
     # Validate required fields
