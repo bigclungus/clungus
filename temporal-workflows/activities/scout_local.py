@@ -6,7 +6,7 @@ generate_model_description is the exception: it calls the xAI API (Grok)
 to synthesize a concise description of what makes a model unique.
 """
 
-import logging
+from logging import getLogger
 import re
 from datetime import datetime, timezone
 
@@ -16,7 +16,7 @@ from .common.http_io import post_json
 from .constants import XAI_API_URL
 from .utils import get_xai_key
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 # Generic frontier models to skip — we want niche/interesting ones
 SKIP_PATTERNS = [

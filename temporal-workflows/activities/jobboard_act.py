@@ -7,7 +7,7 @@ inserts results, and optionally notifies Discord.
 
 import asyncio
 from json import loads as json_loads, JSONDecodeError
-import logging
+from logging import getLogger
 import re
 import sqlite3
 from datetime import datetime, timezone
@@ -18,7 +18,7 @@ from temporalio import activity
 from .constants import CLAUDE_CLI, LABS_DIR
 from .inject_act import _do_inject
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 DB_PATH = LABS_DIR + "/jobboard/jobs.db"
 

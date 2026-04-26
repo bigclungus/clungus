@@ -13,7 +13,7 @@ Steps:
 """
 
 from json import loads as json_loads, JSONDecodeError
-import logging
+from logging import getLogger
 import subprocess
 from collections import Counter
 from datetime import datetime, timezone
@@ -23,7 +23,7 @@ from temporalio import activity
 
 from .constants import BASE_DIR, CLAUDE_SESSIONS_DIR
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 SESSIONS_DIR = CLAUDE_SESSIONS_DIR
 OUTPUT_DIR = Path(BASE_DIR) / "context-snapshot"

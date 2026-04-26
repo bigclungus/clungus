@@ -9,7 +9,7 @@ The congress_report activity posts results directly to Discord via the bot API.
 import asyncio
 import hashlib
 from json import dump as json_dump, dumps as json_dumps, load as json_load, loads as json_loads
-import logging
+from logging import getLogger
 import random
 import re
 import subprocess
@@ -59,7 +59,7 @@ from .common.http_io import clunger_patch_session, post_json
 from .inject_act import _do_inject
 from .utils import get_gemini_key, get_xai_key
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 _falkordb_client = _falkordb.FalkorDB(
     host=FALKORDB_HOST,

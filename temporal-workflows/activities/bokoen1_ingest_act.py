@@ -7,7 +7,7 @@ file so interrupted runs can be resumed.
 """
 from asyncio import sleep
 from json import dumps as json_dumps, loads as json_loads, JSONDecodeError
-import logging
+from logging import getLogger
 import re
 import subprocess
 from datetime import datetime, timezone
@@ -18,7 +18,7 @@ from temporalio import activity
 from .constants import BASE_DIR, FALKORDB_HOST, FALKORDB_PORT, GRAPHITI_ENV
 from .utils import get_openai_key
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 TRANSCRIPTS_DIR = Path(BASE_DIR) / "data/bokoen1-transcripts"
 STATUS_FILE = Path(BASE_DIR) / "data/bokoen1-ingestion-status.json"

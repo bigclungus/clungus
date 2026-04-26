@@ -8,7 +8,7 @@ inject endpoint (with an optional thread for long reports).
 
 import asyncio
 from json import dumps as json_dumps, loads as json_loads
-import logging
+from logging import getLogger
 from datetime import datetime, timezone
 
 from temporalio import activity
@@ -17,7 +17,7 @@ from .common.discord_io import discord_create_thread, discord_post_message
 from .constants import CLAUDE_CLI, HELLO_WORLD_SESSIONS_DIR, MAIN_CHANNEL_ID
 from .inject_act import _do_inject
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 SESSIONS_DIR = HELLO_WORLD_SESSIONS_DIR
 AUDIT_STATE_PATH = SESSIONS_DIR / "audit-state.json"

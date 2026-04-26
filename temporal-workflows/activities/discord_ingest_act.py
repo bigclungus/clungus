@@ -6,7 +6,7 @@ episodes into the Graphiti knowledge graph. Handles OpenAI rate limits with
 backoff between episodes.
 """
 from json import loads as json_loads, JSONDecodeError
-import logging
+from logging import getLogger
 import time
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
@@ -18,7 +18,7 @@ from temporalio import activity
 from .constants import DISCORD_API, FALKORDB_HOST, FALKORDB_PORT, GRAPHITI_ENV, MAIN_CHANNEL_ID
 from .utils import get_discord_token, get_openai_key
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 GROUP_ID = "discord_history"
 DEFAULT_DAYS = 7

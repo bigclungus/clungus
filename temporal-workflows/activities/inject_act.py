@@ -7,11 +7,11 @@ API (bots cannot read their own messages). No secret header required — the
 endpoint is localhost-only.
 """
 
-import logging
+from logging import getLogger
 from time import time
 from temporalio import activity
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 from .constants import INJECT_URL
 from .common.http_io import post_json
