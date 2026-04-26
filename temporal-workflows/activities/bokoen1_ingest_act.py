@@ -15,7 +15,7 @@ from pathlib import Path
 
 from temporalio import activity
 
-from .constants import BASE_DIR, GRAPHITI_ENV
+from .constants import BASE_DIR, FALKORDB_HOST, FALKORDB_PORT, GRAPHITI_ENV
 from .utils import get_openai_key
 
 logger = logging.getLogger(__name__)
@@ -201,7 +201,7 @@ async def _ingest_transcripts(limit: int = 0) -> int:
     })
     _save_status(status)
 
-    falkor_driver = FalkorDriver(host="localhost", port=6379, database=DATABASE_NAME)
+    falkor_driver = FalkorDriver(host=FALKORDB_HOST, port=FALKORDB_PORT, database=DATABASE_NAME)
     llm_config = GraphitiLLMConfig(api_key=api_key, model="gpt-4o-mini")
     llm_client = OpenAIClient(config=llm_config)
     embedder_config = OpenAIEmbedderConfig(api_key=api_key)

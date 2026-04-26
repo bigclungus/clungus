@@ -15,7 +15,7 @@ import requests
 
 from temporalio import activity
 
-from .constants import DISCORD_API, GRAPHITI_ENV, MAIN_CHANNEL_ID
+from .constants import DISCORD_API, FALKORDB_HOST, FALKORDB_PORT, GRAPHITI_ENV, MAIN_CHANNEL_ID
 from .utils import get_discord_token, get_openai_key
 
 logger = logging.getLogger(__name__)
@@ -170,7 +170,7 @@ async def _ingest_into_graphiti(groups: dict, openai_api_key: str) -> int:
     from graphiti_core.embedder.openai import OpenAIEmbedder, OpenAIEmbedderConfig
     from graphiti_core.driver.falkordb_driver import FalkorDriver
 
-    driver = FalkorDriver(host="localhost", port=6379)
+    driver = FalkorDriver(host=FALKORDB_HOST, port=FALKORDB_PORT)
     llm = OpenAIClient(config=LLMConfig(api_key=openai_api_key, model="gpt-4o-mini"))
     embedder = OpenAIEmbedder(config=OpenAIEmbedderConfig(api_key=openai_api_key))
 
