@@ -41,7 +41,7 @@
       const lp = normalizePath(linkUrl.pathname);
       const p = normalizePath(window.location.pathname);
       return p === lp;
-    } catch (_e) {
+    } catch {
       return false;
     }
   }
