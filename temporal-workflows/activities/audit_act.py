@@ -172,7 +172,7 @@ async def audit_sessions(sessions: list[dict]) -> str:
             lines.append(f"Vote: {tally} | Agree: {agree} | Disagree: {disagree}")
         if evolution and isinstance(evolution, dict):
             evolved = [e.get("display_name", "") for e in evolution.get("evolved", [])]
-            retired = [f.get("display_name", "") for f in evolution.get("retired", evolution.get("fired", []))]
+            retired = [p.get("display_name", "") for p in evolution.get("retired", evolution.get("fired", []))]
             retained = evolution.get("retained", [])
             if evolved:
                 lines.append(f"Evolved: {', '.join(evolved)}")

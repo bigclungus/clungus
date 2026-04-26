@@ -129,13 +129,11 @@ def _save_context_cache(brief: str, topic: str) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _sanitize_fulltext_query(topic_text: str) -> str:
-    """Build a sanitized fulltext query string from topic text.
+def _extract_keywords(topic_text: str, max_keywords: int = 10) -> list[str]:
+    """Extract meaningful keywords from topic text.
 
-    Extracts meaningful words (>3 chars), strips punctuation, and joins them
-    with spaces for FalkorDB's RedisSearch-style fulltext indexing.
-    Hyphenated words are split into their components.
-    Returns empty string if no usable keywords remain.
+    Strips punctuation, splits hyphenated words, filters short words and
+    RedisSearch special chars. Returns a list of keywords.
     """
     words = [w.strip(".,!?\"'()[]{}:;@#$%^&*~`<>/\\|") for w in topic_text.split()]
     # Split hyphenated words into components
@@ -146,8 +144,15 @@ def _sanitize_fulltext_query(topic_text: str) -> str:
         else:
             expanded.append(w)
     # Filter to words >3 chars that don't contain special RedisSearch chars
-    keywords = [w for w in expanded if len(w) > 3 and not any(c in w for c in "+-@~")][:10]
-    return " ".join(keywords)
+    return [w for w in expanded if len(w) > 3 and not any(c in w for c in "+-@~")][:max_keywords]
+
+
+def _sanitize_fulltext_query(topic_text: str) -> str:
+    """Build a sanitized fulltext query string from topic text for FalkorDB RedisSearch.
+
+    Returns space-joined keywords, or empty string if none remain.
+    """
+    return " ".join(_extract_keywords(topic_text))
 
 
 def _query_graphiti_facts(topic_text: str) -> list:
@@ -233,11 +238,11 @@ def _query_graphiti_facts(topic_text: str) -> list:
     # Deduplicate on first 80 chars
     seen: set = set()
     deduped: list = []
-    for f in raw:
-        key = f[:80]
+    for fact in raw:
+        key = fact[:80]
         if key not in seen:
             seen.add(key)
-            deduped.append(f)
+            deduped.append(fact)
 
     return deduped[:10]
 
@@ -1397,8 +1402,7 @@ def _codebase_search(topic_text: str) -> str:
     Returns a short formatted string of matching file paths and snippets,
     or an empty string if nothing is found or the search fails.
     """
-    words = [w.strip(".,!?\"'()[]") for w in topic_text.split()]
-    keywords = [w for w in words if len(w) > 3][:5]
+    keywords = _extract_keywords(topic_text, max_keywords=5)
     if not keywords:
         return ""
 
