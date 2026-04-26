@@ -21,11 +21,11 @@ from pathlib import Path
 
 from temporalio import activity
 
-from .constants import BASE_DIR
+from .constants import BASE_DIR, CLAUDE_SESSIONS_DIR
 
 logger = logging.getLogger(__name__)
 
-SESSIONS_DIR = Path("/home/clungus/.claude/projects/-mnt-data")
+SESSIONS_DIR = CLAUDE_SESSIONS_DIR
 OUTPUT_DIR = Path(BASE_DIR) / "context-snapshot"
 OUTPUT_FILE = OUTPUT_DIR / "CONTEXT.md"
 MAX_SESSIONS = 10

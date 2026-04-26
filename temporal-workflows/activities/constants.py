@@ -35,6 +35,9 @@ LABS_DIR = BASE_DIR + "/labs"
 # Claude CLI binary path
 CLAUDE_CLI = "/home/clungus/.local/bin/claude"
 
+# Claude session JSONL directory — contains per-session .jsonl files for context analysis
+CLAUDE_SESSIONS_DIR = Path("/home/clungus/.claude/projects/-mnt-data")
+
 # Temporal server host — overridable via env for non-local deployments
 TEMPORAL_HOST = environ.get("TEMPORAL_HOST", "localhost:7233")
 
