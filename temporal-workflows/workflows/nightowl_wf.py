@@ -127,8 +127,8 @@ class NightOwlWorkflow:
                         if done:
                             done_flags[idx] = True
                             workflow.logger.info(f"NightOwl task {task_id} complete")
-                    except Exception as e:
-                        workflow.logger.warning(f"NightOwl poll error for {task_id}: {e}")
+                    except Exception as exc:
+                        workflow.logger.warning(f"NightOwl poll error for {task_id}: {exc}")
 
                 if all(done_flags):
                     break

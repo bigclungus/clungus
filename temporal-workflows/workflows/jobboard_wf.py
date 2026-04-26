@@ -57,9 +57,9 @@ class JobBoardWorkflow:
                 start_to_close_timeout=timedelta(seconds=180),
                 retry_policy=RetryPolicy(maximum_attempts=2),
             )
-        except Exception as e:
-            workflow.logger.error("Scrape activity failed: %s", e)
-            return {"error": f"scrape failed: {e}", "existing_count": len(existing_jobs), "new_count": 0, "inserted": 0}
+        except Exception as exc:
+            workflow.logger.error("Scrape activity failed: %s", exc)
+            return {"error": f"scrape failed: {exc}", "existing_count": len(existing_jobs), "new_count": 0, "inserted": 0}
 
         workflow.logger.info("Scraped %d career pages", len(scraped_content))
 
@@ -76,9 +76,9 @@ class JobBoardWorkflow:
                 heartbeat_timeout=timedelta(seconds=600),
                 retry_policy=RetryPolicy(maximum_attempts=2),
             )
-        except Exception as e:
-            workflow.logger.error("Analysis activity failed: %s", e)
-            return {"error": f"analysis failed: {e}", "existing_count": len(existing_jobs), "scraped": len(scraped_content), "new_count": 0, "inserted": 0}
+        except Exception as exc:
+            workflow.logger.error("Analysis activity failed: %s", exc)
+            return {"error": f"analysis failed: {exc}", "existing_count": len(existing_jobs), "scraped": len(scraped_content), "new_count": 0, "inserted": 0}
 
         workflow.logger.info("Analysis returned %d new jobs", len(new_jobs))
 
@@ -116,8 +116,8 @@ class JobBoardWorkflow:
                         retry_policy=RetryPolicy(maximum_attempts=2),
                     )
                     workflow.logger.info("Enriched %d companies", len(enrichment_data))
-        except Exception as e:
-            workflow.logger.warning("Company enrichment failed (non-fatal): %s", e)
+        except Exception as exc:
+            workflow.logger.warning("Company enrichment failed (non-fatal): %s", exc)
 
         # Step 6: Notify Discord if any high-relevance jobs
         high_rel = [j for j in new_jobs if (j.get("relevance") or 0) > 0.7]
@@ -129,8 +129,8 @@ class JobBoardWorkflow:
                     start_to_close_timeout=timedelta(seconds=30),
                     retry_policy=RetryPolicy(maximum_attempts=2),
                 )
-            except Exception as e:
-                workflow.logger.warning("Discord notification failed: %s", e)
+            except Exception as exc:
+                workflow.logger.warning("Discord notification failed: %s", exc)
 
         summary = {
             "existing_count": len(existing_jobs),

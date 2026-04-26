@@ -339,8 +339,8 @@ class SessionWorkflow:
                 if isinstance(existing_evolution, str):
                     try:
                         existing_evolution = json_loads(existing_evolution)
-                    except Exception as e:
-                        workflow.logger.warning("failed to parse existing_evolution JSON: %s", e)
+                    except Exception as exc:
+                        workflow.logger.warning("failed to parse existing_evolution JSON: %s", exc)
                         existing_evolution = {}
                 existing_vote_summary: dict = existing.get("vote_summary") or {}
                 existing_mode: str = existing.get("mode") or mode
