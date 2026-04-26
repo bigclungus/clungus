@@ -355,7 +355,7 @@ def _parse_claude_json(text: str) -> list[dict]:
     # Strip markdown fences if present
     if text.startswith("```"):
         lines = text.split("\n")
-        lines = [l for l in lines if not l.strip().startswith("```")]
+        lines = [line for line in lines if not line.strip().startswith("```")]
         text = "\n".join(lines)
 
     # First try direct parse

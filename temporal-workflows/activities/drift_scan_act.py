@@ -17,7 +17,7 @@ STALE_DAYS = 14
 
 def _run_drift_scan_sync() -> str | None:
     """Run the drift scan logic and return findings string, or None if nothing stale."""
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = datetime.now(timezone.utc)
     findings = []
 
     # 1. Labs with no recent commits
@@ -38,7 +38,7 @@ def _run_drift_scan_sync() -> str | None:
                 )
             if result.stdout.strip():
                 last_commit_ts = int(result.stdout.strip())
-                last_commit = datetime.fromtimestamp(last_commit_ts, timezone.utc).replace(tzinfo=None)
+                last_commit = datetime.fromtimestamp(last_commit_ts, timezone.utc)
                 age_days = (now - last_commit).days
                 if age_days >= STALE_DAYS:
                     findings.append(f"lab `{lab_name}`: no commits in {age_days}d (last: {last_commit.strftime('%Y-%m-%d')})")
@@ -55,10 +55,10 @@ def _run_drift_scan_sync() -> str | None:
         if result.returncode == 0:
             issues = json_loads(result.stdout)
             for issue in issues:
-                updated = datetime.fromisoformat(issue["updatedAt"].replace("Z", "+00:00")).replace(tzinfo=None)
+                updated = datetime.fromisoformat(issue["updatedAt"].replace("Z", "+00:00"))
                 age_days = (now - updated).days
                 if age_days >= STALE_DAYS:
-                    labels = [l["name"] for l in issue.get("labels", [])]
+                    labels = [lbl["name"] for lbl in issue.get("labels", [])]
                     label_str = f" [{', '.join(labels)}]" if labels else ""
                     findings.append(f"issue #{issue['number']}{label_str}: `{issue['title']}` — no activity in {age_days}d")
         else:
