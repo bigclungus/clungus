@@ -4,7 +4,7 @@ Activity: check_open_tasks
 Reads task files from bigclungus-meta/tasks/ and posts a summary of in_progress
 tasks to the main Discord channel. Silent if nothing is open.
 """
-from json import dump, load
+from json import dump as json_dump, load as json_load
 from datetime import datetime, timezone
 
 from temporalio import activity
@@ -93,7 +93,7 @@ async def check_open_tasks() -> str | None:
                 continue
             try:
                 with open(fpath, "r") as f:
-                    task = load(f)
+                    task = json_load(f)
             except Exception as e:
                 activity.logger.warning(f"Failed to read task file {fpath}: {e}")
                 continue
@@ -153,6 +153,6 @@ def _write_status_file(checked_at: str, items: list) -> None:
     }
     try:
         with open("/tmp/bc-open-tasks.json", "w") as f:
-            dump(status, f, indent=2)
+            json_dump(status, f, indent=2)
     except Exception as exc:
         activity.logger.warning(f"Failed to write /tmp/bc-open-tasks.json: {exc}")

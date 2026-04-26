@@ -6,7 +6,7 @@ inserts results, and optionally notifies Discord.
 """
 
 import asyncio
-from json import loads, JSONDecodeError
+from json import loads as json_loads, JSONDecodeError
 import logging
 import re
 import sqlite3
@@ -360,7 +360,7 @@ def _parse_claude_json(text: str) -> list[dict]:
 
     # First try direct parse
     try:
-        result = loads(text)
+        result = json_loads(text)
         if isinstance(result, list):
             return result
     except JSONDecodeError:
@@ -373,7 +373,7 @@ def _parse_claude_json(text: str) -> list[dict]:
     if first_bracket != -1 and last_bracket != -1 and last_bracket > first_bracket:
         json_str = text[first_bracket : last_bracket + 1]
         try:
-            result = loads(json_str)
+            result = json_loads(json_str)
             if isinstance(result, list):
                 logger.info("Extracted JSON array from prose-wrapped response (chars %d-%d)", first_bracket, last_bracket)
                 return result
