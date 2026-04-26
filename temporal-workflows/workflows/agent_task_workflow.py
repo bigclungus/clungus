@@ -93,14 +93,14 @@ class AgentTaskWorkflow:
             )
             self._result = result
             self._status = "completed"
-        except ActivityError as e:
-            if isinstance(e.cause, CancelledError) or "cancelled" in str(e).lower():
+        except ActivityError as exc:
+            if isinstance(exc.cause, CancelledError) or "cancelled" in str(exc).lower():
                 self._status = "cancelled"
             else:
                 self._status = "failed"
                 await workflow.execute_local_activity(
                     record_error,
-                    args=[input.task_id, str(e)],
+                    args=[input.task_id, str(exc)],
                     start_to_close_timeout=timedelta(seconds=10),
                 )
             raise
