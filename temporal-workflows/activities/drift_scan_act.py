@@ -25,10 +25,9 @@ def _run_drift_scan_sync() -> str | None:
         if not lab_dir.is_dir():
             continue
         lab_name = lab_dir.name
-        lab_path = str(lab_dir)
         try:
             result = subprocess.run(
-                ["git", "-C", lab_path, "log", "--oneline", "-1", "--format=%ct"],
+                ["git", "-C", lab_dir, "log", "--oneline", "-1", "--format=%ct"],
                 capture_output=True, text=True, timeout=10
             )
             if result.returncode != 0 or not result.stdout.strip():
