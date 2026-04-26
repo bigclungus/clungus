@@ -23,8 +23,8 @@ async def startup_fix_falkordb() -> str:
         if result.returncode == 0 and "OK" in result.stdout:
             return "ok"
         return f"ERROR: {result.stderr or result.stdout}"
-    except Exception as e:
-        return f"ERROR: {e}"
+    except Exception as exc:
+        return f"ERROR: {exc}"
 
 
 @activity.defn
@@ -47,8 +47,8 @@ async def startup_check_services() -> list[str]:
                 name = line.split()[0]
                 failed.append(name)
         return failed
-    except Exception as e:
-        return [f"check_failed: {e}"]
+    except Exception as exc:
+        return [f"check_failed: {exc}"]
 
 
 @activity.defn
@@ -60,16 +60,16 @@ async def startup_check_disk() -> dict:
         try:
             data_usage = shutil.disk_usage(BASE_DIR)
             data_pct = int(data_usage.used / data_usage.total * 100)
-        except Exception as e:
-            activity.logger.warning("[startup_check_disk] could not check %s: %s", BASE_DIR, e)
+        except Exception as exc:
+            activity.logger.warning("[startup_check_disk] could not check %s: %s", BASE_DIR, exc)
             data_pct = 0
         return {
             "root_pct": root_pct,
             "data_pct": data_pct,
             "warning": root_pct > 85 or data_pct > 85,
         }
-    except Exception as e:
-        return {"root_pct": 0, "data_pct": 0, "warning": True, "error": str(e)}
+    except Exception as exc:
+        return {"root_pct": 0, "data_pct": 0, "warning": True, "error": str(exc)}
 
 
 @activity.defn
@@ -83,8 +83,8 @@ async def startup_run_watchdog() -> str:
             timeout=60,
         )
         return result.stdout.strip() or "ok"
-    except Exception as e:
-        return f"ERROR: {e}"
+    except Exception as exc:
+        return f"ERROR: {exc}"
 
 
 @activity.defn
@@ -101,8 +101,8 @@ async def startup_check_heartbeat() -> str:
         if output.startswith("WARN"):
             return output
         return "ok"
-    except Exception as e:
-        return f"ERROR: {e}"
+    except Exception as exc:
+        return f"ERROR: {exc}"
 
 
 @activity.defn
@@ -116,5 +116,5 @@ async def startup_extract_directives() -> str:
             timeout=60,
         )
         return result.stdout.strip() or "ok"
-    except Exception as e:
-        return f"ERROR: {e}"
+    except Exception as exc:
+        return f"ERROR: {exc}"

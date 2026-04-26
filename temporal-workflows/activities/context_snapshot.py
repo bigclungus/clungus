@@ -87,8 +87,8 @@ def _read_file_safe(path: str, max_chars: int = MAX_FILE_CHARS) -> tuple[str, bo
         if len(text) > max_chars:
             return (text[:max_chars], True)
         return (text, False)
-    except Exception as e:
-        logger.warning("[context_snapshot] failed to read file %s: %s", p, e)
+    except Exception as exc:
+        logger.warning("[context_snapshot] failed to read file %s: %s", p, exc)
         return ("", False)
 
 
@@ -127,10 +127,10 @@ def _repo_tree() -> str:
         try:
             entries = sorted(p.iterdir(), key=lambda x: x.name)
             lines.append(f"\n## {subdir}")
-            for full in entries:
-                e = full.name
-                suffix = "/" if full.is_dir() else ""
-                lines.append(f"  {e}{suffix}")
+            for entry in entries:
+                name = entry.name
+                suffix = "/" if entry.is_dir() else ""
+                lines.append(f"  {name}{suffix}")
         except Exception as exc:
             lines.append(f"  (error: {exc})")
 

@@ -37,9 +37,9 @@ async def post_json(url: str, payload: dict, headers: dict | None = None, timeou
         async with session.post(url, json=payload, headers=req_headers) as resp:
             try:
                 data = await resp.json(content_type=None)
-            except Exception as e:
+            except Exception as exc:
                 body = await resp.text()
-                raise RuntimeError(f"post_json: could not parse JSON from {url} ({resp.status}): {e} — body: {body[:200]}")
+                raise RuntimeError(f"post_json: could not parse JSON from {url} ({resp.status}): {exc} — body: {body[:200]}")
             return resp.status, data
 
 

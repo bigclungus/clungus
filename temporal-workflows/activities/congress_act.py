@@ -77,8 +77,8 @@ async def _inject_alert(message: str) -> None:
     """Inject a warning alert to the bot session. Non-fatal — never raises."""
     try:
         await _do_inject(f"⚠️ {message}", MAIN_CHANNEL_ID, user="temporal-monitor")
-    except Exception as e:
-        logger.warning("[congress] _inject_alert failed: %s", e)  # Never let alerting break the caller
+    except Exception as exc:
+        logger.warning("[congress] _inject_alert failed: %s", exc)  # Never let alerting break the caller
 
 
 # ---------------------------------------------------------------------------
@@ -102,8 +102,8 @@ def _load_context_cache(topic: str) -> "str | None":
         if data.get("topic_hash") != expected_hash:
             return None
         return data["brief"]
-    except Exception as e:
-        logger.warning("[congress] failed to load context cache: %s", e)
+    except Exception as exc:
+        logger.warning("[congress] failed to load context cache: %s", exc)
     return None
 
 
@@ -120,8 +120,8 @@ def _save_context_cache(brief: str, topic: str) -> None:
                 }
             )
         )
-    except Exception as e:
-        logger.warning("[congress] context cache write failed: %s", e)
+    except Exception as exc:
+        logger.warning("[congress] context cache write failed: %s", exc)
 
 
 # ---------------------------------------------------------------------------
@@ -135,16 +135,16 @@ def _extract_keywords(topic_text: str, max_keywords: int = 10) -> list[str]:
     Strips punctuation, splits hyphenated words, filters short words and
     RedisSearch special chars. Returns a list of keywords.
     """
-    words = [w.strip(".,!?\"'()[]{}:;@#$%^&*~`<>/\\|") for w in topic_text.split()]
+    words = [word.strip(".,!?\"'()[]{}:;@#$%^&*~`<>/\\|") for word in topic_text.split()]
     # Split hyphenated words into components
     expanded: list[str] = []
-    for w in words:
-        if "-" in w:
-            expanded.extend(part for part in w.split("-") if part)
+    for word in words:
+        if "-" in word:
+            expanded.extend(part for part in word.split("-") if part)
         else:
-            expanded.append(w)
+            expanded.append(word)
     # Filter to words >3 chars that don't contain special RedisSearch chars
-    return [w for w in expanded if len(w) > 3 and not any(c in w for c in "+-@~")][:max_keywords]
+    return [word for word in expanded if len(word) > 3 and not any(c in word for c in "+-@~")][:max_keywords]
 
 
 def _sanitize_fulltext_query(topic_text: str) -> str:
@@ -379,8 +379,8 @@ async def congress_load_session(session_number: int) -> dict:
             f"congress_load_session: loaded {session_file} — status={data.get('status')!r}"
         )
         return data
-    except Exception as e:
-        activity.logger.warning(f"congress_load_session: failed to read {session_file}: {e}")
+    except Exception as exc:
+        activity.logger.warning(f"congress_load_session: failed to read {session_file}: {exc}")
         return {}
 
 
@@ -569,9 +569,9 @@ async def congress_debate(
         post_content = f"**{name}**: {response_text[:1900]}"
         try:
             await discord_post_message(thread_id, post_content)
-        except Exception as e:
+        except Exception as exc:
             activity.logger.error(
-                f"congress_debate: exception posting {identity!r} response to thread {thread_id}: {e}"
+                f"congress_debate: exception posting {identity!r} response to thread {thread_id}: {exc}"
             )
 
     # Strip any "**Name** [label]: " or "**Name**: " prefix Claude may mimic from thread context
@@ -830,9 +830,9 @@ async def congress_evolve(session_id: str, topic: str, debate_summaries: list) -
         response_text,
         re.DOTALL,
     )
-    for m in create_matches:
-        slug = m.group(1).strip()
-        create_reason = m.group(2).strip()
+    for match in create_matches:
+        slug = match.group(1).strip()
+        create_reason = match.group(2).strip()
 
         # Extract the spec block that follows REASON: — everything until the next top-level token
         spec_text = create_reason
@@ -925,8 +925,8 @@ async def congress_evolve(session_id: str, topic: str, debate_summaries: list) -
                 activity.logger.info(f"congress_evolve: launched poll generation for '{slug}'")
             except Exception as poll_err:
                 activity.logger.warning(f"congress_evolve: failed to launch poll generation for '{slug}': {poll_err}")
-        except Exception as e:
-            activity.logger.warning(f"congress_evolve: failed to write new persona '{slug}': {e}")
+        except Exception as exc:
+            activity.logger.warning(f"congress_evolve: failed to write new persona '{slug}': {exc}")
 
     return results
 
@@ -948,9 +948,9 @@ async def congress_commit_evolutions(session_id: str) -> None:
             activity.logger.info(f"Pushed persona changes for {session_id}")
         else:
             activity.logger.info(f"No persona changes to push for {session_id}")
-    except Exception as e:
-        activity.logger.warning(f"Failed to push evolution changes: {e}")
-        await _inject_alert(f"congress_commit_evolutions: git push failed for {session_id} — {str(e)[:200]}")
+    except Exception as exc:
+        activity.logger.warning(f"Failed to push evolution changes: {exc}")
+        await _inject_alert(f"congress_commit_evolutions: git push failed for {session_id} — {str(exc)[:200]}")
 
     sync_script = f"{SCRIPTS_DIR}/sync_personas_db.py"
     if Path(sync_script).exists():
@@ -960,8 +960,8 @@ async def congress_commit_evolutions(session_id: str) -> None:
                 activity.logger.warning(f"sync_personas_db failed: {sync_result.stderr}")
             else:
                 activity.logger.info("sync_personas_db completed successfully")
-        except Exception as e:
-            activity.logger.warning(f"sync_personas_db exception: {e}")
+        except Exception as exc:
+            activity.logger.warning(f"sync_personas_db exception: {exc}")
     else:
         activity.logger.info(f"sync_personas_db.py not found at {sync_script}, skipping")
 
@@ -1103,34 +1103,34 @@ async def congress_select_seats(topic: str, debaters: list, session_id: str) -> 
             line.strip().strip("*-0123456789.").strip() for line in response_text.strip().split("\n") if line.strip()
         ]
         # Build ordered list matching selection, then append any unmatched as fallback
-        name_to_debater = {(d.get("display_name") or d.get("name")): d for d in debaters}
-        selected = [name_to_debater[n] for n in selected_names if n in name_to_debater]
+        name_to_debater = {(debater.get("display_name") or debater.get("name")): debater for debater in debaters}
+        selected = [name_to_debater[cand] for cand in selected_names if cand in name_to_debater]
         if len(selected) < len(selected_names):
             # Fuzzy fallback: case-insensitive and partial matching
             lower_map = {k.lower(): v for k, v in name_to_debater.items()}
-            for n in selected_names:
-                if n not in name_to_debater:
+            for cand in selected_names:
+                if cand not in name_to_debater:
                     # Try exact case-insensitive
-                    if n.lower() in lower_map:
-                        d = lower_map[n.lower()]
-                        if d not in selected:
-                            selected.append(d)
+                    if cand.lower() in lower_map:
+                        debater = lower_map[cand.lower()]
+                        if debater not in selected:
+                            selected.append(debater)
                     else:
-                        # Try partial: does n appear as a substring of any key, or vice versa?
-                        for key, d in name_to_debater.items():
-                            if n.lower() in key.lower() or key.lower() in n.lower():
-                                if d not in selected:
-                                    selected.append(d)
+                        # Try partial: does cand appear as a substring of any key, or vice versa?
+                        for key, debater in name_to_debater.items():
+                            if cand.lower() in key.lower() or key.lower() in cand.lower():
+                                if debater not in selected:
+                                    selected.append(debater)
                                 break
         # Top up from remaining candidates if we're under MAX_DEBATERS
         if len(selected) < MAX_DEBATERS:
-            seated_names = {d.get("name") for d in selected}
-            for d in debaters:
+            seated_names = {debater.get("name") for debater in selected}
+            for debater in debaters:
                 if len(selected) >= MAX_DEBATERS:
                     break
-                if d.get("name") not in seated_names:
-                    selected.append(d)
-                    seated_names.add(d.get("name"))
+                if debater.get("name") not in seated_names:
+                    selected.append(debater)
+                    seated_names.add(debater.get("name"))
         if len(selected) < 3:
             raise ApplicationError(
                 f"congress_select_seats: LLM returned fewer than 3 matched debaters "
@@ -1149,16 +1149,16 @@ async def congress_select_seats(topic: str, debaters: list, session_id: str) -> 
 
         # Build per-provider pools from the full eligible roster
         provider_pools: dict[str, list] = {}
-        for d in debaters:
-            provider = _classify_model(d.get("model") or "")
+        for debater in debaters:
+            provider = _classify_model(debater.get("model") or "")
             if provider != "claude":
-                provider_pools.setdefault(provider, []).append(d)
+                provider_pools.setdefault(provider, []).append(debater)
 
         # Determine which non-Anthropic providers are missing from the current selection
-        selected_names_set = {d.get("name") for d in selected}
+        selected_names_set = {debater.get("name") for debater in selected}
         missing_providers: list[tuple[str, list]] = []
         for provider, pool in provider_pools.items():
-            pool_names = {d.get("name") for d in pool}
+            pool_names = {debater.get("name") for debater in pool}
             if not pool_names & selected_names_set:
                 missing_providers.append((provider, pool))
 
@@ -1175,7 +1175,7 @@ async def congress_select_seats(topic: str, debaters: list, session_id: str) -> 
                 # Pick a random representative from this provider's pool
                 representative = random.choice(pool)
                 rep_name = representative.get("name")
-                if rep_name in {d.get("name") for d in enforced}:
+                if rep_name in {debater.get("name") for debater in enforced}:
                     # Already seated (shouldn't happen, but guard it)
                     continue
                 # Remove the last Claude-model seat to make room
@@ -1189,7 +1189,7 @@ async def congress_select_seats(topic: str, debaters: list, session_id: str) -> 
                     # No Claude seat to evict — hard abort per provider diversity requirement
                     raise ApplicationError(
                         f"Congress aborted: provider '{provider}' has eligible personas "
-                        f"({[d.get('name') for d in pool]}) but no Claude seat can be evicted "
+                        f"({[debater.get('name') for debater in pool]}) but no Claude seat can be evicted "
                         f"to guarantee representation. Increase MAX_DEBATERS or reduce provider count.",
                         non_retryable=True,
                     )
@@ -1203,11 +1203,11 @@ async def congress_select_seats(topic: str, debaters: list, session_id: str) -> 
         return selected
     except ApplicationError:
         raise
-    except Exception as e:
+    except Exception as exc:
         raise ApplicationError(
-            f"congress_select_seats failed: {e}",
+            f"congress_select_seats failed: {exc}",
             non_retryable=True,
-        ) from e
+        ) from exc
 
 
 @activity.defn
@@ -1307,8 +1307,8 @@ async def congress_create_tasks(
                 activity.logger.info(f"Created local task file: {task_path}")
                 task_titles.append(task["title"])
                 task["task_id"] = task_id  # store for inject step
-            except Exception as e:
-                activity.logger.warning(f"Exception creating local task file: {e}")
+            except Exception as exc:
+                activity.logger.warning(f"Exception creating local task file: {exc}")
 
         # Persist task titles to the session JSON so the UI can display them
         if task_titles:
@@ -1320,8 +1320,8 @@ async def congress_create_tasks(
                             task_titles=json_dumps(task_titles),
                         )
                     )
-            except Exception as e:
-                activity.logger.warning(f"Exception patching session with task_titles: {e}")
+            except Exception as exc:
+                activity.logger.warning(f"Exception patching session with task_titles: {exc}")
 
         # Commit task files to git
         if task_titles:
@@ -1348,8 +1348,8 @@ async def congress_create_tasks(
                     activity.logger.info(
                         f"Committed and pushed {len(task_titles)} task(s) for congress #{session_number}"
                     )
-            except Exception as e:
-                activity.logger.warning(f"Failed to commit task files: {e}")
+            except Exception as exc:
+                activity.logger.warning(f"Failed to commit task files: {exc}")
 
         # Inject prompts for each task
         for task in tasks:
@@ -1375,12 +1375,12 @@ async def congress_create_tasks(
             try:
                 await _do_inject(inject_content, MAIN_CHANNEL_ID, user="congress-tasks")
                 activity.logger.info(f"Injected {approval} task: {title}")
-            except Exception as e:
-                activity.logger.warning(f"Failed to inject task '{title}': {e}")
+            except Exception as exc:
+                activity.logger.warning(f"Failed to inject task '{title}': {exc}")
 
         return task_titles
-    except Exception as e:
-        activity.logger.warning(f"congress_create_tasks failed (non-fatal): {e}")
+    except Exception as exc:
+        activity.logger.warning(f"congress_create_tasks failed (non-fatal): {exc}")
         return []
 
 
@@ -1689,8 +1689,8 @@ async def congress_report(
                 f"Review and implement any actionable changes from this verdict."
             )
             await _do_inject(inject_msg, main_channel_id, user=f"congress-{session_number}")
-        except Exception as e:
-            activity.logger.warning(f"Failed to inject verdict notification: {e}")
+        except Exception as exc:
+            activity.logger.warning(f"Failed to inject verdict notification: {exc}")
 
 
 @activity.defn
@@ -1704,8 +1704,8 @@ async def congress_alert_failure(topic: str, session_id: str, error_type: str, e
     )
     try:
         await _do_inject(content, MAIN_CHANNEL_ID, user="temporal-monitor")
-    except Exception as e:
-        activity.logger.error(f"congress_alert_failure: inject failed: {e}")
+    except Exception as exc:
+        activity.logger.error(f"congress_alert_failure: inject failed: {exc}")
 
 
 # ---------------------------------------------------------------------------
@@ -1751,10 +1751,10 @@ async def congress_preflight_check(debaters: list) -> list:
     grok_personas: list[str] = []
     gemini_personas: list[str] = []
 
-    for d in debaters:
-        model = (d.get("model") or "claude").strip()
+    for debater in debaters:
+        model = (debater.get("model") or "claude").strip()
         kind = _classify_model(model)
-        name = d.get("display_name") or d.get("name") or str(d)
+        name = debater.get("display_name") or debater.get("name") or str(debater)
         if kind == "grok":
             need_grok = True
             grok_personas.append(f"{name} ({model})")
@@ -1822,9 +1822,9 @@ async def congress_preflight_check(debaters: list) -> list:
                     activity.logger.warning(
                         f"congress_preflight_check: Grok proxy unexpected HTTP {status} — treating as reachable"
                     )
-            except Exception as e:
+            except Exception as exc:
                 errors.append(
-                    f"Grok proxy check failed: {type(e).__name__}: {e} — "
+                    f"Grok proxy check failed: {type(exc).__name__}: {exc} — "
                     f"Grok personas: {', '.join(grok_personas)}"
                 )
 
@@ -1859,17 +1859,17 @@ async def congress_preflight_check(debaters: list) -> list:
             f"downgrading affected personas to Claude. Issues: {combined}"
         )
         # Strip non-Claude models whose backends failed
-        grok_failed = any("Grok" in e for e in errors)
-        gemini_failed = any("Gemini" in e for e in errors)
-        for d in debaters:
-            model = (d.get("model") or "").strip()
+        grok_failed = any("Grok" in err for err in errors)
+        gemini_failed = any("Gemini" in err for err in errors)
+        for debater in debaters:
+            model = (debater.get("model") or "").strip()
             kind = _classify_model(model)
             if (kind == "grok" and grok_failed) or (kind == "gemini" and gemini_failed):
-                name = d.get("display_name") or d.get("name") or str(d)
+                name = debater.get("display_name") or debater.get("name") or str(debater)
                 activity.logger.warning(
                     f"congress_preflight_check: downgrading {name} from {model} to Claude"
                 )
-                d["model"] = ""
-                d["_original_model"] = model  # preserve for logging
+                debater["model"] = ""
+                debater["_original_model"] = model  # preserve for logging
 
     return debaters

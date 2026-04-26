@@ -94,12 +94,12 @@ _FETCH_LINE_RE = re.compile(
 
 def extract_from_channel_tag(text: str) -> list[dict]:
     messages = []
-    for m in _CHANNEL_RE.finditer(text):
-        chat_id, message_id, user, ts, body = m.groups()
+    for match in _CHANNEL_RE.finditer(text):
+        chat_id, message_id, user, ts, body = match.groups()
         content = body.strip()
         content = re.sub(r'<thread_context>.*?</thread_context>', '', content, flags=re.DOTALL).strip()
 
-        full_tag = m.group(0)
+        full_tag = match.group(0)
         attach_count_m = _ATTACH_COUNT_RE.search(full_tag)
         attach_meta_m = _ATTACH_META_RE.search(full_tag)
         attachment_count = int(attach_count_m.group(1)) if attach_count_m else 0
@@ -132,8 +132,8 @@ def extract_from_channel_tag(text: str) -> list[dict]:
 
 def extract_from_omni_channel_tag(text: str) -> list[dict]:
     messages = []
-    for m in _OMNI_CHANNEL_RE.finditer(text):
-        received_at, body = m.groups()
+    for match in _OMNI_CHANNEL_RE.finditer(text):
+        received_at, body = match.groups()
         body = body.strip()
         try:
             data = json_loads(body)
@@ -223,8 +223,8 @@ def extract_messages_from_jsonl(filepath: Path, start_offset: int) -> tuple[list
                             elif isinstance(sub, str) and _FETCH_LINE_RE.search(sub):
                                 messages.extend(extract_from_fetch_result(sub))
 
-    except OSError as e:
-        activity.logger.warning("could not read %s: %s", filepath, e)
+    except OSError as exc:
+        activity.logger.warning("could not read %s: %s", filepath, exc)
 
     return messages, new_offset
 
@@ -308,8 +308,8 @@ def _run_history_ingest_sync() -> str:
 
             try:
                 embeddings = local_embed_texts(texts)
-            except Exception as e:
-                activity.logger.error("ERROR embedding batch locally: %s", e)
+            except Exception as exc:
+                activity.logger.error("ERROR embedding batch locally: %s", exc)
                 raise  # No silent failures
 
             for msg, emb in zip(batch, embeddings):

@@ -42,8 +42,8 @@ def _run_drift_scan_sync() -> str | None:
                 age_days = (now - last_commit).days
                 if age_days >= STALE_DAYS:
                     findings.append(f"lab `{lab_name}`: no commits in {age_days}d (last: {last_commit.strftime('%Y-%m-%d')})")
-        except Exception as e:
-            findings.append(f"lab `{lab_name}`: git check failed: {e}")
+        except Exception as exc:
+            findings.append(f"lab `{lab_name}`: git check failed: {exc}")
 
     # 2. Stale GitHub issues (open, no update in 14+ days)
     try:
@@ -63,8 +63,8 @@ def _run_drift_scan_sync() -> str | None:
                     findings.append(f"issue #{issue['number']}{label_str}: `{issue['title']}` — no activity in {age_days}d")
         else:
             findings.append(f"GitHub issue check failed: {result.stderr.strip()}")
-    except Exception as e:
-        findings.append(f"GitHub issue check failed: {e}")
+    except Exception as exc:
+        findings.append(f"GitHub issue check failed: {exc}")
 
     if not findings:
         return None

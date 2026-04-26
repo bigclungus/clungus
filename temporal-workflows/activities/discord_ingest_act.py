@@ -151,11 +151,11 @@ def _extract_entities(messages: list) -> list:
             logger.warning("Entity extraction returned non-list: %s", type(entities))
             return []
         return entities
-    except JSONDecodeError as e:
-        logger.warning("Entity extraction JSON parse error: %s", e)
+    except JSONDecodeError as exc:
+        logger.warning("Entity extraction JSON parse error: %s", exc)
         return []
-    except Exception as e:
-        logger.warning("Entity extraction failed: %s", e)
+    except Exception as exc:
+        logger.warning("Entity extraction failed: %s", exc)
         return []
 
 
@@ -215,8 +215,8 @@ async def _ingest_into_graphiti(groups: dict, openai_api_key: str) -> int:
             )
             ingested += 1
             logger.info("[%d/%d] Ingested: %s (%d msgs)", i, total, episode_name, len(messages))
-        except Exception as e:
-            logger.error("[%d/%d] Failed %s: %s", i, total, episode_name, e)
+        except Exception as exc:
+            logger.error("[%d/%d] Failed %s: %s", i, total, episode_name, exc)
 
         # Entity extraction pass
         try:
@@ -238,8 +238,8 @@ async def _ingest_into_graphiti(groups: dict, openai_api_key: str) -> int:
                         reference_time=first_ts,
                     )
                     logger.info("[%d/%d] Entity extraction: %d entities for %s", i, total, len(entities), username)
-        except Exception as e:
-            logger.warning("[%d/%d] Entity extraction pass failed for %s: %s", i, total, username, e)
+        except Exception as exc:
+            logger.warning("[%d/%d] Entity extraction pass failed for %s: %s", i, total, username, exc)
 
     await graphiti.close()
     return ingested

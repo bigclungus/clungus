@@ -38,9 +38,9 @@ async def github_post_ack_comment(repo: str, number: int, event_type: str) -> st
             status, repo, number,
         )
         return f"ERROR {status}"
-    except Exception as e:
-        activity.logger.error("github_post_ack_comment request failed for %s#%s: %s", repo, number, e)
-        return f"ERROR: {e}"
+    except Exception as exc:
+        activity.logger.error("github_post_ack_comment request failed for %s#%s: %s", repo, number, exc)
+        return f"ERROR: {exc}"
 
 
 @activity.defn
@@ -62,5 +62,5 @@ async def github_inject_discord_notification(
 
     try:
         await _do_inject(content, MAIN_CHANNEL_ID, user="github-webhook")
-    except Exception as e:
-        activity.logger.error("Discord inject failed: %s", e)
+    except Exception as exc:
+        activity.logger.error("Discord inject failed: %s", exc)

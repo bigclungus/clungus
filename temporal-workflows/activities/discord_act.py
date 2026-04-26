@@ -237,7 +237,7 @@ async def post_listings_summary(channel_id: str, listings: list) -> str:
     for emoji in ("%F0%9F%91%8D", "%F0%9F%91%8E"):
         try:
             await discord_add_reaction(channel_id, message_id, emoji)
-        except Exception as e:
-            activity.logger.warning("[discord_act] failed to add reaction %s: %s", emoji, e)
+        except Exception as exc:
+            activity.logger.warning("[discord_act] failed to add reaction %s: %s", emoji, exc)
 
     return message_id

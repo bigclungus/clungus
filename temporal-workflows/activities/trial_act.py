@@ -86,7 +86,7 @@ async def trial_announce(
     try:
         thread_id: str = await discord_create_thread_or_reuse(chat_id, message_id, thread_name)
     except RuntimeError as exc:
-        # Discord error 50024 means the channel cannot have threads (e.g. already inside a
+        # Discord error 50024 means the channel cannot have threads (exc.g. already inside a
         # thread). Fall back to chat_id when not on main channel; raise on main channel.
         if chat_id != MAIN_CHANNEL_ID:
             activity.logger.warning(
@@ -351,8 +351,8 @@ async def _fetch_discord_messages_for_user(username: str, channel_id: str, limit
             and m.get("content", "").strip()
         ]
         return user_messages[:20]
-    except Exception as e:
-        activity.logger.warning(f"_fetch_discord_messages_for_user: failed to fetch messages: {e}")
+    except Exception as exc:
+        activity.logger.warning(f"_fetch_discord_messages_for_user: failed to fetch messages: {exc}")
         return []
 
 
@@ -382,8 +382,8 @@ async def trial_load_defendant(slug: str) -> dict:
         facts: list = []
         try:
             facts = await loop.run_in_executor(None, _query_graphiti_facts, slug)
-        except Exception as e:
-            activity.logger.warning(f"trial_load_defendant: graphiti query failed for '{slug}': {e}")
+        except Exception as exc:
+            activity.logger.warning(f"trial_load_defendant: graphiti query failed for '{slug}': {exc}")
 
         # 2. Fetch recent Discord messages from the main channel
         discord_messages = await _fetch_discord_messages_for_user(slug, MAIN_CHANNEL_ID, limit=100)
@@ -433,9 +433,9 @@ async def trial_load_defendant(slug: str) -> dict:
                 activity.logger.info(
                     f"trial_load_defendant: wrote temporary agent file to {fpath}"
                 )
-            except Exception as e:
+            except Exception as exc:
                 activity.logger.warning(
-                    f"trial_load_defendant: could not write temp agent file for '{slug}': {e}"
+                    f"trial_load_defendant: could not write temp agent file for '{slug}': {exc}"
                 )
 
             return {
@@ -596,5 +596,5 @@ async def trial_alert_failure(defendant: str, charges: str, exc_type: str, exc_m
     )
     try:
         await _do_inject(msg, MAIN_CHANNEL_ID, user="temporal-trial")
-    except Exception as e:
-        activity.logger.warning(f"trial_alert_failure: could not inject alert: {e}")
+    except Exception as exc:
+        activity.logger.warning(f"trial_alert_failure: could not inject alert: {exc}")

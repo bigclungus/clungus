@@ -28,8 +28,8 @@ def _age_str(iso_str: str) -> str:
             return f"{total_seconds // 3600}h ago"
         else:
             return f"{total_seconds // 86400}d ago"
-    except Exception as e:
-        activity.logger.warning("[sweeper_act] _age_str failed to parse %r: %s", iso_str, e)
+    except Exception as exc:
+        activity.logger.warning("[sweeper_act] _age_str failed to parse %r: %s", iso_str, exc)
         return "?"
 
 
@@ -94,8 +94,8 @@ async def check_open_tasks() -> str | None:
             try:
                 with open(fpath, "r") as f:
                     task = json_load(f)
-            except Exception as e:
-                activity.logger.warning(f"Failed to read task file {fpath}: {e}")
+            except Exception as exc:
+                activity.logger.warning(f"Failed to read task file {fpath}: {exc}")
                 continue
 
             status = _derive_status(task)
@@ -109,8 +109,8 @@ async def check_open_tasks() -> str | None:
             discord_user = task.get("discord_user")
             open_items.append((title, task_id, age, discord_user))
 
-    except Exception as e:
-        raise RuntimeError(f"Failed to read tasks directory: {e}")
+    except Exception as exc:
+        raise RuntimeError(f"Failed to read tasks directory: {exc}")
 
     checked_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 

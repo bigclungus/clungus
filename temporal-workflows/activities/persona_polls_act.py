@@ -379,8 +379,8 @@ async def run_create_persona_polls(slug: str) -> str:
         avatar_scripts = _generate_avatar_scripts(slug, persona)
         generated_avatars = _execute_avatar_scripts(avatar_scripts)
         activity.logger.info("%d avatars generated", len(generated_avatars))
-    except Exception as e:
-        activity.logger.warning("Avatar generation failed: %s", e)
+    except Exception as exc:
+        activity.logger.warning("Avatar generation failed: %s", exc)
         generated_avatars = []
 
     # 2. Create avatar poll
@@ -393,8 +393,8 @@ async def run_create_persona_polls(slug: str) -> str:
         sprite_code = _generate_sprites(slug, persona)
         batch_file = _write_sprite_batch(slug, sprite_code)
         activity.logger.info("Sprites written to %s", batch_file)
-    except Exception as e:
-        activity.logger.warning("Sprite generation failed: %s", e)
+    except Exception as exc:
+        activity.logger.warning("Sprite generation failed: %s", exc)
 
     # 4. Create sprite poll
     _create_sprite_poll(slug, persona, sprite_code)
@@ -402,8 +402,8 @@ async def run_create_persona_polls(slug: str) -> str:
     # 5. Commit and push
     try:
         _git_commit_and_push()
-    except Exception as e:
-        activity.logger.warning("git commit/push failed: %s", e)
+    except Exception as exc:
+        activity.logger.warning("git commit/push failed: %s", exc)
 
     # 6. Discord notification
     message = (

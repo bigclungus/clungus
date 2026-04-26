@@ -48,8 +48,8 @@ def _estimate_cost(model: str, input_tokens: int, output_tokens: int) -> float:
 def _tool_read_file(path: str) -> str:
     try:
         return Path(path).read_text(encoding="utf-8", errors="replace")
-    except Exception as e:
-        return f"ERROR: {e}"
+    except Exception as exc:
+        return f"ERROR: {exc}"
 
 
 def _tool_write_file(path: str, content: str) -> str:
@@ -58,8 +58,8 @@ def _tool_write_file(path: str, content: str) -> str:
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(content, encoding="utf-8")
         return f"OK: wrote {len(content)} bytes to {path}"
-    except Exception as e:
-        return f"ERROR: {e}"
+    except Exception as exc:
+        return f"ERROR: {exc}"
 
 
 def _tool_list_dir(path: str) -> str:
@@ -70,16 +70,16 @@ def _tool_list_dir(path: str) -> str:
             kind = "FILE" if entry.is_file() else "DIR "
             lines.append(f"{kind}  {entry.name}")
         return "\n".join(lines) if lines else "(empty directory)"
-    except Exception as e:
-        return f"ERROR: {e}"
+    except Exception as exc:
+        return f"ERROR: {exc}"
 
 
 def _tool_bash(command: str) -> str:
     # Security: check first token
     try:
         tokens = shlex.split(command)
-    except ValueError as e:
-        return f"ERROR: could not parse command: {e}"
+    except ValueError as exc:
+        return f"ERROR: could not parse command: {exc}"
 
     if not tokens:
         return "ERROR: empty command"
@@ -113,8 +113,8 @@ def _tool_bash(command: str) -> str:
         return output or "(no output)"
     except subprocess.TimeoutExpired:
         return "ERROR: command timed out after 30s"
-    except Exception as e:
-        return f"ERROR: {e}"
+    except Exception as exc:
+        return f"ERROR: {exc}"
 
 
 # ---------------------------------------------------------------------------
@@ -309,8 +309,8 @@ async def run_xai_agent(
 
                     try:
                         tc_args = json_loads(tc_args_raw)
-                    except JSONDecodeError as e:
-                        activity.logger.warning("[agent_executor] bad tool args JSON for %s: %s — %s", tc_name, tc_args_raw[:100], e)
+                    except JSONDecodeError as exc:
+                        activity.logger.warning("[agent_executor] bad tool args JSON for %s: %s — %s", tc_name, tc_args_raw[:100], exc)
                         tc_args = {}
 
                     activity.heartbeat({

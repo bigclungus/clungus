@@ -151,8 +151,8 @@ def _download_transcripts(video_ids: list[str], limit: int = 100) -> int:
 
         except subprocess.TimeoutExpired:
             logger.warning("  Timeout downloading %s", vid_id)
-        except Exception as e:
-            logger.error("  Error downloading %s: %s", vid_id, e)
+        except Exception as exc:
+            logger.error("  Error downloading %s: %s", vid_id, exc)
 
     return downloaded
 
@@ -216,8 +216,8 @@ async def _ingest_transcripts(limit: int = 0) -> int:
 
     try:
         await client.build_indices_and_constraints()
-    except Exception as e:
-        logger.warning("Index build warning (may be ok): %s", e)
+    except Exception as exc:
+        logger.warning("Index build warning (may be ok): %s", exc)
 
     ingested_count = 0
     failed_count = 0
@@ -247,10 +247,10 @@ async def _ingest_transcripts(limit: int = 0) -> int:
             ingested_count += 1
             logger.info("  Done (%d total)", ingested_count)
 
-        except Exception as e:
+        except Exception as exc:
             failed_count += 1
-            logger.error("  FAILED: %s", e)
-            if "429" in str(e) or "rate" in str(e).lower():
+            logger.error("  FAILED: %s", exc)
+            if "429" in str(exc) or "rate" in str(exc).lower():
                 logger.info("  Rate limited, waiting 30s...")
                 await sleep(30)
             else:

@@ -318,8 +318,8 @@ async def _fetch_hn_whos_hiring() -> str:
                 text = c_data.get("text", "")
                 if text:
                     comments.append(text)
-            except Exception as e:
-                logger.warning("Failed to fetch HN comment %s: %s", kid_id, e)
+            except Exception as exc:
+                logger.warning("Failed to fetch HN comment %s: %s", kid_id, exc)
                 continue
 
         return f"Thread: {story_title}\n\n" + "\n\n---\n\n".join(comments)
@@ -377,8 +377,8 @@ def _parse_claude_json(text: str) -> list[dict]:
             if isinstance(result, list):
                 logger.info("Extracted JSON array from prose-wrapped response (chars %d-%d)", first_bracket, last_bracket)
                 return result
-        except JSONDecodeError as e:
-            logger.error("Failed to parse extracted JSON substring: %s\nSubstring: %s", e, json_str[:500])
+        except JSONDecodeError as exc:
+            logger.error("Failed to parse extracted JSON substring: %s\nSubstring: %s", exc, json_str[:500])
             return []
 
     logger.error("No JSON array found in Claude response. Response: %s", text[:500])
@@ -407,8 +407,8 @@ async def scrape_career_pages() -> dict[str, str]:
                         logger.warning("Skipping %s: too little content (%d chars)", name, len(text))
                         return (name, None)
                     return (name, text[:MAX_SOURCE_CHARS])
-            except Exception as e:
-                logger.warning("Failed to fetch %s: %s", name, e)
+            except Exception as exc:
+                logger.warning("Failed to fetch %s: %s", name, exc)
                 return (name, None)
 
     # Also fetch HN Who's Hiring
@@ -417,8 +417,8 @@ async def scrape_career_pages() -> dict[str, str]:
         hn_content = await asyncio.wait_for(_fetch_hn_whos_hiring(), timeout=60)
         if hn_content:
             logger.info("Fetched HN content: %d chars", len(hn_content))
-    except Exception as e:
-        logger.warning("Failed to fetch HN Who's Hiring: %s", e)
+    except Exception as exc:
+        logger.warning("Failed to fetch HN Who's Hiring: %s", exc)
 
     # Fetch all extra sources concurrently
     tasks = [_fetch_one(name, url) for name, url in EXTRA_JOB_SOURCES]
@@ -563,8 +563,8 @@ async def analyze_scraped_jobs(scraped_content: dict[str, str], existing_jobs: l
     try:
         resume_content = await _fetch_resume()
         logger.info("Fetched live resume: %d chars", len(resume_content))
-    except Exception as e:
-        logger.warning("Failed to fetch resume from %s: %s -- using fallback", RESUME_URL, e)
+    except Exception as exc:
+        logger.warning("Failed to fetch resume from %s: %s -- using fallback", RESUME_URL, exc)
 
     if not resume_content:
         resume_content = RESUME_FALLBACK
@@ -604,9 +604,9 @@ async def analyze_scraped_jobs(scraped_content: dict[str, str], existing_jobs: l
             # Add newly found jobs to existing summary for cross-batch dedup
             for j in batch_jobs:
                 existing_summary += f"\n- {j.get('company', '?')} | {j.get('title', '?')} | {j.get('link', '')}"
-        except Exception as e:
+        except Exception as exc:
             failed_batches += 1
-            logger.error("Analysis batch %d/%d failed: %s", batch_idx, len(batches), e)
+            logger.error("Analysis batch %d/%d failed: %s", batch_idx, len(batches), exc)
             # Continue with remaining batches
 
     logger.info(
@@ -664,8 +664,8 @@ async def insert_new_jobs(jobs: list[dict]) -> int:
                 )
                 if conn.total_changes > changes_before:
                     inserted += 1
-            except Exception as e:
-                logger.warning("Failed to insert job %s at %s: %s", job.get("title"), job.get("company"), e)
+            except Exception as exc:
+                logger.warning("Failed to insert job %s at %s: %s", job.get("title"), job.get("company"), exc)
                 continue
         conn.commit()
     finally:

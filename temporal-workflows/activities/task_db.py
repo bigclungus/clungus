@@ -212,8 +212,8 @@ async def finalize_task(input: AgentTaskInput, result: dict) -> None:
                 if isinstance(blob.get("log"), list):
                     blob["log"].append({"ts": now, "event": status, "context": context or "agent finished"})
                 updated_data = json_dumps(blob)
-            except (JSONDecodeError, TypeError) as e:
-                activity.logger.warning("[finalize_task] failed to update blob for task %s: %s", input.task_id, e)
+            except (JSONDecodeError, TypeError) as exc:
+                activity.logger.warning("[finalize_task] failed to update blob for task %s: %s", input.task_id, exc)
 
         if updated_data is not None:
             conn.execute(
