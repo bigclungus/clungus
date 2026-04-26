@@ -201,8 +201,8 @@ class SessionWorkflow:
                         start_to_close_timeout=_ALERT_TIMEOUT,
                         retry_policy=RetryPolicy(maximum_attempts=1),
                     )
-            except Exception as _alert_err:
-                workflow.logger.warning(f"congress_alert_failure activity itself failed: {_alert_err}")
+            except Exception as exc:
+                workflow.logger.warning(f"congress_alert_failure activity itself failed: {exc}")
             raise  # Re-raise so Temporal marks the workflow as failed
 
     # ====================================================================== #
@@ -484,16 +484,16 @@ class SessionWorkflow:
                     schedule_to_start_timeout=_SCHEDULE_TO_START,
                     retry_policy=RetryPolicy(maximum_attempts=1),
                 )
-            except ActivityError as _thread_err:
+            except ActivityError as exc:
                 if chat_id != MAIN_CHANNEL_ID:
-                    workflow.logger.warning(f"congress_create_thread failed, falling back to chat_id as thread: {_thread_err}")
+                    workflow.logger.warning(f"congress_create_thread failed, falling back to chat_id as thread: {exc}")
                     thread_id = chat_id
                 else:
                     raise ApplicationError(
                         f"congress_create_thread failed on main channel and no fallback thread is available. "
-                        f"Debate cannot proceed without a thread. Original error: {_thread_err}",
+                        f"Debate cannot proceed without a thread. Original error: {exc}",
                         non_retryable=True,
-                    ) from _thread_err
+                    ) from exc
 
         # ------------------------------------------------------------------ #
         # 3b. Ibrahim pre-debate framing
@@ -507,8 +507,8 @@ class SessionWorkflow:
                 schedule_to_start_timeout=_SCHEDULE_TO_START,
                 retry_policy=RetryPolicy(maximum_attempts=1),
             )
-        except ActivityError as _err:
-            workflow.logger.warning(f"congress_frame_topic failed (non-fatal): {_err}")
+        except ActivityError as exc:
+            workflow.logger.warning(f"congress_frame_topic failed (non-fatal): {exc}")
             pre_debate_context = ""
 
         # ------------------------------------------------------------------ #
@@ -586,8 +586,8 @@ class SessionWorkflow:
                             schedule_to_start_timeout=_SCHEDULE_TO_START,
                             retry_policy=RetryPolicy(maximum_attempts=1),
                         )
-                    except ActivityError as _err:
-                        workflow.logger.warning(f"congress_frame_topic failed on reframe (non-fatal): {_err}")
+                    except ActivityError as exc:
+                        workflow.logger.warning(f"congress_frame_topic failed on reframe (non-fatal): {exc}")
                         pre_debate_context = (
                             "No relevant context found in memory — debate is proceeding without grounding. "
                             "Ibrahim should weight this accordingly."
@@ -664,8 +664,8 @@ class SessionWorkflow:
                     schedule_to_start_timeout=_SCHEDULE_TO_START,
                     retry_policy=RetryPolicy(maximum_attempts=1),
                 )
-            except ActivityError as _err:
-                workflow.logger.warning(f"congress_graphiti_context failed (non-fatal): {_err}")
+            except ActivityError as exc:
+                workflow.logger.warning(f"congress_graphiti_context failed (non-fatal): {exc}")
                 graphiti_ctx = ""
 
             dissent_keywords = {"disagree", "wrong", "however", "but", "instead", "oppose", "reject", "no,", "not ", "actually"}
@@ -745,8 +745,8 @@ class SessionWorkflow:
                     anti_raw = results[1] if not isinstance(results[1], Exception) else ""
                     ibrahim_verdict = _trim_synthesis(ibrahim_raw) if ibrahim_raw else ""
                     anti_verdict = _trim_synthesis(anti_raw) if anti_raw else ""
-                except Exception as _e:
-                    workflow.logger.warning(f"Synthesis duel activity failed: {_e}")
+                except Exception as exc:
+                    workflow.logger.warning(f"Synthesis duel activity failed: {exc}")
                     ibrahim_verdict = ""
                     anti_verdict = ""
 
@@ -771,8 +771,8 @@ class SessionWorkflow:
                         retry_policy=RetryPolicy(maximum_attempts=3),
                     )
                     verdict = _trim_synthesis(synthesis_text) if synthesis_text else ""
-                except Exception as _e:
-                    workflow.logger.warning(f"Synthesis activity failed: {_e}")
+                except Exception as exc:
+                    workflow.logger.warning(f"Synthesis activity failed: {exc}")
                     verdict = "Synthesis activity failed — see logs for details."
                 debate_summaries.append({"identity": hm_display, "snippet": (verdict[:300] + "...") if len(verdict) > 300 else verdict})
 
@@ -909,8 +909,8 @@ class SessionWorkflow:
                     schedule_to_start_timeout=_SCHEDULE_TO_START,
                     retry_policy=RetryPolicy(maximum_attempts=1),
                 )
-            except ActivityError as _err:
-                workflow.logger.warning(f"congress_evolve_personas failed (non-fatal): {_err}")
+            except ActivityError as exc:
+                workflow.logger.warning(f"congress_evolve_personas failed (non-fatal): {exc}")
                 evolution_results = {}
 
         if evolution_results:
@@ -952,8 +952,8 @@ class SessionWorkflow:
                     schedule_to_start_timeout=_SCHEDULE_TO_START,
                     retry_policy=RetryPolicy(maximum_attempts=1),
                 )
-            except ActivityError as _err:
-                workflow.logger.warning(f"congress_create_tasks failed (non-fatal): {_err}")
+            except ActivityError as exc:
+                workflow.logger.warning(f"congress_create_tasks failed (non-fatal): {exc}")
                 task_urls = []
 
         # ------------------------------------------------------------------ #
