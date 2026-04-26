@@ -391,7 +391,7 @@ async def trial_load_defendant(slug: str) -> dict:
         # If we have Discord messages, this is a real human user — build a human defendant
         if discord_messages:
             facts_summary = (
-                "\n".join(f"- {f}" for f in facts)
+                "\n".join(f"- {fact}" for fact in facts)
                 if facts
                 else "(no facts found in memory)"
             )
@@ -466,7 +466,7 @@ async def trial_load_defendant(slug: str) -> dict:
         if facts:
             facts_context = (
                 "\n\nSome things that are known about you:\n"
-                + "\n".join(f"- {f}" for f in facts)
+                + "\n".join(f"- {fact}" for fact in facts)
             )
 
         prose = (

@@ -72,7 +72,7 @@ def _run_drift_scan_sync() -> str | None:
     return (
         f"**Drift scan — {now.strftime('%Y-%m-%d')}**\n"
         f"Found {len(findings)} stale item(s):\n"
-        + "\n".join(f"• {f}" for f in findings)
+        + "\n".join(f"• {finding}" for finding in findings)
     )
 
 

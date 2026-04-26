@@ -217,7 +217,7 @@ async def generate_mob_stats(entity_name: str, entity_summary: str) -> dict:
 
     # Validate required fields
     required = ["entity_name", "display_name", "behavior", "base_hp", "base_atk", "base_def", "base_spd", "flavor_text"]
-    missing = [f for f in required if f not in stats]
+    missing = [field for field in required if field not in stats]
     if missing:
         raise RuntimeError(f"Missing fields in generated stats for '{entity_name}': {missing}")
 

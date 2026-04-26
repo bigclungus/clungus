@@ -176,10 +176,10 @@ async def _ingest_transcripts(limit: int = 0) -> int:
 
     all_files = sorted(TRANSCRIPTS_DIR.glob("*.txt"))
     to_ingest = []
-    for f in all_files:
-        name = _filename_to_episode_name(f.name)
+    for path in all_files:
+        name = _filename_to_episode_name(path.name)
         if name not in ingested_names:
-            to_ingest.append((f, name))
+            to_ingest.append((path, name))
 
     if limit:
         to_ingest = to_ingest[:limit]
@@ -282,7 +282,7 @@ async def run_bokoen1_ingest(download: bool = False, download_limit: int = 100, 
     """
     if download:
         logger.info("=== Phase 1: Downloading missing transcripts ===")
-        existing_ids = {_get_video_id_from_filename(f.name) for f in TRANSCRIPTS_DIR.glob("*.txt")}
+        existing_ids = {_get_video_id_from_filename(p.name) for p in TRANSCRIPTS_DIR.glob("*.txt")}
 
         result = subprocess.run(
             [YT_DLP, "--flat-playlist", "--print", "id",
