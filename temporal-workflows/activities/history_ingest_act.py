@@ -233,8 +233,6 @@ def extract_messages_from_jsonl(filepath: Path, start_offset: int) -> tuple[list
 
 
 def _run_history_ingest_sync() -> str:
-    import sqlite_vec
-
     conn = open_db()
 
     jsonl_files = sorted(Path.home().glob(".claude/projects/*/*.jsonl"))

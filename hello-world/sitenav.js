@@ -123,7 +123,7 @@
         const navHeight = nav.getBoundingClientRect().height;
         const existing = parseFloat(window.getComputedStyle(body).paddingTop) || 0;
         if (existing < navHeight) {
-          body.style.paddingTop = `${String(navHeight)}px`;
+          body.style.paddingTop = `${navHeight}px`;
         }
       }
       applyNavOffset();
