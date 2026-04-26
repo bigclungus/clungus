@@ -86,7 +86,7 @@ async def trial_announce(
     try:
         thread_id: str = await discord_create_thread_or_reuse(chat_id, message_id, thread_name)
     except RuntimeError as exc:
-        # Discord error 50024 means the channel cannot have threads (exc.g. already inside a
+        # Discord error 50024 means the channel cannot have threads (e.g. already inside a
         # thread). Fall back to chat_id when not on main channel; raise on main channel.
         if chat_id != MAIN_CHANNEL_ID:
             activity.logger.warning(
