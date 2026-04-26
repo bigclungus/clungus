@@ -85,10 +85,10 @@ def _summarise_session(session: dict) -> dict:
     # Deduplicate while preserving order
     seen: set[str] = set()
     unique_debaters = []
-    for d in debaters:
-        if d not in seen:
-            seen.add(d)
-            unique_debaters.append(d)
+    for debater in debaters:
+        if debater not in seen:
+            seen.add(debater)
+            unique_debaters.append(debater)
 
     return {
         "session_id": session.get("session_id", "unknown"),
@@ -148,16 +148,16 @@ async def audit_sessions(sessions: list[dict]) -> str:
 
     # Build prompt listing each session
     lines = []
-    for s in sessions:
-        num = s.get("session_number", "?")
-        sid = s.get("session_id", "?")
-        topic = s.get("topic", "(no topic)")
-        verdict = s.get("verdict", "(no verdict)")
-        vote = s.get("vote_summary")
-        evolution = s.get("evolution")
-        debaters = ", ".join(s.get("debaters", []))
-        tasks = s.get("task_titles")
-        mode = s.get("mode")
+    for session in sessions:
+        num = session.get("session_number", "?")
+        sid = session.get("session_id", "?")
+        topic = session.get("topic", "(no topic)")
+        verdict = session.get("verdict", "(no verdict)")
+        vote = session.get("vote_summary")
+        evolution = session.get("evolution")
+        debaters = ", ".join(session.get("debaters", []))
+        tasks = session.get("task_titles")
+        mode = session.get("mode")
 
         lines.append(f"--- SESSION {num} ({sid}) ---")
         if mode and mode != "standard":

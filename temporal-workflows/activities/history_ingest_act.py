@@ -215,11 +215,11 @@ def extract_messages_from_jsonl(filepath: Path, start_offset: int) -> tuple[list
                         elif item.get("type") == "tool_result":
                             sub = item.get("content", [])
                             if isinstance(sub, list):
-                                for s in sub:
-                                    if isinstance(s, dict):
-                                        t = s.get("text", "")
-                                        if t and _FETCH_LINE_RE.search(t):
-                                            messages.extend(extract_from_fetch_result(t))
+                                for sub_item in sub:
+                                    if isinstance(sub_item, dict):
+                                        text = sub_item.get("text", "")
+                                        if text and _FETCH_LINE_RE.search(text):
+                                            messages.extend(extract_from_fetch_result(text))
                             elif isinstance(sub, str) and _FETCH_LINE_RE.search(sub):
                                 messages.extend(extract_from_fetch_result(sub))
 
@@ -274,24 +274,24 @@ def _run_history_ingest_sync() -> str:
 
         seen_ids: set[str] = set()
         candidates = []
-        for m in messages:
-            mid = m["message_id"]
+        for msg in messages:
+            mid = msg["message_id"]
             if mid in seen_ids:
                 continue
             seen_ids.add(mid)
-            if not m.get("content", "").strip() and not m.get("attachment_count", 0):
+            if not msg.get("content", "").strip() and not msg.get("attachment_count", 0):
                 continue
-            candidates.append(m)
+            candidates.append(msg)
 
         if candidates:
-            batch_ids = [m["message_id"] for m in candidates]
+            batch_ids = [msg["message_id"] for msg in candidates]
             existing_ids = set(
                 row[0] for row in conn.execute(
                     f"SELECT message_id FROM messages WHERE message_id IN ({','.join('?' * len(batch_ids))})",
                     batch_ids
                 ).fetchall()
             )
-            new_messages = [m for m in candidates if m["message_id"] not in existing_ids]
+            new_messages = [msg for msg in candidates if msg["message_id"] not in existing_ids]
         else:
             new_messages = []
 
@@ -304,7 +304,7 @@ def _run_history_ingest_sync() -> str:
 
         for i in range(0, len(new_messages), BATCH_SIZE):
             batch = new_messages[i:i + BATCH_SIZE]
-            texts = [m["content"] for m in batch]
+            texts = [msg["content"] for msg in batch]
 
             try:
                 embeddings = local_embed_texts(texts)
