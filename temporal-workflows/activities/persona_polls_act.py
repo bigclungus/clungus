@@ -263,7 +263,7 @@ def _create_avatar_poll(slug: str, persona: dict) -> str:
         return str(poll_path)
 
     labels = ["A", "B", "C", "D"]
-    options_yaml = "\n".join(f"  {l}: Variant {l}" for l in labels)
+    options_yaml = "\n".join(f"  {label}: Variant {label}" for label in labels)
 
     content = (
         f"---\n"
