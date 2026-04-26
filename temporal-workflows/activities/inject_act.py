@@ -33,12 +33,10 @@ async def _do_inject(
     if status >= 400:
         raise RuntimeError(f"[inject] inject endpoint returned {status}: {data}")
     if return_message_id:
-        try:
-            assert isinstance(data, dict)
-            return data.get("message_id") or data.get("id")
-        except Exception as e:
-            logger.warning("[inject] failed to parse message_id from response: %s", e)
+        if not isinstance(data, dict):
+            logger.warning("[inject] unexpected response type for message_id: %r", type(data))
             return None
+        return data.get("message_id") or data.get("id")
     return None
 
 
