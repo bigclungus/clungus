@@ -104,10 +104,10 @@ def _repo_tree() -> str:
         )
         entries = result.stdout.strip().splitlines()
         lines.append(f"## {BASE_DIR} top-level")
-        for e in entries:
-            full = Path(BASE_DIR) / e
+        for entry in entries:
+            full = Path(BASE_DIR) / entry
             suffix = "/" if full.is_dir() else ""
-            lines.append(f"  {e}{suffix}")
+            lines.append(f"  {entry}{suffix}")
     except Exception as exc:
         lines.append(f"(tree error: {exc})")
 

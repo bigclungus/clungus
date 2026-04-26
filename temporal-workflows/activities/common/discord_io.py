@@ -5,7 +5,7 @@ Posts messages, polls reactions, adds reactions, creates threads via the
 Discord bot API. Bot token loaded from the standard .env location.
 """
 
-import logging
+from logging import getLogger
 
 import aiohttp
 from temporalio import activity
@@ -14,7 +14,7 @@ from ..constants import DISCORD_API
 from ..utils import get_discord_token
 from .http_io import DISCORD_TIMEOUT
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 def _discord_headers() -> dict:

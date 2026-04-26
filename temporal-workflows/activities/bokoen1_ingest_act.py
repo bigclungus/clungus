@@ -134,19 +134,19 @@ def _download_transcripts(video_ids: list[str], limit: int = 100) -> int:
                             data = json_loads(jf.read_text())
                             events = data.get("events", [])
                             texts = []
-                            for e in events:
-                                segs = e.get("segs", [])
-                                for s in segs:
-                                    t = s.get("utf8", "").strip()
-                                    if t and t != "\n":
-                                        texts.append(t)
+                            for event in events:
+                                segs = event.get("segs", [])
+                                for seg in segs:
+                                    seg_text = seg.get("utf8", "").strip()
+                                    if seg_text and seg_text != "\n":
+                                        texts.append(seg_text)
                             text = " ".join(texts)
                             if text.strip():
                                 txt_path.write_text(text)
                                 downloaded += 1
                                 logger.info("  Saved (json3): %s", txt_path.name)
-                        except Exception as e:
-                            logger.warning("  Failed to parse json3 for %s: %s", vid_id, e)
+                        except Exception as exc:
+                            logger.warning("  Failed to parse json3 for %s: %s", vid_id, exc)
                     jf.unlink()
 
         except subprocess.TimeoutExpired:

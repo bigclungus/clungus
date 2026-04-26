@@ -115,9 +115,9 @@ def _extract_entities(messages: list) -> list:
         return []
 
     msg_text = "\n".join(
-        f"{(m.get('author', {}).get('global_name') or m.get('author', {}).get('username', 'unknown'))}: {m['content']}"
-        for m in messages
-        if m.get("content") and not m["content"].startswith("[")
+        f"{(msg.get('author', {}).get('global_name') or msg.get('author', {}).get('username', 'unknown'))}: {msg['content']}"
+        for msg in messages
+        if msg.get("content") and not msg["content"].startswith("[")
     )
 
     if not msg_text.strip():
@@ -224,9 +224,9 @@ async def _ingest_into_graphiti(groups: dict, openai_api_key: str) -> int:
             if entities:
                 entity_episode_name = f"entities:{username}:{week_key}"
                 entity_body = "\n".join(
-                    f'Discord user "{e.get("user","unknown")}" — {e.get("type","unknown")}: {e.get("fact","")}'
-                    for e in entities
-                    if e.get("fact") and e.get("user")
+                    f'Discord user "{entity.get("user","unknown")}" — {entity.get("type","unknown")}: {entity.get("fact","")}'
+                    for entity in entities
+                    if entity.get("fact") and entity.get("user")
                 )
                 if entity_body:
                     await graphiti.add_episode(

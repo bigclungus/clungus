@@ -3,12 +3,12 @@ Filesystem I/O activities — reusable across all workflows.
 """
 
 import asyncio
-import logging
+from logging import getLogger
 from pathlib import Path
 
 from temporalio import activity
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 async def _run(args: list[str], cwd: str) -> tuple[int, str, str]:

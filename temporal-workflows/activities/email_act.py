@@ -27,31 +27,31 @@ def _check_emails_sync(last_check_ts: float) -> list[dict]:
     messages = client.get_messages_by_page(0, page_size=10)
     new_msgs = []
     try:
-        for m in messages:
-            # m.time is a datetime or unix timestamp — handle both
-            if hasattr(m.time, 'timestamp'):
-                msg_ts = m.time.timestamp()
+        for msg in messages:
+            # msg.time is a datetime or unix timestamp — handle both
+            if hasattr(msg.time, 'timestamp'):
+                msg_ts = msg.time.timestamp()
             else:
-                msg_ts = float(m.time)
+                msg_ts = float(msg.time)
 
             if msg_ts <= last_check_ts:
                 break
 
-            if m.unread:
+            if msg.unread:
                 try:
-                    full = client.read_message(m)
+                    full = client.read_message(msg)
                     raw = full.body or ''
                     raw = re.sub(r'<(style|script)[^>]*>.*?</(style|script)>', '', raw, flags=re.DOTALL | re.IGNORECASE)
                     raw = re.sub(r'<[^>]+>', '', raw)
                     body = ' '.join(raw.split())[:200].strip()
-                except Exception as e:
-                    activity.logger.warning("[email_act] failed to read message body for %s: %s", m.id, e)
+                except Exception as exc:
+                    activity.logger.warning("[email_act] failed to read message body for %s: %s", msg.id, exc)
                     body = ''
 
                 new_msgs.append({
-                    'message_id': str(m.id),
-                    'subject': m.subject or '(no subject)',
-                    'sender': m.sender.address if m.sender else 'unknown',
+                    'message_id': str(msg.id),
+                    'subject': msg.subject or '(no subject)',
+                    'sender': msg.sender.address if msg.sender else 'unknown',
                     'snippet': body,
                     'ts': msg_ts,
                 })
