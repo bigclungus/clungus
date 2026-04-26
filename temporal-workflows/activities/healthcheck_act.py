@@ -11,6 +11,7 @@ from typing import TypedDict
 from temporalio import activity
 
 from .common.http_io import fetch_status
+from .constants import MAIN_CHANNEL_ID
 from .inject_act import _do_inject
 
 SITES = [
@@ -54,6 +55,5 @@ async def check_sites() -> dict[str, SiteStatus]:
 @activity.defn
 async def send_alert(message: str) -> str:
     """Send an alert message via the omni inject endpoint so it arrives as a BigClungus message."""
-    from .constants import MAIN_CHANNEL_ID
     await _do_inject(message, MAIN_CHANNEL_ID, user="healthcheck")
     return "injected"
