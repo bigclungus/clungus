@@ -25,7 +25,6 @@ from .constants import BASE_DIR, CLAUDE_SESSIONS_DIR
 
 logger = getLogger(__name__)
 
-SESSIONS_DIR = CLAUDE_SESSIONS_DIR
 OUTPUT_DIR = Path(BASE_DIR) / "context-snapshot"
 OUTPUT_FILE = OUTPUT_DIR / "CONTEXT.md"
 MAX_SESSIONS = 10
@@ -144,7 +143,7 @@ async def generate_context_snapshot() -> dict:
 
     # Find last N sessions by mtime
     all_jsonls = sorted(
-        SESSIONS_DIR.glob("*.jsonl"),
+        CLAUDE_SESSIONS_DIR.glob("*.jsonl"),
         key=lambda p: p.stat().st_mtime,
         reverse=True,
     )
