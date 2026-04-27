@@ -18,15 +18,6 @@ _SYSTEM_PROMPT = (
 )
 
 
-def _build_image_content(urls: list[str]) -> list[dict]:
-    """Build image_url content blocks for the vision API."""
-    return [
-        {"type": "image_url", "image_url": {"url": url}}
-        for url in urls
-        if url
-    ]
-
-
 def _build_text_context(listing: dict) -> str:
     """Build a text summary of listing stats for context."""
     parts = []
@@ -78,7 +69,11 @@ async def generate_listing_commentary(listing: dict) -> str:
             user_content.append({"type": "text", "text": f"Listing stats:\n{text_context}\n\nGive your caveman review of this house based on the photos and stats."})
 
         # Add image blocks
-        user_content.extend(_build_image_content(photo_urls))
+        user_content.extend(
+            {"type": "image_url", "image_url": {"url": url}}
+            for url in photo_urls
+            if url
+        )
 
         # If no images at all, just use text
         if not photo_urls:
