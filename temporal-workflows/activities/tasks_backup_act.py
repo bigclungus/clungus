@@ -10,11 +10,9 @@ from .constants import META_REPO_PATH
 @activity.defn
 async def backup_tasks_db() -> str:
     """Commit tasks.db to git and push. No-ops if nothing changed."""
-    repo = META_REPO_PATH
-
     # Stage the DB
     result = run(
-        ["git", "-C", repo, "add", "tasks.db"],
+        ["git", "-C", META_REPO_PATH, "add", "tasks.db"],
         capture_output=True,
         text=True,
         timeout=30,
@@ -24,7 +22,7 @@ async def backup_tasks_db() -> str:
 
     # Check if there's anything staged
     diff = run(
-        ["git", "-C", repo, "diff", "--staged", "--quiet"],
+        ["git", "-C", META_REPO_PATH, "diff", "--staged", "--quiet"],
         capture_output=True,
         timeout=10,
     )
@@ -34,7 +32,7 @@ async def backup_tasks_db() -> str:
 
     # Commit
     commit = run(
-        ["git", "-C", repo, "commit", "-m", "chore: task db backup"],
+        ["git", "-C", META_REPO_PATH, "commit", "-m", "chore: task db backup"],
         capture_output=True,
         text=True,
         timeout=30,
@@ -44,7 +42,7 @@ async def backup_tasks_db() -> str:
 
     # Push
     push = run(
-        ["git", "-C", repo, "push"],
+        ["git", "-C", META_REPO_PATH, "push"],
         capture_output=True,
         text=True,
         timeout=60,
