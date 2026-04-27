@@ -43,4 +43,4 @@ async def nightowl_poll_status(task_id: str) -> bool:
     """Poll clunger to check if a NightOwl task has been marked complete."""
     url = f"{CLUNGER_BASE_URL}/api/nightowl/status/{task_id}"
     data = await fetch_json(url)
-    return bool(data.get("done", False))
+    return bool(data.get("done"))
