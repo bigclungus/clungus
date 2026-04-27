@@ -36,6 +36,6 @@ async def save_seen_ids(db_path: str, search_name: str, ids: list[str]) -> None:
         await _ensure_table(db)
         await db.executemany(
             "INSERT OR IGNORE INTO seen_listings (search_name, listing_id) VALUES (?, ?)",
-            [(search_name, listing_id) for listing_id in ids],
+            ((search_name, listing_id) for listing_id in ids),
         )
         await db.commit()
