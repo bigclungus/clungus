@@ -8,7 +8,7 @@ file so interrupted runs can be resumed.
 from asyncio import sleep
 from json import dumps as json_dumps, loads as json_loads, JSONDecodeError
 from logging import getLogger
-import re
+from re import sub as re_sub
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -77,7 +77,7 @@ def _extract_text_from_vtt(vtt_path: Path) -> str:
         if not line or line.startswith("WEBVTT") or line.startswith("Kind:") or \
            line.startswith("Language:") or "-->" in line or line.isdigit():
             continue
-        clean = re.sub(r"<[^>]+>", "", line)
+        clean = re_sub(r"<[^>]+>", "", line)
         if clean and clean not in seen:
             seen.add(clean)
             texts.append(clean)
