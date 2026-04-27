@@ -282,8 +282,7 @@ def _create_avatar_poll(slug: str, persona: dict) -> str:
     )
 
     POLLS_DIR.mkdir(parents=True, exist_ok=True)
-    with open(poll_path, "w") as f:
-        f.write(content)
+    poll_path.write_text(content)
 
     activity.logger.info("Created avatar poll: %s", poll_path)
     return str(poll_path)
@@ -327,8 +326,7 @@ def _create_sprite_poll(slug: str, persona: dict, sprite_code: str) -> str:
     )
 
     POLLS_DIR.mkdir(parents=True, exist_ok=True)
-    with open(poll_path, "w") as f:
-        f.write(content)
+    poll_path.write_text(content)
 
     activity.logger.info("Created sprite poll: %s", poll_path)
     return str(poll_path)
