@@ -19,8 +19,7 @@ from .inject_act import _do_inject
 
 logger = getLogger(__name__)
 
-SESSIONS_DIR = HELLO_WORLD_SESSIONS_DIR
-AUDIT_STATE_PATH = SESSIONS_DIR / "audit-state.json"
+AUDIT_STATE_PATH = HELLO_WORLD_SESSIONS_DIR / "audit-state.json"
 
 AUDIT_SYSTEM_PROMPT = (
     "You are BigClungus, reviewing your own congress sessions for quality. "
@@ -113,7 +112,7 @@ async def load_sessions_since_last_audit() -> list[dict]:
     activity.logger.info("Loading sessions completed after %s", last_audit.isoformat())
 
     results = []
-    for path in sorted(SESSIONS_DIR.glob("congress-*.json")):
+    for path in sorted(HELLO_WORLD_SESSIONS_DIR.glob("congress-*.json")):
         try:
             session = json_loads(path.read_text())
         except Exception as exc:
