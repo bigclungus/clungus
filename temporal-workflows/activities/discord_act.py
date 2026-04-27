@@ -1,5 +1,5 @@
 from hashlib import md5
-import random
+from random import Random
 from datetime import date, datetime
 
 from temporalio import activity
@@ -67,7 +67,7 @@ def _grug_commentary(listing: dict) -> str:
 
     # Seed RNG with listing ID for deterministic picks
     seed = int(md5(str(listing.get("id", "")).encode()).hexdigest()[:8], 16)
-    rng = random.Random(seed)
+    rng = Random(seed)
 
     # Categorize and pick from matching pools
     pool: list[str] = []
