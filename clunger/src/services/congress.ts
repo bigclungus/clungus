@@ -168,9 +168,7 @@ async function callClaudeCli(
       if (code !== 0) {
         reject(new Error(`claude CLI exited with code ${code}: ${stderr.slice(0, 500)}`));
       } else {
-        // Extract assistant content from JSON output if needed
-        const trimmed = fullText.trim();
-        resolve(trimmed);
+        resolve(fullText.trim());
       }
     });
     proc.on("error", (err) => {
@@ -267,11 +265,10 @@ async function callGeminiCli(
   const promptBody = parsed.content.trim();
   const fullPrompt = promptBody + "\n\n" + userMessage;
 
-  const { spawn } = await import("node:child_process");
   return new Promise((resolve, reject) => {
     const args = ["--yolo", "-p", fullPrompt, "--output-format", "text"];
     if (model) args.push("-m", model);
-    const proc = spawn(GEMINI_BIN, args, { stdio: ["ignore", "pipe", "pipe"] });
+    const proc = childProcess.spawn(GEMINI_BIN, args, { stdio: ["ignore", "pipe", "pipe"] });
     const chunks: string[] = [];
     const stderrChunks: string[] = [];
 
