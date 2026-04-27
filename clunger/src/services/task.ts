@@ -134,11 +134,7 @@ function loadTasksFromJSON(): Task[] {
     if (task) tasks.push(task);
   }
 
-  tasks.sort((a, b) => {
-    if (a.startedAt > b.startedAt) return -1;
-    if (a.startedAt < b.startedAt) return 1;
-    return 0;
-  });
+  tasks.sort((a, b) => b.startedAt.localeCompare(a.startedAt));
 
   return tasks;
 }
