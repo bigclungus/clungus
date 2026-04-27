@@ -1,7 +1,7 @@
 """
 Shared utility helpers for temporal-workflows activities.
 """
-from os import environ, path as os_path
+from os import environ, path
 
 from .constants import BASE_DIR, TEMPORAL_WORKFLOWS_DIR
 
@@ -9,7 +9,7 @@ from .constants import BASE_DIR, TEMPORAL_WORKFLOWS_DIR
 _ENV_PATHS = [
     TEMPORAL_WORKFLOWS_DIR + "/.env",
     BASE_DIR + "/.env",
-    os_path.expanduser("~/.claude/channels/discord/.env"),
+    path.expanduser("~/.claude/channels/discord/.env"),
 ]
 
 
