@@ -4,8 +4,6 @@ Activities: check_sites, send_alert
 check_sites — HTTP-checks all public clung.us endpoints and returns a status dict.
 send_alert  — Sends an alert message via the omni inject endpoint.
 """
-from __future__ import annotations
-
 from typing import TypedDict
 
 from temporalio import activity
