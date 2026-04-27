@@ -92,8 +92,7 @@ async function callClaudeForReview(prompt: string, diff: string): Promise<string
   });
 }
 
-function buildReviewPrompt(): string {
-  return `Review this git diff for correctness regressions and security vulnerabilities only.
+const REVIEW_PROMPT = `Review this git diff for correctness regressions and security vulnerabilities only.
 Do NOT comment on style, test coverage, or code organization.
 
 For each finding, specify:
@@ -104,7 +103,6 @@ For each finding, specify:
 If no issues found, respond with "LGTM — no correctness or security issues found."
 
 Diff:`;
-}
 
 function hasHighSeverity(reviewText: string): boolean {
   // Match common HIGH severity indicators Claude might produce
@@ -173,7 +171,7 @@ async function _runPostMergeReviewInner(params: PushReviewParams): Promise<void>
 
   let review: string;
   try {
-    review = await callClaudeForReview(buildReviewPrompt(), diff);
+    review = await callClaudeForReview(REVIEW_PROMPT, diff);
   } catch (e) {
     console.error(`[post-merge-review] Claude review failed for ${repo}@${sha}:`, e);
     throw e;
