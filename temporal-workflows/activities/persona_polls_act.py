@@ -193,17 +193,14 @@ def _write_sprite_batch(slug: str, sprite_code: str) -> str:
     js_slug = slug.replace("-", "_")
 
     for batch in sorted(SPRITES_DIR.glob("sprites-batch*.js")):
-        with open(batch) as f:
-            if f"drawSprite_{js_slug}_A" in f.read():
-                activity.logger.warning("%s sprites already exist in %s, skipping write", slug, batch.name)
-                return batch.name
+        if f"drawSprite_{js_slug}_A" in batch.read_text():
+            activity.logger.warning("%s sprites already exist in %s, skipping write", slug, batch.name)
+            return batch.name
 
     batch_files = sorted(SPRITES_DIR.glob("sprites-batch*.js"))
     if batch_files:
         latest = batch_files[-1]
-        with open(latest) as f:
-            lines = f.readlines()
-        if len(lines) < 600:
+        if len(latest.read_text().splitlines()) < 600:
             with open(latest, "a") as f:
                 f.write(f"\n\n// --- {slug.upper()} sprites (auto-generated) ---\n\n")
                 f.write(sprite_code)
