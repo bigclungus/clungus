@@ -5,7 +5,8 @@ Table: scouted_models — tracks all models seen by the scout, their status,
 and metadata from the source (HuggingFace / together.ai).
 """
 
-import os
+from os import makedirs
+from os.path import dirname
 import sqlite3
 
 from temporalio import activity
@@ -23,7 +24,7 @@ STATUS_SKIPPED = "skipped"
 
 def _init_db() -> None:
     """Create the database and table if they don't exist. Called once at import."""
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    makedirs(dirname(DB_PATH), exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     try:
         conn.execute("PRAGMA journal_mode=WAL")
