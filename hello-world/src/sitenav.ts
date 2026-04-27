@@ -71,7 +71,7 @@
     const links = document.createElement('div');
     links.className = 'sitenav-links';
 
-    NAV_LINKS.forEach((item: NavLink) => {
+    NAV_LINKS.forEach((item) => {
       const a = document.createElement('a');
       a.href = item.href;
       a.textContent = item.label;
@@ -90,7 +90,7 @@
     sep.textContent = '|';
     links.appendChild(sep);
 
-    TOOL_LINKS.forEach((item: NavLink) => {
+    TOOL_LINKS.forEach((item) => {
       const a = document.createElement('a');
       a.href = item.href;
       a.textContent = item.label;
