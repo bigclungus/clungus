@@ -443,14 +443,7 @@ def extract_model_card_details(hf_detail: dict) -> dict:
                 if re.search(r"\d+\.?\d*", line):
                     bench_lines.append(line.strip())
         if bench_lines and not result.get("benchmarks"):
-            # Deduplicate and cap
-            seen: set[str] = set()
-            unique_bench_lines = []
-            for line in bench_lines:
-                if line not in seen:
-                    seen.add(line)
-                    unique_bench_lines.append(line)
-            result["benchmark_mentions"] = " | ".join(unique_bench_lines[:6])
+            result["benchmark_mentions"] = " | ".join(list(dict.fromkeys(bench_lines))[:6])
 
     return result
 
