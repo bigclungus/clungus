@@ -1,5 +1,5 @@
 """Startup activities — run on bot restart, inject Discord only if something is wrong."""
-import shutil
+from shutil import disk_usage
 import subprocess
 
 from temporalio import activity
@@ -55,10 +55,10 @@ async def startup_check_services() -> list[str]:
 async def startup_check_disk() -> dict:
     """Check disk usage. Returns {'root_pct': int, 'data_pct': int, 'warning': bool}."""
     try:
-        root_usage = shutil.disk_usage("/")
+        root_usage = disk_usage("/")
         root_pct = int(root_usage.used / root_usage.total * 100)
         try:
-            data_usage = shutil.disk_usage(BASE_DIR)
+            data_usage = disk_usage(BASE_DIR)
             data_pct = int(data_usage.used / data_usage.total * 100)
         except Exception as exc:
             activity.logger.warning("[startup_check_disk] could not check %s: %s", BASE_DIR, exc)
