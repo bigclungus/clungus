@@ -18,9 +18,9 @@ def load_env_key(var_name: str) -> str:
     key = environ.get(var_name)
     if key:
         return key
-    for path in _ENV_PATHS:
+    for env_path in _ENV_PATHS:
         try:
-            with open(path) as f:
+            with open(env_path) as f:
                 for line in f:
                     line = line.strip()
                     if line.startswith(f"{var_name}=") and not line.startswith("#"):
