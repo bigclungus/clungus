@@ -3,14 +3,8 @@ import { ConnectError, Code } from "@connectrpc/connect";
 import type { HandlerContext, ServiceImpl } from "@connectrpc/connect";
 import { requireAuth } from "./service-auth.js";
 import { create } from "@bufbuild/protobuf";
-import { WalletService } from "../../gen/wallet/v1/wallet_pb.js";
-import {
-  GetBalanceResponseSchema,
-} from "../../gen/wallet/v1/wallet_pb.js";
-import type {
-  GetBalanceRequest,
-  GetBalanceResponse,
-} from "../../gen/wallet/v1/wallet_pb.js";
+import { WalletService, GetBalanceResponseSchema } from "../../gen/wallet/v1/wallet_pb.js";
+import type { GetBalanceRequest, GetBalanceResponse } from "../../gen/wallet/v1/wallet_pb.js";
 
 
 const WALLET_FILE = "/mnt/data/secrets/eth_wallet";
