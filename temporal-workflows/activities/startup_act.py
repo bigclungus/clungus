@@ -1,6 +1,6 @@
 """Startup activities — run on bot restart, inject Discord only if something is wrong."""
 from shutil import disk_usage
-import subprocess
+from subprocess import run
 
 from temporalio import activity
 
@@ -11,7 +11,7 @@ from .constants import BASE_DIR, SCRIPTS_DIR
 async def startup_fix_falkordb() -> str:
     """Apply the FalkorDB bgsave-error fix. Returns 'ok' or error message."""
     try:
-        result = subprocess.run(
+        result = run(
             [
                 "docker", "exec", "docker-falkordb-1", "redis-cli",
                 "CONFIG", "SET", "stop-writes-on-bgsave-error", "no",
@@ -31,7 +31,7 @@ async def startup_fix_falkordb() -> str:
 async def startup_check_services() -> list[str]:
     """Return list of failed service names, empty list if all healthy."""
     try:
-        result = subprocess.run(
+        result = run(
             [
                 "systemctl", "--user", "list-units",
                 "--type=service", "--state=failed", "--no-pager", "--plain",
@@ -76,7 +76,7 @@ async def startup_check_disk() -> dict:
 async def startup_run_watchdog() -> str:
     """Run the stale task watchdog. Returns output summary."""
     try:
-        result = subprocess.run(
+        result = run(
             ["bash", f"{SCRIPTS_DIR}/hooks/watchdog-stale-tasks.sh"],
             capture_output=True,
             text=True,
@@ -91,7 +91,7 @@ async def startup_run_watchdog() -> str:
 async def startup_check_heartbeat() -> str:
     """Check if heartbeat inject has landed recently. Returns 'ok' or a warning message."""
     try:
-        result = subprocess.run(
+        result = run(
             ["bash", f"{SCRIPTS_DIR}/watchdog-heartbeat.sh"],
             capture_output=True,
             text=True,
@@ -109,7 +109,7 @@ async def startup_check_heartbeat() -> str:
 async def startup_extract_directives() -> str:
     """Extract congress directives into learned-directives.md. Returns status."""
     try:
-        result = subprocess.run(
+        result = run(
             ["python3", f"{SCRIPTS_DIR}/extract-congress-directives.py"],
             capture_output=True,
             text=True,
