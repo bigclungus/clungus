@@ -7,7 +7,7 @@ Called from CongressWorkflow after a CREATE directive, or triggered manually.
 from json import dumps as json_dumps
 import re
 import subprocess
-import sys
+from sys import executable as sys_executable
 from datetime import date
 from pathlib import Path
 
@@ -123,7 +123,7 @@ def _execute_avatar_scripts(scripts: list[tuple[str, Path, str]]) -> list[Path]:
         script_path.write_text(script)
 
         proc = subprocess.run(
-            [sys.executable, script_path],
+            [sys_executable, script_path],
             capture_output=True,
             text=True,
             timeout=60,
