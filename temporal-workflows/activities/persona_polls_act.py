@@ -28,8 +28,7 @@ def _read_persona(slug: str) -> dict:
     if not path.exists():
         raise FileNotFoundError(f"Persona file not found: {path}")
 
-    with open(path) as f:
-        content = f.read()
+    content = path.read_text()
 
     fm_match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
     if not fm_match:
