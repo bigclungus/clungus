@@ -12,7 +12,7 @@ Steps:
 7. Return a summary dict: {files_analyzed, top_files: [(path, count)], snapshot_size_bytes}
 """
 
-from json import loads as json_loads, JSONDecodeError
+from json import loads, JSONDecodeError
 from logging import getLogger
 from subprocess import run
 from collections import Counter
@@ -42,7 +42,7 @@ def _parse_file_reads(jsonl_path: Path) -> list[str]:
                 if not line:
                     continue
                 try:
-                    obj = json_loads(line)
+                    obj = loads(line)
                 except JSONDecodeError:
                     continue
 
