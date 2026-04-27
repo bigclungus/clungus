@@ -6,7 +6,7 @@ run_xai_agent: used by the xAI path — calls the xAI API with a full
   Moved here from the now-deleted xai_agent_activity.py.
 """
 
-from json import dumps as json_dumps, loads as json_loads, JSONDecodeError
+from json import dumps, loads, JSONDecodeError
 from subprocess import run, TimeoutExpired
 from shlex import split
 from pathlib import Path
@@ -259,7 +259,7 @@ async def run_xai_agent(
             # Token count guard: estimate tokens via chars/4 heuristic.
             # If estimated tokens exceed 120k (buffer below xAI 131k limit),
             # trim to messages[0] (initial prompt) + last 10 messages.
-            estimated_tokens = len(json_dumps(messages)) // 4
+            estimated_tokens = len(dumps(messages)) // 4
             if estimated_tokens > 120_000:
                 old_len = len(messages)
                 messages = [messages[0]] + messages[-10:]
@@ -289,7 +289,7 @@ async def run_xai_agent(
 
             choices = data.get("choices", [])
             if not choices:
-                raise RuntimeError(f"xAI API returned no choices: {json_dumps(data)[:300]}")
+                raise RuntimeError(f"xAI API returned no choices: {dumps(data)[:300]}")
 
             choice = choices[0]
             message = choice.get("message", {})
@@ -308,7 +308,7 @@ async def run_xai_agent(
                     tc_args_raw = tc.get("function", {}).get("arguments", "{}")
 
                     try:
-                        tc_args = json_loads(tc_args_raw)
+                        tc_args = loads(tc_args_raw)
                     except JSONDecodeError as exc:
                         activity.logger.warning("[agent_executor] bad tool args JSON for %s: %s — %s", tc_name, tc_args_raw[:100], exc)
                         tc_args = {}
