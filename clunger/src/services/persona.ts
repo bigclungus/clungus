@@ -8,8 +8,8 @@ import {
 import { ConnectError, Code } from "@connectrpc/connect";
 import type { HandlerContext, ServiceImpl } from "@connectrpc/connect";
 import { create } from "@bufbuild/protobuf";
-import { PersonaService } from "../../gen/persona/v1/persona_pb.js";
 import {
+  PersonaService,
   PersonaSchema,
   ListPersonasResponseSchema,
   GetPersonaResponseSchema,
