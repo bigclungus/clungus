@@ -213,11 +213,11 @@ def _write_sprite_batch(slug: str, sprite_code: str) -> str:
         new_name = "sprites-batch1.js"
 
     new_path = SPRITES_DIR / new_name
-    with open(new_path, "w") as f:
-        f.write(f"// {new_name} -- Auto-generated sprite variants\n")
-        f.write("// Format: drawSprite_<name>_<variant>(ctx, cx, cy)\n\n")
-        f.write(sprite_code)
-        f.write("\n")
+    new_path.write_text(
+        f"// {new_name} -- Auto-generated sprite variants\n"
+        f"// Format: drawSprite_<name>_<variant>(ctx, cx, cy)\n\n"
+        f"{sprite_code}\n"
+    )
 
     activity.logger.info("Created sprite batch file %s", new_name)
     _update_html_script_refs(new_name)
