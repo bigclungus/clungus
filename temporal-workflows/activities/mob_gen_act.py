@@ -9,7 +9,7 @@ Activities for the MobGenerationWorkflow.
 
 import asyncio
 from json import loads as json_loads, JSONDecodeError
-import random
+from random import sample
 import re
 import sqlite3
 from pathlib import Path
@@ -157,7 +157,7 @@ async def select_entities_from_graph(count: int, exclude_names: list[str]) -> li
         return []
 
     selected_count = min(count, len(eligible))
-    selected = random.sample(eligible, selected_count)
+    selected = sample(eligible, selected_count)
 
     activity.logger.info("Selected %d entities (from %d eligible, %d total)", len(selected), len(eligible), len(all_entities))
     return [{"name": e["name"], "summary": e["summary"]} for e in selected]
