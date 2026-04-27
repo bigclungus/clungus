@@ -8,7 +8,7 @@ The congress_report activity posts results directly to Discord via the bot API.
 
 import asyncio
 import hashlib
-from json import dump as json_dump, dumps as json_dumps, load as json_load, loads as json_loads
+from json import dump, dumps, load, loads
 from logging import getLogger
 from random import choice as random_choice
 import re
@@ -94,7 +94,7 @@ def _load_context_cache(topic: str) -> "str | None":
     try:
         if not CONTEXT_CACHE_PATH.exists():
             return None
-        data = json_loads(CONTEXT_CACHE_PATH.read_text())
+        data = loads(CONTEXT_CACHE_PATH.read_text())
         generated_at = datetime.fromisoformat(data["generated_at"])
         if datetime.now(timezone.utc) - generated_at >= CONTEXT_CACHE_TTL:
             return None
@@ -111,7 +111,7 @@ def _save_context_cache(brief: str, topic: str) -> None:
     try:
         CONTEXT_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
         CONTEXT_CACHE_PATH.write_text(
-            json_dumps(
+            dumps(
                 {
                     "generated_at": datetime.now(timezone.utc).isoformat(),
                     "brief": brief,
@@ -374,7 +374,7 @@ async def congress_load_session(session_number: int) -> dict:
         return {}
     try:
         with open(session_file) as f:
-            data = json_load(f)
+            data = load(f)
         activity.logger.info(
             f"congress_load_session: loaded {session_file} — status={data.get('status')!r}"
         )
@@ -609,7 +609,7 @@ async def congress_finalize(
     if thread_id:
         patch_kwargs["thread_id"] = thread_id
     if evolution_results:
-        patch_kwargs["evolution"] = json_dumps(evolution_results)
+        patch_kwargs["evolution"] = dumps(evolution_results)
     async with congress_client(base_url=CLUNGER_BASE_URL, timeout_ms=15_000) as svc:
         patch_resp = await svc.patch_session(PatchSessionRequest(**patch_kwargs))
     if not patch_resp.ok:
@@ -1303,7 +1303,7 @@ async def congress_create_tasks(
                 }
                 task_path = str(TASKS_DIR / f"{task_id}.json")
                 with open(task_path, "w") as f:
-                    json_dump(task_data, f, indent=2)
+                    dump(task_data, f, indent=2)
                 activity.logger.info(f"Created local task file: {task_path}")
                 task_titles.append(task["title"])
                 task["task_id"] = task_id  # store for inject step
@@ -1317,7 +1317,7 @@ async def congress_create_tasks(
                     await svc.patch_session(
                         PatchSessionRequest(
                             session_id=session_id,
-                            task_titles=json_dumps(task_titles),
+                            task_titles=dumps(task_titles),
                         )
                     )
             except Exception as exc:
