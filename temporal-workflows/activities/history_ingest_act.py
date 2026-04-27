@@ -6,7 +6,7 @@ embeds them with local embeddings, and stores them in the sqlite-vec database at
 /mnt/data/data/discord-history.db.
 """
 from json import loads, JSONDecodeError
-import re
+from re import compile as re_compile, sub as re_sub, DOTALL
 import sys
 import sqlite3
 from time import monotonic
@@ -71,23 +71,23 @@ def open_db() -> sqlite3.Connection:
 
 # ---- Parsers -----------------------------------------------------------------
 
-_CHANNEL_RE = re.compile(
+_CHANNEL_RE = re_compile(
     r'<channel\s+source="plugin:discord[^"]*"\s+'
     r'chat_id="([^"]+)"\s+'
     r'message_id="([^"]+)"\s+'
     r'user="([^"]+)"[^>]*?ts="([^"]+)"[^>]*?>(.*?)</channel>',
-    re.DOTALL,
+    DOTALL,
 )
 
-_OMNI_CHANNEL_RE = re.compile(
+_OMNI_CHANNEL_RE = re_compile(
     r'<channel\s+source="omni"[^>]*received_at="([^"]+)"[^>]*>(.*?)</channel>',
-    re.DOTALL,
+    DOTALL,
 )
 
-_ATTACH_COUNT_RE = re.compile(r'attachment_count="(\d+)"')
-_ATTACH_META_RE = re.compile(r'attachments="([^"]*)"')
+_ATTACH_COUNT_RE = re_compile(r'attachment_count="(\d+)"')
+_ATTACH_META_RE = re_compile(r'attachments="([^"]*)"')
 
-_FETCH_LINE_RE = re.compile(
+_FETCH_LINE_RE = re_compile(
     r'^\[([^\]]+)\]\s+([^:]+):\s+(.*?)\s+\(id:\s+(\d+)\)\s*$'
 )
 
@@ -97,7 +97,7 @@ def extract_from_channel_tag(text: str) -> list[dict]:
     for match in _CHANNEL_RE.finditer(text):
         chat_id, message_id, user, ts, body = match.groups()
         content = body.strip()
-        content = re.sub(r'<thread_context>.*?</thread_context>', '', content, flags=re.DOTALL).strip()
+        content = re_sub(r'<thread_context>.*?</thread_context>', '', content, flags=DOTALL).strip()
 
         full_tag = match.group(0)
         attach_count_m = _ATTACH_COUNT_RE.search(full_tag)
