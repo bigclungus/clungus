@@ -9,7 +9,7 @@ from json import loads as json_loads, JSONDecodeError
 import re
 import sys
 import sqlite3
-import time
+from time import monotonic
 from pathlib import Path
 
 from temporalio import activity
@@ -244,7 +244,7 @@ def _run_history_ingest_sync() -> str:
     for filepath in jsonl_files:
         # Throttle heartbeats to once per 10 seconds — queue maxsize is 1000
         # and with thousands of files we'd overflow it immediately.
-        _now = time.monotonic()
+        _now = monotonic()
         if _now - _last_heartbeat >= 10.0:
             activity.heartbeat(f"processing {filepath.name}")
             _last_heartbeat = _now
