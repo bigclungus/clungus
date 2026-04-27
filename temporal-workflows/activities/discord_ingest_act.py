@@ -5,7 +5,7 @@ Fetches recent messages from the Discord channel and ingests new user-week
 episodes into the Graphiti knowledge graph. Handles OpenAI rate limits with
 backoff between episodes.
 """
-from json import loads as json_loads, JSONDecodeError
+from json import loads, JSONDecodeError
 from logging import getLogger
 from time import sleep
 from collections import defaultdict
@@ -146,7 +146,7 @@ def _extract_entities(messages: list) -> list:
             messages=[{"role": "user", "content": msg_text}],
         )
         raw = response.content[0].text.strip()
-        entities = json_loads(raw)
+        entities = loads(raw)
         if not isinstance(entities, list):
             logger.warning("Entity extraction returned non-list: %s", type(entities))
             return []
