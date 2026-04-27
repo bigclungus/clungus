@@ -10,7 +10,7 @@ import asyncio
 import hashlib
 from json import dump as json_dump, dumps as json_dumps, load as json_load, loads as json_loads
 from logging import getLogger
-import random
+from random import choice as random_choice
 import re
 import subprocess
 import sys
@@ -537,8 +537,8 @@ async def congress_debate(
                 if content.startswith(own_prefix):
                     continue
                 prior_lines.append(content)
-        except Exception as _fetch_err:
-            activity.logger.warning(f"congress_debate: failed to fetch thread context for rebuttal: {_fetch_err}")
+        except Exception as exc:
+            activity.logger.warning(f"congress_debate: failed to fetch thread context for rebuttal: {exc}")
 
         prior_messages_from_thread = "\n\n".join(prior_lines) if prior_lines else "(no prior messages found)"
         user_message = (
@@ -670,11 +670,11 @@ async def congress_evolve(session_id: str, topic: str, debate_summaries: list) -
                     name_to_file[dn] = (fname, fpath)
                     if is_probationary:
                         probationary_names.add(dn)
-            except Exception as _fe:
-                activity.logger.warning(f"congress_evolve: failed to parse persona file {fname}: {_fe}")
-    except Exception as _lse:
-        activity.logger.error(f"congress_evolve: failed to scan agents dir: {_lse}")
-        asyncio.create_task(_inject_alert(f"congress_evolve: agents dir scan failed — {str(_lse)[:200]}"))
+            except Exception as exc:
+                activity.logger.warning(f"congress_evolve: failed to parse persona file {fname}: {exc}")
+    except Exception as exc:
+        activity.logger.error(f"congress_evolve: failed to scan agents dir: {exc}")
+        asyncio.create_task(_inject_alert(f"congress_evolve: agents dir scan failed — {str(exc)[:200]}"))
 
     # Build probationary note to append to the evolution prompt
     probationary_in_debate = [
@@ -786,8 +786,8 @@ async def congress_evolve(session_id: str, topic: str, debate_summaries: list) -
                 pcontent = re.sub(r"^status:\s*\S+\s*$", "status: meme", pcontent, flags=re.MULTILINE)
                 with open(persona_file, "w") as _pf:
                     _pf.write(pcontent)
-            except Exception as _fe:
-                activity.logger.warning(f"congress_evolve: failed to set status=meme for '{display_name}': {_fe}")
+            except Exception as exc:
+                activity.logger.warning(f"congress_evolve: failed to set status=meme for '{display_name}': {exc}")
             results["retired"].append({"display_name": display_name, "reason": reason})
         elif verdict == "EVOLVE" and learned:
             timestamp = today
@@ -808,9 +808,9 @@ async def congress_evolve(session_id: str, topic: str, debate_summaries: list) -
                     with open(persona_file, "w") as _pf:
                         _pf.write(pcontent)
                     activity.logger.info(f"congress_evolve: cleared probationary flag for '{display_name}'")
-                except Exception as _pe:
+                except Exception as exc:
                     activity.logger.warning(
-                        f"congress_evolve: failed to clear probationary flag for '{display_name}': {_pe}"
+                        f"congress_evolve: failed to clear probationary flag for '{display_name}': {exc}"
                     )
             results["retained"].append(display_name)
 
@@ -821,8 +821,8 @@ async def congress_evolve(session_id: str, topic: str, debate_summaries: list) -
             activity.logger.info(
                 f"congress_evolve: recorded verdict {effective_verdict} for '{persona_slug}' in personas.db"
             )
-        except Exception as _ve:
-            activity.logger.warning(f"congress_evolve: failed to record verdict for '{persona_slug}': {_ve}")
+        except Exception as exc:
+            activity.logger.warning(f"congress_evolve: failed to record verdict for '{persona_slug}': {exc}")
 
     # Parse CREATE verdicts — these are not PERSONA blocks, they stand alone
     create_matches = re.finditer(
@@ -1173,7 +1173,7 @@ async def congress_select_seats(topic: str, debaters: list, session_id: str) -> 
                 if not enforced:
                     break
                 # Pick a random representative from this provider's pool
-                representative = random.choice(pool)
+                representative = random_choice(pool)
                 rep_name = representative.get("name")
                 if rep_name in {debater.get("name") for debater in enforced}:
                     # Already seated (shouldn't happen, but guard it)
