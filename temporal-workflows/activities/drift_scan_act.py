@@ -2,7 +2,7 @@
 Drift scan activity — daily check for dropped BigClungus projects.
 Checks: labs with no commits in 14+ days, GitHub issues stale 14+ days.
 """
-import subprocess
+from subprocess import run as subprocess_run
 from json import loads as json_loads
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,12 +26,12 @@ def _run_drift_scan_sync() -> str | None:
             continue
         lab_name = lab_dir.name
         try:
-            result = subprocess.run(
+            result = subprocess_run(
                 ["git", "-C", lab_dir, "log", "--oneline", "-1", "--format=%ct"],
                 capture_output=True, text=True, timeout=10
             )
             if result.returncode != 0 or not result.stdout.strip():
-                result = subprocess.run(
+                result = subprocess_run(
                     ["git", "-C", BASE_DIR, "log", "--oneline", "-1", "--format=%ct", "--", f"labs/{lab_name}/"],
                     capture_output=True, text=True, timeout=10
                 )
@@ -46,7 +46,7 @@ def _run_drift_scan_sync() -> str | None:
 
     # 2. Stale GitHub issues (open, no update in 14+ days)
     try:
-        result = subprocess.run(
+        result = subprocess_run(
             ["gh", "issue", "list", "--repo", "bigclungus/bigclungus-meta",
              "--state", "open", "--limit", "50", "--json", "number,title,updatedAt,createdAt,labels"],
             capture_output=True, text=True, timeout=30
