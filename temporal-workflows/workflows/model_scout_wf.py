@@ -9,7 +9,7 @@ PersonaOnboardingWorkflow as a child workflow.
 One model per day. Human-in-the-loop voting with 24h deadline.
 """
 
-from re import search as re_search
+from re import search
 from datetime import timedelta
 from temporalio import workflow
 from temporalio.common import RetryPolicy
@@ -131,7 +131,7 @@ def _normalize_together_models(data: object) -> list[dict]:
 
 def _parse_params_from_name(name: str) -> int | None:
     """Try to extract parameter count from a model name like 'Llama-3-70B'."""
-    match = re_search(r"(\d+(?:\.\d+)?)\s*[Bb]", name)
+    match = search(r"(\d+(?:\.\d+)?)\s*[Bb]", name)
     if match:
         val = float(match.group(1))
         return int(val * 1_000_000_000)
