@@ -3,16 +3,8 @@ import { join } from "node:path";
 import { ConnectError, Code } from "@connectrpc/connect";
 import type { HandlerContext, ServiceImpl } from "@connectrpc/connect";
 import { create } from "@bufbuild/protobuf";
-import { TaskService } from "../../gen/task/v1/task_pb.js";
-import {
-  TaskSchema,
-  ListTasksResponseSchema,
-} from "../../gen/task/v1/task_pb.js";
-import type {
-  Task,
-  ListTasksRequest,
-  ListTasksResponse,
-} from "../../gen/task/v1/task_pb.js";
+import { TaskService, TaskSchema, ListTasksResponseSchema } from "../../gen/task/v1/task_pb.js";
+import type { Task, ListTasksRequest, ListTasksResponse } from "../../gen/task/v1/task_pb.js";
 import { requireAuth } from "./service-auth.js";
 import Database from "bun:sqlite";
 
