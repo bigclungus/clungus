@@ -16,6 +16,6 @@ export async function injectDiscord(
     signal: AbortSignal.timeout(10_000),
   })
   if (!resp.ok) {
-    throw new Error(`injectDiscord failed: HTTP ${resp.status.toString()}`)
+    throw new Error(`injectDiscord failed: HTTP ${resp.status}`)
   }
 }
