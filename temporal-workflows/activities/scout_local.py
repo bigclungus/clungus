@@ -7,7 +7,7 @@ to synthesize a concise description of what makes a model unique.
 """
 
 from logging import getLogger
-import re
+from re import compile, search, split, DOTALL, IGNORECASE
 from datetime import datetime, timezone
 
 from temporalio import activity
@@ -27,7 +27,7 @@ SKIP_PATTERNS = [
     r"palm",
 ]
 
-_SKIP_RE = re.compile("|".join(SKIP_PATTERNS), re.IGNORECASE)
+_SKIP_RE = compile("|".join(SKIP_PATTERNS), IGNORECASE)
 
 # together.ai type values that are definitively not text models
 _NON_TEXT_TOGETHER_TYPES = {
@@ -77,7 +77,7 @@ _VISION_OCR_TAG_SUBSTRINGS = {"ocr", "inpaint", "image-edit", "diffusion", "outp
 # These are explicit well-known video/image/audio/vision model families.
 # We do NOT match broad words like "vision" or "image" alone since many text
 # models use those in names (e.g. "CodeVision", "ImageBind-text").
-_NON_TEXT_NAME_RE = re.compile(
+_NON_TEXT_NAME_RE = compile(
     r"\b(wan2|wan-2|diffusion|sdxl|stable[-_]diffusion|"
     r"dall[-_e]|flux\b|midjourney|whisper|voxtral|musicgen|audiogen|"
     r"sora\b|kling\b|hunyuan[-_]?video|cogvideo|videollm|video[-_]llm|"
@@ -86,7 +86,7 @@ _NON_TEXT_NAME_RE = re.compile(
     r"inpaint|outpaint|upscal|coloriz|deblur|denois|superresolution|"
     r"image[-_]gen|img[-_]gen|text[-_]to[-_]img|txt[-_]to[-_]img|"
     r"img2img|image2image|pix2pix|controlnet|lora[-_]?train|dreambooth)\b",
-    re.IGNORECASE,
+    IGNORECASE,
 )
 
 
@@ -239,7 +239,7 @@ async def parse_persona_drafts(llm_output: str) -> list[dict]:
     """
     personas = []
     # Split on persona markers
-    sections = re.split(r"---\s*PERSONA\s*\d+\s*---", llm_output, flags=re.IGNORECASE)
+    sections = split(r"---\s*PERSONA\s*\d+\s*---", llm_output, flags=IGNORECASE)
 
     for section in sections:
         section = section.strip()
@@ -250,7 +250,7 @@ async def parse_persona_drafts(llm_output: str) -> list[dict]:
         # Extract fields
         for field in ["Name", "Slug", "Role", "Description", "System Prompt", "Avatar Prompt"]:
             pattern = rf"(?:^|\n)\s*{field}\s*:\s*(.+?)(?=\n\s*(?:Name|Slug|Role|Description|System Prompt|Avatar Prompt)\s*:|$)"
-            match = re.search(pattern, section, re.DOTALL | re.IGNORECASE)
+            match = search(pattern, section, DOTALL | IGNORECASE)
             if match:
                 value = match.group(1).strip()
                 key = field.lower().replace(" ", "_")
@@ -440,7 +440,7 @@ def extract_model_card_details(hf_detail: dict) -> dict:
             line_lower = line.lower()
             if any(kw in line_lower for kw in bench_keywords):
                 # Keep lines that have at least one number — likely a score
-                if re.search(r"\d+\.?\d*", line):
+                if search(r"\d+\.?\d*", line):
                     bench_lines.append(line.strip())
         if bench_lines and not result.get("benchmarks"):
             result["benchmark_mentions"] = " | ".join(list(dict.fromkeys(bench_lines))[:6])
