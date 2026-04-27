@@ -174,7 +174,7 @@ async def check_mob_cache(entity_names: list[str]) -> dict:
         activity.logger.info("clungiverse.db not found, no cache")
         return {}
 
-    conn = sqlite3.connect(str(CLUNGIVERSE_DB))
+    conn = sqlite3.connect(CLUNGIVERSE_DB)
     conn.row_factory = sqlite3.Row
     try:
         # Check if mob_cache table exists
@@ -256,7 +256,7 @@ async def save_mob_stats(stats: dict) -> None:
     entity_name = stats["entity_name"]
     activity.logger.info("Saving mob stats for: %s", entity_name)
 
-    conn = sqlite3.connect(str(CLUNGIVERSE_DB))
+    conn = sqlite3.connect(CLUNGIVERSE_DB)
     try:
         budget_cost = stats.get("budget_cost", 5)
 
