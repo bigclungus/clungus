@@ -8,7 +8,7 @@ inserts results, and optionally notifies Discord.
 import asyncio
 from json import loads as json_loads, JSONDecodeError
 from logging import getLogger
-import re
+from re import sub, DOTALL
 import sqlite3
 from datetime import datetime, timezone
 
@@ -327,10 +327,10 @@ async def _fetch_hn_whos_hiring() -> str:
 
 def _strip_html(html: str) -> str:
     """Strip HTML tags and collapse whitespace to plain text."""
-    text = re.sub(r"<style[^>]*>.*?</style>", "", html, flags=re.DOTALL)
-    text = re.sub(r"<script[^>]*>.*?</script>", "", text, flags=re.DOTALL)
-    text = re.sub(r"<[^>]+>", " ", text)
-    text = re.sub(r"\s+", " ", text).strip()
+    text = sub(r"<style[^>]*>.*?</style>", "", html, flags=DOTALL)
+    text = sub(r"<script[^>]*>.*?</script>", "", text, flags=DOTALL)
+    text = sub(r"<[^>]+>", " ", text)
+    text = sub(r"\s+", " ", text).strip()
     return text
 
 
