@@ -1,4 +1,4 @@
-import re
+from re import sub as re_sub, DOTALL, IGNORECASE
 from asyncio import get_running_loop
 from os.path import expanduser
 
@@ -40,8 +40,8 @@ def _check_emails_sync(last_check_ts: float) -> list[dict]:
                 try:
                     full = client.read_message(msg)
                     raw = full.body or ''
-                    raw = re.sub(r'<(style|script)[^>]*>.*?</(style|script)>', '', raw, flags=re.DOTALL | re.IGNORECASE)
-                    raw = re.sub(r'<[^>]+>', '', raw)
+                    raw = re_sub(r'<(style|script)[^>]*>.*?</(style|script)>', '', raw, flags=DOTALL | IGNORECASE)
+                    raw = re_sub(r'<[^>]+>', '', raw)
                     body = ' '.join(raw.split())[:200].strip()
                 except Exception as exc:
                     activity.logger.warning("[email_act] failed to read message body for %s: %s", msg.id, exc)
