@@ -8,9 +8,9 @@ Requires DISCORD_BOT_TOKEN in the environment (loaded from .env if present).
 """
 
 from asyncio import run as asyncio_run
-from json import loads as json_loads
+from json import loads
 import logging
-import time
+from time import time
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -156,10 +156,10 @@ async def main() -> None:
     client = await Client.connect(TEMPORAL_HOST)
 
     # Trigger the startup checklist (fire-and-forget — unique ID per run)
-    await _ensure_workflow(client, StartupWorkflow.run, f"startup-{int(time.time())}")
+    await _ensure_workflow(client, StartupWorkflow.run, f"startup-{int(time())}")
 
     # Schedule each search as a daily cron workflow
-    criteria = json_loads(CRITERIA_PATH.read_text())
+    criteria = loads(CRITERIA_PATH.read_text())
     for search in criteria["searches"]:
         workflow_id = f"listings-{search['name'].replace(' ', '-').lower()}"
         await _ensure_workflow(client, ListingsWorkflow.run, workflow_id, arg=search, cron_schedule="0 8 * * *")
