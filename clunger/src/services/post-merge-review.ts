@@ -8,7 +8,7 @@
  * Congress #87 / GitHub issue #72
  */
 
-import * as childProcess from "node:child_process";
+import { spawn } from "node:child_process";
 import { injectDiscord } from "../utils/inject.js";
 
 const REVIEW_MODEL = "claude-sonnet-4-6";
@@ -60,7 +60,7 @@ async function postCommitComment(repo: string, sha: string, body: string): Promi
 async function callClaudeForReview(prompt: string, diff: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const args = ["-p", prompt, "--output-format", "text", "--model", REVIEW_MODEL];
-    const proc = childProcess.spawn(CLAUDE_CLI, args, {
+    const proc = spawn(CLAUDE_CLI, args, {
       stdio: ["pipe", "pipe", "pipe"],
     });
 
