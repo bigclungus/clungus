@@ -14,7 +14,7 @@ Steps:
 
 from json import loads as json_loads, JSONDecodeError
 from logging import getLogger
-import subprocess
+from subprocess import run as subprocess_run
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -97,7 +97,7 @@ def _repo_tree() -> str:
 
     # Top-level dirs
     try:
-        result = subprocess.run(
+        result = subprocess_run(
             ["ls", "-1", BASE_DIR],
             capture_output=True, text=True, timeout=10
         )
