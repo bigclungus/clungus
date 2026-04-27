@@ -29,7 +29,7 @@ Trial-specific input keys:
   charges          – charge string
 """
 import asyncio
-from json import loads as json_loads
+from json import loads
 import re
 from datetime import timedelta
 from temporalio import workflow
@@ -338,7 +338,7 @@ class SessionWorkflow:
                 existing_evolution: dict = existing.get("evolution") or {}
                 if isinstance(existing_evolution, str):
                     try:
-                        existing_evolution = json_loads(existing_evolution)
+                        existing_evolution = loads(existing_evolution)
                     except Exception as exc:
                         workflow.logger.warning("failed to parse existing_evolution JSON: %s", exc)
                         existing_evolution = {}
