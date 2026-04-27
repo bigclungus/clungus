@@ -14,8 +14,7 @@ PROTON_SESSION = str(Path.home() / ".cache" / "proton_session.json")
 async def check_new_emails(last_check_ts: float) -> list[dict]:
     """Poll ProtonMail for emails newer than last_check_ts (unix timestamp).
     Returns list of dicts with: message_id, subject, sender, snippet, ts."""
-    loop = get_running_loop()
-    return await loop.run_in_executor(None, _check_emails_sync, last_check_ts)
+    return await get_running_loop().run_in_executor(None, _check_emails_sync, last_check_ts)
 
 
 def _check_emails_sync(last_check_ts: float) -> list[dict]:
