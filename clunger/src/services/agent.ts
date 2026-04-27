@@ -11,8 +11,8 @@ import type {
   ListAgentsRequest,
   ListAgentsResponse,
 } from "../../gen/agent/v1/agent_pb.js";
-import * as fs from "node:fs";
-import * as path from "node:path";
+import { readdirSync, readFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
 import matter from "gray-matter";
 
 const PERSONAS_DB = "/mnt/data/hello-world/personas.db";
@@ -38,10 +38,10 @@ function buildVerdictHistory(): Map<string, VerdictCounts> {
   }
 
   try {
-    const files = fs.readdirSync(SESSIONS_DIR).filter(f => /^congress-\d+\.json$/.test(f));
+    const files = readdirSync(SESSIONS_DIR).filter(f => /^congress-\d+\.json$/.test(f));
     for (const file of files) {
       try {
-        const raw = fs.readFileSync(path.join(SESSIONS_DIR, file), "utf-8");
+        const raw = readFileSync(join(SESSIONS_DIR, file), "utf-8");
         const sdata = JSON.parse(raw) as Record<string, unknown>;
         const evo = (sdata.evolution ?? {}) as Record<string, unknown>;
         const retained = (evo.retained as string[] | undefined) ?? [];
@@ -62,10 +62,10 @@ function buildVerdictHistory(): Map<string, VerdictCounts> {
 }
 
 function loadMdMeta(name: string): Record<string, unknown> {
-  const fpath = path.join(AGENTS_DIR, `${name}.md`);
-  if (fs.existsSync(fpath)) {
+  const fpath = join(AGENTS_DIR, `${name}.md`);
+  if (existsSync(fpath)) {
     try {
-      const raw = fs.readFileSync(fpath, "utf-8");
+      const raw = readFileSync(fpath, "utf-8");
       return matter(raw).data as Record<string, unknown>;
     } catch (e) {
       console.warn(`[agent] loadMdMeta: failed to parse ${fpath}: ${e instanceof Error ? e.message : String(e)}`);
