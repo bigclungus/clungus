@@ -173,8 +173,7 @@ async function _runPostMergeReviewInner(params: PushReviewParams): Promise<void>
 
   let review: string;
   try {
-    const prompt = buildReviewPrompt();
-    review = await callClaudeForReview(prompt, diff);
+    review = await callClaudeForReview(buildReviewPrompt(), diff);
   } catch (e) {
     console.error(`[post-merge-review] Claude review failed for ${repo}@${sha}:`, e);
     throw e;
