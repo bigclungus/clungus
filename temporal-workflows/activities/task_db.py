@@ -109,8 +109,7 @@ def _parse_jsonl_tokens(agent_id: str) -> dict:
 
     output_path = matches[0]
     try:
-        with open(output_path, "r", encoding="utf-8") as f:
-            raw = f.read()
+        raw = output_path.read_text(encoding="utf-8")
     except OSError:
         return empty
 
@@ -180,9 +179,7 @@ async def finalize_task(input: AgentTaskInput, result: dict) -> None:
     status = result.get("status", "completed")
     if status in ("success", "completed"):
         status = "done"
-    elif status == "timed_out":
-        status = "timed_out"
-    elif status in ("failed", "cancelled"):
+    elif status in ("failed", "cancelled", "timed_out"):
         pass  # keep as-is
 
     last_preview = result.get("last_message_preview", "")
