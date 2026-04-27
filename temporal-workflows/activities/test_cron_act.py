@@ -6,7 +6,6 @@ via the inject endpoint.
 """
 
 import asyncio
-from pathlib import Path
 
 from temporalio import activity
 
@@ -15,7 +14,7 @@ from .inject_act import _do_inject
 
 INTEGRATION_TEST_CMD = [
     "python3",
-    str(Path(META_REPO_PATH) / "tests" / "integration_test.py"),
+    f"{META_REPO_PATH}/tests/integration_test.py",
 ]
 
 
