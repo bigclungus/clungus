@@ -7,7 +7,7 @@ run_xai_agent: used by the xAI path — calls the xAI API with a full
 """
 
 from json import dumps as json_dumps, loads as json_loads, JSONDecodeError
-import subprocess
+from subprocess import run, TimeoutExpired
 from shlex import split as shlex_split
 from pathlib import Path
 import httpx
@@ -98,7 +98,7 @@ def _tool_bash(command: str) -> str:
             return f"ERROR: command contains blocked pattern '{pattern.strip()}'"
 
     try:
-        result = subprocess.run(
+        result = run(
             command,
             shell=True,
             capture_output=True,
@@ -111,7 +111,7 @@ def _tool_bash(command: str) -> str:
         if result.returncode != 0:
             output += f"\nEXIT CODE: {result.returncode}"
         return output or "(no output)"
-    except subprocess.TimeoutExpired:
+    except TimeoutExpired:
         return "ERROR: command timed out after 30s"
     except Exception as exc:
         return f"ERROR: {exc}"
