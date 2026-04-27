@@ -7,7 +7,7 @@ backoff between episodes.
 """
 from json import loads as json_loads, JSONDecodeError
 from logging import getLogger
-import time
+from time import sleep
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 
@@ -36,7 +36,7 @@ def _fetch_messages_page(headers: dict, before: str | None = None, limit: int = 
         if resp.status_code == 429:
             retry_after = resp.json().get("retry_after", 5)
             logger.warning("Rate limited, sleeping %ss (attempt %d/%d)", retry_after, attempt + 1, max_retries)
-            time.sleep(retry_after + 0.5)
+            sleep(retry_after + 0.5)
             continue
         if resp.status_code != 200:
             logger.error("Discord API error %s: %s", resp.status_code, resp.text)
@@ -73,7 +73,7 @@ def _fetch_recent_messages(token: str, cutoff: datetime) -> list:
         before = messages[-1]["id"]
         oldest_ts = datetime.fromisoformat(messages[-1]["timestamp"].replace("Z", "+00:00"))
         logger.info("Page %d: %d msgs, oldest %s, total %d", page_count, len(messages), oldest_ts.isoformat(), len(all_messages))
-        time.sleep(0.3)
+        sleep(0.3)
 
     logger.info("Fetched %d messages across %d pages", len(all_messages), page_count)
     return all_messages
