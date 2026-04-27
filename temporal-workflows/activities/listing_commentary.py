@@ -3,7 +3,7 @@
 import httpx
 from temporalio import activity
 
-from .constants import XAI_API_URL as _API_URL
+from .constants import XAI_API_URL
 from .utils import get_xai_key
 
 _MODEL = "grok-4-fast-non-reasoning"
@@ -91,7 +91,7 @@ async def generate_listing_commentary(listing: dict) -> str:
 
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.post(
-                _API_URL,
+                XAI_API_URL,
                 headers={
                     "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
