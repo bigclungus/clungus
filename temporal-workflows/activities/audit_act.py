@@ -7,7 +7,7 @@ inject endpoint (with an optional thread for long reports).
 """
 
 import asyncio
-from json import dumps as json_dumps, loads as json_loads
+from json import dumps, loads
 from logging import getLogger
 from datetime import datetime, timezone
 
@@ -37,7 +37,7 @@ def _load_audit_state() -> datetime:
     """Return the last_audit_at timestamp, or today at 00:00 UTC if state file absent."""
     if AUDIT_STATE_PATH.exists():
         try:
-            data = json_loads(AUDIT_STATE_PATH.read_text())
+            data = loads(AUDIT_STATE_PATH.read_text())
             ts_str = data.get("last_audit_at", "")
             if ts_str:
                 return datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
@@ -65,14 +65,14 @@ def _summarise_session(session: dict) -> dict:
     evolution = session.get("evolution")
     if isinstance(evolution, str):
         try:
-            evolution = json_loads(evolution)
+            evolution = loads(evolution)
         except Exception as exc:
             logger.warning("[audit] failed to parse evolution JSON in session %s: %s", session.get("session_id"), exc)
 
     vote_summary = session.get("vote_summary")
     if isinstance(vote_summary, str):
         try:
-            vote_summary = json_loads(vote_summary)
+            vote_summary = loads(vote_summary)
         except Exception as exc:
             logger.warning("[audit] failed to parse vote_summary JSON in session %s: %s", session.get("session_id"), exc)
 
@@ -108,7 +108,7 @@ async def load_sessions_since_last_audit() -> list[dict]:
     results = []
     for path in sorted(HELLO_WORLD_SESSIONS_DIR.glob("congress-*.json")):
         try:
-            session = json_loads(path.read_text())
+            session = loads(path.read_text())
         except Exception as exc:
             activity.logger.warning("Skipping %s: %s", path.name, exc)
             continue
@@ -216,7 +216,7 @@ async def save_audit_state(latest_session_ts: str) -> None:
         "last_audit_at": latest_session_ts,
         "audit_ran_at": now_utc,
     }
-    AUDIT_STATE_PATH.write_text(json_dumps(state, indent=2))
+    AUDIT_STATE_PATH.write_text(dumps(state, indent=2))
     activity.logger.info("Saved audit state: last_audit_at=%s", latest_session_ts)
 
 
