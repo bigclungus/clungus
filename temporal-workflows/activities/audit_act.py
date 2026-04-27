@@ -81,13 +81,7 @@ def _summarise_session(session: dict) -> dict:
         for r in session.get("rounds", [])
         if r.get("identity") not in ("chairman", "hiring-manager")
     ]
-    # Deduplicate while preserving order
-    seen: set[str] = set()
-    unique_debaters = []
-    for debater in debaters:
-        if debater not in seen:
-            seen.add(debater)
-            unique_debaters.append(debater)
+    unique_debaters = list(dict.fromkeys(debaters))
 
     return {
         "session_id": session.get("session_id", "unknown"),
