@@ -1,16 +1,8 @@
 import { Database } from "bun:sqlite";
 import type { HandlerContext, ServiceImpl } from "@connectrpc/connect";
 import { create } from "@bufbuild/protobuf";
-import { AgentService } from "../../gen/agent/v1/agent_pb.js";
-import {
-  AgentSchema,
-  ListAgentsResponseSchema,
-} from "../../gen/agent/v1/agent_pb.js";
-import type {
-  Agent,
-  ListAgentsRequest,
-  ListAgentsResponse,
-} from "../../gen/agent/v1/agent_pb.js";
+import { AgentService, AgentSchema, ListAgentsResponseSchema } from "../../gen/agent/v1/agent_pb.js";
+import type { Agent, ListAgentsRequest, ListAgentsResponse } from "../../gen/agent/v1/agent_pb.js";
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import matter from "gray-matter";
