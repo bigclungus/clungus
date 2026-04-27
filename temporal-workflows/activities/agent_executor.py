@@ -8,7 +8,7 @@ run_xai_agent: used by the xAI path — calls the xAI API with a full
 
 from json import dumps as json_dumps, loads as json_loads, JSONDecodeError
 from subprocess import run, TimeoutExpired
-from shlex import split as shlex_split
+from shlex import split
 from pathlib import Path
 import httpx
 from temporalio import activity
@@ -77,7 +77,7 @@ def _tool_list_dir(path: str) -> str:
 def _tool_bash(command: str) -> str:
     # Security: check first token
     try:
-        tokens = shlex_split(command)
+        tokens = split(command)
     except ValueError as exc:
         return f"ERROR: could not parse command: {exc}"
 
