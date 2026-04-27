@@ -9,7 +9,7 @@ from asyncio import sleep
 from json import dumps as json_dumps, loads as json_loads, JSONDecodeError
 from logging import getLogger
 from re import sub as re_sub
-import subprocess
+from subprocess import run, TimeoutExpired
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -40,7 +40,7 @@ def _save_status(data: dict) -> None:
 
 def _get_ingested_episode_names() -> set[str]:
     """Query FalkorDB for already-ingested episode names."""
-    result = subprocess.run(
+    result = run(
         ["docker", "exec", "docker-falkordb-1", "redis-cli",
          "GRAPH.QUERY", DATABASE_NAME,
          "MATCH (n:Episodic) RETURN n.name"],
@@ -95,7 +95,7 @@ def _download_transcripts(video_ids: list[str], limit: int = 100) -> int:
         logger.info("Downloading transcript %d/%d: %s", i + 1, total, vid_id)
 
         try:
-            subprocess.run(
+            run(
                 [YT_DLP, "--write-auto-sub", "--sub-lang", "en",
                  "--skip-download", "--sub-format", "vtt",
                  "-o", f"{TRANSCRIPTS_DIR}/%(id)s_%(title)s.%(ext)s",
@@ -118,7 +118,7 @@ def _download_transcripts(video_ids: list[str], limit: int = 100) -> int:
                 vtt_file.unlink()
 
             if not vtt_files:
-                subprocess.run(
+                run(
                     [YT_DLP, "--write-auto-sub", "--sub-lang", "en",
                      "--skip-download", "--sub-format", "json3",
                      "-o", f"{TRANSCRIPTS_DIR}/%(id)s_%(title)s.%(ext)s",
@@ -149,7 +149,7 @@ def _download_transcripts(video_ids: list[str], limit: int = 100) -> int:
                             logger.warning("  Failed to parse json3 for %s: %s", vid_id, exc)
                     jf.unlink()
 
-        except subprocess.TimeoutExpired:
+        except TimeoutExpired:
             logger.warning("  Timeout downloading %s", vid_id)
         except Exception as exc:
             logger.error("  Error downloading %s: %s", vid_id, exc)
@@ -284,7 +284,7 @@ async def run_bokoen1_ingest(download: bool = False, download_limit: int = 100, 
         logger.info("=== Phase 1: Downloading missing transcripts ===")
         existing_ids = {_get_video_id_from_filename(p.name) for p in TRANSCRIPTS_DIR.glob("*.txt")}
 
-        result = subprocess.run(
+        result = run(
             [YT_DLP, "--flat-playlist", "--print", "id",
              "https://www.youtube.com/@Bokoen1/videos"],
             capture_output=True, text=True, timeout=120
