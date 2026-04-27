@@ -38,12 +38,11 @@ async def check_sites() -> dict[str, SiteStatus]:
 
     for site in SITES:
         url = site["url"]
-        ok_codes = site["ok_codes"]
         status_code, latency_ms, error = await fetch_status(url, allow_redirects=False, ssl=True)
         entry: SiteStatus = {
             "url": url,
             "status_code": status_code,
-            "ok": status_code in ok_codes if status_code is not None else False,
+            "ok": status_code in site["ok_codes"] if status_code is not None else False,
             "latency_ms": latency_ms,
             "error": error,
         }
