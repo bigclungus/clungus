@@ -4,9 +4,9 @@ create poll files, commit to git, and notify Discord.
 
 Called from CongressWorkflow after a CREATE directive, or triggered manually.
 """
-from json import dumps as json_dumps
+from json import dumps
 import re
-import subprocess
+from subprocess import run
 from sys import executable
 from datetime import date
 from pathlib import Path
@@ -48,7 +48,7 @@ def _read_persona(slug: str) -> dict:
 
 def _run_claude(system_prompt: str, user_msg: str) -> str:
     """Run claude CLI and return output. Raises on failure or empty output."""
-    proc = subprocess.run(
+    proc = run(
         [CLAUDE_CLI, "-p", system_prompt, "--output-format", "text"],
         input=user_msg,
         capture_output=True,
@@ -104,7 +104,7 @@ def _generate_avatar_scripts(slug: str, persona: dict) -> list[tuple[str, str, s
             f"({role}, {title}). Traits: {traits}.\n"
             f"Character context: {prose[:300]}\n\n"
             f"This is variant {label} ({concept}).\n"
-            f"Set OUT_PATH = {json_dumps(str(out_path))} at the top of the script.\n"
+            f"Set OUT_PATH = {dumps(str(out_path))} at the top of the script.\n"
             "Save the animated GIF to OUT_PATH at the end."
         )
         script = _run_claude(system_prompt, user_msg)
@@ -121,7 +121,7 @@ def _execute_avatar_scripts(scripts: list[tuple[str, Path, str]]) -> list[Path]:
         script_path = SCRIPTS_DIR / f"_gen_{out_path.stem}.py"
         script_path.write_text(script)
 
-        proc = subprocess.run(
+        proc = run(
             [executable, script_path],
             capture_output=True,
             text=True,
@@ -330,22 +330,22 @@ def _create_sprite_poll(slug: str, persona: dict, sprite_code: str) -> str:
 
 def _git_commit_and_push() -> None:
     """Commit and push hello-world changes (polls, avatars, sprites)."""
-    subprocess.run(
+    run(
         ["git", "add", "polls/", "static/avatars/", "sprites-batch*.js",
          "sprites-vote.html", "grazing.html"],
         cwd=SPRITES_DIR,
         check=False,
         timeout=30,
     )
-    result = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=SPRITES_DIR, timeout=10)
+    result = run(["git", "diff", "--cached", "--quiet"], cwd=SPRITES_DIR, timeout=10)
     if result.returncode != 0:
-        subprocess.run(
+        run(
             ["git", "commit", "-m", "auto: new persona avatar + sprite polls"],
             cwd=SPRITES_DIR,
             check=True,
             timeout=30,
         )
-        subprocess.run(["git", "push"], cwd=SPRITES_DIR, check=True, timeout=60)
+        run(["git", "push"], cwd=SPRITES_DIR, check=True, timeout=60)
         activity.logger.info("hello-world committed and pushed")
     else:
         activity.logger.info("hello-world: nothing to commit")
