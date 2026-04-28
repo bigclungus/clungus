@@ -189,9 +189,22 @@ class PolymarketWorkflow:
             )
 
             # ------------------------------------------------------------------ #
-            # 6. Decision: 3+ yea → bet YES; 3+ nay → skip; else no action
+            # 6. Decision: skip_veto → skip; 3+ yea → bet YES; 3+ nay → skip; else no action
             # ------------------------------------------------------------------ #
-            if yea >= 3:
+            if tally.get("skip_veto"):
+                # Activity signalled an immediate veto — skip without waiting for nay threshold
+                workflow.logger.info("PolymarketWorkflow: skip_veto=True — skipping market, trying next")
+                await workflow.execute_activity(
+                    post_vote_result_notification,
+                    args=[market, tally, "skip_veto"],
+                    start_to_close_timeout=_SHORT,
+                    retry_policy=_IO_RETRY,
+                )
+                nay_markets.append(market)
+                excluded_ids.append(condition_id)
+                continue
+
+            elif yea >= 3:
                 # Place the bet
                 workflow.logger.info("PolymarketWorkflow: 3+ yea — placing YES bet")
                 await workflow.execute_activity(
