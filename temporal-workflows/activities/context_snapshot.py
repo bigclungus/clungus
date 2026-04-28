@@ -36,15 +36,14 @@ def _parse_file_reads(jsonl_path: Path) -> list[str]:
     """Parse a JSONL session file and return all file_path values from Read tool_use calls."""
     paths: list[str] = []
     try:
-        with open(jsonl_path, "r", encoding="utf-8", errors="replace") as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    obj = loads(line)
-                except JSONDecodeError:
-                    continue
+        for line in jsonl_path.read_text(encoding="utf-8", errors="replace").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                obj = loads(line)
+            except JSONDecodeError:
+                continue
 
                 # Format 1: {"type": "tool_use", "name": "Read", "input": {"file_path": "..."}}
                 if (
