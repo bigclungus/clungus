@@ -217,7 +217,7 @@ async def post_market_poll(market: dict) -> str:
         + (f" | {category}" if category else "")
     )
     content_parts.append(
-        "\n\n👍 = YES bet  |  👎 = NO (skip)\n"
+        "\n\n👍 = YES bet  |  👎 = NO  |  ⏭️ = SKIP (veto — any skip immediately skips this market)\n"
         "*Congress is also deliberating. Combined vote decides the bet in 12 hours.*"
     )
 
@@ -232,7 +232,7 @@ async def post_market_poll(market: dict) -> str:
         "User-Agent": "BigClungusBot/1.0",
     }
     async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
-        for emoji in ["%F0%9F%91%8D", "%F0%9F%91%8E"]:  # URL-encoded 👍 👎
+        for emoji in ["%F0%9F%91%8D", "%F0%9F%91%8E", "%E2%8F%AD%EF%B8%8F"]:  # URL-encoded 👍 👎 ⏭️
             url = f"{DISCORD_API}/channels/{MAIN_CHANNEL_ID}/messages/{message_id}/reactions/{emoji}/@me"
             async with session.put(url, headers=headers) as resp:
                 if resp.status not in (200, 201, 204):
@@ -314,10 +314,18 @@ async def get_vote_tally(message_id: str, congress_verdict: str) -> dict:
     """
     Tally Discord emoji reactions + Congress verdict.
 
-    Discord 👍 = yea, 👎 = nay (bot's own reaction not counted).
+    Discord 👍 = yea, 👎 = nay, ⏭️ = skip/veto (bot's own reactions not counted).
     Congress: if verdict contains strong YES/YEA/AGREE/SUPPORT language → 1 yea; NAY/NO/AGAINST → 1 nay.
 
-    Returns dict: {"yea": int, "nay": int, "discord_yea": int, "discord_nay": int, "congress_vote": str}
+    If any non-bot ⏭️ reactions exist, skip_veto=True is returned — caller should
+    immediately skip this market without waiting for 3 nay.
+
+    Returns dict: {
+        "yea": int, "nay": int,
+        "discord_yea": int, "discord_nay": int, "discord_skip": int,
+        "congress_vote": str,
+        "skip_veto": bool,
+    }
     """
     token = get_discord_token()
     headers = {
@@ -348,13 +356,25 @@ async def get_vote_tally(message_id: str, congress_verdict: str) -> dict:
             if resp.status == 200:
                 thumbs_down_users = [u["id"] for u in await resp.json()]
 
+        # Fetch ⏭️ reactors (skip/veto)
+        skip_users: list[str] = []
+        url_skip = f"{DISCORD_API}/channels/{MAIN_CHANNEL_ID}/messages/{message_id}/reactions/%E2%8F%AD%EF%B8%8F?limit=100"
+        async with session.get(url_skip, headers=headers) as resp:
+            if resp.status == 200:
+                skip_users = [u["id"] for u in await resp.json()]
+
     # Exclude bot's own reactions
     if bot_user_id:
         thumbs_up_users = [u for u in thumbs_up_users if u != bot_user_id]
         thumbs_down_users = [u for u in thumbs_down_users if u != bot_user_id]
+        skip_users = [u for u in skip_users if u != bot_user_id]
 
     discord_yea = len(thumbs_up_users)
     discord_nay = len(thumbs_down_users)
+    discord_skip = len(skip_users)
+
+    # Any skip reaction = immediate veto
+    skip_veto = discord_skip > 0
 
     # Interpret Congress verdict
     import re
@@ -385,7 +405,9 @@ async def get_vote_tally(message_id: str, congress_verdict: str) -> dict:
         "nay": total_nay,
         "discord_yea": discord_yea,
         "discord_nay": discord_nay,
+        "discord_skip": discord_skip,
         "congress_vote": congress_vote,
+        "skip_veto": skip_veto,
     }
     activity.logger.info("get_vote_tally: %s", result)
     return result
@@ -588,6 +610,9 @@ async def post_vote_result_notification(
 
     if action == "bet_yes":
         action_line = f"✅ Placing $5 YES bet on Polymarket!"
+    elif action == "skip_veto":
+        discord_skip = tally.get("discord_skip", 0)
+        action_line = f"⏭️ Veto! {discord_skip} skip reaction(s) — skipping this market immediately."
     elif action == "skip":
         action_line = f"⏭️ 3 nay votes — skipping this market, trying another."
     else:
