@@ -142,6 +142,11 @@ async def fetch_polymarket_markets(
             price = float(prices_raw[i]) if i < len(prices_raw) else 0.5
             tokens.append({"outcome": outcome, "token_id": token_id, "price": price})
 
+        # Prefer the event-level slug for URL construction — the market-level slug
+        # produces 404s; the event slug at events[0].slug gives a valid 200.
+        events = m.get("events") or []
+        event_slug = events[0].get("slug", "") if events else ""
+
         markets.append({
             "condition_id": m.get("conditionId", ""),
             "question": m.get("question", ""),
@@ -150,6 +155,7 @@ async def fetch_polymarket_markets(
             "volume": volume,
             "tokens": tokens,
             "market_slug": m.get("slug", ""),
+            "event_slug": event_slug,
             "category": m.get("category", ""),
         })
 
@@ -259,9 +265,11 @@ async def post_market_poll(market: dict) -> str:
         f"\n\nResolves: {end_display} | Volume: ${volume:,.0f}"
         + (f" | {category}" if category else "")
     )
-    market_slug = market.get("market_slug", "")
-    if market_slug:
-        content_parts.append(f"\n🔗 https://polymarket.com/event/{market_slug}")
+    # event_slug (from events[0].slug) produces valid URLs; market_slug (market-level)
+    # returns 404. Fall back to market_slug only if event_slug is absent.
+    event_slug = market.get("event_slug", "") or market.get("market_slug", "")
+    if event_slug:
+        content_parts.append(f"\n🔗 https://polymarket.com/event/{event_slug}")
     content_parts.append(
         "\n\n👍 = YES bet  |  👎 = NO  |  ⏭️ = SKIP (veto — any skip immediately skips this market)\n"
         "*Congress is also deliberating. Combined vote decides the bet in 12 hours.*"
