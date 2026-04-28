@@ -58,8 +58,7 @@ def _run_drift_scan_sync() -> str | None:
                 age_days = (now - updated).days
                 if age_days >= STALE_DAYS:
                     labels = [lbl["name"] for lbl in issue.get("labels", [])]
-                    label_str = f" [{', '.join(labels)}]" if labels else ""
-                    findings.append(f"issue #{issue['number']}{label_str}: `{issue['title']}` — no activity in {age_days}d")
+                    findings.append(f"issue #{issue['number']}{' [' + ', '.join(labels) + ']' if labels else ''}: `{issue['title']}` — no activity in {age_days}d")
         else:
             findings.append(f"GitHub issue check failed: {result.stderr.strip()}")
     except Exception as exc:

@@ -1,13 +1,13 @@
 from re import sub, DOTALL, IGNORECASE
 from asyncio import get_running_loop
-from os.path import expanduser
+from pathlib import Path
 
 from temporalio import activity
 
 from .constants import MAIN_CHANNEL_ID
 from .inject_act import _do_inject
 
-PROTON_SESSION = expanduser("~/.cache/proton_session.json")
+PROTON_SESSION = Path("~/.cache/proton_session.json").expanduser()
 
 
 @activity.defn
@@ -63,12 +63,8 @@ def _check_emails_sync(last_check_ts: float) -> list[dict]:
 @activity.defn
 async def inject_email_notification(email: dict) -> None:
     """Inject an email notification into the bot session via the inject endpoint."""
-    subject = email['subject']
-    sender = email['sender']
-    snippet = email['snippet']
-
-    content = f"📧 **New email** from {sender}\n**Subject:** {subject}"
-    if snippet:
-        content += f"\n> {snippet}{'…' if len(snippet) == 200 else ''}"
+    content = f"📧 **New email** from {email['sender']}\n**Subject:** {email['subject']}"
+    if email['snippet']:
+        content += f"\n> {email['snippet']}{'…' if len(email['snippet']) == 200 else ''}"
 
     await _do_inject(content, MAIN_CHANNEL_ID, user="email-poller")
