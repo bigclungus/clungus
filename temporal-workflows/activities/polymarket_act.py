@@ -315,13 +315,13 @@ async def launch_congress_on_market(market: dict, chat_id: str) -> str:
 
     handle = await client.start_workflow(
         "CongressWorkflow",
-        args=[{"topic": topic, "chat_id": chat_id, "flavor": "congress"}],
+        args=[{"topic": topic, "chat_id": chat_id, "flavor": "meme"}],
         id=workflow_id,
         task_queue="listings-queue",
     )
 
     activity.logger.info(
-        "launch_congress_on_market: started CongressWorkflow id=%s run_id=%s",
+        "launch_congress_on_market: started CongressWorkflow (meme flavor) id=%s run_id=%s",
         workflow_id, handle.result_run_id,
     )
     return handle.result_run_id
