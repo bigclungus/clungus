@@ -50,12 +50,24 @@ def _read_private_key() -> str:
     raise RuntimeError("PRIVATE_KEY not found in wallet file")
 
 
+POLYMARKET_GAMMA = "https://gamma-api.polymarket.com"
+
+# Browser-like headers to avoid CDN blocks
+_POLYMARKET_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "application/json",
+}
+
+
 @activity.defn
 async def fetch_polymarket_markets(
     hours_min: int = 24, hours_max: int = 48, limit: int = 20
 ) -> list[dict]:
     """
     Fetch active Polymarket markets resolving within hours_min..hours_max from now.
+
+    Uses the Gamma API (gamma-api.polymarket.com) which supports server-side
+    date filtering — avoids paginating thousands of markets client-side.
 
     Returns list of market dicts sorted by volume descending, up to `limit` entries.
     Each dict contains: condition_id, question, description, end_date_iso,
@@ -65,50 +77,81 @@ async def fetch_polymarket_markets(
     window_start = now + timedelta(hours=hours_min)
     window_end = now + timedelta(hours=hours_max)
 
+    # ISO 8601 strings for query params
+    end_date_min = window_start.strftime("%Y-%m-%dT%H:%M:%SZ")
+    end_date_max = window_end.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    url = (
+        f"{POLYMARKET_GAMMA}/markets"
+        f"?closed=false&active=true"
+        f"&end_date_min={end_date_min}&end_date_max={end_date_max}"
+        f"&limit={min(limit * 5, 100)}"  # fetch a few extra to filter/sort, cap at 100
+    )
+
+    async with aiohttp.ClientSession(timeout=POLYMARKET_TIMEOUT, headers=_POLYMARKET_HEADERS) as session:
+        async with session.get(url) as resp:
+            if resp.status != 200:
+                body = await resp.text()
+                raise RuntimeError(f"Polymarket Gamma API fetch failed ({resp.status}): {body[:300]}")
+            raw_markets = await resp.json()
+
+    if not isinstance(raw_markets, list):
+        raise RuntimeError(f"Unexpected Gamma API response type: {type(raw_markets).__name__}")
+
     markets: list[dict] = []
-    offset = 0
-    page_size = 100
+    for m in raw_markets:
+        # endDate has full datetime; endDateIso may be just a date string (YYYY-MM-DD)
+        end_str = m.get("endDate") or m.get("endDateIso") or ""
+        if not end_str:
+            continue
+        try:
+            # Normalize: if bare date (no time component), treat as midnight UTC
+            normalized = end_str.replace("Z", "+00:00")
+            if "T" not in normalized:
+                normalized = normalized + "T00:00:00+00:00"
+            end_dt = datetime.fromisoformat(normalized)
+        except ValueError:
+            continue
 
-    async with aiohttp.ClientSession(timeout=POLYMARKET_TIMEOUT) as session:
-        while True:
-            url = f"{POLYMARKET_CLOB}/markets?closed=false&limit={page_size}&offset={offset}"
-            async with session.get(url) as resp:
-                if resp.status != 200:
-                    body = await resp.text()
-                    raise RuntimeError(f"Polymarket markets fetch failed ({resp.status}): {body[:300]}")
-                data = await resp.json()
+        # Double-check window (server filter may be approximate)
+        if not (window_start <= end_dt <= window_end):
+            continue
 
-            raw_markets = data if isinstance(data, list) else data.get("data", [])
-            if not raw_markets:
-                break
+        volume = float(m.get("volumeClob") or m.get("volume") or 0)
 
-            for m in raw_markets:
-                end_str = m.get("end_date_iso") or m.get("end_date") or ""
-                if not end_str:
-                    continue
+        # Build tokens list from outcomes + outcomePrices + clobTokenIds.
+        # The Gamma API returns these fields as JSON-encoded strings within the JSON.
+        def _parse_json_field(val: object) -> list:
+            if isinstance(val, list):
+                return val
+            if isinstance(val, str):
                 try:
-                    end_dt = datetime.fromisoformat(end_str.replace("Z", "+00:00"))
-                except ValueError:
-                    continue
+                    parsed = loads(val)
+                    return parsed if isinstance(parsed, list) else []
+                except Exception:
+                    return []
+            return []
 
-                if window_start <= end_dt <= window_end:
-                    volume = float(m.get("volume", 0) or 0)
-                    tokens = m.get("tokens", [])
-                    markets.append({
-                        "condition_id": m.get("condition_id", ""),
-                        "question": m.get("question", ""),
-                        "description": m.get("description", ""),
-                        "end_date_iso": end_str,
-                        "volume": volume,
-                        "tokens": tokens,
-                        "market_slug": m.get("market_slug", ""),
-                        "category": m.get("category", ""),
-                    })
+        outcomes = _parse_json_field(m.get("outcomes"))
+        prices_raw = _parse_json_field(m.get("outcomePrices"))
+        clob_ids = _parse_json_field(m.get("clobTokenIds"))
 
-            # If we got a full page and might have more, keep going
-            if len(raw_markets) < page_size:
-                break
-            offset += page_size
+        tokens = []
+        for i, outcome in enumerate(outcomes):
+            token_id = clob_ids[i] if i < len(clob_ids) else ""
+            price = float(prices_raw[i]) if i < len(prices_raw) else 0.5
+            tokens.append({"outcome": outcome, "token_id": token_id, "price": price})
+
+        markets.append({
+            "condition_id": m.get("conditionId", ""),
+            "question": m.get("question", ""),
+            "description": m.get("description", ""),
+            "end_date_iso": m.get("endDate") or end_str,
+            "volume": volume,
+            "tokens": tokens,
+            "market_slug": m.get("slug", ""),
+            "category": m.get("category", ""),
+        })
 
     # Sort by volume descending and cap
     markets.sort(key=lambda m: m["volume"], reverse=True)
