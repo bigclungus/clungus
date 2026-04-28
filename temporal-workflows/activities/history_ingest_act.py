@@ -12,6 +12,7 @@ from sys import path as sys_path
 from time import monotonic
 from pathlib import Path
 
+import sqlite_vec
 from temporalio import activity
 
 from .constants import SCRIPTS_DIR
@@ -35,7 +36,6 @@ _UPSERT_STATE = (
 # ---- Database ----------------------------------------------------------------
 
 def open_db() -> sqlite3.Connection:
-    import sqlite_vec
     conn = sqlite3.connect(DB_PATH)
     conn.enable_load_extension(True)
     sqlite_vec.load(conn)
