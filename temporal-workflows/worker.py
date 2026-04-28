@@ -51,6 +51,11 @@ from activities.congress_act import (
     congress_vote,
 )
 from activities.bokoen1_ingest_act import run_bokoen1_ingest
+from activities.bridge_act import (
+    execute_bridge_tx,
+    get_bridge_quote,
+    wait_for_bridge_confirmation,
+)
 from activities.discord_act import post_listings_summary
 from activities.discord_ingest_act import run_discord_ingest
 from activities.drift_scan_act import run_drift_scan
@@ -106,6 +111,7 @@ from activities.trial_act import (
 )
 from workflows.audit_wf import CongressAuditWorkflow
 from workflows.bokoen1_ingest_wf import Bokoen1IngestWorkflow
+from workflows.bridge_wf import BridgeWorkflow
 from workflows.discord_ingest_wf import DiscordIngestWorkflow
 from workflows.drift_scan_wf import DriftScanWorkflow
 from workflows.email_wf import EmailPollerWorkflow
@@ -205,6 +211,7 @@ async def main() -> None:
             Bokoen1IngestWorkflow,
             PersonaPollsWorkflow,
             JobBoardWorkflow,
+            BridgeWorkflow,
         ],
         activities=[
             post_listings_summary,
@@ -286,6 +293,9 @@ async def main() -> None:
             get_unenriched_companies,
             enrich_companies,
             update_company_data,
+            get_bridge_quote,
+            execute_bridge_tx,
+            wait_for_bridge_confirmation,
         ],
     )
     logger.info("Worker started on task queue %r", TASK_QUEUE)
