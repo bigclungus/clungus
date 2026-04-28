@@ -6,9 +6,9 @@ embeds them with local embeddings, and stores them in the sqlite-vec database at
 /mnt/data/data/discord-history.db.
 """
 from json import loads, JSONDecodeError
-from re import compile as re_compile, sub as re_sub, DOTALL
-import sys
+from re import compile, sub, DOTALL
 import sqlite3
+from sys import path as sys_path
 from time import monotonic
 from pathlib import Path
 
@@ -16,7 +16,7 @@ from temporalio import activity
 
 from .constants import SCRIPTS_DIR
 
-sys.path.insert(0, str(SCRIPTS_DIR))
+sys_path.insert(0, str(SCRIPTS_DIR))
 from common import (
     DB_PATH, LOCAL_EMBED_DIMS,
     EMBED_DIMS, local_embed_texts,
@@ -71,7 +71,7 @@ def open_db() -> sqlite3.Connection:
 
 # ---- Parsers -----------------------------------------------------------------
 
-_CHANNEL_RE = re_compile(
+_CHANNEL_RE = compile(
     r'<channel\s+source="plugin:discord[^"]*"\s+'
     r'chat_id="([^"]+)"\s+'
     r'message_id="([^"]+)"\s+'
@@ -79,15 +79,15 @@ _CHANNEL_RE = re_compile(
     DOTALL,
 )
 
-_OMNI_CHANNEL_RE = re_compile(
+_OMNI_CHANNEL_RE = compile(
     r'<channel\s+source="omni"[^>]*received_at="([^"]+)"[^>]*>(.*?)</channel>',
     DOTALL,
 )
 
-_ATTACH_COUNT_RE = re_compile(r'attachment_count="(\d+)"')
-_ATTACH_META_RE = re_compile(r'attachments="([^"]*)"')
+_ATTACH_COUNT_RE = compile(r'attachment_count="(\d+)"')
+_ATTACH_META_RE = compile(r'attachments="([^"]*)"')
 
-_FETCH_LINE_RE = re_compile(
+_FETCH_LINE_RE = compile(
     r'^\[([^\]]+)\]\s+([^:]+):\s+(.*?)\s+\(id:\s+(\d+)\)\s*$'
 )
 
