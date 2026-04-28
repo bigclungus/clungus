@@ -10,7 +10,7 @@ Activities for the MobGenerationWorkflow.
 import asyncio
 from json import loads, JSONDecodeError
 from random import sample
-import re
+from re import compile, escape, sub, DOTALL, MULTILINE
 import sqlite3
 from pathlib import Path
 
@@ -292,7 +292,7 @@ def _slugify(name: str) -> str:
     "Centronias the Void Walker" -> "centronias_the_void_walker"
     """
     slug = name.lower()
-    slug = re.sub(r"[^a-z0-9]+", "_", slug)
+    slug = sub(r"[^a-z0-9]+", "_", slug)
     slug = slug.strip("_")
     return slug
 
@@ -338,9 +338,9 @@ async def generate_mob_sprite(entity_name: str, display_name: str, description: 
     existing = MOB_SPRITES_JS.read_text(encoding="utf-8") if MOB_SPRITES_JS.exists() else ""
 
     # Replace if function already exists, otherwise append
-    pattern = re.compile(
-        r"(?m)(^//[^\n]*\n)?^function " + re.escape(fn_name) + r"\(ctx, cx, cy\).*?^}",
-        re.DOTALL | re.MULTILINE,
+    pattern = compile(
+        r"(?m)(^//[^\n]*\n)?^function " + escape(fn_name) + r"\(ctx, cx, cy\).*?^}",
+        DOTALL | MULTILINE,
     )
     if pattern.search(existing):
         new_content = pattern.sub(raw, existing, count=1)
