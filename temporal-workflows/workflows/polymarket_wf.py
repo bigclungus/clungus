@@ -23,8 +23,8 @@ from temporalio import workflow
 from temporalio.common import RetryPolicy
 from temporalio.exceptions import ActivityError
 
-# Congress integration disabled — unreliable. Pure Discord emoji vote only.
-USE_CONGRESS = False
+# Congress integration enabled — personas vote alongside Discord reactions.
+USE_CONGRESS = True
 
 with workflow.unsafe.imports_passed_through():
     from activities.polymarket_act import (
@@ -133,7 +133,6 @@ class PolymarketWorkflow:
 
             workflow.logger.info("PolymarketWorkflow: poll posted message_id=%s", poll_message_id)
 
-            # Congress disabled (USE_CONGRESS = False) — skip launch entirely
             congress_run_id: str = ""
             if USE_CONGRESS:
                 try:
@@ -155,7 +154,7 @@ class PolymarketWorkflow:
             await asyncio.sleep(12 * 3600)
 
             # ------------------------------------------------------------------ #
-            # 5. Get Congress verdict (disabled — USE_CONGRESS = False)
+            # 5. Get Congress verdict (if congress ran)
             # ------------------------------------------------------------------ #
             congress_result: dict = {"persona_yea": 0, "persona_nay": 0}
             if USE_CONGRESS and congress_run_id:

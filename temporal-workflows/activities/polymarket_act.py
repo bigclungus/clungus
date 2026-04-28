@@ -457,21 +457,46 @@ async def get_congress_verdict(congress_run_id: str, condition_id: str, timeout_
             session_file = HELLO_WORLD_SESSIONS_DIR / f"congress-{num_str}.json"
             if session_file.exists():
                 session_data = loads(session_file.read_text())
-                vote_summary = session_data.get("vote_summary", {})
+                vote_summary = session_data.get("vote_summary")
+                # vote_summary may be a JSON string in some older sessions
                 if isinstance(vote_summary, str):
-                    vote_summary = loads(vote_summary)
-                agree_names = vote_summary.get("agree", [])
-                disagree_names = vote_summary.get("disagree", [])
-                for name in agree_names:
-                    persona_votes[name] = "yea"
-                    persona_yea += 1
-                for name in disagree_names:
-                    persona_votes[name] = "nay"
-                    persona_nay += 1
-                activity.logger.info(
-                    "get_congress_verdict: %d yea / %d nay persona votes from %s",
-                    persona_yea, persona_nay, session_file,
-                )
+                    try:
+                        vote_summary = loads(vote_summary)
+                    except Exception:
+                        vote_summary = None
+
+                if vote_summary and isinstance(vote_summary, dict):
+                    agree_names = vote_summary.get("agree") or []
+                    disagree_names = vote_summary.get("disagree") or []
+                    for name in agree_names:
+                        persona_votes[name] = "yea"
+                        persona_yea += 1
+                    for name in disagree_names:
+                        persona_votes[name] = "nay"
+                        persona_nay += 1
+                    activity.logger.info(
+                        "get_congress_verdict: %d yea / %d nay persona votes from %s",
+                        persona_yea, persona_nay, session_file,
+                    )
+                else:
+                    # vote_summary absent or empty — fall back to parsing the overall verdict string
+                    # Ibrahim signals abort/yea/nay in the verdict text
+                    activity.logger.warning(
+                        "get_congress_verdict: vote_summary missing/empty in %s — falling back to verdict text parsing",
+                        session_file,
+                    )
+                    verdict_text = (session_data.get("verdict") or verdict or "").upper()
+                    if "YEA" in verdict_text or "AGREE" in verdict_text or "YES" in verdict_text:
+                        persona_votes["[congress-verdict]"] = "yea"
+                        persona_yea += 1
+                    elif "NAY" in verdict_text or "DISAGREE" in verdict_text or "NO" in verdict_text:
+                        persona_votes["[congress-verdict]"] = "nay"
+                        persona_nay += 1
+                    # If neither, no persona votes counted (avoids false signal)
+                    activity.logger.info(
+                        "get_congress_verdict: verdict-text fallback → persona_yea=%d persona_nay=%d",
+                        persona_yea, persona_nay,
+                    )
             else:
                 activity.logger.warning(
                     "get_congress_verdict: session file not found at %s — no persona votes", session_file
