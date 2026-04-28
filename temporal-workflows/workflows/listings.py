@@ -1,7 +1,6 @@
 from datetime import timedelta
 
-from temporalio import activity as _activity
-from temporalio import workflow
+from temporalio import activity, workflow
 from temporalio.common import RetryPolicy
 
 with workflow.unsafe.imports_passed_through():
@@ -12,7 +11,7 @@ with workflow.unsafe.imports_passed_through():
     from activities.constants import TEMPORAL_WORKFLOWS_DIR
 
 
-@_activity.defn(name="filter_new_listings")
+@activity.defn(name="filter_new_listings")
 async def filter_new_listings(all_listings: list[dict], seen_ids: list[str]) -> list[dict]:
     """Pure dedup filter. No I/O — registered as local activity."""
     seen_set = set(seen_ids)
