@@ -392,7 +392,10 @@ async def launch_congress_on_market(market: dict, chat_id: str) -> str:
     )
 
     client = await Client.connect(TEMPORAL_HOST)
-    workflow_id = f"congress-polymarket-{condition_id[:30]}"
+    # Include a timestamp suffix so concurrent / re-fired PolymarketWorkflows on
+    # the same market don't collide on a deterministic congress workflow id.
+    ts = int(datetime.now(timezone.utc).timestamp())
+    workflow_id = f"congress-polymarket-{condition_id[:30]}-{ts}"
 
     handle = await client.start_workflow(
         "CongressWorkflow",
@@ -405,11 +408,13 @@ async def launch_congress_on_market(market: dict, chat_id: str) -> str:
         "launch_congress_on_market: started CongressWorkflow (meme flavor) id=%s run_id=%s",
         workflow_id, handle.result_run_id,
     )
-    return handle.result_run_id
+    # Return the workflow_id (not run_id) so get_congress_verdict can locate
+    # this exact congress run without re-deriving the id from condition_id.
+    return workflow_id
 
 
 @activity.defn
-async def get_congress_verdict(congress_run_id: str, condition_id: str, timeout_seconds: int = 7200) -> dict:
+async def get_congress_verdict(congress_workflow_id: str, condition_id: str, timeout_seconds: int = 7200) -> dict:
     """
     Poll for the CongressWorkflow result and return per-persona vote breakdown.
 
@@ -427,10 +432,12 @@ async def get_congress_verdict(congress_run_id: str, condition_id: str, timeout_
     from temporalio.client import Client
     from .constants import TEMPORAL_HOST, HELLO_WORLD_SESSIONS_DIR
 
-    workflow_id = f"congress-polymarket-{condition_id[:30]}"
+    # condition_id retained for logging/back-compat but workflow id now passed
+    # directly (it includes a timestamp suffix from launch_congress_on_market).
+    workflow_id = congress_workflow_id
 
     client = await Client.connect(TEMPORAL_HOST)
-    handle = client.get_workflow_handle(workflow_id, run_id=congress_run_id)
+    handle = client.get_workflow_handle(workflow_id)
 
     try:
         result = await asyncio.wait_for(handle.result(), timeout=timeout_seconds)

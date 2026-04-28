@@ -133,16 +133,16 @@ class PolymarketWorkflow:
 
             workflow.logger.info("PolymarketWorkflow: poll posted message_id=%s", poll_message_id)
 
-            congress_run_id: str = ""
+            congress_workflow_id: str = ""
             if USE_CONGRESS:
                 try:
-                    congress_run_id = await workflow.execute_activity(
+                    congress_workflow_id = await workflow.execute_activity(
                         launch_congress_on_market,
                         args=[market, MAIN_CHANNEL_ID],
                         start_to_close_timeout=_SHORT,
                         retry_policy=_IO_RETRY,
                     )
-                    workflow.logger.info("PolymarketWorkflow: Congress launched run_id=%s", congress_run_id)
+                    workflow.logger.info("PolymarketWorkflow: Congress launched workflow_id=%s", congress_workflow_id)
                 except ActivityError as exc:
                     workflow.logger.warning("launch_congress_on_market failed (non-fatal): %s", exc)
                     # Congress failure doesn't block — just no congress vote
@@ -157,11 +157,11 @@ class PolymarketWorkflow:
             # 5. Get Congress verdict (if congress ran)
             # ------------------------------------------------------------------ #
             congress_result: dict = {"persona_yea": 0, "persona_nay": 0}
-            if USE_CONGRESS and congress_run_id:
+            if USE_CONGRESS and congress_workflow_id:
                 try:
                     congress_result = await workflow.execute_activity(
                         get_congress_verdict,
-                        args=[congress_run_id, condition_id, 1800],  # 30min timeout
+                        args=[congress_workflow_id, condition_id, 1800],  # 30min timeout
                         start_to_close_timeout=timedelta(minutes=35),
                         retry_policy=_NO_RETRY,
                     )
