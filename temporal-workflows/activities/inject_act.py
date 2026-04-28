@@ -8,13 +8,15 @@ endpoint is localhost-only.
 """
 
 from logging import getLogger
+from pathlib import Path
 from time import time
-from temporalio import activity
 
-logger = getLogger(__name__)
+from temporalio import activity
 
 from .constants import INJECT_URL
 from .common.http_io import post_json
+
+logger = getLogger(__name__)
 
 HEARTBEAT_TIMESTAMP_FILE = "/tmp/last-heartbeat.txt"
 
@@ -47,6 +49,6 @@ async def inject_message(content: str, user: str, chat_id: str) -> None:
     # Track heartbeat liveness: record timestamp whenever a heartbeat message is injected
     if "[heartbeat]" in content:
         try:
-            open(HEARTBEAT_TIMESTAMP_FILE, "w").write(str(time()))
+            Path(HEARTBEAT_TIMESTAMP_FILE).write_text(str(time()))
         except Exception as exc:
             activity.logger.warning("[inject] failed to write heartbeat timestamp: %s", exc)
