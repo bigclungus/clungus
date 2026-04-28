@@ -110,6 +110,7 @@ from activities.trial_act import (
     trial_verdict,
 )
 from workflows.audit_wf import CongressAuditWorkflow
+from workflows.polymarket_wf import PolymarketWorkflow
 from workflows.bokoen1_ingest_wf import Bokoen1IngestWorkflow
 from workflows.bridge_wf import BridgeWorkflow
 from workflows.discord_ingest_wf import DiscordIngestWorkflow
@@ -130,6 +131,18 @@ from workflows.simplify_wf import SimplifyCronWorkflow
 from workflows.startup_wf import StartupWorkflow
 from workflows.sweeper import TaskSweeperWorkflow
 from workflows.tasks_backup_wf import TaskDbBackupWorkflow
+from activities.polymarket_act import (
+    check_market_resolution,
+    fetch_polymarket_markets,
+    get_congress_verdict,
+    get_vote_tally,
+    launch_congress_on_market,
+    pick_market_with_llm,
+    place_polymarket_bet,
+    post_market_poll,
+    post_resolution_notification,
+    post_vote_result_notification,
+)
 from workflows.test_cron_wf import TestCronWorkflow
 
 TASK_QUEUE = "listings-queue"
@@ -212,6 +225,7 @@ async def main() -> None:
             PersonaPollsWorkflow,
             JobBoardWorkflow,
             BridgeWorkflow,
+            PolymarketWorkflow,
         ],
         activities=[
             post_listings_summary,
@@ -296,6 +310,16 @@ async def main() -> None:
             get_bridge_quote,
             execute_bridge_tx,
             wait_for_bridge_confirmation,
+            fetch_polymarket_markets,
+            pick_market_with_llm,
+            post_market_poll,
+            launch_congress_on_market,
+            get_congress_verdict,
+            get_vote_tally,
+            place_polymarket_bet,
+            check_market_resolution,
+            post_resolution_notification,
+            post_vote_result_notification,
         ],
     )
     logger.info("Worker started on task queue %r", TASK_QUEUE)

@@ -6,3 +6,4 @@ homeharvest
 pandas
 openai
 falkordb
+py-clob-client
