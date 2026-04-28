@@ -30,7 +30,7 @@ Trial-specific input keys:
 """
 import asyncio
 from json import loads
-from re import search as re_search, finditer as re_finditer, IGNORECASE
+from re import search, finditer, IGNORECASE
 from datetime import timedelta
 from temporalio import workflow
 from temporalio.common import RetryPolicy
@@ -143,16 +143,16 @@ def _parse_jury_vote(speech: str) -> str:
     Prefers explicit vote declarations; falls back to the last occurrence
     of a verdict keyword. Defaults to PROBATION if nothing is found.
     """
-    explicit = re_search(r'\b(?:vote|voting|voted):\s*(ACQUIT|RETIRE|FIRE|EVOLVE|PROBATION)\b', speech, IGNORECASE)
+    explicit = search(r'\b(?:vote|voting|voted):\s*(ACQUIT|RETIRE|FIRE|EVOLVE|PROBATION)\b', speech, IGNORECASE)
     if explicit:
         v = explicit.group(1).upper()
         return "RETIRE" if v == "FIRE" else v
-    explicit2 = re_search(r'\bI\s+vote\s+(ACQUIT|RETIRE|FIRE|EVOLVE|PROBATION)\b', speech, IGNORECASE)
+    explicit2 = search(r'\bI\s+vote\s+(ACQUIT|RETIRE|FIRE|EVOLVE|PROBATION)\b', speech, IGNORECASE)
     if explicit2:
         v = explicit2.group(1).upper()
         return "RETIRE" if v == "FIRE" else v
     last_match = None
-    for m in re_finditer(r'\b(ACQUIT|RETIRE|FIRE|EVOLVE|PROBATION)\b', speech, IGNORECASE):
+    for m in finditer(r'\b(ACQUIT|RETIRE|FIRE|EVOLVE|PROBATION)\b', speech, IGNORECASE):
         last_match = m.group(1).upper()
     if last_match == "FIRE":
         last_match = "RETIRE"
