@@ -409,48 +409,103 @@ async def launch_congress_on_market(market: dict, chat_id: str) -> str:
 
 
 @activity.defn
-async def get_congress_verdict(congress_run_id: str, condition_id: str, timeout_seconds: int = 7200) -> str:
+async def get_congress_verdict(congress_run_id: str, condition_id: str, timeout_seconds: int = 7200) -> dict:
     """
-    Poll for the CongressWorkflow result and return the verdict string.
+    Poll for the CongressWorkflow result and return per-persona vote breakdown.
 
     Waits up to timeout_seconds (default 2h) for completion.
-    Returns the raw verdict string from the session.
+
+    Returns dict:
+        {
+            "verdict": str,           # raw Ibrahim verdict text
+            "session_id": str,        # e.g. "congress-0091"
+            "persona_votes": dict,    # {display_name: "yea" | "nay"}
+            "persona_yea": int,
+            "persona_nay": int,
+        }
     """
     from temporalio.client import Client
-    from .constants import TEMPORAL_HOST
-    from .constants import HELLO_WORLD_SESSIONS_DIR
+    from .constants import TEMPORAL_HOST, HELLO_WORLD_SESSIONS_DIR
 
     workflow_id = f"congress-polymarket-{condition_id[:30]}"
 
     client = await Client.connect(TEMPORAL_HOST)
     handle = client.get_workflow_handle(workflow_id, run_id=congress_run_id)
 
-    # Wait for result with timeout
-    import asyncio
     try:
         result = await asyncio.wait_for(handle.result(), timeout=timeout_seconds)
-        verdict = result.get("verdict", "") if isinstance(result, dict) else str(result)
-        activity.logger.info("get_congress_verdict: workflow %s verdict=%s", workflow_id, verdict[:100])
-        return verdict
     except asyncio.TimeoutError:
         raise RuntimeError(f"CongressWorkflow {workflow_id} did not complete within {timeout_seconds}s")
 
+    verdict = result.get("verdict", "") if isinstance(result, dict) else str(result)
+    session_id = result.get("session_id", "") if isinstance(result, dict) else ""
+
+    activity.logger.info(
+        "get_congress_verdict: workflow %s session_id=%s verdict=%s",
+        workflow_id, session_id, verdict[:100],
+    )
+
+    # Parse per-persona votes from the session file's vote_summary
+    persona_votes: dict[str, str] = {}
+    persona_yea = 0
+    persona_nay = 0
+
+    if session_id:
+        try:
+            # session_id is like "congress-0091" — extract the number
+            num_str = session_id.split("-")[-1].zfill(4)
+            session_file = HELLO_WORLD_SESSIONS_DIR / f"congress-{num_str}.json"
+            if session_file.exists():
+                session_data = loads(session_file.read_text())
+                vote_summary = session_data.get("vote_summary", {})
+                if isinstance(vote_summary, str):
+                    vote_summary = loads(vote_summary)
+                agree_names = vote_summary.get("agree", [])
+                disagree_names = vote_summary.get("disagree", [])
+                for name in agree_names:
+                    persona_votes[name] = "yea"
+                    persona_yea += 1
+                for name in disagree_names:
+                    persona_votes[name] = "nay"
+                    persona_nay += 1
+                activity.logger.info(
+                    "get_congress_verdict: %d yea / %d nay persona votes from %s",
+                    persona_yea, persona_nay, session_file,
+                )
+            else:
+                activity.logger.warning(
+                    "get_congress_verdict: session file not found at %s — no persona votes", session_file
+                )
+        except Exception as exc:
+            activity.logger.warning(
+                "get_congress_verdict: failed to parse session file for %s: %s", session_id, exc
+            )
+
+    return {
+        "verdict": verdict,
+        "session_id": session_id,
+        "persona_votes": persona_votes,
+        "persona_yea": persona_yea,
+        "persona_nay": persona_nay,
+    }
+
 
 @activity.defn
-async def get_vote_tally(message_id: str, congress_verdict: str) -> dict:
+async def get_vote_tally(message_id: str, congress_result: dict) -> dict:
     """
-    Tally Discord emoji reactions + Congress verdict.
+    Tally Discord emoji reactions + per-persona Congress votes.
 
     Discord 👍 = yea, 👎 = nay, ⏭️ = skip/veto (bot's own reactions not counted).
-    Congress: if verdict contains strong YES/YEA/AGREE/SUPPORT language → 1 yea; NAY/NO/AGAINST → 1 nay.
+    Congress: each individual persona in vote_summary gets their own yea/nay vote.
 
     If any non-bot ⏭️ reactions exist, skip_veto=True is returned — caller should
-    immediately skip this market without waiting for 3 nay.
+    immediately skip this market without waiting for the majority threshold.
 
     Returns dict: {
         "yea": int, "nay": int,
         "discord_yea": int, "discord_nay": int, "discord_skip": int,
-        "congress_vote": str,
+        "persona_votes": dict,
+        "persona_yea": int, "persona_nay": int,
         "skip_veto": bool,
     }
     """
@@ -460,6 +515,11 @@ async def get_vote_tally(message_id: str, congress_verdict: str) -> dict:
         "Content-Type": "application/json",
         "User-Agent": "BigClungusBot/1.0",
     }
+
+    # Extract per-persona vote breakdown from congress_result
+    persona_votes: dict[str, str] = congress_result.get("persona_votes", {}) if isinstance(congress_result, dict) else {}
+    persona_yea: int = congress_result.get("persona_yea", 0) if isinstance(congress_result, dict) else 0
+    persona_nay: int = congress_result.get("persona_nay", 0) if isinstance(congress_result, dict) else 0
 
     # Fetch bot user ID so we can exclude bot's own reaction
     bot_user_id: str | None = None
@@ -503,29 +563,9 @@ async def get_vote_tally(message_id: str, congress_verdict: str) -> dict:
     # Any skip reaction = immediate veto
     skip_veto = discord_skip > 0
 
-    # Interpret Congress verdict
-    import re
-    verdict_upper = (congress_verdict or "").upper()
-
-    # Look for explicit YEA/NAY/YES/NO signals in the verdict
-    congress_vote = "abstain"
-    yea_patterns = [r'\bYEA\b', r'\bYES\b', r'\bAGREE\b', r'\bSUPPORT\b', r'\bBET\b', r'\bFAVORABLE\b', r'\bFAVOURED\b']
-    nay_patterns = [r'\bNAY\b', r'\bNO\b', r'\bDISAGREE\b', r'\bAGAINST\b', r'\bSKIP\b', r'\bPASS\b', r'\bDECLINE\b']
-
-    yea_hits = sum(1 for p in yea_patterns if re.search(p, verdict_upper))
-    nay_hits = sum(1 for p in nay_patterns if re.search(p, verdict_upper))
-
-    if yea_hits > nay_hits:
-        congress_vote = "yea"
-    elif nay_hits > yea_hits:
-        congress_vote = "nay"
-    # tie → abstain
-
-    congress_yea = 1 if congress_vote == "yea" else 0
-    congress_nay = 1 if congress_vote == "nay" else 0
-
-    total_yea = discord_yea + congress_yea
-    total_nay = discord_nay + congress_nay
+    # Combine Discord reactions + individual persona votes
+    total_yea = discord_yea + persona_yea
+    total_nay = discord_nay + persona_nay
 
     result = {
         "yea": total_yea,
@@ -533,7 +573,9 @@ async def get_vote_tally(message_id: str, congress_verdict: str) -> dict:
         "discord_yea": discord_yea,
         "discord_nay": discord_nay,
         "discord_skip": discord_skip,
-        "congress_vote": congress_vote,
+        "persona_votes": persona_votes,
+        "persona_yea": persona_yea,
+        "persona_nay": persona_nay,
         "skip_veto": skip_veto,
     }
     activity.logger.info("get_vote_tally: %s", result)
@@ -728,20 +770,21 @@ async def post_vote_result_notification(
     nay = tally.get("nay", 0)
     discord_yea = tally.get("discord_yea", 0)
     discord_nay = tally.get("discord_nay", 0)
-    congress_vote = tally.get("congress_vote", "abstain")
+    persona_yea = tally.get("persona_yea", 0)
+    persona_nay = tally.get("persona_nay", 0)
 
     tally_line = (
-        f"👍 {yea} yea (Discord: {discord_yea} + Congress: {'1' if congress_vote == 'yea' else '0'}) | "
-        f"👎 {nay} nay (Discord: {discord_nay} + Congress: {'1' if congress_vote == 'nay' else '0'})"
+        f"👍 {yea} yea (Discord: {discord_yea} + Personas: {persona_yea}) | "
+        f"👎 {nay} nay (Discord: {discord_nay} + Personas: {persona_nay})"
     )
 
     if action == "bet_yes":
-        action_line = f"✅ Placing $5 YES bet on Polymarket!"
+        action_line = f"✅ Majority yea — placing $5 YES bet on Polymarket!"
     elif action == "skip_veto":
         discord_skip = tally.get("discord_skip", 0)
         action_line = f"⏭️ Veto! {discord_skip} skip reaction(s) — skipping this market immediately."
     elif action == "skip":
-        action_line = f"⏭️ 3 nay votes — skipping this market, trying another."
+        action_line = f"⏭️ Majority nay — skipping this market, trying another."
     else:
         action_line = f"🤷 No consensus reached ({yea} yea / {nay} nay) — no action."
 
