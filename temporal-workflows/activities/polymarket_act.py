@@ -230,11 +230,72 @@ async def pick_market_with_llm(markets: list[dict], exclude_ids: list[str] | Non
     return chosen
 
 
+async def _screenshot_market_page(url: str) -> bytes | None:
+    """
+    Take a viewport screenshot of a Polymarket market page.
+
+    Returns PNG bytes, or None if the screenshot fails (caller should
+    fall back to a text-only message).
+    """
+    try:
+        from playwright.async_api import async_playwright
+
+        async with async_playwright() as pw:
+            browser = await pw.chromium.launch(headless=True)
+            page = await browser.new_page(viewport={"width": 1280, "height": 800})
+            try:
+                await page.goto(url, wait_until="networkidle", timeout=30_000)
+            except Exception:
+                # networkidle may time out on JS-heavy pages — grab whatever rendered
+                await page.wait_for_timeout(5_000)
+            png_bytes: bytes = await page.screenshot(full_page=False)
+            await browser.close()
+            return png_bytes
+    except Exception as exc:
+        logger.warning("_screenshot_market_page: failed for %s — %s", url, exc)
+        return None
+
+
+async def _post_discord_message_with_image(
+    channel_id: str,
+    content: str,
+    image_bytes: bytes,
+) -> str:
+    """
+    Post a Discord message with an attached PNG image via multipart/form-data.
+
+    Returns the message_id string.
+    """
+    token = get_discord_token()
+    url = f"{DISCORD_API}/channels/{channel_id}/messages"
+    headers = {
+        "Authorization": f"Bot {token}",
+        "User-Agent": "BigClungusBot/1.0",
+    }
+    data = aiohttp.FormData()
+    data.add_field("content", content)
+    data.add_field(
+        "files[0]",
+        image_bytes,
+        filename="market.png",
+        content_type="image/png",
+    )
+    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
+        async with session.post(url, data=data, headers=headers) as resp:
+            body = await resp.json()
+            if resp.status not in (200, 201):
+                raise RuntimeError(
+                    f"_post_discord_message_with_image: Discord returned {resp.status}: {body}"
+                )
+            return str(body["id"])
+
+
 @activity.defn
 async def post_market_poll(market: dict) -> str:
     """
     Post a Discord poll message for the market with 👍/👎 reactions.
 
+    Attaches a screenshot of the Polymarket page when possible.
     Returns the Discord message_id.
     """
     question = market.get("question", "Unknown market")
@@ -268,15 +329,27 @@ async def post_market_poll(market: dict) -> str:
     # event_slug (from events[0].slug) produces valid URLs; market_slug (market-level)
     # returns 404. Fall back to market_slug only if event_slug is absent.
     event_slug = market.get("event_slug", "") or market.get("market_slug", "")
-    if event_slug:
-        content_parts.append(f"\n🔗 https://polymarket.com/event/{event_slug}")
+    market_url = f"https://polymarket.com/event/{event_slug}" if event_slug else ""
+    if market_url:
+        content_parts.append(f"\n🔗 {market_url}")
     content_parts.append(
         "\n\n👍 = YES bet  |  👎 = NO  |  ⏭️ = SKIP (veto — any skip immediately skips this market)\n"
         "*Congress is also deliberating. Combined vote decides the bet in 12 hours.*"
     )
 
     content = "".join(content_parts)
-    message_id = await discord_post_message(MAIN_CHANNEL_ID, content)
+
+    # Attempt screenshot; fall back to text-only if it fails
+    screenshot: bytes | None = None
+    if market_url:
+        screenshot = await _screenshot_market_page(market_url)
+        if screenshot is None:
+            activity.logger.warning("post_market_poll: screenshot failed, posting text-only")
+
+    if screenshot is not None:
+        message_id = await _post_discord_message_with_image(MAIN_CHANNEL_ID, content, screenshot)
+    else:
+        message_id = await discord_post_message(MAIN_CHANNEL_ID, content)
 
     # Add seed reactions from the bot
     token = get_discord_token()
