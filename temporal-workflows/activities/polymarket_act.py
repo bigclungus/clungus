@@ -31,6 +31,9 @@ WALLET_PATH = "/mnt/data/secrets/eth_wallet"
 POLYGON_CHAIN_ID = 137
 BET_AMOUNT_USDC = 5.0
 
+# Generous timeout for Polymarket CLOB API — response bodies can be large
+POLYMARKET_TIMEOUT = aiohttp.ClientTimeout(total=60, connect=10, sock_read=30)
+
 
 def _read_private_key() -> str:
     """Read PRIVATE_KEY from /mnt/data/secrets/eth_wallet (KEY=VALUE format)."""
@@ -66,7 +69,7 @@ async def fetch_polymarket_markets(
     offset = 0
     page_size = 100
 
-    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
+    async with aiohttp.ClientSession(timeout=POLYMARKET_TIMEOUT) as session:
         while True:
             url = f"{POLYMARKET_CLOB}/markets?closed=false&limit={page_size}&offset={offset}"
             async with session.get(url) as resp:
@@ -469,7 +472,7 @@ async def check_market_resolution(condition_id: str) -> dict:
     Returns dict with: resolved (bool), winner (str or None), tokens (list).
     """
     url = f"{POLYMARKET_CLOB}/markets/{condition_id}"
-    async with aiohttp.ClientSession(timeout=DISCORD_TIMEOUT) as session:
+    async with aiohttp.ClientSession(timeout=POLYMARKET_TIMEOUT) as session:
         async with session.get(url) as resp:
             if resp.status != 200:
                 body = await resp.text()
