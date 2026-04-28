@@ -259,6 +259,9 @@ async def post_market_poll(market: dict) -> str:
         f"\n\nResolves: {end_display} | Volume: ${volume:,.0f}"
         + (f" | {category}" if category else "")
     )
+    market_slug = market.get("market_slug", "")
+    if market_slug:
+        content_parts.append(f"\n🔗 https://polymarket.com/event/{market_slug}")
     content_parts.append(
         "\n\n👍 = YES bet  |  👎 = NO  |  ⏭️ = SKIP (veto — any skip immediately skips this market)\n"
         "*Congress is also deliberating. Combined vote decides the bet in 12 hours.*"
