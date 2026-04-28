@@ -8,7 +8,7 @@ The congress_report activity posts results directly to Discord via the bot API.
 
 import asyncio
 import hashlib
-from json import dump, dumps, load, loads
+from json import dumps, loads
 from logging import getLogger
 from random import choice as random_choice
 import re
@@ -267,11 +267,8 @@ def _update_persona_stats(file_path: str, verdict: str, date_str: str) -> None:
         return
 
     try:
-        with open(file_path) as _f:
-            content = _f.read()
-
-        # Split on --- delimiters to isolate frontmatter
-        parts = content.split("---", 2)
+        p = Path(file_path)
+        parts = p.read_text().split("---", 2)
         if len(parts) < 3:
             return  # no valid frontmatter
         fm = parts[1]  # frontmatter body (between first and second ---)
@@ -294,8 +291,7 @@ def _update_persona_stats(file_path: str, verdict: str, date_str: str) -> None:
                 fm = fm.rstrip("\n") + f"\n{lf}: {lv}\n"
 
         parts[1] = fm
-        with open(file_path, "w") as _f:
-            _f.write("---".join(parts))
+        p.write_text("---".join(parts))
     except Exception as exc:
         activity.logger.warning(f"_update_persona_stats: failed to update {file_path}: {exc}")
 
@@ -373,8 +369,7 @@ async def congress_load_session(session_number: int) -> dict:
         activity.logger.info(f"congress_load_session: no file at {session_file} — returning empty")
         return {}
     try:
-        with open(session_file) as f:
-            data = load(f)
+        data = loads(session_file.read_text())
         activity.logger.info(
             f"congress_load_session: loaded {session_file} — status={data.get('status')!r}"
         )
@@ -650,8 +645,7 @@ async def congress_evolve(session_id: str, topic: str, debate_summaries: list) -
             fname = fpath_obj.name
             fpath = str(fpath_obj)
             try:
-                with open(fpath) as _f:
-                    content = _f.read()
+                content = fpath_obj.read_text()
                 # Extract display_name, status, and probationary flag from frontmatter
                 dn = None
                 is_probationary = False
@@ -781,32 +775,24 @@ async def congress_evolve(session_id: str, topic: str, debate_summaries: list) -
             _update_persona_stats(persona_file, "RETIRE", today)
             # Update status field in frontmatter to meme (no file move — unified dir)
             try:
-                with open(persona_file) as _pf:
-                    pcontent = _pf.read()
-                pcontent = re.sub(r"^status:\s*\S+\s*$", "status: meme", pcontent, flags=re.MULTILINE)
-                with open(persona_file, "w") as _pf:
-                    _pf.write(pcontent)
+                pf = Path(persona_file)
+                pf.write_text(re.sub(r"^status:\s*\S+\s*$", "status: meme", pf.read_text(), flags=re.MULTILINE))
             except Exception as exc:
                 activity.logger.warning(f"congress_evolve: failed to set status=meme for '{display_name}': {exc}")
             results["retired"].append({"display_name": display_name, "reason": reason})
         elif verdict == "EVOLVE" and learned:
-            timestamp = today
             session_number = int(session_id.split("-")[-1])
-            _update_persona_stats(persona_file, "EVOLVE", timestamp)
-            append = f"\n\n## Learned (Congress #{session_number} — {timestamp})\n- {learned}"
-            with open(persona_file, "a") as f:
-                f.write(append)
+            _update_persona_stats(persona_file, "EVOLVE", today)
+            with Path(persona_file).open("a") as f:
+                f.write(f"\n\n## Learned (Congress #{session_number} — {today})\n- {learned}")
             results["evolved"].append({"display_name": display_name, "learned": learned})
         else:
             _update_persona_stats(persona_file, "RETAIN", today)
             # If this persona was on probation, clear the flag — they've earned their seat
             if display_name in probationary_names:
                 try:
-                    with open(persona_file) as _pf:
-                        pcontent = _pf.read()
-                    pcontent = re.sub(r"^probationary:\s*true\s*\n", "", pcontent, flags=re.MULTILINE)
-                    with open(persona_file, "w") as _pf:
-                        _pf.write(pcontent)
+                    pf = Path(persona_file)
+                    pf.write_text(re.sub(r"^probationary:\s*true\s*\n", "", pf.read_text(), flags=re.MULTILINE))
                     activity.logger.info(f"congress_evolve: cleared probationary flag for '{display_name}'")
                 except Exception as exc:
                     activity.logger.warning(
@@ -1301,10 +1287,9 @@ async def congress_create_tasks(
                         },
                     ],
                 }
-                task_path = str(TASKS_DIR / f"{task_id}.json")
-                with open(task_path, "w") as f:
-                    dump(task_data, f, indent=2)
-                activity.logger.info(f"Created local task file: {task_path}")
+                task_file = TASKS_DIR / f"{task_id}.json"
+                task_file.write_text(dumps(task_data, indent=2))
+                activity.logger.info(f"Created local task file: {task_file}")
                 task_titles.append(task["title"])
                 task["task_id"] = task_id  # store for inject step
             except Exception as exc:
