@@ -23,6 +23,9 @@ from temporalio import workflow
 from temporalio.common import RetryPolicy
 from temporalio.exceptions import ActivityError
 
+# Congress integration disabled — unreliable. Pure Discord emoji vote only.
+USE_CONGRESS = False
+
 with workflow.unsafe.imports_passed_through():
     from activities.polymarket_act import (
         check_market_resolution,
@@ -130,19 +133,20 @@ class PolymarketWorkflow:
 
             workflow.logger.info("PolymarketWorkflow: poll posted message_id=%s", poll_message_id)
 
-            # Launch Congress (fire-and-forget style — we'll wait for it separately)
+            # Congress disabled (USE_CONGRESS = False) — skip launch entirely
             congress_run_id: str = ""
-            try:
-                congress_run_id = await workflow.execute_activity(
-                    launch_congress_on_market,
-                    args=[market, MAIN_CHANNEL_ID],
-                    start_to_close_timeout=_SHORT,
-                    retry_policy=_IO_RETRY,
-                )
-                workflow.logger.info("PolymarketWorkflow: Congress launched run_id=%s", congress_run_id)
-            except ActivityError as exc:
-                workflow.logger.warning("launch_congress_on_market failed (non-fatal): %s", exc)
-                # Congress failure doesn't block — just no congress vote
+            if USE_CONGRESS:
+                try:
+                    congress_run_id = await workflow.execute_activity(
+                        launch_congress_on_market,
+                        args=[market, MAIN_CHANNEL_ID],
+                        start_to_close_timeout=_SHORT,
+                        retry_policy=_IO_RETRY,
+                    )
+                    workflow.logger.info("PolymarketWorkflow: Congress launched run_id=%s", congress_run_id)
+                except ActivityError as exc:
+                    workflow.logger.warning("launch_congress_on_market failed (non-fatal): %s", exc)
+                    # Congress failure doesn't block — just no congress vote
 
             # ------------------------------------------------------------------ #
             # 4. Wait 12 hours
@@ -151,10 +155,10 @@ class PolymarketWorkflow:
             await asyncio.sleep(12 * 3600)
 
             # ------------------------------------------------------------------ #
-            # 5. Get Congress verdict (should be done by now; 30min timeout)
+            # 5. Get Congress verdict (disabled — USE_CONGRESS = False)
             # ------------------------------------------------------------------ #
-            congress_result: dict = {}
-            if congress_run_id:
+            congress_result: dict = {"persona_yea": 0, "persona_nay": 0}
+            if USE_CONGRESS and congress_run_id:
                 try:
                     congress_result = await workflow.execute_activity(
                         get_congress_verdict,
@@ -169,7 +173,7 @@ class PolymarketWorkflow:
                     )
                 except ActivityError as exc:
                     workflow.logger.warning("get_congress_verdict failed (non-fatal): %s", exc)
-                    congress_result = {}
+                    congress_result = {"persona_yea": 0, "persona_nay": 0}
 
             # ------------------------------------------------------------------ #
             # 5b. Tally votes

@@ -334,7 +334,7 @@ async def post_market_poll(market: dict) -> str:
         content_parts.append(f"\n🔗 {market_url}")
     content_parts.append(
         "\n\n👍 = YES bet  |  👎 = NO  |  ⏭️ = SKIP (veto — any skip immediately skips this market)\n"
-        "*Congress is also deliberating. Combined vote decides the bet in 12 hours.*"
+        "*Vote decides the bet in 12 hours.*"
     )
 
     content = "".join(content_parts)
