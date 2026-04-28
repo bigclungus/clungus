@@ -10,8 +10,8 @@ Persistence uses clunger's REST PATCH endpoint instead of direct file writes.
 """
 
 from asyncio import get_running_loop
-from json import dumps as json_dumps, loads as json_loads
-from re import sub as re_sub, MULTILINE
+from json import dumps, loads
+from re import sub, MULTILINE
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -328,11 +328,11 @@ async def trial_save_session(session_id: str, trial_data: dict) -> None:
     existing = {}
     if fpath.exists():
         try:
-            existing = json_loads(fpath.read_text())
+            existing = loads(fpath.read_text())
         except Exception as exc:
             activity.logger.warning(f"trial_save_session: failed to read existing session file {fpath}: {exc}")
     existing.update(trial_data)
-    fpath.write_text(json_dumps(existing, indent=2, ensure_ascii=False))
+    fpath.write_text(dumps(existing, indent=2, ensure_ascii=False))
     activity.logger.info(f"trial_save_session: saved {session_id} via clunger API + file merge")
 
 
@@ -572,7 +572,7 @@ async def trial_apply_retire_verdict(defendant: str, defendant_display: str, mod
         return
 
     try:
-        pcontent = re_sub(r"^status:\s*\S+\s*$", "status: meme", pcontent, flags=MULTILINE)
+        pcontent = sub(r"^status:\s*\S+\s*$", "status: meme", pcontent, flags=MULTILINE)
         with open(persona_file, "w") as pf:
             pf.write(pcontent)
         activity.logger.info(
