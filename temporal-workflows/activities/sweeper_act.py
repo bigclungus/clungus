@@ -4,7 +4,7 @@ Activity: check_open_tasks
 Reads task files from bigclungus-meta/tasks/ and posts a summary of in_progress
 tasks to the main Discord channel. Silent if nothing is open.
 """
-from json import dump as json_dump, load as json_load
+from json import dump, load
 from datetime import datetime, timezone
 
 from temporalio import activity
@@ -93,7 +93,7 @@ async def check_open_tasks() -> str | None:
                 continue
             try:
                 with open(fpath, "r") as f:
-                    task = json_load(f)
+                    task = load(f)
             except Exception as exc:
                 activity.logger.warning(f"Failed to read task file {fpath}: {exc}")
                 continue
@@ -138,8 +138,8 @@ async def check_open_tasks() -> str | None:
     try:
         await _do_inject(message, MAIN_CHANNEL_ID, user="temporal-sweeper")
         return None
-    except Exception as _e:
-        activity.logger.warning(f"inject endpoint unavailable, falling back to Discord API: {_e}")
+    except Exception as exc:
+        activity.logger.warning(f"inject endpoint unavailable, falling back to Discord API: {exc}")
 
     return await discord_post_message(MAIN_CHANNEL_ID, message)
 
@@ -153,6 +153,6 @@ def _write_status_file(checked_at: str, items: list) -> None:
     }
     try:
         with open("/tmp/bc-open-tasks.json", "w") as f:
-            json_dump(status, f, indent=2)
+            dump(status, f, indent=2)
     except Exception as exc:
         activity.logger.warning(f"Failed to write /tmp/bc-open-tasks.json: {exc}")
