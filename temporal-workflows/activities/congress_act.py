@@ -46,6 +46,7 @@ from .constants import (
     META_REPO_PATH,
     SCRIPTS_DIR,
     SESSION_MODE_MEME,
+    SESSION_MODE_POLYMARKET,
     SESSION_MODES_NO_ACK,
     SIGNAL_ABORT,
     SIGNAL_CONTINUE,
@@ -1722,7 +1723,7 @@ async def congress_report(
 
     if mode == SESSION_MODE_MEME:
         meme_footer = "\n\n🃏 *meme session — no action items*"
-    elif mode == "polymarket":
+    elif mode == SESSION_MODE_POLYMARKET:
         meme_footer = "\n\n🎲 *polymarket vote — no action items*"
     else:
         meme_footer = ""
