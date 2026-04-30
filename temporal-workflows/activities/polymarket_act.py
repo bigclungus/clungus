@@ -2,7 +2,7 @@
 Activities for PolymarketWorkflow.
 
 Handles fetching markets, LLM market picking, Discord poll posting,
-Congress integration, vote tallying, bet placement, and resolution reporting.
+Congress integration, vote tallying, position placement, and resolution reporting.
 """
 
 import asyncio
@@ -195,7 +195,7 @@ async def pick_market_with_llm(markets: list[dict], exclude_ids: list[str] | Non
     )
 
     prompt = (
-        "You are picking a Polymarket prediction market to bet on for fun and engagement.\n\n"
+        "You are picking a Polymarket prediction market to invest in for fun and engagement.\n\n"
         "Pick the single MOST INTERESTING and FUN market from this list. "
         "Prefer markets about pop culture, sports, elections, or viral topics — not obscure financial instruments. "
         "High volume is a signal of interest but not the only factor.\n\n"
@@ -333,8 +333,8 @@ async def post_market_poll(market: dict) -> str:
     if market_url:
         content_parts.append(f"\n🔗 {market_url}")
     content_parts.append(
-        "\n\n👍 = YES bet  |  👎 = NO  |  ⏭️ = SKIP (veto — any skip immediately skips this market)\n"
-        "*Vote decides the bet in 12 hours.*"
+        "\n\n👍 = BET YES  |  👎 = BET NO  |  ⏭️ = DO NOT BET (veto — any vote here skips this market)\n"
+        "*Vote decides the position in 12 hours.*"
     )
 
     content = "".join(content_parts)
@@ -385,10 +385,13 @@ async def launch_congress_on_market(market: dict, chat_id: str) -> str:
     condition_id = market.get("condition_id", "unknown")
 
     topic = (
-        f"Polymarket bet: {question}\n\n"
-        "Should BigClungus place a YES bet on this prediction market? "
-        "Vote YEA (support the YES bet) or NAY (skip this market). "
-        "Consider the likelihood of the YES outcome, current market pricing, and entertainment value."
+        f"Polymarket investment decision: {question}\n\n"
+        "Should BigClungus take a $5 YES position on this prediction market?\n\n"
+        "Vote BET_YES (open a $5 YES position), BET_NO (open a $5 NO position), "
+        "or DO_NOT_BET (veto, try a different market). "
+        "Consider the likelihood of the YES outcome, current market pricing, and entertainment value. "
+        "DO_NOT_BET is a hard veto — only use it if the market itself is unfit (e.g. degenerate, "
+        "illegible, or near-coinflip with no edge); use BET_NO if you simply think NO is the better position."
     )
 
     client = await Client.connect(TEMPORAL_HOST)
@@ -399,13 +402,13 @@ async def launch_congress_on_market(market: dict, chat_id: str) -> str:
 
     handle = await client.start_workflow(
         "CongressWorkflow",
-        args=[{"topic": topic, "chat_id": chat_id, "flavor": "meme"}],
+        args=[{"topic": topic, "chat_id": chat_id, "flavor": "polymarket"}],
         id=workflow_id,
         task_queue="listings-queue",
     )
 
     activity.logger.info(
-        "launch_congress_on_market: started CongressWorkflow (meme flavor) id=%s run_id=%s",
+        "launch_congress_on_market: started CongressWorkflow (polymarket flavor) id=%s run_id=%s",
         workflow_id, handle.result_run_id,
     )
     # Return the workflow_id (not run_id) so get_congress_verdict can locate
@@ -424,9 +427,10 @@ async def get_congress_verdict(congress_workflow_id: str, condition_id: str, tim
         {
             "verdict": str,           # raw Ibrahim verdict text
             "session_id": str,        # e.g. "congress-0091"
-            "persona_votes": dict,    # {display_name: "yea" | "nay"}
-            "persona_yea": int,
-            "persona_nay": int,
+            "persona_votes": dict,    # {display_name: "BET_YES"|"BET_NO"|"DO_NOT_BET"}
+            "persona_yes": int,       # number of BET_YES votes
+            "persona_no": int,        # number of BET_NO votes
+            "persona_skip": int,      # number of DO_NOT_BET (veto) votes
         }
     """
     from temporalio.client import Client
@@ -454,8 +458,9 @@ async def get_congress_verdict(congress_workflow_id: str, condition_id: str, tim
 
     # Parse per-persona votes from the session file's vote_summary
     persona_votes: dict[str, str] = {}
-    persona_yea = 0
-    persona_nay = 0
+    persona_yes = 0
+    persona_no = 0
+    persona_skip = 0
 
     if session_id:
         try:
@@ -473,36 +478,27 @@ async def get_congress_verdict(congress_workflow_id: str, condition_id: str, tim
                         vote_summary = None
 
                 if vote_summary and isinstance(vote_summary, dict):
-                    agree_names = vote_summary.get("agree") or []
-                    disagree_names = vote_summary.get("disagree") or []
-                    for name in agree_names:
-                        persona_votes[name] = "yea"
-                        persona_yea += 1
-                    for name in disagree_names:
-                        persona_votes[name] = "nay"
-                        persona_nay += 1
+                    # Polymarket vote shape: {"bet_yes": [...], "bet_no": [...], "do_not_bet": [...]}
+                    yes_names = vote_summary.get("bet_yes") or []
+                    no_names = vote_summary.get("bet_no") or []
+                    skip_names = vote_summary.get("do_not_bet") or []
+                    for name in yes_names:
+                        persona_votes[name] = "BET_YES"
+                        persona_yes += 1
+                    for name in no_names:
+                        persona_votes[name] = "BET_NO"
+                        persona_no += 1
+                    for name in skip_names:
+                        persona_votes[name] = "DO_NOT_BET"
+                        persona_skip += 1
                     activity.logger.info(
-                        "get_congress_verdict: %d yea / %d nay persona votes from %s",
-                        persona_yea, persona_nay, session_file,
+                        "get_congress_verdict: %d BET_YES / %d BET_NO / %d DO_NOT_BET persona votes from %s",
+                        persona_yes, persona_no, persona_skip, session_file,
                     )
                 else:
-                    # vote_summary absent or empty — fall back to parsing the overall verdict string
-                    # Ibrahim signals abort/yea/nay in the verdict text
                     activity.logger.warning(
-                        "get_congress_verdict: vote_summary missing/empty in %s — falling back to verdict text parsing",
+                        "get_congress_verdict: vote_summary missing/empty in %s",
                         session_file,
-                    )
-                    verdict_text = (session_data.get("verdict") or verdict or "").upper()
-                    if "YEA" in verdict_text or "AGREE" in verdict_text or "YES" in verdict_text:
-                        persona_votes["[congress-verdict]"] = "yea"
-                        persona_yea += 1
-                    elif "NAY" in verdict_text or "DISAGREE" in verdict_text or "NO" in verdict_text:
-                        persona_votes["[congress-verdict]"] = "nay"
-                        persona_nay += 1
-                    # If neither, no persona votes counted (avoids false signal)
-                    activity.logger.info(
-                        "get_congress_verdict: verdict-text fallback → persona_yea=%d persona_nay=%d",
-                        persona_yea, persona_nay,
                     )
             else:
                 activity.logger.warning(
@@ -517,8 +513,9 @@ async def get_congress_verdict(congress_workflow_id: str, condition_id: str, tim
         "verdict": verdict,
         "session_id": session_id,
         "persona_votes": persona_votes,
-        "persona_yea": persona_yea,
-        "persona_nay": persona_nay,
+        "persona_yes": persona_yes,
+        "persona_no": persona_no,
+        "persona_skip": persona_skip,
     }
 
 
@@ -527,17 +524,17 @@ async def get_vote_tally(message_id: str, congress_result: dict) -> dict:
     """
     Tally Discord emoji reactions + per-persona Congress votes.
 
-    Discord 👍 = yea, 👎 = nay, ⏭️ = skip/veto (bot's own reactions not counted).
-    Congress: each individual persona in vote_summary gets their own yea/nay vote.
+    Discord 👍 = BET_YES, 👎 = BET_NO, ⏭️ = DO_NOT_BET/veto (bot's own reactions not counted).
+    Congress: each individual persona in vote_summary casts BET_YES / BET_NO / DO_NOT_BET.
 
-    If any non-bot ⏭️ reactions exist, skip_veto=True is returned — caller should
-    immediately skip this market without waiting for the majority threshold.
+    Any DO_NOT_BET from Discord reactors OR personas triggers skip_veto=True — caller
+    immediately skips this market without waiting for the majority threshold.
 
     Returns dict: {
-        "yea": int, "nay": int,
-        "discord_yea": int, "discord_nay": int, "discord_skip": int,
+        "yes": int, "no": int, "skip": int,
+        "discord_yes": int, "discord_no": int, "discord_skip": int,
         "persona_votes": dict,
-        "persona_yea": int, "persona_nay": int,
+        "persona_yes": int, "persona_no": int, "persona_skip": int,
         "skip_veto": bool,
     }
     """
@@ -550,8 +547,9 @@ async def get_vote_tally(message_id: str, congress_result: dict) -> dict:
 
     # Extract per-persona vote breakdown from congress_result
     persona_votes: dict[str, str] = congress_result.get("persona_votes", {}) if isinstance(congress_result, dict) else {}
-    persona_yea: int = congress_result.get("persona_yea", 0) if isinstance(congress_result, dict) else 0
-    persona_nay: int = congress_result.get("persona_nay", 0) if isinstance(congress_result, dict) else 0
+    persona_yes: int = congress_result.get("persona_yes", 0) if isinstance(congress_result, dict) else 0
+    persona_no: int = congress_result.get("persona_no", 0) if isinstance(congress_result, dict) else 0
+    persona_skip: int = congress_result.get("persona_skip", 0) if isinstance(congress_result, dict) else 0
 
     # Fetch bot user ID so we can exclude bot's own reaction
     bot_user_id: str | None = None
@@ -588,26 +586,29 @@ async def get_vote_tally(message_id: str, congress_result: dict) -> dict:
         thumbs_down_users = [u for u in thumbs_down_users if u != bot_user_id]
         skip_users = [u for u in skip_users if u != bot_user_id]
 
-    discord_yea = len(thumbs_up_users)
-    discord_nay = len(thumbs_down_users)
+    discord_yes = len(thumbs_up_users)
+    discord_no = len(thumbs_down_users)
     discord_skip = len(skip_users)
 
-    # Any skip reaction = immediate veto
-    skip_veto = discord_skip > 0
+    # Any SKIP (Discord or persona) = immediate veto
+    skip_veto = (discord_skip > 0) or (persona_skip > 0)
 
     # Combine Discord reactions + individual persona votes
-    total_yea = discord_yea + persona_yea
-    total_nay = discord_nay + persona_nay
+    total_yes = discord_yes + persona_yes
+    total_no = discord_no + persona_no
+    total_skip = discord_skip + persona_skip
 
     result = {
-        "yea": total_yea,
-        "nay": total_nay,
-        "discord_yea": discord_yea,
-        "discord_nay": discord_nay,
+        "yes": total_yes,
+        "no": total_no,
+        "skip": total_skip,
+        "discord_yes": discord_yes,
+        "discord_no": discord_no,
         "discord_skip": discord_skip,
         "persona_votes": persona_votes,
-        "persona_yea": persona_yea,
-        "persona_nay": persona_nay,
+        "persona_yes": persona_yes,
+        "persona_no": persona_no,
+        "persona_skip": persona_skip,
         "skip_veto": skip_veto,
     }
     activity.logger.info("get_vote_tally: %s", result)
@@ -753,7 +754,7 @@ async def post_resolution_notification(
         msg = (
             f"⏳ **Polymarket Update** — market not yet resolved\n"
             f"**{question}**\n"
-            f"Bet: ${amount_usdc:.2f} {bet_side} | Order: `{order_id}`"
+            f"Position: ${amount_usdc:.2f} {bet_side} | Order: `{order_id}`"
         )
     else:
         won = (winner or "").upper() == (bet_side or "").upper()
@@ -778,7 +779,7 @@ async def post_resolution_notification(
         msg = (
             f"{result_emoji} **Polymarket Result** — market resolved!\n"
             f"**{question}**\n"
-            f"Winner: **{winner}** | Bet: ${amount_usdc:.2f} {bet_side}\n"
+            f"Winner: **{winner}** | Position: ${amount_usdc:.2f} {bet_side}\n"
             f"P&L: {pnl_str} | Order: `{order_id}`"
         )
 
@@ -795,35 +796,58 @@ async def post_vote_result_notification(
     """
     Post the vote tally result to Discord after the 12hr window closes.
 
-    action: "bet_yes" | "skip" | "no_consensus"
+    action: "bet_yes" | "skip" | "skip_veto" | "no_consensus"
     """
     question = market.get("question", "Unknown market")
-    yea = tally.get("yea", 0)
-    nay = tally.get("nay", 0)
-    discord_yea = tally.get("discord_yea", 0)
-    discord_nay = tally.get("discord_nay", 0)
-    persona_yea = tally.get("persona_yea", 0)
-    persona_nay = tally.get("persona_nay", 0)
+    yes = tally.get("yes", 0)
+    no = tally.get("no", 0)
+    skip = tally.get("skip", 0)
+    discord_yes = tally.get("discord_yes", 0)
+    discord_no = tally.get("discord_no", 0)
+    discord_skip = tally.get("discord_skip", 0)
+    persona_yes = tally.get("persona_yes", 0)
+    persona_no = tally.get("persona_no", 0)
+    persona_skip = tally.get("persona_skip", 0)
+    persona_votes: dict = tally.get("persona_votes") or {}
 
     tally_line = (
-        f"👍 {yea} yea (Discord: {discord_yea} + Personas: {persona_yea}) | "
-        f"👎 {nay} nay (Discord: {discord_nay} + Personas: {persona_nay})"
+        f"👍 BET_YES: {yes} (Discord {discord_yes} + Personas {persona_yes}) | "
+        f"👎 BET_NO: {no} (Discord {discord_no} + Personas {persona_no}) | "
+        f"⏭️ DO_NOT_BET: {skip} (Discord {discord_skip} + Personas {persona_skip})"
     )
 
+    # Per-persona breakdown (only if any personas voted)
+    persona_lines = ""
+    if persona_votes:
+        # Stable display order: BET_YES, BET_NO, DO_NOT_BET
+        order = {"BET_YES": 0, "BET_NO": 1, "DO_NOT_BET": 2}
+        sorted_pairs = sorted(persona_votes.items(), key=lambda kv: (order.get(kv[1], 9), kv[0]))
+        persona_lines = "\n**Persona votes:**\n" + "\n".join(
+            f"  • {name}: {vote}" for name, vote in sorted_pairs
+        )
+
     if action == "bet_yes":
-        action_line = f"✅ Majority yea — placing $5 YES bet on Polymarket!"
+        action_line = "✅ Majority BET_YES — opening $5 YES position on Polymarket!"
     elif action == "skip_veto":
-        discord_skip = tally.get("discord_skip", 0)
-        action_line = f"⏭️ Veto! {discord_skip} skip reaction(s) — skipping this market immediately."
+        action_line = (
+            f"⏭️ Veto! {skip} DO_NOT_BET vote(s) (Discord {discord_skip} + Personas {persona_skip}) "
+            "— passing on this market immediately."
+        )
     elif action == "skip":
-        action_line = f"⏭️ Majority nay — skipping this market, trying another."
+        action_line = "⏭️ Majority BET_NO — passing on this market, trying another."
     else:
-        action_line = f"🤷 No consensus reached ({yea} yea / {nay} nay) — no action."
+        action_line = (
+            f"🤷 No consensus reached ({yes} BET_YES / {no} BET_NO / {skip} DO_NOT_BET) — no action."
+        )
 
     msg = (
         f"🗳️ **Polymarket Vote Result**\n"
         f"**{question}**\n"
-        f"{tally_line}\n"
+        f"{tally_line}"
+        f"{persona_lines}\n"
         f"{action_line}"
     )
+    # Discord 2000-char hard limit
+    if len(msg) > 1990:
+        msg = msg[:1987] + "…"
     await discord_post_message(MAIN_CHANNEL_ID, msg)

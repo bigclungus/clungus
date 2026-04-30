@@ -46,6 +46,7 @@ from .constants import (
     META_REPO_PATH,
     SCRIPTS_DIR,
     SESSION_MODE_MEME,
+    SESSION_MODES_NO_ACK,
     SIGNAL_ABORT,
     SIGNAL_CONTINUE,
     SIGNAL_NO_DISPUTE,
@@ -615,7 +616,7 @@ async def congress_finalize(
     if vote_summary:
         rest_payload["vote_summary"] = vote_summary
     rest_payload["mode"] = mode or "standard"
-    rest_payload["requires_ack"] = mode != SESSION_MODE_MEME
+    rest_payload["requires_ack"] = mode not in SESSION_MODES_NO_ACK
     if rest_payload:
         await clunger_patch_session(session_id, rest_payload, caller="congress_finalize")
 
@@ -1583,6 +1584,69 @@ async def congress_duel_vote(
 
 
 @activity.defn
+async def congress_polymarket_vote(
+    identity: str,
+    topic: str,
+    session_id: str,
+    thread_id: str = None,
+    display_name: str = None,
+) -> dict:
+    """Ask a persona to cast a Polymarket vote: BET_YES, BET_NO, or DO_NOT_BET.
+
+    BET_YES     = open the $5 YES position on this market.
+    BET_NO      = open the $5 NO position on this market.
+    DO_NOT_BET  = veto this market entirely; pick a different one.
+
+    Returns: {"name": display_name, "vote": "BET_YES"|"BET_NO"|"DO_NOT_BET", "reason": str}
+    """
+    name = display_name or identity
+    prompt = (
+        f"You are {name}.\n\n"
+        f"Polymarket investment decision:\n{topic}\n\n"
+        f"Cast your vote. The options are:\n"
+        f"  - BET_YES: open a $5 YES position on this market\n"
+        f"  - BET_NO: open a $5 NO position on this market\n"
+        f"  - DO_NOT_BET: veto this market entirely — try a different one (use only if this market is unfit, "
+        f"e.g. degenerate, illegible, or near-coinflip with no edge)\n\n"
+        f"Respond with BET_YES, BET_NO, or DO_NOT_BET on the first line, followed by ONE sentence "
+        f"explaining why. DO_NOT_BET is a hard veto — only use it if the market itself is bad, "
+        f"not because you think the YES outcome is unlikely (use BET_NO for that)."
+    )
+
+    response_text = await _call_congress_api(prompt, identity, session_id, timeout=180)
+
+    # Parse vote — order matters: DO_NOT_BET > BET_YES > BET_NO (longest unique prefix first).
+    first_line = response_text.strip().split("\n")[0].strip().upper() if response_text else ""
+    if (
+        first_line.startswith("DO_NOT_BET")
+        or first_line.startswith("DO NOT BET")
+        or first_line.startswith("DO-NOT-BET")
+    ):
+        vote = "DO_NOT_BET"
+    elif (
+        first_line.startswith("BET_YES")
+        or first_line.startswith("BET YES")
+        or first_line.startswith("BET-YES")
+    ):
+        vote = "BET_YES"
+    elif (
+        first_line.startswith("BET_NO")
+        or first_line.startswith("BET NO")
+        or first_line.startswith("BET-NO")
+    ):
+        vote = "BET_NO"
+    else:
+        # Ambiguous — default to BET_NO (take a NO position, don't veto)
+        vote = "BET_NO"
+
+    lines = response_text.strip().split("\n")
+    reason_lines = [line.strip() for line in lines[1:] if line.strip()]
+    reason = reason_lines[0] if reason_lines else lines[0].strip()
+
+    return {"name": name, "vote": vote, "reason": reason}
+
+
+@activity.defn
 async def congress_report(
     chat_id: str,
     session_id: str,
@@ -1636,13 +1700,32 @@ async def congress_report(
     vote_suffix = ""
     if vote_summary and vote_summary.get("tally"):
         tally = vote_summary["tally"]
-        agree_names = vote_summary.get("agree", [])
-        disagree_names = vote_summary.get("disagree", [])
-        agree_str = ", ".join(agree_names) if agree_names else "none"
-        disagree_str = ", ".join(disagree_names) if disagree_names else "none"
-        vote_suffix = f"\n📊 **Synthesis vote:** {tally} — agreed: {agree_str} | dissented: {disagree_str}"
+        if vote_summary.get("polymarket"):
+            yes_names = vote_summary.get("bet_yes", [])
+            no_names = vote_summary.get("bet_no", [])
+            skip_names = vote_summary.get("do_not_bet", [])
+            yes_str = ", ".join(yes_names) if yes_names else "none"
+            no_str = ", ".join(no_names) if no_names else "none"
+            skip_str = ", ".join(skip_names) if skip_names else "none"
+            vote_suffix = (
+                f"\n📊 **Polymarket vote:** {tally}\n"
+                f"  ✅ BET_YES: {yes_str}\n"
+                f"  ❌ BET_NO: {no_str}\n"
+                f"  ⏭️ DO_NOT_BET: {skip_str}"
+            )
+        else:
+            agree_names = vote_summary.get("agree", [])
+            disagree_names = vote_summary.get("disagree", [])
+            agree_str = ", ".join(agree_names) if agree_names else "none"
+            disagree_str = ", ".join(disagree_names) if disagree_names else "none"
+            vote_suffix = f"\n📊 **Synthesis vote:** {tally} — agreed: {agree_str} | dissented: {disagree_str}"
 
-    meme_footer = "\n\n🃏 *meme session — no action items*" if mode == SESSION_MODE_MEME else ""
+    if mode == SESSION_MODE_MEME:
+        meme_footer = "\n\n🃏 *meme session — no action items*"
+    elif mode == "polymarket":
+        meme_footer = "\n\n🎲 *polymarket vote — no action items*"
+    else:
+        meme_footer = ""
 
     closing = f"⚖️ **Congress #{session_number} adjourned**\n**Verdict:** {verdict}\n\n🔗 {session_link}"
     closing += vote_suffix
@@ -1664,8 +1747,8 @@ async def congress_report(
 
     await discord_post_message(main_channel_id, notice)
 
-    # Inject verdict back to BigClungus for self-implementation (skipped in meme mode)
-    if mode != SESSION_MODE_MEME:
+    # Inject verdict back to BigClungus for self-implementation (skipped in meme/polymarket modes)
+    if mode not in SESSION_MODES_NO_ACK:
         try:
             inject_msg = (
                 f"📋 **Congress #{session_number} verdict ready for implementation.**\n"

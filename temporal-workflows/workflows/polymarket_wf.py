@@ -4,13 +4,14 @@ Temporal workflow: PolymarketWorkflow
 Daily cron at 14:00 UTC (7am Pacific):
   1. Fetch Polymarket markets resolving in 24-48 hours
   2. LLM picks the most interesting one
-  3. Post Discord poll + launch CongressWorkflow simultaneously
+  3. Post Discord poll + launch CongressWorkflow (polymarket flavor) simultaneously
   4. Wait 12 hours
-  5. Tally votes (Discord reactions + individual persona votes, each persona counts separately)
-  6. If yea > nay (majority): place $5 YES bet on Polymarket
-  7. If nay >= yea: skip market, try next from same batch
-  8. If all tied (0-0): no action
-  9. After market resolves: post outcome + P&L to Discord
+  5. Tally votes — Discord 👍/👎/⏭️ + per-persona BET_YES/BET_NO/DO_NOT_BET votes
+  6. Any DO_NOT_BET (Discord or persona) → pass on this market and try next
+  7. yes > no (majority BET_YES) → open $5 YES position on Polymarket
+  8. no >= yes (majority BET_NO / tied) → pass on market, try next from same batch
+  9. If all 0 (no votes): no action
+ 10. After market resolves: post outcome + P&L to Discord
 
 Cron schedule: 0 14 * * * (UTC = 7am PT)
 NOTE: Cron is NOT auto-activated — jaboostin must confirm before enabling.
@@ -156,7 +157,7 @@ class PolymarketWorkflow:
             # ------------------------------------------------------------------ #
             # 5. Get Congress verdict (if congress ran)
             # ------------------------------------------------------------------ #
-            congress_result: dict = {"persona_yea": 0, "persona_nay": 0}
+            congress_result: dict = {"persona_yes": 0, "persona_no": 0, "persona_skip": 0}
             if USE_CONGRESS and congress_workflow_id:
                 try:
                     congress_result = await workflow.execute_activity(
@@ -166,13 +167,14 @@ class PolymarketWorkflow:
                         retry_policy=_NO_RETRY,
                     )
                     workflow.logger.info(
-                        "PolymarketWorkflow: Congress persona_yea=%d persona_nay=%d",
-                        congress_result.get("persona_yea", 0),
-                        congress_result.get("persona_nay", 0),
+                        "PolymarketWorkflow: Congress persona_yes=%d persona_no=%d persona_skip=%d",
+                        congress_result.get("persona_yes", 0),
+                        congress_result.get("persona_no", 0),
+                        congress_result.get("persona_skip", 0),
                     )
                 except ActivityError as exc:
                     workflow.logger.warning("get_congress_verdict failed (non-fatal): %s", exc)
-                    congress_result = {"persona_yea": 0, "persona_nay": 0}
+                    congress_result = {"persona_yes": 0, "persona_no": 0, "persona_skip": 0}
 
             # ------------------------------------------------------------------ #
             # 5b. Tally votes
@@ -188,17 +190,20 @@ class PolymarketWorkflow:
                 workflow.logger.error("get_vote_tally failed: %s", exc)
                 return {"error": f"vote tally failed: {exc}"}
 
-            yea = tally.get("yea", 0)
-            nay = tally.get("nay", 0)
+            yes = tally.get("yes", 0)
+            no = tally.get("no", 0)
             workflow.logger.info(
-                "PolymarketWorkflow: tally yea=%d nay=%d (discord_yea=%d persona_yea=%d discord_nay=%d persona_nay=%d)",
-                yea, nay,
-                tally.get("discord_yea", 0), tally.get("persona_yea", 0),
-                tally.get("discord_nay", 0), tally.get("persona_nay", 0),
+                "PolymarketWorkflow: tally yes=%d no=%d skip=%d "
+                "(discord_yes=%d persona_yes=%d discord_no=%d persona_no=%d "
+                "discord_skip=%d persona_skip=%d)",
+                yes, no, tally.get("skip", 0),
+                tally.get("discord_yes", 0), tally.get("persona_yes", 0),
+                tally.get("discord_no", 0), tally.get("persona_no", 0),
+                tally.get("discord_skip", 0), tally.get("persona_skip", 0),
             )
 
             # ------------------------------------------------------------------ #
-            # 6. Decision: skip_veto → skip; yea > nay → bet YES; else → skip/no action
+            # 6. Decision: skip_veto → skip; yes > no → bet YES; else → skip/no action
             # ------------------------------------------------------------------ #
             if tally.get("skip_veto"):
                 # Activity signalled an immediate veto — skip without waiting for majority
@@ -213,9 +218,9 @@ class PolymarketWorkflow:
                 excluded_ids.append(condition_id)
                 continue
 
-            elif yea > nay and (yea + nay) > 0:
-                # Majority yea — place the bet
-                workflow.logger.info("PolymarketWorkflow: 3+ yea — placing YES bet")
+            elif yes > no and (yes + no) > 0:
+                # Majority BET_YES — open the position
+                workflow.logger.info("PolymarketWorkflow: BET_YES majority — opening YES position")
                 await workflow.execute_activity(
                     post_vote_result_notification,
                     args=[market, tally, "bet_yes"],
@@ -289,9 +294,9 @@ class PolymarketWorkflow:
                     "resolved": False,
                 }
 
-            elif nay >= yea and (yea + nay) > 0:
-                # Majority nay (or tied with votes present) — skip this market and try the next one
-                workflow.logger.info("PolymarketWorkflow: nay majority (yea=%d nay=%d) — skipping market, trying next", yea, nay)
+            elif no >= yes and (yes + no) > 0:
+                # Majority BET_NO (or tied with votes present) — pass on this market and try the next one
+                workflow.logger.info("PolymarketWorkflow: BET_NO majority (yes=%d no=%d) — passing on market, trying next", yes, no)
                 await workflow.execute_activity(
                     post_vote_result_notification,
                     args=[market, tally, "skip"],
@@ -306,7 +311,7 @@ class PolymarketWorkflow:
             else:
                 # No votes at all (0-0 tie)
                 workflow.logger.info(
-                    "PolymarketWorkflow: no votes cast (yea=%d nay=%d) — no action", yea, nay
+                    "PolymarketWorkflow: no votes cast (yes=%d no=%d) — no action", yes, no
                 )
                 await workflow.execute_activity(
                     post_vote_result_notification,
@@ -317,8 +322,8 @@ class PolymarketWorkflow:
                 return {
                     "action": "no_consensus",
                     "market": question,
-                    "yea": yea,
-                    "nay": nay,
+                    "yes": yes,
+                    "no": no,
                 }
 
         # Exhausted all attempts

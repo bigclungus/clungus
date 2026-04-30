@@ -54,6 +54,7 @@ with workflow.unsafe.imports_passed_through():
         congress_graphiti_context,
         congress_identities,
         congress_load_session,
+        congress_polymarket_vote,
         congress_post_separator,
         congress_preflight_check,
         congress_report,
@@ -86,13 +87,16 @@ def _resolve_flavor(input: dict) -> str:
     """Determine the session flavor from input dict.
 
     Checks 'flavor' first, then 'mode', then falls back to detecting
-    trial-specific keys ('defendant'). Returns one of: 'congress', 'meme', 'trial'.
+    trial-specific keys ('defendant'). Returns one of: 'congress', 'meme',
+    'polymarket', 'trial'.
     """
     flavor = input.get("flavor", "") or ""
     mode = input.get("mode", "") or ""
 
     if flavor == "trial" or (not flavor and "defendant" in input):
         return "trial"
+    if flavor == "polymarket" or mode == "polymarket":
+        return "polymarket"
     if flavor == "meme" or mode == "meme":
         return "meme"
     return "congress"
@@ -301,7 +305,22 @@ class SessionWorkflow:
         custom_personas: list = input.get("personas") or []
         forced_personas: list = input.get("forced_personas") or []
         is_meme: bool = (flavor == "meme")
-        mode: str = "meme" if is_meme else "standard"
+        is_polymarket: bool = (flavor == "polymarket")
+        # Polymarket sessions ride the meme code path: single round, no Ibrahim
+        # ABORT/REFRAME, no evolution, no tasks. Mode tag stays as "polymarket"
+        # so downstream consumers can distinguish.
+        if is_polymarket:
+            mode: str = "polymarket"
+        elif is_meme:
+            mode: str = "meme"
+        else:
+            mode: str = "standard"
+        # Polymarket uses the meme persona pool too (so meme personas can vote).
+        skip_ibrahim_checks: bool = is_meme or is_polymarket
+        skip_synthesis: bool = is_polymarket  # no Ibrahim verdict needed
+        skip_evolution: bool = is_meme or is_polymarket
+        skip_tasks: bool = is_meme or is_polymarket
+        max_rounds: int = 1 if is_polymarket else MAX_ROUNDS
 
         # ------------------------------------------------------------------ #
         # 1. Start session
@@ -363,15 +382,17 @@ class SessionWorkflow:
         # ------------------------------------------------------------------ #
         # 2. Get identities
         # ------------------------------------------------------------------ #
+        # Polymarket uses meme identities API (gets full pool including meme personas)
+        identities_mode = "meme" if (is_meme or is_polymarket) else mode
         identities: list = await workflow.execute_activity(
             congress_identities,
-            mode,
+            identities_mode,
             start_to_close_timeout=_SHORT_TIMEOUT,
             schedule_to_start_timeout=_SCHEDULE_TO_START,
             retry_policy=RetryPolicy(maximum_attempts=1),
         )
 
-        eligible_statuses = ("eligible", "meme") if is_meme else ("eligible",)
+        eligible_statuses = ("eligible", "meme") if (is_meme or is_polymarket) else ("eligible",)
         all_candidates = [i for i in identities if i.get("name") != "chairman" and i.get("status", "eligible") in eligible_statuses]
         hiring_managers = [i for i in identities if i.get("name") == "chairman"]
 
@@ -523,7 +544,7 @@ class SessionWorkflow:
         aborted: bool = False
         abort_verdict: str = ""
 
-        for round_num in range(1, MAX_ROUNDS + 1):
+        for round_num in range(1, max_rounds + 1):
             if round_num > 1 and thread_id:
                 label = "Rebuttal Round — responding to each other" if round_num == 2 else f"Round {round_num}"
                 await workflow.execute_activity(
@@ -538,8 +559,8 @@ class SessionWorkflow:
                     await self._run_debate_round(topic, debaters, session_id, thread_id, debater_display_names, round_num, pre_debate_context, parallel=True)
                 )
 
-                # Ibrahim ABORT/REFRAME check (skipped in meme mode)
-                if is_meme:
+                # Ibrahim ABORT/REFRAME check (skipped in meme/polymarket modes)
+                if skip_ibrahim_checks:
                     signal: str = SIGNAL_CONTINUE
                     check_reason: str = ""
                 else:
@@ -614,8 +635,8 @@ class SessionWorkflow:
                 )
 
                 # Midpoint kill switch: after Round 2, check if there's a genuine dispute
-                midpoint = (MAX_ROUNDS + 1) // 2
-                if round_num == midpoint and not is_meme:
+                midpoint = (max_rounds + 1) // 2
+                if round_num == midpoint and not skip_ibrahim_checks:
                     ibrahim_midpoint: dict = await workflow.execute_activity(
                         congress_check_midpoint,
                         args=[topic, debate_summaries, session_id],
@@ -650,6 +671,10 @@ class SessionWorkflow:
 
         if aborted:
             verdict = abort_verdict
+        elif skip_synthesis:
+            # Polymarket: skip chairman synthesis entirely. Personas vote directly
+            # on the market question. Verdict is set after the vote step below.
+            verdict = ""
         elif hiring_managers:
             hm_obj = hiring_managers[0]
             hm_name: str = hm_obj.get("name", "chairman")
@@ -780,7 +805,91 @@ class SessionWorkflow:
         # 5b. Duel vote or post-synthesis vote
         # ------------------------------------------------------------------ #
         vote_summary: dict = {}
-        if duel_mode:
+        if is_polymarket and not aborted and debaters:
+            # Polymarket vote: each persona casts BET_YES / BET_NO / DO_NOT_BET.
+            if thread_id:
+                await workflow.execute_activity(
+                    congress_post_separator,
+                    args=[thread_id, "--- **Polymarket Vote** ---"],
+                    start_to_close_timeout=_ALERT_TIMEOUT,
+                    retry_policy=RetryPolicy(maximum_attempts=1),
+                )
+
+            poly_vote_tasks = [
+                workflow.execute_activity(
+                    congress_polymarket_vote,
+                    args=[
+                        identity_obj.get("name", str(identity_obj)),
+                        topic,
+                        session_id,
+                        thread_id,
+                        identity_obj.get("display_name") or identity_obj.get("name", str(identity_obj)),
+                    ],
+                    start_to_close_timeout=_VOTE_TIMEOUT,
+                    schedule_to_start_timeout=_SCHEDULE_TO_START,
+                    retry_policy=RetryPolicy(maximum_attempts=1),
+                )
+                for identity_obj in debaters
+            ]
+            raw_poly_votes = await asyncio.gather(*poly_vote_tasks, return_exceptions=True)
+
+            yes_list: list = []
+            no_list: list = []
+            skip_list: list = []
+            for result in raw_poly_votes:
+                if isinstance(result, Exception):
+                    workflow.logger.warning(f"congress_polymarket_vote task failed: {result}")
+                    continue
+                v = result.get("vote")
+                if v == "BET_YES":
+                    yes_list.append(result["name"])
+                elif v == "DO_NOT_BET":
+                    skip_list.append(result["name"])
+                else:
+                    no_list.append(result["name"])
+
+            total_poly = len(yes_list) + len(no_list) + len(skip_list)
+            tally = (
+                f"BET_YES={len(yes_list)} BET_NO={len(no_list)} DO_NOT_BET={len(skip_list)}"
+                if total_poly > 0
+                else "0 votes cast"
+            )
+            vote_summary = {
+                "bet_yes": yes_list,
+                "bet_no": no_list,
+                "do_not_bet": skip_list,
+                "tally": tally,
+                "polymarket": True,
+            }
+
+            # Cheap human-readable verdict so downstream consumers (Discord report,
+            # session JSON) carry an at-a-glance summary.
+            if skip_list:
+                verdict = f"DO_NOT_BET ({len(skip_list)} veto): " + tally
+            elif len(yes_list) > len(no_list):
+                verdict = f"BET_YES wins: " + tally
+            elif len(no_list) > len(yes_list):
+                verdict = f"BET_NO wins: " + tally
+            else:
+                verdict = f"TIE: " + tally
+
+            if thread_id and total_poly > 0:
+                yes_str = ", ".join(yes_list) if yes_list else "none"
+                no_str = ", ".join(no_list) if no_list else "none"
+                skip_str = ", ".join(skip_list) if skip_list else "none"
+                tally_msg = (
+                    f"**Polymarket vote:** {tally}\n"
+                    f"BET_YES: {yes_str}\n"
+                    f"BET_NO: {no_str}\n"
+                    f"DO_NOT_BET: {skip_str}"
+                )
+                await workflow.execute_activity(
+                    congress_post_separator,
+                    args=[thread_id, tally_msg],
+                    start_to_close_timeout=_ALERT_TIMEOUT,
+                    retry_policy=RetryPolicy(maximum_attempts=1),
+                )
+        elif duel_mode:
             # SYNTHESIS DUEL: debaters vote whose synthesis is better
             if thread_id:
                 await workflow.execute_activity(
@@ -897,10 +1006,10 @@ class SessionWorkflow:
                 )
 
         # ------------------------------------------------------------------ #
-        # 6b. Evolve/retire personas (skipped if aborted)
+        # 6b. Evolve/retire personas (skipped if aborted/meme/polymarket)
         # ------------------------------------------------------------------ #
         evolution_results: dict = {}
-        if not aborted:
+        if not aborted and not skip_evolution:
             try:
                 evolution_results = await workflow.execute_activity(
                     congress_evolve,
@@ -943,7 +1052,7 @@ class SessionWorkflow:
         # 6d. Create local task files from verdict (skipped in meme mode)
         # ------------------------------------------------------------------ #
         task_urls: list = []
-        if not is_meme:
+        if not skip_tasks:
             try:
                 task_urls = await workflow.execute_activity(
                     congress_create_tasks,
@@ -1347,9 +1456,15 @@ class CongressWorkflow:
     async def run(self, input: dict | str) -> dict:
         if isinstance(input, str):
             input = {"topic": input}
-        # Ensure flavor is set for congress (mode may already be set for meme)
+        # Ensure flavor is set for congress (mode may already be set for meme/polymarket)
         if "flavor" not in input and "defendant" not in input:
-            input["flavor"] = "meme" if input.get("mode") == "meme" else "congress"
+            mode = input.get("mode")
+            if mode == "meme":
+                input["flavor"] = "meme"
+            elif mode == "polymarket":
+                input["flavor"] = "polymarket"
+            else:
+                input["flavor"] = "congress"
         impl = SessionWorkflow()
         return await impl.run(input)
 
