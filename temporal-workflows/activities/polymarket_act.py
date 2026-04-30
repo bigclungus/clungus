@@ -52,6 +52,11 @@ def _read_private_key() -> str:
 
 POLYMARKET_GAMMA = "https://gamma-api.polymarket.com"
 
+# Markets below this 24h volume are dropped before the LLM picker sees them.
+# Low-volume markets are almost always niche/illiquid (e.g. Egyptian football
+# at $455 volume) and waste the framers' attention.
+MIN_VOLUME_USD = 10_000.0
+
 # Browser-like headers to avoid CDN blocks
 _POLYMARKET_HEADERS = {
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -118,6 +123,10 @@ async def fetch_polymarket_markets(
             continue
 
         volume = float(m.get("volumeClob") or m.get("volume") or 0)
+
+        # Drop low-volume markets — they're almost always niche/illiquid.
+        if volume < MIN_VOLUME_USD:
+            continue
 
         # Build tokens list from outcomes + outcomePrices + clobTokenIds.
         # The Gamma API returns these fields as JSON-encoded strings within the JSON.
@@ -199,6 +208,14 @@ async def pick_market_with_llm(markets: list[dict], exclude_ids: list[str] | Non
         "Pick the single MOST INTERESTING and FUN market from this list. "
         "Prefer markets about pop culture, sports, elections, or viral topics — not obscure financial instruments. "
         "High volume is a signal of interest but not the only factor.\n\n"
+        "Audience bias: the voters are US-based and care about AI/tech (Anthropic, OpenAI, "
+        "startups), US politics (federal elections, Supreme Court), crypto/equities/macro, "
+        "mainstream US sports (NBA, NFL, MLB, NHL, major UFC fights), top-tier European football "
+        "(Premier League, Champions League finals only), and mainstream US entertainment "
+        "(Drake-tier celebrities, major TV/movies). AVOID niche foreign sports leagues "
+        "(Egyptian, Saudi, Turkish, etc.), local elections outside the US, obscure trivia, and "
+        "non-English-language events. When uncertain, favor markets with higher volume — "
+        "volume itself signals broad interest.\n\n"
         "Markets:\n"
         f"{market_list_text}\n\n"
         "Respond with ONLY the index number (e.g. '3') of your chosen market. No explanation."
